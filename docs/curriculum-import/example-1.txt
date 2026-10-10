@@ -1,0 +1,23 @@
+Wykłady 1-4: Wygłaszanie prezentacji
+
+Porady i wskazówki dotyczące przedstawiania wyników badań w formie prezentacji, przeważnie z użyciem slajdów. Jak rozpoznać potrzeby publiczności, zorganizować materiał, zaprojektować slajdy i odpowiadać na pytania. Podczas ćwiczeń studenci będą wygłaszać prezentacje, być może kilkukrotnie, po czym nastąpi wspólna dyskusja na temat ich mocnych i słabych stron. Efektem takiej dyskusji ma być wyrobienie wrażliwości na potencjalne błędy w wygłaszaniu prezentacji.
+
+Wykłady 5-8: Pisanie prac naukowych (po angielsku)
+
+Pisanie prac naukowych z zakresu informatyki. Wskazówki ogólne dotyczące organizacji materiału i struktury tekstu, a także bardziej szczegółowe porady dotyczące pisania poszczególnych zdań (zarówno matematycznych, jak i niematematycznych) oraz unikania uciążliwej notacji.
+
+Wykłady 8–9: Etyka
+
+Problemy etyczne związane z technologiami komputerowymi, takie jak prywatność, stronniczość algorytmów, zagrożenia związane z automatyzacją, dezinformacja, czy też eksperymenty na ludziach. Odpowiedzialność etyczna informatyka.
+
+Wykłady 9–10: Komunikacja wizualna i projektowanie interfejsów
+
+Jak zaprojektować przedmiot wizualny (stronę internetową, plakat czy wykres), aby zawarte w nim informacje były jasne, nie wprowadzały w błąd i były intuicyjnie zrozumiałe. Jak rozmawiać z grafikami i projektantami UX.
+
+Wykłady 11–12: Prawo
+
+Zagadnienia prawne – jak radzić sobie z problemami prawnymi i jak współpracować z prawnikami. Zarówno z perspektywy prywatnej, jak i – w szczególności – biznesowej.
+
+Wykłady 13–14: Własność intelektualna
+
+Podstawowe zagadnienia dotyczące własności intelektualnej, w tym prawa autorskie, patenty i licencjonowanie oprogramowania. Etyczne i prawne konsekwencje używania cudzego kodu, wkładu w projekty open-source oraz stosowania oprogramowania komercyjnego w procesie tworzenia.

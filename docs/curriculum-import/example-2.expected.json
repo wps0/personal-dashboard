@@ -1,0 +1,116 @@
+{
+  "topics": [
+    {
+      "title": "Obszary stosowania mikrokontrolerów, architektura mikroprocesorów ARM",
+      "description": "",
+      "lectureFrom": 1,
+      "lectureTo": 1
+    },
+    {
+      "title": "Binarna struktura kodu wykonywalnego, środowisko programistyczne, kompilator, debugger",
+      "description": "",
+      "lectureFrom": 2,
+      "lectureTo": 2
+    },
+    {
+      "title": "Wejścia-wyjścia binarne na przykładzie przycisków i diod świecących (LED)",
+      "description": "",
+      "lectureFrom": 3,
+      "lectureTo": 3
+    },
+    {
+      "title": "Taktowanie mikrokontrolera i dystrybucja sygnału zegarowego, prosty interfejs szeregowy UART",
+      "description": "",
+      "lectureFrom": 4,
+      "lectureTo": 4
+    },
+    {
+      "title": "System przerwań, obsługa przerwań, przerwania zewnętrzne",
+      "description": "",
+      "lectureFrom": 5,
+      "lectureTo": 5
+    },
+    {
+      "title": "Układy licznikowe, wykorzystanie licznika do generowania przerwań i przebiegów okresowych, PWM, dioda świecąca RGB",
+      "description": "",
+      "lectureFrom": 6,
+      "lectureTo": 6
+    },
+    {
+      "title": "Nadajnik i odbiornik podczerwieni",
+      "description": "",
+      "lectureFrom": 7,
+      "lectureTo": 7
+    },
+    {
+      "title": "Przetwornik analogowo-cyfrowy, termometr analogowy",
+      "description": "",
+      "lectureFrom": 8,
+      "lectureTo": 8
+    },
+    {
+      "title": "Interfejs szeregowy I2C, akcelerometr ew. inne czujniki, np. temperatury, ciśnienia, wilgotności lub oświetlenia",
+      "description": "",
+      "lectureFrom": 9,
+      "lectureTo": 9
+    },
+    {
+      "title": "Interfejs szeregowy SPI, wyświetlacz ciekłokrystaliczny (LCD)",
+      "description": "",
+      "lectureFrom": 10,
+      "lectureTo": 10
+    },
+    {
+      "title": "Klawiatura multipleksowana 4 ✕ 4",
+      "description": "",
+      "lectureFrom": 11,
+      "lectureTo": 11
+    },
+    {
+      "title": "Zegar czasu rzeczywistego (RTC)",
+      "description": "",
+      "lectureFrom": 12,
+      "lectureTo": 12
+    },
+    {
+      "title": "Interfejs szeregowy RS232, moduł komunikacyjny Bluetooth",
+      "description": "",
+      "lectureFrom": 13,
+      "lectureTo": 13
+    },
+    {
+      "title": "DMA",
+      "description": "",
+      "lectureFrom": 14,
+      "lectureTo": 14
+    },
+    {
+      "title": "Koprocesor zmiennoprzecinkowy, cyfrowe przetwarzanie sygnałów (DSP)",
+      "description": "",
+      "lectureFrom": 15,
+      "lectureTo": 15
+    },
+    {
+      "title": "Programowanie pamięci Flash, bootloader",
+      "description": "",
+      "lectureFrom": 16,
+      "lectureTo": 16
+    },
+    {
+      "title": "Przegląd innych architektur",
+      "description": "",
+      "lectureFrom": 17,
+      "lectureTo": 17
+    }
+  ],
+  "courseNotes": "Wykład odbywa się co tydzień po 2 godziny, a zajęcia laboratoryjne - co drugi tydzień po 4 godziny. W pierwszym tygodniu są dwa wykłady (1 i 2); w drugim tygodniu jest wykład 3; zajęcia laboratoryjne startują w drugim tygodniu; kolejność wykładów może się zmienić.",
+  "warnings": [
+    "The description says the order of lectures may change."
+  ],
+  "corrections": [
+    {
+      "from": "w pierwszym tygodniu",
+      "to": "W pierwszym tygodniu"
+    }
+  ]
+}

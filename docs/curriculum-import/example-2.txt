@@ -1,0 +1,40 @@
+Skrócony opis: 	
+
+Celem przedmiotu jest pogłębienie wiedzy na temat programowania niskopoziomowego i zapoznanie z metodami programowania mikrokontrolerów (sterowników mikroprocesorowych). Na wykładzie są omawiane typowe techniki programowania i narzędzia programistyczne, architektura mikroprocesorów ARM oraz typowe układy peryferyjne. Na laboratorium są prowadzone praktyczne ćwiczenia w oparciu o zestawy prototypowe z mikroprocesorem ARM. Programy pisze się w języku C, ewentualnie z drobnymi wstawkami asemblerowymi.
+
+Wykład odbywa się co tydzień po 2 godziny, a zajęcia laboratoryjne - co drugi tydzień po 4 godziny. w pierwszym tygodniu są dwa wykłady (1 i 2); w drugim tygodniu jest wykład 3; zajęcia laboratoryjne startują w drugim tygodniu; kolejność wykładów może się zmienić.
+Pełny opis: 	
+
+1. Obszary stosowania mikrokontrolerów, architektura mikroprocesorów ARM
+
+2. Binarna struktura kodu wykonywalnego, środowisko programistyczne, kompilator, debugger
+
+3. Wejścia-wyjścia binarne na przykładzie przycisków i diod świecących (LED)
+
+4. Taktowanie mikrokontrolera i dystrybucja sygnału zegarowego, prosty interfejs szeregowy UART
+
+5. System przerwań, obsługa przerwań, przerwania zewnętrzne
+
+6. Układy licznikowe, wykorzystanie licznika do generowania przerwań i przebiegów okresowych, PWM, dioda świecąca RGB
+
+7. Nadajnik i odbiornik podczerwieni
+
+8. Przetwornik analogowo-cyfrowy, termometr analogowy
+
+9. Interfejs szeregowy I2C, akcelerometr ew. inne czujniki, np. temperatury, ciśnienia, wilgotności lub oświetlenia
+
+10. Interfejs szeregowy SPI, wyświetlacz ciekłokrystaliczny (LCD)
+
+11. Klawiatura multipleksowana 4 ✕ 4
+
+12. Zegar czasu rzeczywistego (RTC)
+
+13. Interfejs szeregowy RS232, moduł komunikacyjny Bluetooth
+
+14. DMA
+
+15. Koprocesor zmiennoprzecinkowy, cyfrowe przetwarzanie sygnałów (DSP)
+
+16. Programowanie pamięci Flash, bootloader
+
+17. Przegląd innych architektur

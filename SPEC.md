@@ -194,6 +194,8 @@ choice is stored per device.
 - **Long-term.**
   - Moodle integration: assignments and deadlines from the course pages,
     probably through Moodle's web-service API or its calendar export.
+  - Curriculum import: turn a course description pasted from USOS into lecture
+    items, with Google Gemini doing the extraction (see 5.2).
   - RSS feed client: a reader pane for course, blog and release feeds.
     Fetching feeds needs a CORS proxy or a small backend, which this
     serverless app avoids today, so it needs a design decision first.
@@ -227,3 +229,95 @@ Open questions for that iteration:
 - **Selection model.** Probably a focus ring on the blocks, so arrow keys and
   `e` have a target.
 - **Undo.** Whether it covers every change or only deletes.
+
+### 5.2 Curriculum import (long-term)
+
+Paste a course description, for example the "Pełny opis" section from USOS,
+and get one item per lecture or topic, with the original wording kept.
+Sample inputs and the output we expect from them live in
+`docs/curriculum-import/` and double as evaluation fixtures.
+
+**Flow**
+1. In the project panel: **Import curriculum…** → paste the text (any
+   language; the examples are Polish).
+2. The app calls the Gemini API with the prompt and response schema below.
+3. **Review screen** before anything is created:
+   - an editable table of topics;
+   - the model's warnings;
+   - every correction the model reports;
+   - a "not verbatim" flag on any title or description that isn't found in
+     the pasted text (whitespace-insensitive). This catches paraphrasing.
+4. Choose the granularity:
+   - **one item per topic** (e.g. "Wykłady 5–8: Pisanie prac naukowych"), or
+   - **one item per lecture number** (Lecture 5…8, all with that topic's
+     title and description).
+5. The import creates `kind: 'lecture'` items with title = topic title, notes
+   = description, and an estimate from a default. `courseNotes` goes into the
+   project's overview doc.
+
+**Gemini call**
+- Endpoint: `models/<model>:generateContent`, with a current Gemini Flash
+  model that is configurable in Settings.
+- Use structured output: `responseMimeType: 'application/json'` plus a
+  `responseSchema`.
+- Temperature 0.
+- API key: entered by the user in Settings and stored only on that device.
+  This is acceptable for a single-user personal app. Verify that the API
+  accepts browser (CORS) requests; if it doesn't, use a tiny proxy.
+- The pasted text is sent to Google. Say so in the import dialog.
+
+Response schema:
+
+```json
+{
+  "topics": [{ "title": "string", "description": "string", "lectureFrom": "integer|null", "lectureTo": "integer|null" }],
+  "courseNotes": "string",
+  "warnings": ["string"],
+  "corrections": [{ "from": "string", "to": "string" }]
+}
+```
+
+System instruction (draft):
+
+> You extract the lecture plan from a university course description. Return
+> JSON that matches the schema.
+>
+> 1. Extract only the lectures or topics of the syllabus: numbered lists, or
+>    headings like "Wykłady 5–8: …". Do not create topics from the course goals,
+>    the schedule or the assessment rules.
+> 2. Preserve the original wording and language **verbatim**. Do not
+>    translate, paraphrase, summarise, shorten or reorder. You may only fix
+>    obvious typos, capitalisation at the start of a sentence, and broken
+>    whitespace or line breaks.
+> 3. `title`: the topic heading without its numbering prefix ("Wykłady 1-4:",
+>    "3."). `description`: the text that belongs to that topic, verbatim,
+>    joined into one paragraph. Use an empty string if there is none. Never
+>    invent a description.
+> 4. `lectureFrom` / `lectureTo`: the lecture numbers if they are stated (both
+>    the same for a single lecture), otherwise null. Keep ranges exactly as
+>    written, even if they overlap or leave gaps.
+> 5. `courseNotes`: verbatim sentences about scheduling that matter for
+>    planning (how often lectures happen, whether the order may change), or an
+>    empty string.
+> 6. `warnings`: overlapping or missing lecture numbers, ambiguous structure,
+>    or a note that the order may change.
+> 7. `corrections`: every change you made to the original text, as `from` /
+>    `to` pairs.
+
+**What the examples exercise**
+- Example 1 has topic blocks over ranges of lectures that overlap: lecture 8
+  is in 5–8 and 8–9, and lecture 9 is in 8–9 and 9–10. It also mixes `-` and
+  `–` in the ranges.
+- Example 2 has a goal and schedule preamble that must not become topics, 17
+  numbered single lectures with no description, and one capitalisation fix.
+
+**Testing.** A unit test feeds the fixtures through the response validation
+and the "not verbatim" check. An opt-in live evaluation (run with an API key)
+compares Gemini's output against the `*.expected.json` files.
+
+**Open questions**
+- **Default granularity for overlapping ranges.** Per topic, or per lecture
+  with overlaps merged into one item titled "Etyka / Pisanie prac…"?
+- **Linking to the USOS timetable.** Should imported lectures be matched to
+  USOS timetable events in order, so each gets its `heldOn` date
+  automatically?
