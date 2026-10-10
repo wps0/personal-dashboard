@@ -1,16 +1,14 @@
 import { useRef, useState, type ReactNode } from 'react';
-import { HoursInput } from '../components/HoursInput';
 import { InlineText } from '../components/InlineText';
 import { sampleData } from '../model/sample';
 import { AREA_COLORS, emptyData } from '../model/types';
 import { exportJson, parseAppData } from '../storage/storage';
 import { useData, useStore } from '../store';
-
-const WEEKDAYS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+import { CapacitySettings } from './CapacitySettings';
 
 export function SettingsView() {
   const data = useData();
-  const { setCapacity, addArea, updateArea, deleteArea, replaceAll } = useStore.getState();
+  const { addArea, updateArea, deleteArea, replaceAll } = useStore.getState();
   const fileRef = useRef<HTMLInputElement>(null);
   const [newArea, setNewArea] = useState('');
   const [message, setMessage] = useState<string | null>(null);
@@ -38,19 +36,9 @@ export function SettingsView() {
 
   return (
     <div className="scroll-thin h-full overflow-y-auto">
-      <div className="mx-auto max-w-2xl space-y-6 p-4">
-        <Section title="Daily capacity" hint="Hours you can realistically plan per day. Days over capacity turn red.">
-          <div className="flex flex-wrap gap-2">
-            {WEEKDAYS.map((d, i) => (
-              <label key={d} className="flex flex-col items-center gap-1 rounded border border-line bg-panel px-2 py-1.5">
-                <span className="label">{d}</span>
-                <span className="flex items-center">
-                  <HoursInput value={data.settings.capacity[i]} onChange={(h) => setCapacity(i, h ?? 0)} />
-                  <span className="text-dim">h</span>
-                </span>
-              </label>
-            ))}
-          </div>
+      <div className="mx-auto max-w-4xl space-y-6 p-4">
+        <Section title="Capacity & reserved time" hint="When you can plan work, and which hours are taken (sleep, work).">
+          <CapacitySettings />
         </Section>
 
         <Section title="Areas" hint="Top-level groups for projects. Deleting an area deletes its projects.">
@@ -69,7 +57,7 @@ export function SettingsView() {
                   ))}
                 </div>
                 <InlineText value={a.name} onChange={(name) => updateArea(a.id, { name })} className="flex-1" />
-                <span className="font-mono text-[11px] text-dim">
+                <span className="tabular-nums text-[11px] text-dim">
                   {data.projects.filter((p) => p.areaId === a.id).length} projects
                 </span>
                 <button

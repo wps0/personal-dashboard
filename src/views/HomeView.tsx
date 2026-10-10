@@ -6,7 +6,7 @@ import { useLookups, type Lookups } from '../hooks';
 import { addDays, countdown, dayName, shortDate, todayISO } from '../model/dates';
 import { allocationsByItem, isItemDone, missedAllocations, projectStats, urgency } from '../model/selectors';
 import type { Allocation, ISODate } from '../model/types';
-import { href } from '../router';
+import { href, navigate } from '../router';
 import { useStore } from '../store';
 import { useUi } from '../ui';
 
@@ -16,8 +16,13 @@ export function HomeView() {
   const days = useMemo(() => [today, addDays(today, 1), addDays(today, 2)], [today]);
   return (
     <div className="grid h-full grid-cols-1 gap-2 overflow-y-auto p-2 lg:grid-cols-[minmax(0,1fr)_380px] lg:overflow-hidden">
-      <div className="h-[70vh] min-h-0 lg:h-full">
-        <TimeGrid days={days} hourHeight={40} scrollToHour={Math.max(0, new Date().getHours() - 2)} />
+      <div className="h-[70vh] min-h-0 rounded-lg border border-line bg-panel lg:h-full">
+        <TimeGrid
+          days={days}
+          hourHeight={44}
+          scrollToHour={Math.max(0, new Date().getHours() - 2)}
+          onDayClick={(d) => navigate({ name: 'calendar', view: 'day', date: d })}
+        />
       </div>
       <div className="flex min-h-0 flex-col gap-2">
         <Planned days={days} />
@@ -62,8 +67,8 @@ function Planned({ days }: { days: ISODate[] }) {
               <span className={`text-[12px] font-semibold ${i === 0 ? 'text-accent' : 'text-strong'}`}>
                 {i === 0 ? 'Today' : i === 1 ? 'Tomorrow' : dayName(date)}
               </span>
-              <span className="font-mono text-[11px] text-dim">{shortDate(date)}</span>
-              <span className="ml-auto font-mono text-[11px] text-dim">{fmtH(allocs.reduce((s, a) => s + a.plannedHours, 0))}</span>
+              <span className="tabular-nums text-[11px] text-dim">{shortDate(date)}</span>
+              <span className="ml-auto tabular-nums text-[11px] text-dim">{fmtH(allocs.reduce((s, a) => s + a.plannedHours, 0))}</span>
             </div>
             {allocs.length === 0 ? (
               <p className="px-1 text-[12px] text-dim/60">nothing planned</p>
@@ -95,8 +100,8 @@ const PlannedRow = memo(function PlannedRow({ alloc, lookups }: { alloc: Allocat
         </div>
         <div className="truncate text-[10px] text-dim">{lookups.project(item.projectId)?.name}</div>
       </button>
-      {alloc.start && <span className="font-mono text-[11px] text-dim">{alloc.start}</span>}
-      <span className="w-8 text-right font-mono text-[11px]">{fmtH(alloc.plannedHours)}</span>
+      {alloc.start && <span className="tabular-nums text-[11px] text-dim">{alloc.start}</span>}
+      <span className="w-8 text-right tabular-nums text-[11px]">{fmtH(alloc.plannedHours)}</span>
     </li>
   );
 });
@@ -133,7 +138,7 @@ function Projects() {
               <div className="min-w-0 flex-1 leading-tight">
                 <div className="truncate text-strong">{p.name}</div>
                 <div className="truncate text-[11px] text-dim">
-                  <span className="font-mono">{s.total > 0 ? `${s.done}/${s.total}` : `${s.percent}%`}</span>
+                  <span className="tabular-nums">{s.total > 0 ? `${s.done}/${s.total}` : `${s.percent}%`}</span>
                   {s.next && (
                     <span className={URGENCY_CLASS[urgency(s.next.date, today)]}>
                       {' '}

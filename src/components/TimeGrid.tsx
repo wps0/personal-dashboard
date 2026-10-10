@@ -10,15 +10,19 @@ import {
   type DragEndEvent,
   type DragStartEvent,
 } from '@dnd-kit/core';
-import { memo, useEffect, useLayoutEffect, useMemo, useRef, useState, type MouseEvent } from 'react';
+import { memo, useEffect, useLayoutEffect, useMemo, useRef, useState, type MouseEvent as ReactMouseEvent, type PointerEvent as ReactPointerEvent } from 'react';
 import { fmtH } from '../format';
-import { FALLBACK_COLOR, useLookups, type Lookups } from '../hooks';
-import { dayName, shortDate, todayISO, weekdayIndex } from '../model/dates';
+import { useCapacities, useLookups, type Lookups } from '../hooks';
+import { reservedFor } from '../model/capacity';
+import { dayName, todayISO } from '../model/dates';
 import { isItemDone } from '../model/selectors';
 import { fromMinutes, layoutSpans, snap, toMinutes } from '../model/time';
 import type { Allocation, CalendarEvent, ISODate } from '../model/types';
 import { useStore } from '../store';
 import { useUi } from '../ui';
+import { CapacityBadge } from './CapacityBadge';
+import { DraftEditor, EventEditor, draftAt } from './EventEditor';
+import { Popover, PopoverAnchor, PopoverContent } from './ui/Popover';
 
 interface Props {
   days: ISODate[];
@@ -26,25 +30,37 @@ interface Props {
   hourHeight?: number;
   /** Hour to scroll to initially. */
   scrollToHour?: number;
+  /** Clicking a day number in the header (e.g. to open the day view). */
+  onDayClick?(date: ISODate): void;
 }
 
 type Drag = { kind: 'alloc'; alloc: Allocation } | { kind: 'event'; event: CalendarEvent };
+type Span = { start: number; end: number; label?: string };
 
 const EMPTY: never[] = [];
+const DAY_MIN = 24 * 60;
 
-/** Browsers may fire a click on the common ancestor after a drag; ignore it. */
+/** Browsers may fire a click on the common ancestor after a drag or resize; ignore it. */
 let suppressClickUntil = 0;
-const endDrag = () => (suppressClickUntil = performance.now() + 200);
+const suppressClicks = () => (suppressClickUntil = performance.now() + 200);
+const clicksSuppressed = () => performance.now() < suppressClickUntil;
+
+function clientY(e: Event | null): number {
+  if (!e) return 0;
+  if ('touches' in e) return (e as TouchEvent).touches[0]?.clientY ?? 0;
+  return (e as PointerEvent).clientY;
+}
 
 /**
- * Day columns with an hour grid. Shows calendar events and planned task
- * sessions that have a start time; sessions without one sit in a strip above
- * the grid and can be dragged onto it.
+ * Google-Calendar-style day columns: an all-day row, then an hour grid with
+ * events and time-blocked task sessions. Click or drag on empty grid to create
+ * an event; drag blocks to move them; drag their bottom edge to resize.
  */
-export function TimeGrid({ days, hourHeight = 44, scrollToHour = 7 }: Props) {
-  // Like WeekView: the DndContext owner must not subscribe to data, or every
-  // data change re-renders all draggables. GridBody holds the subscriptions.
+export function TimeGrid({ days, hourHeight = 48, scrollToHour = 7, onDayClick }: Props) {
+  // The DndContext owner must not subscribe to data, or every data change
+  // re-renders all draggables. GridBody holds the subscriptions.
   const grab = useRef(0);
+  const pointerY = useRef(0);
   const [dragging, setDragging] = useState<Drag | null>(null);
 
   const sensors = useSensors(
@@ -52,29 +68,27 @@ export function TimeGrid({ days, hourHeight = 44, scrollToHour = 7 }: Props) {
     useSensor(TouchSensor, { activationConstraint: { delay: 200, tolerance: 6 } }),
   );
 
-  // Track the real pointer position: dnd-kit's delta mixes in scroll compensation
-  // that doesn't match the time grid's own scroll container.
-  const pointerY = useRef(0);
+  // Track the real pointer: dnd-kit's delta mixes in scroll compensation that
+  // doesn't match the grid's own scroll container.
   const trackPointer = (ev: PointerEvent | TouchEvent) => (pointerY.current = clientY(ev));
-
-  const onDragStart = (e: DragStartEvent) => {
-    setDragging(e.active.data.current as Drag);
-    pointerY.current = clientY(e.activatorEvent);
-    window.addEventListener('pointermove', trackPointer);
-    window.addEventListener('touchmove', trackPointer);
-    // Where inside the block it was grabbed (dnd-kit hasn't measured the node yet at this point).
-    const node = (e.activatorEvent?.target as Element | null)?.closest('[aria-roledescription="draggable"]');
-    grab.current = node ? pointerY.current - node.getBoundingClientRect().top : 0;
-  };
-
   const stopTracking = () => {
     window.removeEventListener('pointermove', trackPointer);
     window.removeEventListener('touchmove', trackPointer);
   };
 
+  const onDragStart = (e: DragStartEvent) => {
+    setDragging(e.active.data.current as Drag);
+    useUi.getState().openEvent(null);
+    pointerY.current = clientY(e.activatorEvent);
+    window.addEventListener('pointermove', trackPointer);
+    window.addEventListener('touchmove', trackPointer);
+    const node = (e.activatorEvent?.target as Element | null)?.closest('[aria-roledescription="draggable"]');
+    grab.current = node ? pointerY.current - node.getBoundingClientRect().top : 0;
+  };
+
   const onDragEnd = (e: DragEndEvent) => {
     setDragging(null);
-    endDrag();
+    suppressClicks();
     stopTracking();
     const drag = e.active.data.current as Drag | undefined;
     const target = e.over?.id;
@@ -84,41 +98,51 @@ export function TimeGrid({ days, hourHeight = 44, scrollToHour = 7 }: Props) {
 
     if (zone === 'strip') {
       if (drag.kind === 'alloc') updateAllocation(drag.alloc.id, { date, start: undefined });
+      else updateEvent(drag.event.id, { date, allDay: true });
       return;
     }
-    // Block top = pointer position minus where inside the block it was grabbed.
     const col = document.querySelector(`[data-col="${date}"]`);
     if (!col) return;
     const top = pointerY.current - grab.current - col.getBoundingClientRect().top;
-    const start = Math.max(0, Math.min(24 * 60 - 15, snap((top / hourHeight) * 60)));
+    const start = Math.max(0, Math.min(DAY_MIN - 15, snap((top / hourHeight) * 60)));
     if (drag.kind === 'alloc') {
       updateAllocation(drag.alloc.id, { date, start: fromMinutes(start) });
     } else {
-      const len = toMinutes(drag.event.end) - toMinutes(drag.event.start);
-      updateEvent(drag.event.id, { date, start: fromMinutes(start), end: fromMinutes(Math.min(start + len, 24 * 60 - 1)) });
+      const ev = drag.event;
+      const len = ev.allDay ? 60 : toMinutes(ev.end) - toMinutes(ev.start);
+      updateEvent(ev.id, { date, allDay: false, start: fromMinutes(start), end: fromMinutes(Math.min(start + len, DAY_MIN - 1)) });
     }
   };
 
   return (
-    <DndContext sensors={sensors} onDragStart={onDragStart} onDragEnd={onDragEnd} onDragCancel={() => (setDragging(null), endDrag(), stopTracking())}>
-      <GridBody days={days} hourHeight={hourHeight} scrollToHour={scrollToHour} />
+    <DndContext
+      sensors={sensors}
+      onDragStart={onDragStart}
+      onDragEnd={onDragEnd}
+      onDragCancel={() => (setDragging(null), suppressClicks(), stopTracking())}
+    >
+      <GridBody days={days} hourHeight={hourHeight} scrollToHour={scrollToHour} onDayClick={onDayClick} />
       <DragOverlay dropAnimation={null}>{dragging && <DragGhost drag={dragging} />}</DragOverlay>
     </DndContext>
   );
 }
 
-type DayData = { timed: Allocation[]; untimed: Allocation[]; events: CalendarEvent[] };
+type DayData = { timed: Allocation[]; untimed: Allocation[]; events: CalendarEvent[]; allDay: CalendarEvent[] };
 
-/** Reuses the previous arrays for days whose contents didn't change, so memoized columns skip re-rendering. */
 function sameItems<T>(a: T[] | undefined, b: T[]): a is T[] {
   return !!a && a.length === b.length && a.every((x, i) => x === b[i]);
 }
 
-function GridBody({ days, hourHeight, scrollToHour }: Required<Props>) {
+type BodyProps = Required<Omit<Props, 'onDayClick'>> & Pick<Props, 'onDayClick'>;
+
+function GridBody({ days, hourHeight, scrollToHour, onDayClick }: BodyProps) {
   const allocations = useStore((s) => s.data.allocations);
   const events = useStore((s) => s.data.events);
-  const capacity = useStore((s) => s.data.settings.capacity);
+  const rules = useStore((s) => s.data.settings.capacityRules);
+  const hidden = useUi((s) => s.hidden);
+  const draftElsewhere = useUi((s) => !!s.draft && !days.includes(s.draft.date));
   const lookups = useLookups();
+  const capacities = useCapacities(days);
   const today = todayISO();
   const scrollRef = useRef<HTMLDivElement>(null);
   const prev = useRef(new Map<ISODate, DayData>());
@@ -127,59 +151,72 @@ function GridBody({ days, hourHeight, scrollToHour }: Required<Props>) {
     scrollRef.current?.scrollTo({ top: scrollToHour * hourHeight });
   }, [scrollToHour, hourHeight]);
 
+  const reserved = useMemo(() => new Map(days.map((d) => [d, reservedFor(rules, d)])), [days, rules]);
+
   const byDay = useMemo(() => {
     const want = new Set(days);
+    const showEvents = !hidden.includes('events');
+    const visibleAlloc = (a: Allocation) => {
+      if (!hidden.length) return true;
+      const item = lookups.item(a.itemId);
+      const area = item && lookups.project(item.projectId)?.areaId;
+      return !area || !hidden.includes(area);
+    };
     const m = new Map<ISODate, DayData>();
-    for (const d of days) m.set(d, { timed: [], untimed: [], events: [] });
-    for (const a of allocations) if (want.has(a.date)) (a.start ? m.get(a.date)!.timed : m.get(a.date)!.untimed).push(a);
-    for (const e of events) if (want.has(e.date)) m.get(e.date)!.events.push(e);
+    for (const d of days) m.set(d, { timed: [], untimed: [], events: [], allDay: [] });
+    for (const a of allocations) if (want.has(a.date) && visibleAlloc(a)) (a.start ? m.get(a.date)!.timed : m.get(a.date)!.untimed).push(a);
+    if (showEvents) for (const e of events) if (want.has(e.date)) (e.allDay ? m.get(e.date)!.allDay : m.get(e.date)!.events).push(e);
+    // Unchanged days keep their previous arrays so memoized columns skip re-rendering.
     for (const [d, day] of m) {
       const p = prev.current.get(d);
       if (!p) continue;
       if (sameItems(p.timed, day.timed)) day.timed = p.timed;
       if (sameItems(p.untimed, day.untimed)) day.untimed = p.untimed;
       if (sameItems(p.events, day.events)) day.events = p.events;
+      if (sameItems(p.allDay, day.allDay)) day.allDay = p.allDay;
     }
     prev.current = m;
     return m;
-  }, [allocations, events, days]);
+  }, [allocations, events, days, hidden, lookups]);
 
-  const cols = `3rem repeat(${days.length}, minmax(0, 1fr))`;
+  const cols = `3.5rem repeat(${days.length}, minmax(0, 1fr))`;
 
   return (
-    <div className="flex h-full min-h-0 flex-col rounded border border-line bg-panel">
-      <div className="grid shrink-0 border-b border-line" style={{ gridTemplateColumns: cols }}>
+    <div className="relative flex h-full min-h-0 flex-col">
+      {draftElsewhere && <OffscreenDraft />}
+      <div className="grid shrink-0" style={{ gridTemplateColumns: cols }}>
         <div />
         {days.map((d) => {
           const day = byDay.get(d)!;
           const planned = [...day.timed, ...day.untimed].reduce((s, a) => s + a.plannedHours, 0);
-          const cap = capacity[weekdayIndex(d)];
+          const isToday = d === today;
           return (
-            <div key={d} className="border-l border-line px-2 py-1">
-              <div className="flex items-baseline gap-1.5">
-                <span className={`font-semibold ${d === today ? 'text-accent' : 'text-strong'}`}>{dayName(d)}</span>
-                <span className="font-mono text-[11px] text-dim">{shortDate(d)}</span>
-                <span className={`ml-auto font-mono text-[11px] ${planned > cap ? 'text-danger' : 'text-dim'}`}>
-                  {fmtH(planned)}/{fmtH(cap)}
-                </span>
-              </div>
+            <div key={d} className="flex flex-col items-center pt-1.5 pb-1">
+              <span className={`text-[11px] font-medium uppercase ${isToday ? 'text-accent' : 'text-dim'}`}>{dayName(d)}</span>
+              <button
+                onClick={() => onDayClick?.(d)}
+                className={`flex h-10 w-10 items-center justify-center rounded-full text-[22px] tabular-nums ${
+                  isToday ? 'bg-accent text-white' : 'text-strong hover:bg-raised'
+                }`}
+              >
+                {Number(d.slice(8))}
+              </button>
+              <CapacityBadge date={d} planned={planned} info={capacities.get(d)!} isPast={d < today} />
             </div>
           );
         })}
       </div>
       <div className="grid shrink-0 border-b border-line" style={{ gridTemplateColumns: cols }}>
-        <div className="label self-center pr-1 text-right text-[9px]" title="Planned without a start time — drag onto the grid">
-          todo
-        </div>
+        <div className="self-end pr-2 pb-1 text-right text-[10px] text-dim">all-day</div>
         {days.map((d) => (
-          <Strip key={d} date={d} allocs={byDay.get(d)!.untimed} lookups={lookups} />
+          <Strip key={d} date={d} allocs={byDay.get(d)!.untimed} events={byDay.get(d)!.allDay} lookups={lookups} />
         ))}
       </div>
       <div ref={scrollRef} className="scroll-thin relative min-h-0 flex-1 overflow-y-auto">
         <div className="grid" style={{ gridTemplateColumns: cols, height: 24 * hourHeight }}>
           <div className="relative">
             {Array.from({ length: 24 }, (_, h) => (
-              <span key={h} className="absolute right-1.5 -translate-y-1/2 font-mono text-[10px] text-dim" style={{ top: h * hourHeight }}>
+              <span key={h} className="absolute right-2 -translate-y-1/2 text-[10px] text-dim tabular-nums" style={{ top: h * hourHeight }}>
                 {h > 0 ? `${String(h).padStart(2, '0')}:00` : ''}
               </span>
             ))}
@@ -193,6 +230,7 @@ function GridBody({ days, hourHeight, scrollToHour }: Required<Props>) {
                 isToday={d === today}
                 timed={day.timed.length ? day.timed : EMPTY}
                 events={day.events.length ? day.events : EMPTY}
+                reserved={reserved.get(d)!}
                 hourHeight={hourHeight}
                 lookups={lookups}
               />
@@ -204,25 +242,70 @@ function GridBody({ days, hourHeight, scrollToHour }: Required<Props>) {
   );
 }
 
-function clientY(e: Event | null): number {
-  if (!e) return 0;
-  if ('touches' in e) return (e as TouchEvent).touches[0]?.clientY ?? 0;
-  return (e as PointerEvent).clientY;
+/** Draft moved to a date this grid doesn't show (e.g. via its date picker): keep the editor open. */
+function OffscreenDraft() {
+  return (
+    <Popover open onOpenChange={(o) => !o && useUi.getState().setDraft(null)}>
+      <PopoverAnchor className="absolute top-2 right-1/2 h-0 w-0" />
+      <PopoverContent side="bottom">
+        <DraftEditor />
+      </PopoverContent>
+    </Popover>
+  );
 }
 
-const Strip = memo(function Strip({ date, allocs, lookups }: { date: ISODate; allocs: Allocation[]; lookups: Lookups }) {
+const Strip = memo(function Strip(props: { date: ISODate; allocs: Allocation[]; events: CalendarEvent[]; lookups: Lookups }) {
+  const { date, allocs, events, lookups } = props;
   const { setNodeRef, isOver } = useDroppable({ id: `strip|${date}` });
+  const hasDraft = useUi((s) => !!s.draft?.allDay && s.draft.date === date);
   return (
-    <div ref={setNodeRef} className={`scroll-thin max-h-24 min-h-7 space-y-px overflow-y-auto border-l border-line p-0.5 ${isOver ? 'bg-accent/10' : ''}`}>
+    <div
+      ref={setNodeRef}
+      onClick={(e) => {
+        if (e.target !== e.currentTarget || clicksSuppressed()) return;
+        useUi.getState().setDraft(draftAt(date, 9 * 60, 10 * 60, true));
+      }}
+      className={`scroll-thin max-h-24 min-h-7 cursor-pointer space-y-px overflow-y-auto border-l border-line p-0.5 ${isOver ? 'bg-accent/10' : ''}`}
+      title="Click to add an all-day event"
+    >
+      {events.map((e) => (
+        <AllDayChip key={e.id} event={e} />
+      ))}
       {allocs.map((a) => (
         <StripChip key={a.id} alloc={a} lookups={lookups} />
       ))}
+      {hasDraft && <DraftChip />}
     </div>
   );
 });
 
+const AllDayChip = memo(function AllDayChip({ event }: { event: CalendarEvent }) {
+  const open = useUi((s) => s.openEventId === event.id);
+  const { attributes, listeners, setNodeRef, isDragging } = useDraggable({ id: `event:${event.id}`, data: { kind: 'event', event } satisfies Drag });
+  return (
+    <Popover open={open} onOpenChange={(o) => !o && useUi.getState().openEvent(null)}>
+      <PopoverAnchor asChild>
+        <div
+          ref={setNodeRef}
+          {...attributes}
+          {...listeners}
+          onClick={() => !clicksSuppressed() && useUi.getState().openEvent(event.id)}
+          className={`cursor-pointer touch-none truncate rounded px-1.5 py-px text-[11px] font-medium ${isDragging ? 'opacity-30' : ''}`}
+          style={{ background: 'var(--color-event)', color: 'var(--color-on-block)' }}
+        >
+          {event.title}
+        </div>
+      </PopoverAnchor>
+      {open && (
+        <PopoverContent side="bottom" align="start">
+          <EventEditor eventId={event.id} />
+        </PopoverContent>
+      )}
+    </Popover>
+  );
+});
+
 const StripChip = memo(function StripChip({ alloc, lookups }: { alloc: Allocation; lookups: Lookups }) {
-  const openItem = useUi((s) => s.openItem);
   const { attributes, listeners, setNodeRef, isDragging } = useDraggable({ id: `alloc:${alloc.id}`, data: { kind: 'alloc', alloc } satisfies Drag });
   const item = lookups.item(alloc.itemId);
   return (
@@ -230,28 +313,50 @@ const StripChip = memo(function StripChip({ alloc, lookups }: { alloc: Allocatio
       ref={setNodeRef}
       {...attributes}
       {...listeners}
-      onClick={() => openItem(alloc.itemId)}
-      className={`flex cursor-grab touch-none items-center gap-1 truncate rounded border-l-2 bg-raised px-1 text-[11px] ${isDragging ? 'opacity-30' : ''} ${alloc.done ? 'text-dim line-through' : ''}`}
-      style={{ borderLeftColor: lookups.color(item) }}
+      onClick={() => !clicksSuppressed() && useUi.getState().openItem(alloc.itemId)}
+      className={`flex cursor-pointer touch-none items-center gap-1 truncate rounded border-l-4 px-1.5 py-px text-[11px] font-medium ${isDragging ? 'opacity-30' : ''} ${
+        alloc.done ? 'line-through opacity-60' : ''
+      }`}
+      style={{ background: `color-mix(in srgb, ${lookups.color(item)} 55%, var(--color-panel))`, borderLeftColor: lookups.color(item) }}
+      title="Planned without a time: drag onto the grid to time-block it"
     >
-      <span className="min-w-0 flex-1 truncate">{item?.title}</span>
-      <span className="font-mono text-dim">{fmtH(alloc.plannedHours)}</span>
+      <span className="min-w-0 flex-1 truncate text-strong">{item?.title}</span>
+      <span className="tabular-nums opacity-70">{fmtH(alloc.plannedHours)}</span>
     </div>
   );
 });
+
+function DraftChip() {
+  const title = useUi((s) => s.draft?.title);
+  return (
+    <Popover open onOpenChange={(o) => !o && useUi.getState().setDraft(null)}>
+      <PopoverAnchor asChild>
+        <div className="truncate rounded px-1.5 py-px text-[11px] font-medium shadow-md" style={{ background: 'var(--color-event)', color: 'var(--color-on-block)' }}>
+          {title || '(No title)'}
+        </div>
+      </PopoverAnchor>
+      <PopoverContent side="bottom" align="start">
+        <DraftEditor />
+      </PopoverContent>
+    </Popover>
+  );
+}
 
 interface ColumnProps {
   date: ISODate;
   isToday: boolean;
   timed: Allocation[];
   events: CalendarEvent[];
+  reserved: Span[];
   hourHeight: number;
   lookups: Lookups;
 }
 
-const Column = memo(function Column({ date, isToday, timed, events, hourHeight, lookups }: ColumnProps) {
+const Column = memo(function Column({ date, isToday, timed, events, reserved, hourHeight, lookups }: ColumnProps) {
   const { setNodeRef, isOver } = useDroppable({ id: `col|${date}` });
-  const setOpenEvent = useUi((s) => s.setOpenEvent);
+  const hasDraft = useUi((s) => !!s.draft && !s.draft.allDay && s.draft.date === date);
+  // Slot selection in progress: [anchor, current] minutes.
+  const [sel, setSel] = useState<[number, number] | null>(null);
 
   const layout = useMemo(
     () =>
@@ -262,34 +367,98 @@ const Column = memo(function Column({ date, isToday, timed, events, hourHeight, 
     [events, timed],
   );
 
-  // Click on empty grid → new event at that time.
-  const onClick = (e: MouseEvent<HTMLDivElement>) => {
-    if (e.target !== e.currentTarget || performance.now() < suppressClickUntil) return;
+  const minuteAt = (e: ReactPointerEvent<HTMLElement>) => {
     const y = e.clientY - e.currentTarget.getBoundingClientRect().top;
-    const start = Math.floor(((y / hourHeight) * 60) / 30) * 30;
-    setOpenEvent({ draft: { title: '', date, start: fromMinutes(start), end: fromMinutes(start + 60) } });
+    return Math.max(0, Math.min(DAY_MIN, (y / hourHeight) * 60));
   };
 
   return (
     <div
       ref={setNodeRef}
       data-col={date}
-      onClick={onClick}
-      className={`relative border-l border-line ${isOver ? 'bg-accent/5' : isToday ? 'bg-accent/[0.03]' : ''}`}
-      style={{
-        backgroundImage: `repeating-linear-gradient(to bottom, var(--color-line) 0 1px, transparent 1px ${hourHeight}px)`,
+      onPointerDown={(e) => {
+        if (e.button !== 0 || e.target !== e.currentTarget) return;
+        e.currentTarget.setPointerCapture(e.pointerId);
+        const m = minuteAt(e);
+        setSel([m, m]);
       }}
+      onPointerMove={(e) => sel && setSel([sel[0], minuteAt(e)])}
+      onPointerUp={() => {
+        if (!sel) return;
+        const [a, b] = sel;
+        setSel(null);
+        const lo = Math.min(a, b);
+        const hi = Math.max(a, b);
+        // A click makes a 1 h event on the half hour; a drag selects in 15-minute steps.
+        const draft =
+          hi - lo < 10
+            ? draftAt(date, Math.min(Math.floor(lo / 30) * 30, DAY_MIN - 60))
+            : draftAt(date, Math.floor(lo / 15) * 15, Math.min(Math.ceil(hi / 15) * 15, DAY_MIN - 1));
+        useUi.getState().setDraft(draft);
+      }}
+      onPointerCancel={() => setSel(null)}
+      className={`relative border-l border-line ${isOver ? 'bg-accent/5' : ''}`}
+      style={{ backgroundImage: `repeating-linear-gradient(to bottom, var(--color-line) 0 1px, transparent 1px ${hourHeight}px)` }}
     >
+      {reserved.map((r, i) => (
+        <div
+          key={i}
+          className="reserved pointer-events-none absolute right-0 left-0"
+          style={{ top: (r.start / 60) * hourHeight, height: ((r.end - r.start) / 60) * hourHeight }}
+        >
+          {r.label && r.end - r.start >= 45 && <span className="absolute top-0.5 left-1 text-[10px] text-dim/80">{r.label}</span>}
+        </div>
+      ))}
       {events.map((e) => (
-        <Block key={e.id} kind="event" event={e} pos={layout.get(e.id)} hourHeight={hourHeight} lookups={lookups} />
+        <EventBlock key={e.id} event={e} pos={layout.get(e.id)} hourHeight={hourHeight} />
       ))}
       {timed.map((a) => (
-        <Block key={a.id} kind="alloc" alloc={a} pos={layout.get(a.id)} hourHeight={hourHeight} lookups={lookups} />
+        <AllocBlock key={a.id} alloc={a} pos={layout.get(a.id)} hourHeight={hourHeight} lookups={lookups} />
       ))}
+      {sel && <SelectionGhost from={sel[0]} to={sel[1]} hourHeight={hourHeight} />}
+      {hasDraft && <DraftBlock hourHeight={hourHeight} />}
       {isToday && <NowLine hourHeight={hourHeight} />}
     </div>
   );
 });
+
+function SelectionGhost({ from, to, hourHeight }: { from: number; to: number; hourHeight: number }) {
+  const lo = Math.floor(Math.min(from, to) / 15) * 15;
+  const hi = Math.max(lo + 15, Math.ceil(Math.max(from, to) / 15) * 15);
+  return (
+    <div
+      className="pointer-events-none absolute right-1 left-0.5 z-20 rounded-md px-1.5 py-0.5 text-[11px] font-medium shadow-lg"
+      style={{ top: (lo / 60) * hourHeight, height: ((hi - lo) / 60) * hourHeight, background: 'var(--color-event)', color: 'var(--color-on-block)' }}
+    >
+      {fromMinutes(lo)} – {fromMinutes(hi)}
+    </div>
+  );
+}
+
+/** The event being created, anchored to its quick-create card. */
+function DraftBlock({ hourHeight }: { hourHeight: number }) {
+  const draft = useUi((s) => s.draft)!;
+  const start = toMinutes(draft.start);
+  const end = Math.max(start + 15, toMinutes(draft.end));
+  return (
+    <Popover open onOpenChange={(o) => !o && useUi.getState().setDraft(null)}>
+      <PopoverAnchor asChild>
+        <div
+          className="absolute right-1 left-0.5 z-20 overflow-hidden rounded-md px-1.5 py-0.5 text-[11px] leading-tight shadow-lg"
+          style={{ top: (start / 60) * hourHeight, height: ((end - start) / 60) * hourHeight, background: 'var(--color-event)', color: 'var(--color-on-block)' }}
+        >
+          <div className="truncate font-medium">{draft.title || '(No title)'}</div>
+          <div className="truncate opacity-80">
+            {draft.start} – {draft.end}
+          </div>
+        </div>
+      </PopoverAnchor>
+      <PopoverContent side="right" align="start" sideOffset={10}>
+        <DraftEditor />
+      </PopoverContent>
+    </Popover>
+  );
+}
 
 function NowLine({ hourHeight }: { hourHeight: number }) {
   const [now, setNow] = useState(() => new Date());
@@ -299,63 +468,123 @@ function NowLine({ hourHeight }: { hourHeight: number }) {
   }, []);
   const top = ((now.getHours() * 60 + now.getMinutes()) / 60) * hourHeight;
   return (
-    <div className="pointer-events-none absolute right-0 left-0 z-20 border-t border-danger" style={{ top }}>
-      <div className="-mt-[3px] -ml-[3px] h-1.5 w-1.5 rounded-full bg-danger" />
+    <div className="pointer-events-none absolute right-0 left-0 z-30 border-t-2 border-danger" style={{ top }}>
+      <div className="-mt-[7px] -ml-[6px] h-3 w-3 rounded-full bg-danger" />
     </div>
   );
 }
 
-type BlockProps = { pos?: { lane: number; lanes: number }; hourHeight: number; lookups: Lookups } & (
-  | { kind: 'event'; event: CalendarEvent }
-  | { kind: 'alloc'; alloc: Allocation }
-);
+/** Drag the bottom edge of a block to change its length (15-minute steps). */
+function useResize(startMin: number, hourHeight: number, commit: (endMin: number) => void) {
+  const [previewEnd, setPreviewEnd] = useState<number | null>(null);
+  const handleProps = {
+    onPointerDown: (e: ReactPointerEvent<HTMLElement>) => {
+      e.stopPropagation(); // don't start a dnd-kit drag
+      const target = e.currentTarget;
+      target.setPointerCapture(e.pointerId);
+      const col = target.closest('[data-col]')!.getBoundingClientRect();
+      const toEnd = (y: number) => Math.max(startMin + 15, Math.min(DAY_MIN - 1, snap(((y - col.top) / hourHeight) * 60)));
+      const move = (ev: PointerEvent) => setPreviewEnd(toEnd(ev.clientY));
+      const up = (ev: PointerEvent) => {
+        target.removeEventListener('pointermove', move);
+        target.removeEventListener('pointerup', up);
+        setPreviewEnd(null);
+        suppressClicks();
+        commit(toEnd(ev.clientY));
+      };
+      target.addEventListener('pointermove', move);
+      target.addEventListener('pointerup', up);
+    },
+    onClick: (e: ReactMouseEvent) => e.stopPropagation(),
+  };
+  return { previewEnd, handleProps };
+}
 
-const Block = memo(function Block(props: BlockProps) {
-  const { pos = { lane: 0, lanes: 1 }, hourHeight, lookups } = props;
-  const openItem = useUi((s) => s.openItem);
-  const setOpenEvent = useUi((s) => s.setOpenEvent);
-  const id = props.kind === 'event' ? `event:${props.event.id}` : `alloc:${props.alloc.id}`;
-  const data: Drag = props.kind === 'event' ? { kind: 'event', event: props.event } : { kind: 'alloc', alloc: props.alloc };
-  const { attributes, listeners, setNodeRef, isDragging } = useDraggable({ id, data });
+type Pos = { lane: number; lanes: number };
 
-  let start: number, end: number, title: string, sub: string, color: string, done = false;
-  if (props.kind === 'event') {
-    start = toMinutes(props.event.start);
-    end = toMinutes(props.event.end);
-    title = props.event.title;
-    sub = `${props.event.start}–${props.event.end}`;
-    color = FALLBACK_COLOR;
-  } else {
-    const item = lookups.item(props.alloc.itemId);
-    start = toMinutes(props.alloc.start!);
-    end = start + props.alloc.plannedHours * 60;
-    title = item?.title ?? '?';
-    sub = `${props.alloc.start} · ${fmtH(props.alloc.plannedHours)}${item ? ` · ${lookups.project(item.projectId)?.name ?? ''}` : ''}`;
-    color = lookups.color(item);
-    done = props.alloc.done || (item ? isItemDone(item) : false);
-  }
-  const height = Math.max(((end - start) / 60) * hourHeight, 16);
+function blockStyle(start: number, end: number, pos: Pos, hourHeight: number) {
+  return {
+    top: (start / 60) * hourHeight,
+    height: Math.max(((end - start) / 60) * hourHeight - 1, 14),
+    left: `calc(${(pos.lane / pos.lanes) * 100}% + 2px)`,
+    width: `calc(${100 / pos.lanes}% - 6px)`,
+  };
+}
+
+const EventBlock = memo(function EventBlock({ event, pos = { lane: 0, lanes: 1 }, hourHeight }: { event: CalendarEvent; pos?: Pos; hourHeight: number }) {
+  const open = useUi((s) => s.openEventId === event.id);
+  const { attributes, listeners, setNodeRef, isDragging } = useDraggable({ id: `event:${event.id}`, data: { kind: 'event', event } satisfies Drag });
+  const start = toMinutes(event.start);
+  const { previewEnd, handleProps } = useResize(start, hourHeight, (end) => useStore.getState().updateEvent(event.id, { end: fromMinutes(end) }));
+  const end = previewEnd ?? toMinutes(event.end);
+  const height = ((end - start) / 60) * hourHeight;
+
+  return (
+    <Popover open={open} onOpenChange={(o) => !o && useUi.getState().openEvent(null)}>
+      <PopoverAnchor asChild>
+        <div
+          ref={setNodeRef}
+          {...attributes}
+          {...listeners}
+          onClick={() => !clicksSuppressed() && useUi.getState().openEvent(event.id)}
+          className={`absolute z-10 cursor-pointer touch-none overflow-hidden rounded-md px-1.5 py-0.5 text-[11px] leading-tight ${
+            isDragging ? 'opacity-30' : ''
+          } ${open ? 'shadow-lg ring-2 ring-bg' : ''}`}
+          style={{ ...blockStyle(start, end, pos, hourHeight), background: 'var(--color-event)', color: 'var(--color-on-block)' }}
+        >
+          <div className="truncate font-medium">{event.title}</div>
+          {height > 26 && (
+            <div className="truncate opacity-80">
+              {event.start} – {fromMinutes(end)}
+            </div>
+          )}
+          <div {...handleProps} className="absolute right-0 bottom-0 left-0 h-1.5 cursor-ns-resize" />
+        </div>
+      </PopoverAnchor>
+      {open && (
+        <PopoverContent side="right" align="start" sideOffset={10}>
+          <EventEditor eventId={event.id} />
+        </PopoverContent>
+      )}
+    </Popover>
+  );
+});
+
+const AllocBlock = memo(function AllocBlock(props: { alloc: Allocation; pos?: Pos; hourHeight: number; lookups: Lookups }) {
+  const { alloc, pos = { lane: 0, lanes: 1 }, hourHeight, lookups } = props;
+  const { attributes, listeners, setNodeRef, isDragging } = useDraggable({ id: `alloc:${alloc.id}`, data: { kind: 'alloc', alloc } satisfies Drag });
+  const item = lookups.item(alloc.itemId);
+  const start = toMinutes(alloc.start!);
+  const { previewEnd, handleProps } = useResize(start, hourHeight, (end) =>
+    useStore.getState().updateAllocation(alloc.id, { plannedHours: (end - start) / 60 }),
+  );
+  const end = previewEnd ?? start + alloc.plannedHours * 60;
+  const height = ((end - start) / 60) * hourHeight;
+  const done = alloc.done || (item ? isItemDone(item) : false);
 
   return (
     <div
       ref={setNodeRef}
       {...attributes}
       {...listeners}
-      onClick={() => (props.kind === 'event' ? setOpenEvent({ id: props.event.id }) : openItem(props.alloc.itemId))}
-      className={`absolute z-10 cursor-grab touch-none overflow-hidden rounded-sm px-1 py-px text-[11px] leading-tight active:cursor-grabbing ${
-        isDragging ? 'opacity-30' : ''
-      } ${props.kind === 'event' ? 'border border-line bg-raised text-fg' : 'border-l-2'}`}
+      onClick={() => !clicksSuppressed() && useUi.getState().openItem(alloc.itemId)}
+      className={`absolute z-10 cursor-pointer touch-none overflow-hidden rounded-md border-l-4 px-1.5 py-0.5 text-[11px] leading-tight ${
+        isDragging ? 'opacity-30' : done ? 'opacity-60' : ''
+      }`}
       style={{
-        top: (start / 60) * hourHeight,
-        height,
-        left: `calc(${(pos.lane / pos.lanes) * 100}% + 1px)`,
-        width: `calc(${100 / pos.lanes}% - 3px)`,
-        ...(props.kind === 'alloc' && { borderLeftColor: color, background: `color-mix(in srgb, ${color} 18%, var(--color-panel))` }),
+        ...blockStyle(start, end, pos, hourHeight),
+        background: `color-mix(in srgb, ${lookups.color(item)} 55%, var(--color-panel))`,
+        borderLeftColor: lookups.color(item),
       }}
-      title={`${title}\n${sub}`}
+      title={`${item?.title ?? ''}\n${alloc.start} · ${fmtH((end - start) / 60)}`}
     >
-      <div className={`truncate font-medium ${done ? 'text-dim line-through' : 'text-strong'}`}>{title}</div>
-      {height > 28 && <div className="truncate text-[10px] text-dim">{sub}</div>}
+      <div className={`truncate font-medium text-strong ${done ? 'line-through' : ''}`}>{item?.title}</div>
+      {height > 26 && (
+        <div className="truncate opacity-80">
+          {alloc.start} – {fromMinutes(end)} · {item ? lookups.project(item.projectId)?.name : ''}
+        </div>
+      )}
+      <div {...handleProps} className="absolute right-0 bottom-0 left-0 h-1.5 cursor-ns-resize" />
     </div>
   );
 });
@@ -364,7 +593,10 @@ function DragGhost({ drag }: { drag: Drag }) {
   const lookups = useLookups();
   const title = drag.kind === 'event' ? drag.event.title : (lookups.item(drag.alloc.itemId)?.title ?? '');
   return (
-    <div className="w-40 cursor-grabbing truncate rounded-sm border border-accent/60 bg-raised px-1 py-0.5 text-[11px] shadow-lg shadow-black/50">
+    <div
+      className="w-40 cursor-grabbing truncate rounded-md px-1.5 py-0.5 text-[11px] font-medium shadow-xl"
+      style={{ background: drag.kind === 'event' ? 'var(--color-event)' : lookups.color(lookups.item(drag.alloc.itemId)), color: 'var(--color-on-block)' }}
+    >
       {title}
     </div>
   );

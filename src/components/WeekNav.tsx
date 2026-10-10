@@ -1,54 +1,48 @@
-import { useRef } from 'react';
-import { addDays, isoWeek, shortDate, startOfWeek, todayISO } from '../model/dates';
+import { ChevronDown, ChevronLeft, ChevronRight } from 'lucide-react';
+import { useState } from 'react';
+import { addDays, formatMonthYear, isoWeek, shortDate, startOfWeek, todayISO } from '../model/dates';
 import type { ISODate } from '../model/types';
 import { href, navigate } from '../router';
+import { MiniMonth } from './MiniMonth';
+import { Popover, PopoverContent, PopoverTrigger } from './ui/Popover';
 
-/**
- * Prev/next arrows plus a date picker: pick any day to jump to its week.
- * (A date input rather than `type="week"`, which Firefox doesn't support.)
- */
-export function WeekNav({ view, monday }: { view: 'week' | 'calendar'; monday: ISODate }) {
-  const picker = useRef<HTMLInputElement>(null);
+/** Today / prev / next, plus a mini-month popover to jump to any week. */
+export function WeekNav({ monday }: { monday: ISODate }) {
+  const [open, setOpen] = useState(false);
   const thisWeek = startOfWeek(todayISO());
-  const go = (date: string) => date && navigate({ name: view, week: startOfWeek(date) === thisWeek ? undefined : startOfWeek(date) });
+  const go = (date: ISODate) => navigate({ name: 'week', week: startOfWeek(date) === thisWeek ? undefined : startOfWeek(date) });
 
   return (
     <div className="flex items-center gap-1">
-      <a className="btn-ghost" href={href({ name: view, week: addDays(monday, -7) })} title="Previous week">
-        ←
+      <a className="btn h-8 rounded-full px-4" href={href({ name: 'week' })}>
+        Today
       </a>
-      <a className="btn-ghost" href={href({ name: view, week: addDays(monday, 7) })} title="Next week">
-        →
+      <a className="icon-btn" href={href({ name: 'week', week: addDays(monday, -7) })} aria-label="Previous week">
+        <ChevronLeft size={18} />
       </a>
-      <span className="relative">
-        <button
-          className="rounded px-1.5 py-0.5 font-mono text-[12px] text-strong hover:bg-raised"
-          title="Pick a week"
-          onClick={() => {
-            try {
-              picker.current?.showPicker();
-            } catch {
-              picker.current?.focus();
-            }
-          }}
-        >
-          <span className="text-dim">W{isoWeek(monday)}</span> {shortDate(monday)} – {shortDate(addDays(monday, 6))} ▾
-        </button>
-        <input
-          ref={picker}
-          type="date"
-          aria-label="Jump to week containing date"
-          tabIndex={-1}
-          className="pointer-events-none absolute bottom-0 left-0 h-0 w-full opacity-0"
-          value={monday}
-          onChange={(e) => go(e.target.value)}
-        />
-      </span>
-      {monday !== thisWeek && (
-        <a className="btn-ghost text-[11px]" href={href({ name: view })}>
-          today
-        </a>
-      )}
+      <a className="icon-btn" href={href({ name: 'week', week: addDays(monday, 7) })} aria-label="Next week">
+        <ChevronRight size={18} />
+      </a>
+      <Popover open={open} onOpenChange={setOpen}>
+        <PopoverTrigger className="ml-1 flex items-center gap-1.5 rounded-md px-2 py-1 hover:bg-raised" title="Pick a week">
+          <span className="text-lg text-strong">{formatMonthYear(addDays(monday, 3))}</span>
+          <span className="text-dim tabular-nums">
+            W{isoWeek(monday)} · {shortDate(monday)} – {shortDate(addDays(monday, 6))}
+          </span>
+          <ChevronDown size={16} className="text-dim" />
+        </PopoverTrigger>
+        <PopoverContent align="start" className="p-3">
+          <MiniMonth
+            selected={monday}
+            range={[monday, addDays(monday, 6)]}
+            weekHover
+            onSelect={(d) => {
+              go(d);
+              setOpen(false);
+            }}
+          />
+        </PopoverContent>
+      </Popover>
     </div>
   );
 }

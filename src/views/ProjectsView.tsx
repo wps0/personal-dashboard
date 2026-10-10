@@ -1,4 +1,4 @@
-import { memo, useMemo, useState } from 'react';
+import { memo, useMemo, useState, type PointerEvent as ReactPointerEvent } from 'react';
 import { ProgressRing } from '../components/ProgressRing';
 import { URGENCY_CLASS } from '../format';
 import { countdown, todayISO } from '../model/dates';
@@ -23,10 +23,14 @@ export function ProjectsView({ selectedId }: { selectedId?: string }) {
   }, [projects, items, allocations]);
 
   const selected = selectedId ? projects.find((p) => p.id === selectedId) : undefined;
+  const [listWidth, startResize] = useSplitWidth();
 
   return (
     <div className="flex h-full">
-      <div className={`scroll-thin h-full overflow-y-auto p-3 ${selected ? 'hidden w-[min(44%,640px)] shrink-0 border-r border-line md:block' : 'flex-1'}`}>
+      <div
+        className={`scroll-thin h-full overflow-y-auto p-3 ${selected ? 'hidden shrink-0 md:block' : 'flex-1'}`}
+        style={selected ? { width: listWidth } : undefined}
+      >
         <div className="mb-2 flex items-center justify-end gap-2 text-dim">
           <label className="flex items-center gap-1.5">
             <input type="checkbox" checked={showArchived} onChange={(e) => setShowArchived(e.target.checked)} />
@@ -46,6 +50,17 @@ export function ProjectsView({ selectedId }: { selectedId?: string }) {
           ))}
         </div>
       </div>
+      {selected && (
+        <div
+          role="separator"
+          aria-orientation="vertical"
+          aria-label="Resize project list"
+          onPointerDown={startResize}
+          className="group relative hidden w-px shrink-0 cursor-col-resize bg-line md:block"
+        >
+          <div className="absolute inset-y-0 -right-1.5 -left-1.5 group-hover:bg-accent/30 group-active:bg-accent/50" />
+        </div>
+      )}
       {selected ? (
         <div className="min-w-0 flex-1">
           <ProjectPanel key={selected.id} project={selected} percent={stats.get(selected.id)?.percent ?? 0} />
@@ -55,6 +70,41 @@ export function ProjectsView({ selectedId }: { selectedId?: string }) {
       )}
     </div>
   );
+}
+
+const WIDTH_KEY = 'personal-dashboard/project-list-width';
+
+/** Width of the project list beside the panel; drag the divider to change it (remembered per device). */
+function useSplitWidth(): [number, (e: ReactPointerEvent<HTMLElement>) => void] {
+  const [width, setWidth] = useState(() => {
+    try {
+      return Number(localStorage.getItem(WIDTH_KEY)) || 520;
+    } catch {
+      return 520;
+    }
+  });
+  const start = (e: ReactPointerEvent<HTMLElement>) => {
+    const handle = e.currentTarget;
+    const container = handle.parentElement!.getBoundingClientRect();
+    handle.setPointerCapture(e.pointerId);
+    document.body.style.cursor = 'col-resize';
+    const clamp = (x: number) => Math.max(260, Math.min(container.width - 380, x - container.left));
+    let last = width;
+    const move = (ev: PointerEvent) => setWidth((last = clamp(ev.clientX)));
+    const up = () => {
+      handle.removeEventListener('pointermove', move);
+      handle.removeEventListener('pointerup', up);
+      document.body.style.cursor = '';
+      try {
+        localStorage.setItem(WIDTH_KEY, String(Math.round(last)));
+      } catch {
+        // Not remembered; fine.
+      }
+    };
+    handle.addEventListener('pointermove', move);
+    handle.addEventListener('pointerup', up);
+  };
+  return [width, start];
 }
 
 function AreaSection(props: { area: Area; projects: Project[]; stats: Map<string, ProjectStats>; selectedId?: string; today: string }) {
@@ -73,7 +123,7 @@ function AreaSection(props: { area: Area; projects: Project[]; stats: Map<string
       <h2 className="mb-2 flex items-center gap-2">
         <span className="h-2 w-2 rounded-full" style={{ background: area.color }} />
         <span className="label">{area.name}</span>
-        <span className="font-mono text-[11px] text-dim/60">{projects.length}</span>
+        <span className="tabular-nums text-[11px] text-dim/60">{projects.length}</span>
       </h2>
       <div className="grid grid-cols-[repeat(auto-fill,minmax(240px,1fr))] gap-2">
         {projects.map((p) => (
@@ -119,13 +169,13 @@ const ProjectCard = memo(function ProjectCard(props: { project: Project; color: 
       <ProgressRing percent={stats.percent} color={color} />
       <div className="min-w-0 flex-1">
         <div className="truncate font-medium text-strong">{project.name}</div>
-        <div className="font-mono text-[11px] text-dim">
+        <div className="tabular-nums text-[11px] text-dim">
           {stats.total > 0 ? `${stats.done}/${stats.total} done` : 'no items'}
           {project.progressMode !== 'checklist' && <span className="text-dim/60"> · {project.progressMode}</span>}
         </div>
         {stats.next && (
           <div className={`truncate text-[12px] ${URGENCY_CLASS[urgency(stats.next.date, today)]}`}>
-            <span className="font-mono">{countdown(stats.next.date, today)}</span> · {stats.next.title}
+            <span className="tabular-nums">{countdown(stats.next.date, today)}</span> · {stats.next.title}
           </div>
         )}
       </div>

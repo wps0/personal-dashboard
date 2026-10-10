@@ -1,19 +1,61 @@
 import { create } from 'zustand';
-import type { CalendarEvent } from './model/types';
+import type { ISODate } from './model/types';
 
-/** Transient UI state that is not persisted. */
+/** An event being created: shown as a ghost block with a floating editor. */
+export interface Draft {
+  date: ISODate;
+  start: string;
+  end: string;
+  allDay: boolean;
+  title: string;
+  notes: string;
+}
+
+const HIDDEN_KEY = 'personal-dashboard/hidden-calendars';
+
+function loadHidden(): string[] {
+  try {
+    return JSON.parse(localStorage.getItem(HIDDEN_KEY) ?? '[]');
+  } catch {
+    return [];
+  }
+}
+
+/** Transient UI state that is not part of the synced data. */
 interface UiState {
   /** Item shown in the task overlay. */
   openItemId: string | null;
-  /** Event shown in the event overlay: an existing id, or a draft to create. */
-  openEvent: { id: string } | { draft: Omit<CalendarEvent, 'id'> } | null;
+  /** Existing event whose floating editor is open. */
+  openEventId: string | null;
+  draft: Draft | null;
+  /** Calendar layers switched off in the sidebar: 'events' or an area id. Per device. */
+  hidden: string[];
   openItem(id: string | null): void;
-  setOpenEvent(e: UiState['openEvent']): void;
+  openEvent(id: string | null): void;
+  setDraft(d: Draft | null): void;
+  patchDraft(p: Partial<Draft>): void;
+  toggleHidden(key: string): void;
 }
 
-export const useUi = create<UiState>()((set) => ({
+export const useUi = create<UiState>()((set, get) => ({
   openItemId: null,
-  openEvent: null,
-  openItem: (id) => set({ openItemId: id, openEvent: null }),
-  setOpenEvent: (openEvent) => set({ openEvent, openItemId: null }),
+  openEventId: null,
+  draft: null,
+  hidden: loadHidden(),
+  openItem: (id) => set({ openItemId: id, openEventId: null, draft: null }),
+  openEvent: (id) => set({ openEventId: id, openItemId: null, draft: null }),
+  setDraft: (draft) => set({ draft, openEventId: null, openItemId: null }),
+  patchDraft: (p) => {
+    const d = get().draft;
+    if (d) set({ draft: { ...d, ...p } });
+  },
+  toggleHidden: (key) => {
+    const hidden = get().hidden.includes(key) ? get().hidden.filter((k) => k !== key) : [...get().hidden, key];
+    set({ hidden });
+    try {
+      localStorage.setItem(HIDDEN_KEY, JSON.stringify(hidden));
+    } catch {
+      // Not persisted; fine.
+    }
+  },
 }));

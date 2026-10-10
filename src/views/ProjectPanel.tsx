@@ -1,12 +1,16 @@
 import { memo, useMemo, useState } from 'react';
 import { BufferedTextarea } from '../components/Buffered';
+import { DateField } from '../components/DateField';
+import { StatusSelect } from '../components/StatusSelect';
+import { Select, type Option } from '../components/ui/Select';
+import { Pencil, Trash2, X } from 'lucide-react';
 import { HoursInput } from '../components/HoursInput';
 import { InlineText } from '../components/InlineText';
 import { Markdown } from '../components/Markdown';
 import { ProgressRing } from '../components/ProgressRing';
 import { fmtNum, KIND_BADGE, KINDS, URGENCY_CLASS } from '../format';
 import { countdown, shortDate, todayISO } from '../model/dates';
-import { actualHours, compareItems, isItemDone, plannedHours, STATUS_LABEL, statusesFor, urgency } from '../model/selectors';
+import { actualHours, compareItems, isItemDone, plannedHours, urgency } from '../model/selectors';
 import type { Allocation, Item, ItemKind, ProgressMode, Project } from '../model/types';
 import { href, navigate } from '../router';
 import { useStore } from '../store';
@@ -52,23 +56,20 @@ function Header({ project, percent, color }: { project: Project; percent: number
         </a>
       </div>
       <div className="flex flex-wrap items-center gap-2">
-        <select className="field py-0.5" value={project.areaId} onChange={(e) => set({ areaId: e.target.value })} title="Area">
-          {areas.map((a) => (
-            <option key={a.id} value={a.id}>
-              {a.name}
-            </option>
-          ))}
-        </select>
-        <select
-          className="field py-0.5"
+        <Select
+          value={project.areaId}
+          onChange={(areaId) => set({ areaId })}
+          options={areas.map((a) => ({ value: a.id, label: a.name, color: a.color }))}
+          className="w-36"
+          ariaLabel="Area"
+        />
+        <Select
           value={project.progressMode}
-          title="How progress is computed"
-          onChange={(e) => set({ progressMode: e.target.value as ProgressMode })}
-        >
-          <option value="checklist">progress: items done</option>
-          <option value="hours">progress: hours spent / estimate</option>
-          <option value="manual">progress: manual</option>
-        </select>
+          onChange={(progressMode: ProgressMode) => set({ progressMode })}
+          options={PROGRESS_OPTIONS}
+          className="w-52"
+          ariaLabel="How progress is computed"
+        />
         {project.progressMode === 'manual' && (
           <input
             type="range"
@@ -80,10 +81,7 @@ function Header({ project, percent, color }: { project: Project; percent: number
             className="w-28 accent-accent"
           />
         )}
-        <label className="flex items-center gap-1">
-          <span className="label">due</span>
-          <input type="date" className="field py-0.5 font-mono" value={project.dueDate ?? ''} onChange={(e) => set({ dueDate: e.target.value || undefined })} />
-        </label>
+        <DateField optional value={project.dueDate} onChange={(dueDate) => set({ dueDate })} placeholder="Project due date" />
         <div className="ml-auto flex gap-1">
           <button className="btn-ghost" onClick={() => set({ archived: !project.archived })}>
             {project.archived ? 'unarchive' : 'archive'}
@@ -107,6 +105,14 @@ function Header({ project, percent, color }: { project: Project; percent: number
 
 const NO_ALLOCS: Allocation[] = [];
 
+const PROGRESS_OPTIONS = [
+  { value: 'checklist', label: 'Progress: items done' },
+  { value: 'hours', label: 'Progress: hours spent / estimate' },
+  { value: 'manual', label: 'Progress: manual' },
+] as const;
+
+const KIND_OPTIONS = KINDS.map((k): Option<ItemKind> => ({ value: k, label: k[0].toUpperCase() + k.slice(1) }));
+
 function ItemsTab({ project }: { project: Project }) {
   const allItems = useStore((s) => s.data.items);
   const allocations = useStore((s) => s.data.allocations);
@@ -126,7 +132,7 @@ function ItemsTab({ project }: { project: Project }) {
   return (
     <div className="scroll-thin h-full overflow-y-auto p-3">
       <div className="mb-2 flex items-center gap-3">
-        <span className="font-mono text-[11px] text-dim">
+        <span className="tabular-nums text-[11px] text-dim">
           {items.filter(isItemDone).length}/{items.length} done
         </span>
         <label className="ml-auto flex items-center gap-1.5 text-dim">
@@ -169,26 +175,16 @@ const ItemRow = memo(function ItemRow({ item, allocs, today }: { item: Item; all
   return (
     <tr className={`group border-b border-line/50 hover:bg-panel ${done ? 'text-dim' : ''}`}>
       <td className="px-1 py-0.5">
-        <select
-          className={`w-full rounded px-0.5 font-mono text-[11px] hover:bg-raised ${done ? 'text-ok' : ''}`}
-          value={item.status}
-          onChange={(e) => updateItem(item.id, { status: e.target.value as Item['status'] })}
-        >
-          {statusesFor(item.kind).map((s) => (
-            <option key={s} value={s}>
-              {STATUS_LABEL[s]}
-            </option>
-          ))}
-        </select>
+        <StatusSelect value={item.status} onChange={(status) => updateItem(item.id, { status })} className="h-6 w-full text-[12px]" />
       </td>
       <td className="px-1 py-0.5">
         <button className="flex w-full min-w-0 items-center gap-1.5 rounded px-1 text-left hover:bg-raised" onClick={() => openItem(item.id)} title="Open task details">
-          <span className="font-mono text-[10px] text-dim">{KIND_BADGE[item.kind]}</span>
+          <span className="tabular-nums text-[10px] text-dim">{KIND_BADGE[item.kind]}</span>
           <span className={`truncate ${done ? 'line-through' : ''}`}>{item.title}</span>
           {item.notes && <span className="text-[10px] text-dim" title="Has notes">✎</span>}
         </button>
       </td>
-      <td className="px-1 py-0.5 font-mono text-[11px] whitespace-nowrap">
+      <td className="px-1 py-0.5 tabular-nums text-[11px] whitespace-nowrap">
         {item.dueDate ? (
           <span className={done ? '' : URGENCY_CLASS[urgency(item.dueDate, today)]} title={`Due ${item.dueDate}`}>
             {countdown(item.dueDate, today)}
@@ -202,7 +198,7 @@ const ItemRow = memo(function ItemRow({ item, allocs, today }: { item: Item; all
       <td className="px-1 py-0.5 text-right">
         <HoursInput optional value={item.estimateHours} onChange={(estimateHours) => updateItem(item.id, { estimateHours })} />
       </td>
-      <td className="px-1 py-0.5 text-right font-mono text-[11px] text-dim">
+      <td className="px-1 py-0.5 text-right tabular-nums text-[11px] text-dim">
         {planned > 0 ? `${fmtNum(actualHours(allocs))}/${fmtNum(planned)}` : '–'}
       </td>
       <td className="px-1 py-0.5 text-right">
@@ -221,22 +217,18 @@ const ItemRow = memo(function ItemRow({ item, allocs, today }: { item: Item; all
 function AddItem({ projectId }: { projectId: string }) {
   const [kind, setKind] = useState<ItemKind>('task');
   const [title, setTitle] = useState('');
-  const [dueDate, setDueDate] = useState('');
+  const [dueDate, setDueDate] = useState<string | undefined>();
   const [estimate, setEstimate] = useState<number | undefined>();
 
   const submit = () => {
     if (!title.trim()) return;
-    useStore.getState().addItems(projectId, [{ kind, title: title.trim(), dueDate: dueDate || undefined, estimateHours: estimate }]);
+    useStore.getState().addItems(projectId, [{ kind, title: title.trim(), dueDate, estimateHours: estimate }]);
     setTitle('');
   };
 
   return (
     <div className="mt-2 flex flex-wrap items-center gap-1.5">
-      <select className="field" value={kind} onChange={(e) => setKind(e.target.value as ItemKind)}>
-        {KINDS.map((k) => (
-          <option key={k}>{k}</option>
-        ))}
-      </select>
+      <Select value={kind} onChange={setKind} options={KIND_OPTIONS} className="w-32" ariaLabel="Kind" />
       <input
         className="field min-w-40 flex-1"
         placeholder="New item… (Enter)"
@@ -244,7 +236,7 @@ function AddItem({ projectId }: { projectId: string }) {
         onChange={(e) => setTitle(e.target.value)}
         onKeyDown={(e) => e.key === 'Enter' && submit()}
       />
-      <input type="date" className="field font-mono" title="Due date" value={dueDate} onChange={(e) => setDueDate(e.target.value)} />
+      <DateField optional value={dueDate} onChange={setDueDate} placeholder="Due date" />
       <span className="flex items-center gap-1">
         <HoursInput optional value={estimate} onChange={setEstimate} placeholder="est" className="field w-14" />
         <span className="text-dim">h</span>
@@ -265,16 +257,12 @@ function BulkAdd({ projectId, onDone }: { projectId: string; onDone(): void }) {
   const count = Math.max(0, to - from + 1);
 
   return (
-    <div className="mb-3 flex flex-wrap items-center gap-1.5 rounded border border-line bg-panel p-2">
-      <select className="field" value={kind} onChange={(e) => setKind(e.target.value as ItemKind)}>
-        {KINDS.map((k) => (
-          <option key={k}>{k}</option>
-        ))}
-      </select>
+    <div className="mb-3 flex flex-wrap items-center gap-1.5 rounded-md border border-line bg-panel p-2">
+      <Select value={kind} onChange={setKind} options={KIND_OPTIONS} className="w-32" ariaLabel="Kind" />
       <input className="field w-28" value={prefix} onChange={(e) => setPrefix(e.target.value)} />
-      <input type="number" className="field w-14 font-mono" value={from} onChange={(e) => setFrom(Number(e.target.value))} />
+      <input type="number" className="field w-14 tabular-nums" value={from} onChange={(e) => setFrom(Number(e.target.value))} />
       <span className="text-dim">to</span>
-      <input type="number" className="field w-14 font-mono" value={to} onChange={(e) => setTo(Number(e.target.value))} />
+      <input type="number" className="field w-14 tabular-nums" value={to} onChange={(e) => setTo(Number(e.target.value))} />
       <HoursInput optional value={estimate} onChange={setEstimate} placeholder="est" className="field w-14" />
       <span className="text-dim">h each</span>
       <button
@@ -305,7 +293,7 @@ function Overview({ project }: { project: Project }) {
       {editing ? (
         <BufferedTextarea
           autoFocus={project.overviewDoc !== ''}
-          className="field scroll-thin min-h-0 flex-1 resize-none font-mono text-[12px]"
+          className="field scroll-thin min-h-0 flex-1 resize-none tabular-nums text-[12px]"
           placeholder={'## Goals\n- …\n\n## Links\n- …\n\n## Decisions\n- …'}
           value={project.overviewDoc}
           onCommit={(overviewDoc) => useStore.getState().updateProject(project.id, { overviewDoc })}
@@ -341,17 +329,68 @@ function Log({ project }: { project: Project }) {
       </button>
       <ul className="scroll-thin min-h-0 flex-1 space-y-2 overflow-y-auto">
         {project.log.map((l) => (
-          <li key={l.id} className="group border-l-2 border-line pl-2">
-            <div className="flex font-mono text-[11px] text-dim">
-              {new Date(l.at).toLocaleString(undefined, { dateStyle: 'medium', timeStyle: 'short' })}
-              <button className="invisible ml-auto group-hover:visible hover:text-danger" onClick={() => confirm('Delete this entry?') && deleteLog(project.id, l.id)}>
-                ×
-              </button>
-            </div>
-            <div className="whitespace-pre-wrap">{l.text}</div>
-          </li>
+          <LogEntryRow key={l.id} projectId={project.id} entry={l} onDelete={() => confirm('Delete this entry?') && deleteLog(project.id, l.id)} />
         ))}
       </ul>
     </div>
+  );
+}
+
+function LogEntryRow({ projectId, entry, onDelete }: { projectId: string; entry: Project['log'][number]; onDelete(): void }) {
+  const [editing, setEditing] = useState(false);
+  const [text, setText] = useState(entry.text);
+  const save = () => {
+    if (text.trim() && text.trim() !== entry.text) useStore.getState().updateLog(projectId, entry.id, text.trim());
+    setEditing(false);
+  };
+  const stamp = (iso: string) => new Date(iso).toLocaleString(undefined, { dateStyle: 'medium', timeStyle: 'short' });
+  return (
+    <li className="group border-l-2 border-line pl-2">
+      <div className="flex items-center text-[11px] text-dim tabular-nums">
+        <span title={entry.editedAt ? `Edited ${stamp(entry.editedAt)}` : undefined}>
+          {stamp(entry.at)}
+          {entry.editedAt && ' · edited'}
+        </span>
+        {!editing && (
+          <span className="ml-auto flex opacity-0 group-hover:opacity-100 focus-within:opacity-100">
+            <button className="icon-btn h-6 w-6" aria-label="Edit entry" onClick={() => (setText(entry.text), setEditing(true))}>
+              <Pencil size={13} />
+            </button>
+            <button className="icon-btn h-6 w-6 hover:!text-danger" aria-label="Delete entry" onClick={onDelete}>
+              <Trash2 size={13} />
+            </button>
+          </span>
+        )}
+      </div>
+      {editing ? (
+        <div className="mt-1 space-y-1">
+          <textarea
+            autoFocus
+            className="field h-20 w-full resize-y"
+            value={text}
+            onChange={(e) => setText(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) save();
+              if (e.key === 'Escape') {
+                e.stopPropagation();
+                setEditing(false);
+              }
+            }}
+          />
+          <div className="flex justify-end gap-1">
+            <button className="btn h-6" onClick={() => setEditing(false)}>
+              <X size={12} /> Cancel
+            </button>
+            <button className="btn h-6 border-accent/60" onClick={save}>
+              Save
+            </button>
+          </div>
+        </div>
+      ) : (
+        <div className="cursor-text whitespace-pre-wrap" onDoubleClick={() => (setText(entry.text), setEditing(true))} title="Double-click to edit">
+          {entry.text}
+        </div>
+      )}
+    </li>
   );
 }

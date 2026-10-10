@@ -1,12 +1,19 @@
 import { useMemo, useState, type ReactNode } from 'react';
 import { BufferedInput, BufferedTextarea } from './Buffered';
+import { DateField } from './DateField';
+import { StatusSelect } from './StatusSelect';
+import { TimeSelect } from './TimeSelect';
+import { Select, type Option } from './ui/Select';
+import { Trash2, X } from 'lucide-react';
 import { HoursInput } from './HoursInput';
 import { Markdown } from './Markdown';
 import { Modal } from './Modal';
 import { countdown, todayISO } from '../model/dates';
-import { actualHours, isItemDone, normalizeStatus, plannedHours, STATUS_LABEL, statusesFor, urgency } from '../model/selectors';
+import { actualHours, isItemDone, plannedHours, urgency } from '../model/selectors';
 import type { Allocation, Item, ItemKind } from '../model/types';
 import { fmtH, KINDS, URGENCY_CLASS } from '../format';
+
+const KIND_OPTIONS = KINDS.map((k): Option<ItemKind> => ({ value: k, label: k[0].toUpperCase() + k.slice(1) }));
 import { navigate } from '../router';
 import { useStore } from '../store';
 import { useUi } from '../ui';
@@ -52,59 +59,33 @@ function ItemDetails({ item, onClose }: { item: Item; onClose(): void }) {
             onCommit={(title) => title.trim() && set({ title: title.trim() })}
             className={`w-full rounded px-1 text-base font-semibold text-strong hover:bg-raised focus:bg-raised ${isItemDone(item) ? 'line-through decoration-dim' : ''}`}
           />
-          <div className="mt-1 flex flex-wrap items-center gap-2 px-1">
-            <select
-              className="field py-0.5"
+          <div className="mt-1.5 flex flex-wrap items-center gap-2 px-1">
+            <Select
               value={item.projectId}
-              onChange={(e) => set({ projectId: e.target.value })}
-              title="Project"
-            >
-              {projects.map((p) => (
-                <option key={p.id} value={p.id}>
-                  {p.name}
-                </option>
-              ))}
-            </select>
-            <select
-              className="field py-0.5"
-              value={item.kind}
-              onChange={(e) => {
-                const kind = e.target.value as ItemKind;
-                set({ kind, status: normalizeStatus(kind, item.status) });
-              }}
-            >
-              {KINDS.map((k) => (
-                <option key={k}>{k}</option>
-              ))}
-            </select>
-            <select
-              className={`field py-0.5 ${isItemDone(item) ? 'text-ok' : ''}`}
-              value={item.status}
-              onChange={(e) => set({ status: e.target.value as Item['status'] })}
-            >
-              {statusesFor(item.kind).map((s) => (
-                <option key={s} value={s}>
-                  {STATUS_LABEL[s]}
-                </option>
-              ))}
-            </select>
+              onChange={(projectId) => set({ projectId })}
+              options={projects.map((p) => ({ value: p.id, label: p.name, color: areas.find((a) => a.id === p.areaId)?.color }))}
+              className="w-48"
+              ariaLabel="Project"
+            />
+            <Select value={item.kind} onChange={(kind) => set({ kind })} options={KIND_OPTIONS} className="w-32" ariaLabel="Kind" />
+            <StatusSelect value={item.status} onChange={(status) => set({ status })} variant="field" className="w-36" />
           </div>
         </div>
-        <button className="btn-ghost text-base" onClick={onClose} aria-label="Close">
-          ×
+        <button className="icon-btn" onClick={onClose} aria-label="Close">
+          <X size={18} />
         </button>
       </header>
 
-      <div className="grid grid-cols-2 gap-x-4 gap-y-2 border-b border-line p-3 sm:grid-cols-4">
+      <div className="grid grid-cols-2 gap-x-4 gap-y-2 border-b border-line p-3 sm:grid-cols-[1.3fr_1.3fr_0.8fr_1fr]">
         <Field label="due">
-          <input type="date" className="field w-full font-mono" value={item.dueDate ?? ''} onChange={(e) => set({ dueDate: e.target.value || undefined })} />
+          <DateField optional value={item.dueDate} onChange={(dueDate) => set({ dueDate })} placeholder="No due date" className="w-full" />
           {item.dueDate && !isItemDone(item) && (
-            <span className={`font-mono text-[11px] ${URGENCY_CLASS[urgency(item.dueDate, today)]}`}>{countdown(item.dueDate, today)}</span>
+            <span className={`tabular-nums text-[11px] ${URGENCY_CLASS[urgency(item.dueDate, today)]}`}>{countdown(item.dueDate, today)}</span>
           )}
         </Field>
         {item.kind === 'lecture' && (
           <Field label="held on">
-            <input type="date" className="field w-full font-mono" value={item.heldOn ?? ''} onChange={(e) => set({ heldOn: e.target.value || undefined })} />
+            <DateField optional value={item.heldOn} onChange={(heldOn) => set({ heldOn })} placeholder="Not set" className="w-full" />
           </Field>
         )}
         <Field label="estimate">
@@ -114,7 +95,7 @@ function ItemDetails({ item, onClose }: { item: Item; onClose(): void }) {
           </span>
         </Field>
         <Field label="spent / planned">
-          <span className="font-mono">
+          <span className="tabular-nums">
             {fmtH(spent)} / {fmtH(planned)}
             {remaining != null && <span className={remaining < 0 ? 'text-warn' : 'text-dim'}> · {fmtH(Math.max(0, remaining))} left</span>}
           </span>
@@ -162,7 +143,7 @@ function ItemDetails({ item, onClose }: { item: Item; onClose(): void }) {
         </div>
         {editingNotes ? (
           <BufferedTextarea
-            className="field scroll-thin h-36 w-full resize-y font-mono text-[12px]"
+            className="field scroll-thin h-36 w-full resize-y tabular-nums text-[12px]"
             placeholder="Markdown: details, links, where you stopped…"
             value={item.notes ?? ''}
             onCommit={(notes) => set({ notes })}
@@ -176,7 +157,7 @@ function ItemDetails({ item, onClose }: { item: Item; onClose(): void }) {
 
       <footer className="flex items-center gap-2 border-t border-line px-3 py-2">
         {!isItemDone(item) && (
-          <button className="btn" onClick={() => set({ status: item.kind === 'lecture' ? 'notes' : 'done' })}>
+          <button className="btn" onClick={() => set({ status: 'done' })}>
             ✓ mark complete
           </button>
         )}
@@ -216,21 +197,28 @@ function SessionRow({ alloc, today }: { alloc: Allocation; today: string }) {
         <input type="checkbox" checked={alloc.done} onChange={() => toggleAllocation(alloc.id)} className="accent-ok" />
       </td>
       <td className="px-1">
-        <input
-          type="date"
-          className={`font-mono text-[12px] ${missed ? 'text-danger' : ''}`}
+        <DateField
           value={alloc.date}
-          onChange={(e) => e.target.value && updateAllocation(alloc.id, { date: e.target.value })}
+          onChange={(date) => date && updateAllocation(alloc.id, { date })}
+          variant="ghost"
+          className={missed ? 'text-danger' : ''}
         />
       </td>
       <td className="px-1">
-        <input
-          type="time"
-          step={900}
-          className="font-mono text-[12px]"
-          value={alloc.start ?? ''}
-          onChange={(e) => updateAllocation(alloc.id, { start: e.target.value || undefined })}
-        />
+        <span className="flex items-center">
+          <TimeSelect
+            value={alloc.start ?? '--:--'}
+            onChange={(start) => start !== '--:--' && updateAllocation(alloc.id, { start })}
+            variant="ghost"
+            className="w-20"
+            ariaLabel="Start time"
+          />
+          {alloc.start && (
+            <button className="icon-btn h-6 w-6" aria-label="Clear start time" onClick={() => updateAllocation(alloc.id, { start: undefined })}>
+              <X size={12} />
+            </button>
+          )}
+        </span>
       </td>
       <td className="px-1 text-right">
         <HoursInput value={alloc.plannedHours} onChange={(h) => h && updateAllocation(alloc.id, { plannedHours: h })} className="text-[12px]" />
@@ -243,8 +231,8 @@ function SessionRow({ alloc, today }: { alloc: Allocation; today: string }) {
         )}
       </td>
       <td className="px-1 text-right">
-        <button className="invisible text-dim group-hover:visible hover:text-danger" onClick={() => deleteAllocation(alloc.id)} title="Remove session">
-          ×
+        <button className="icon-btn invisible h-6 w-6 group-hover:visible hover:!text-danger" onClick={() => deleteAllocation(alloc.id)} title="Remove session">
+          <Trash2 size={13} />
         </button>
       </td>
     </tr>

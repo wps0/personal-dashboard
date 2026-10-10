@@ -3,7 +3,7 @@ import {
   allocationsByItem,
   backlogItems,
   missedAllocations,
-  normalizeStatus,
+  migrateStatus,
   projectStats,
 } from './selectors';
 import type { Allocation, AppData, Item, Project } from './types';
@@ -48,10 +48,10 @@ const alloc = (id: string, itemId: string, date: string, plannedHours: number, e
 });
 
 describe('projectStats', () => {
-  it('computes checklist progress, counting lectures with notes as done', () => {
+  it('computes checklist progress from done items', () => {
     const items = [
-      item('l1', { kind: 'lecture', status: 'notes' }),
-      item('l2', { kind: 'lecture', status: 'watched' }),
+      item('l1', { kind: 'lecture', status: 'done' }),
+      item('l2', { kind: 'lecture', status: 'doing' }),
       item('t1', { status: 'done' }),
       item('t2'),
     ];
@@ -129,12 +129,13 @@ describe('missedAllocations', () => {
   });
 });
 
-describe('normalizeStatus', () => {
-  it('maps statuses between lecture and generic kinds', () => {
-    expect(normalizeStatus('lecture', 'done')).toBe('notes');
-    expect(normalizeStatus('lecture', 'doing')).toBe('watched');
-    expect(normalizeStatus('task', 'revised')).toBe('done');
-    expect(normalizeStatus('task', 'watched')).toBe('doing');
-    expect(normalizeStatus('task', 'todo')).toBe('todo');
+describe('migrateStatus', () => {
+  it('maps old lecture stages onto todo / in progress / done', () => {
+    expect(migrateStatus('watched')).toBe('doing');
+    expect(migrateStatus('notes')).toBe('done');
+    expect(migrateStatus('revised')).toBe('done');
+    expect(migrateStatus('doing')).toBe('doing');
+    expect(migrateStatus('todo')).toBe('todo');
+    expect(migrateStatus('garbage')).toBe('todo');
   });
 });

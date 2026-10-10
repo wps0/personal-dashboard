@@ -72,3 +72,31 @@ export function isoWeek(s: ISODate): number {
   const thursday = addDays(s, 3 - weekdayIndex(s));
   return Math.floor(daysBetween(`${thursday.slice(0, 4)}-01-01`, thursday) / 7) + 1;
 }
+
+const fmt = (opts: Intl.DateTimeFormatOptions) => new Intl.DateTimeFormat('en-GB', opts);
+const LONG = fmt({ weekday: 'long', day: 'numeric', month: 'long' });
+const MEDIUM = fmt({ weekday: 'short', day: 'numeric', month: 'short', year: 'numeric' });
+const MONTH_YEAR = fmt({ month: 'long', year: 'numeric' });
+
+/** "Tuesday 14 October". */
+export const formatLong = (s: ISODate) => LONG.format(parseISODate(s));
+/** "Tue 14 Oct 2026". */
+export const formatMedium = (s: ISODate) => MEDIUM.format(parseISODate(s));
+/** "October 2026". */
+export const formatMonthYear = (s: ISODate) => MONTH_YEAR.format(parseISODate(s));
+
+export function firstOfMonth(s: ISODate): ISODate {
+  return `${s.slice(0, 7)}-01`;
+}
+
+export function addMonths(s: ISODate, n: number): ISODate {
+  const d = parseISODate(firstOfMonth(s));
+  d.setMonth(d.getMonth() + n);
+  return toISODate(d);
+}
+
+/** The 6×7 grid of dates shown for the month containing `s` (Monday first). */
+export function monthGrid(s: ISODate): ISODate[] {
+  const start = startOfWeek(firstOfMonth(s));
+  return Array.from({ length: 42 }, (_, i) => addDays(start, i));
+}

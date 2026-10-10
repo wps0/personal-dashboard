@@ -15,8 +15,10 @@ import { BufferedTextarea } from '../components/Buffered';
 import { HoursInput } from '../components/HoursInput';
 import { WeekNav } from '../components/WeekNav';
 import { fmtH, URGENCY_CLASS } from '../format';
-import { useLookups, type Lookups } from '../hooks';
-import { addDays, countdown, dayName, monthKey, monthName, shortDate, startOfWeek, todayISO, weekdayIndex } from '../model/dates';
+import { useCapacities, useLookups, type Lookups } from '../hooks';
+import { CapacityBadge } from '../components/CapacityBadge';
+import type { CapacityInfo } from '../model/capacity';
+import { addDays, countdown, dayName, monthKey, monthName, shortDate, startOfWeek, todayISO } from '../model/dates';
 import { backlogItems, defaultAllocationHours, isItemDone, missedAllocations, plannedHours, urgency } from '../model/selectors';
 import type { Allocation, ISODate, Item } from '../model/types';
 import { useStore } from '../store';
@@ -61,7 +63,7 @@ export function WeekView({ week }: { week?: ISODate }) {
     <DndContext sensors={sensors} onDragStart={onDragStart} onDragEnd={onDragEnd} onDragCancel={() => setDragging(null)}>
       <div className="flex h-full flex-col">
         <div className="flex shrink-0 items-center gap-2 border-b border-line px-3 py-1">
-          <WeekNav view="week" monday={monday} />
+          <WeekNav monday={monday} />
           <WeekTotal monday={monday} />
         </div>
         <WeekGrid monday={monday} today={today} />
@@ -72,23 +74,25 @@ export function WeekView({ week }: { week?: ISODate }) {
 }
 
 function WeekTotal({ monday }: { monday: ISODate }) {
+  const days = useMemo(() => Array.from({ length: 7 }, (_, i) => addDays(monday, i)), [monday]);
   const planned = useStore((s) => {
-    const end = addDays(monday, 6);
+    const end = days[6];
     return s.data.allocations.reduce((sum, a) => (a.date >= monday && a.date <= end ? sum + a.plannedHours : sum), 0);
   });
-  const capacity = useStore((s) => s.data.settings.capacity.reduce((sum, h) => sum + h, 0));
+  const capacities = useCapacities(days);
+  const capacity = [...capacities.values()].reduce((sum, c) => sum + c.total, 0);
   return (
-    <span className={`ml-auto font-mono text-[11px] ${planned > capacity ? 'text-danger' : 'text-dim'}`}>
-      week {fmtH(planned)} / {fmtH(capacity)}
+    <span className={`ml-auto text-[12px] tabular-nums ${planned > capacity ? 'text-danger' : 'text-dim'}`}>
+      Week: {fmtH(planned)} planned of {fmtH(capacity)}
     </span>
   );
 }
 
 function WeekGrid({ monday, today }: { monday: ISODate; today: ISODate }) {
   const allocations = useStore((s) => s.data.allocations);
-  const capacity = useStore((s) => s.data.settings.capacity);
   const lookups = useLookups();
   const days = useMemo(() => Array.from({ length: 7 }, (_, i) => addDays(monday, i)), [monday]);
+  const capacities = useCapacities(days);
 
   // Days whose sessions didn't change keep the same array, so their memoized boxes skip re-rendering.
   const prevByDate = useRef(new Map<ISODate, Allocation[]>());
@@ -115,7 +119,7 @@ function WeekGrid({ monday, today }: { monday: ISODate; today: ISODate }) {
       isToday={date === today}
       isPast={date < today}
       allocs={byDate.get(date) ?? NO_ALLOCS}
-      capacity={capacity[weekdayIndex(date)]}
+      capacity={capacities.get(date)!}
       lookups={lookups}
     />
   );
@@ -138,7 +142,7 @@ interface DayBoxProps {
   isToday: boolean;
   isPast: boolean;
   allocs: Allocation[];
-  capacity: number;
+  capacity: CapacityInfo;
   lookups: Lookups;
 }
 
@@ -157,19 +161,19 @@ const DayBox = memo(function DayBox(props: DayBoxProps) {
   );
 });
 
-const DayContent = memo(function DayContent({ date, isToday, allocs, capacity, lookups }: DayBoxProps) {
+const DayContent = memo(function DayContent({ date, isToday, isPast, allocs, capacity, lookups }: DayBoxProps) {
   const planned = plannedHours(allocs);
-  const over = planned > capacity;
   return (
     <>
-      <header className="flex items-baseline gap-1.5 border-b border-line px-2 py-1">
+      <header className="flex items-center gap-1.5 border-b border-line px-2 py-1">
         <span className={`font-semibold ${isToday ? 'text-accent' : 'text-strong'}`}>{dayName(date)}</span>
-        <span className="font-mono text-[11px] text-dim">{shortDate(date)}</span>
         <span
-          className={`ml-auto font-mono text-[11px] ${over ? 'text-danger' : planned > 0 ? 'text-fg' : 'text-dim/60'}`}
-          title={`Planned ${planned}h of ${capacity}h capacity`}
+          className={`flex h-6 min-w-6 items-center justify-center rounded-full px-1 text-[12px] tabular-nums ${isToday ? 'bg-accent font-medium text-white' : 'text-dim'}`}
         >
-          {fmtH(planned)}/{fmtH(capacity)}
+          {Number(date.slice(8))}
+        </span>
+        <span className="ml-auto">
+          <CapacityBadge date={date} planned={planned} info={capacity} isPast={isPast} />
         </span>
       </header>
       {allocs.length > 0 && (
@@ -242,12 +246,12 @@ const AllocationContent = memo(function AllocationContent(props: { alloc: Alloca
       <button className="min-w-0 flex-1 text-left leading-tight" onClick={() => openItem(item.id)} title="Open task details">
         <div className={`truncate ${alloc.done ? 'text-dim line-through' : ''}`}>
           {itemDone && <span className="text-ok">✓ </span>}
-          {alloc.start && <span className="font-mono text-[11px] text-dim">{alloc.start} </span>}
+          {alloc.start && <span className="tabular-nums text-[11px] text-dim">{alloc.start} </span>}
           {item.title}
         </div>
         <div className="truncate text-[10px] text-dim">
           {showDate && (
-            <span className="font-mono text-danger">
+            <span className="tabular-nums text-danger">
               {dayName(alloc.date)} {shortDate(alloc.date)} ·{' '}
             </span>
           )}
@@ -260,7 +264,7 @@ const AllocationContent = memo(function AllocationContent(props: { alloc: Alloca
             className="btn-ghost px-1 text-[11px]"
             title="Mark the whole task complete"
             onPointerDown={stop}
-            onClick={() => updateItem(item.id, { status: item.kind === 'lecture' ? 'notes' : 'done' })}
+            onClick={() => updateItem(item.id, { status: 'done' })}
           >
             ✓✓
           </button>
@@ -424,9 +428,9 @@ const BacklogContent = memo(function BacklogContent(props: { item: Item; remaini
         </div>
       </div>
       {item.dueDate && (
-        <span className={`shrink-0 font-mono text-[11px] ${URGENCY_CLASS[urgency(item.dueDate, today)]}`}>{countdown(item.dueDate, today)}</span>
+        <span className={`shrink-0 tabular-nums text-[11px] ${URGENCY_CLASS[urgency(item.dueDate, today)]}`}>{countdown(item.dueDate, today)}</span>
       )}
-      <span className="w-10 shrink-0 text-right font-mono text-[11px] text-dim" title="Hours left to plan">
+      <span className="w-10 shrink-0 text-right tabular-nums text-[11px] text-dim" title="Hours left to plan">
         {remaining != null ? fmtH(remaining) : ''}
       </span>
     </>
@@ -444,7 +448,7 @@ function DragPreview({ drag }: { drag: DragData }) {
       style={{ borderLeftColor: lookups.color(item) }}
     >
       <span className="min-w-0 flex-1 truncate">{item.title}</span>
-      <span className="font-mono text-[11px] text-dim">{fmtH(hours)}</span>
+      <span className="tabular-nums text-[11px] text-dim">{fmtH(hours)}</span>
     </div>
   );
 }

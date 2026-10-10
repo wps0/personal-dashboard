@@ -1,6 +1,8 @@
 import { create } from 'zustand';
 import type { Allocation, AppData, Area, CalendarEvent, ISODate, Item, Project } from './model/types';
 import { AREA_COLORS, emptyData } from './model/types';
+import { withRuleChange, type CapacityRule, type DayCapacity } from './model/capacity';
+import { todayISO } from './model/dates';
 
 const uid = () => crypto.randomUUID();
 const now = () => new Date().toISOString();
@@ -16,6 +18,7 @@ export interface Actions {
   updateProject(id: string, patch: Partial<Omit<Project, 'id'>>): void;
   deleteProject(id: string): void;
   addLog(projectId: string, text: string): void;
+  updateLog(projectId: string, logId: string, text: string): void;
   deleteLog(projectId: string, logId: string): void;
 
   addItems(projectId: string, items: Partial<Omit<Item, 'id' | 'projectId'>>[]): void;
@@ -33,7 +36,10 @@ export interface Actions {
 
   setDayNote(date: ISODate, text: string): void;
   setMonthNote(key: string, text: string): void;
-  setCapacity(weekday: number, hours: number): void;
+  /** Changes planning windows / global adjustment from today on (past days keep theirs). */
+  changeCapacityRule(patch: Partial<Omit<CapacityRule, 'from'>>): void;
+  /** Per-day tweak; ignored for past days. `null` resets the day. */
+  setDayCapacity(date: ISODate, patch: DayCapacity | null): void;
 }
 
 export type State = { data: AppData } & Actions;
@@ -93,6 +99,11 @@ export const useStore = create<State>()((set, get) => {
       if (!p) return;
       get().updateProject(projectId, { log: [{ id: uid(), at: now(), text }, ...p.log] });
     },
+    updateLog: (projectId, logId, text) => {
+      const p = get().data.projects.find((x) => x.id === projectId);
+      if (!p) return;
+      get().updateProject(projectId, { log: p.log.map((l) => (l.id === logId ? { ...l, text, editedAt: now() } : l)) });
+    },
     deleteLog: (projectId, logId) => {
       const p = get().data.projects.find((x) => x.id === projectId);
       if (!p) return;
@@ -135,10 +146,17 @@ export const useStore = create<State>()((set, get) => {
 
     setDayNote: (date, text) => update((d) => ({ dayNotes: { ...d.dayNotes, [date]: text } })),
     setMonthNote: (key, text) => update((d) => ({ monthNotes: { ...d.monthNotes, [key]: text } })),
-    setCapacity: (weekday, hours) =>
-      update((d) => ({
-        settings: { ...d.settings, capacity: d.settings.capacity.map((h, i) => (i === weekday ? hours : h)) },
-      })),
+    changeCapacityRule: (patch) =>
+      update((d) => ({ settings: { ...d.settings, capacityRules: withRuleChange(d.settings.capacityRules, todayISO(), patch) } })),
+    setDayCapacity: (date, patch) => {
+      if (date < todayISO()) return;
+      update((d) => {
+        const dayCapacity = { ...d.settings.dayCapacity };
+        if (patch === null) delete dayCapacity[date];
+        else dayCapacity[date] = { ...dayCapacity[date], ...patch };
+        return { settings: { ...d.settings, dayCapacity } };
+      });
+    },
   };
 });
 

@@ -4,7 +4,7 @@ All ongoing projects (university, work, personal) in one place: progress rings,
 deadlines, and a one-screen bullet-journal week where you plan hours per day.
 See [SPEC.md](SPEC.md) for the full design.
 
-**Status: v1.1, a local-only UI.** Data lives in your browser (IndexedDB), and
+**Status: v1.2, a local-only UI.** Data lives in your browser (IndexedDB), and
 calendar events are local for now. Google Drive sync, Google Calendar and USOS
 import come in v2; keyboard shortcuts come next (see the SPEC roadmap).
 
@@ -50,17 +50,29 @@ On first launch, choose **Load sample data** to explore, or create empty areas.
   - Unchecked sessions from past days show up under **missed**.
   - Drop a session on the backlog to unschedule it.
   - Click the week label to jump to any week.
-- **Calendar** (`#/calendar`): a week time grid.
-  - Click an empty slot to add an event.
-  - Drag sessions from a day's **todo** strip onto the grid to give them a
-    time; drag blocks around to move them.
+- **Calendar** (`#/calendar`): Google-Calendar-style Day / 3-day / Week /
+  Month views, with a mini month and layer toggles in the sidebar.
+  - Click or drag on the grid to create an event; a floating card opens next to
+    the selection.
+  - Click the all-day row for an all-day event.
+  - Drag blocks to move them; drag a block's bottom edge to resize it.
+  - Sessions without a time sit in the all-day row; drag them onto the grid to
+    time-block them.
+  - Hatched areas are reserved time (sleep, work), set in Settings.
 - **Projects** (`#/projects`): cards with progress rings. Click one to open its
-  items, overview doc and progress log in a side panel. **+ bulk** creates
-  "Lecture 1…13" in one go.
+  items, overview doc and progress log in a side panel. Drag the divider to
+  resize the panel; double-click a log entry (or use ✎) to edit it. **+ bulk**
+  creates "Lecture 1…13" in one go.
 - **Task overlay**: click any task, anywhere, for its details, sessions and
   notes.
-- **Settings**: daily capacity, areas, JSON export/import, reset. The header
-  toggle switches the theme (auto / light / dark).
+- **Capacity**: each day's "planned/capacity" badge opens the breakdown
+  (planning window − events + adjustments) and ± / fixed controls for that
+  day.
+- **Settings**:
+  - Planning windows, the global adjustment and reserved time per weekday
+    (changes apply from today; past days don't change).
+  - Areas, JSON export/import, reset.
+  - The header icon switches the theme (auto / light / dark).
 
 ## Deploy
 
@@ -71,12 +83,13 @@ Enable it once under repo Settings → Pages → Source: **GitHub Actions**.
 
 | Path | What |
 |---|---|
-| `src/model/` | Types, date/time helpers, pure selectors (progress, backlog, missed), block layout, sample data |
+| `src/model/` | Types, date/time helpers, selectors (progress, backlog, missed), capacity rules, block layout, sample data |
 | `src/store.ts` | Zustand store: all mutations, cascading deletes |
 | `src/ui.ts`, `src/theme.ts` | Transient UI state (open overlays), theme preference |
 | `src/storage/` | `Storage` interface, IndexedDB implementation, import validation |
 | `src/views/` | Home, Week, Calendar, Projects (+ side panel), Settings |
-| `src/components/` | TimeGrid, task/event overlays, week picker, buffered inputs, progress ring |
+| `src/components/` | TimeGrid, MonthGrid, event editor, task overlay, mini month, date/time pickers, capacity badge |
+| `src/components/ui/` | Radix-based Select and Popover wrappers |
 
 **Performance notes.** Components subscribe to the narrowest store slice
 they need. Text fields buffer keystrokes and write to the store after a pause.

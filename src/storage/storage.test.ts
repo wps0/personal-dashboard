@@ -21,6 +21,19 @@ describe('storage', () => {
   it('fills in missing optional sections', () => {
     const d = parseAppData({ version: 1, areas: [], projects: [], items: [], allocations: [] });
     expect(d.dayNotes).toEqual({});
-    expect(d.settings.capacity).toHaveLength(7);
+    expect(d.settings.capacityRules[0].windows).toHaveLength(7);
+  });
+
+  it('migrates old data: fixed capacity hours and lecture statuses', () => {
+    const d = parseAppData({
+      version: 1,
+      areas: [],
+      projects: [],
+      items: [{ id: 'x', projectId: 'p', kind: 'lecture', title: 'L1', status: 'notes', createdAt: '' }],
+      allocations: [],
+      settings: { capacity: [2, 2, 2, 2, 2, 5, 5] },
+    });
+    expect(d.items[0].status).toBe('done');
+    expect(d.settings.capacityRules[0].windows[5]).toEqual({ start: '10:00', end: '15:00' });
   });
 });

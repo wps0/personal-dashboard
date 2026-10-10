@@ -1,17 +1,11 @@
 import { daysBetween } from './dates';
-import type { Allocation, AppData, ISODate, Item, ItemKind, ItemStatus, Project } from './types';
-import { GENERIC_STATUSES, LECTURE_STATUSES } from './types';
+import type { Allocation, AppData, ISODate, Item, ItemStatus, Project } from './types';
 
 /** The slices planning selectors need; lets callers memoize on just these. */
 export type PlanData = Pick<AppData, 'items' | 'allocations' | 'projects'>;
 
-export function statusesFor(kind: ItemKind): readonly ItemStatus[] {
-  return kind === 'lecture' ? LECTURE_STATUSES : GENERIC_STATUSES;
-}
-
-/** A lecture counts as done once its notes are done. */
 export function isItemDone(item: Item): boolean {
-  return item.status === 'done' || item.status === 'notes' || item.status === 'revised';
+  return item.status === 'done';
 }
 
 export function plannedHours(allocs: Allocation[]): number {
@@ -143,18 +137,15 @@ export function compareItems(a: Item, b: Item): number {
   return a.title.localeCompare(b.title, undefined, { numeric: true });
 }
 
-/** Maps a status onto the closest one valid for `kind` (used when an item's kind changes). */
-export function normalizeStatus(kind: ItemKind, status: ItemStatus): ItemStatus {
-  if (statusesFor(kind).includes(status)) return status;
-  if (kind === 'lecture') return status === 'done' ? 'notes' : status === 'doing' ? 'watched' : 'todo';
-  return status === 'watched' ? 'doing' : status === 'notes' || status === 'revised' ? 'done' : 'todo';
+/** Maps statuses from older data (lecture stages) onto todo / in progress / done. */
+export function migrateStatus(status: string): ItemStatus {
+  if (status === 'watched') return 'doing';
+  if (status === 'notes' || status === 'revised') return 'done';
+  return status === 'doing' || status === 'done' ? status : 'todo';
 }
 
 export const STATUS_LABEL: Record<ItemStatus, string> = {
-  todo: 'todo',
-  doing: 'doing',
-  done: 'done',
-  watched: 'watched',
-  notes: 'notes done',
-  revised: 'revised',
+  todo: 'To do',
+  doing: 'In progress',
+  done: 'Done',
 };

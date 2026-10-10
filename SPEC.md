@@ -45,7 +45,7 @@ CalendarEvent   { date, start, end, title, notes }   local in v1; Google Calenda
   You can edit the number if it differed.
 - **Item completion** is independent of its allocations. An item is done only
   when it is marked done, because you may finish early or need an extra session.
-- **Lecture status:** not started → watched → notes done → revised (optional).
+- **Status** (every item kind): To do → In progress → Done. Older lecture stages migrate on load (watched → in progress; notes/revised → done).
 
 ### Progress (per project, chosen by `progressMode`)
 
@@ -90,9 +90,19 @@ Each day box is a hybrid of three parts:
 3. A freeform text area for anything else.
 
 - **Planning is manual.** Drag items or allocations into days and set hours.
-- **Capacity.** Each day has a capacity (configurable per weekday, e.g. 2h on
-  weekdays and 5h on weekends). In v2, calendar busy time is subtracted. A day
-  turns red when it is over capacity.
+- **Capacity** is inferred per day:
+  - Start from the weekday's **planning window** (e.g. 18:00–21:00), minus
+    calendar events inside it (overlapping events are merged).
+  - Add a **global adjustment** (± hours on every day) and the day's own
+    **± delta**. A **fixed value** set for the day overrides the calculation.
+  - Window and adjustment changes are stored as rules with an effective date
+    and apply from today on. Past days keep their old values, and their
+    per-day tweaks are locked.
+  - Click a day's "planned/capacity" badge for the breakdown and the per-day
+    controls. A day turns red when it is over capacity.
+- **Reserved time** per weekday (e.g. sleep 23:00–07:00, work 09:00–17:00) is
+  drawn with diagonal hatching on the calendar. It's informational only: events
+  can still go there. It's versioned with the capacity rules.
 - **Overdue tray.** Unfinished allocations from past days move to a "missed"
   tray that is visible on today, so you reschedule them deliberately. They are
   never moved automatically.
@@ -109,12 +119,23 @@ Each day box is a hybrid of three parts:
 ### 3.3 Project panel
 The project's items, overview doc and progress log, as tabs in the side panel.
 
-### 3.4 Calendar
-A week time grid with prev/next and the week picker.
-- Shows local events and timed sessions.
-- Each day has a "todo" strip of sessions that have no time yet; drag one onto
-  the grid to time-block it, or drag a block back to the strip to clear its time.
-- Click an empty slot to create an event. Drag events and blocks to move them.
+### 3.4 Calendar (Google-Calendar-like)
+- **Sidebar:** a Create button, a mini month (click a day to jump to it; the
+  visible range is tinted), and "My calendars" toggles to show or hide events
+  and each area's sessions (stored per device).
+- **Toolbar:** Today, ‹ ›, the period title, and a view switcher
+  (Day / 3 days / Week / Month, remembered per device). Routes look like
+  `#/calendar/<view>/<date>`.
+- **Time grid:**
+  - Click a slot for a 1 h event on the half hour, or drag to select a range
+    in 15-minute steps. Either opens a floating quick-create card next to the
+    selection, not a modal.
+  - Click the all-day row for an all-day event.
+  - Drag blocks to move them, and drag a block's bottom edge to resize it.
+  - Click an event for its floating editor; click a session for the task
+    overlay.
+- **Month view:** click an empty cell for an all-day event. Drag entries
+  between days. "N more" and day numbers open the day view.
 
 ### 3.5 Task overlay
 Clicking any task (in the week view, backlog, calendar, home or project panel)
@@ -156,6 +177,13 @@ choice is stored per device.
 - **v1.1 — iteration 2.** ✅ Performance pass; home page; calendar view with
   local events and time blocks; task overlay; projects side panel; week
   picker; light mode.
+- **v1.2 — iteration 3.** ✅
+  - Calendar: Google-Calendar-style interactions (drag-select, floating
+    editor, resize), sidebar mini month and layers, Day / 3-day / Week / Month
+    views, all-day events.
+  - Inter font, and styled dropdowns, date and time pickers throughout.
+  - Resizable projects split; editable log entries; three task statuses.
+  - Inferred, versioned capacity; reserved time.
 - **Next iteration — keyboard shortcuts** (see 5.1).
 - **v2 — Google.** Sign-in, Drive sync, Calendar two-way (the local events
   become Google events, and time blocks go to a "Study/Projects" calendar),

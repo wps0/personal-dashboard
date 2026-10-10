@@ -1,3 +1,5 @@
+import { defaultRules, type CapacityRule, type DayCapacity } from './capacity';
+
 /** ISO calendar date in local time, `YYYY-MM-DD`. */
 export type ISODate = string;
 
@@ -14,6 +16,7 @@ export interface LogEntry {
   /** Full ISO timestamp. */
   at: string;
   text: string;
+  editedAt?: string;
 }
 
 export interface Project {
@@ -33,9 +36,8 @@ export interface Project {
 
 export type ItemKind = 'lecture' | 'assignment' | 'exam' | 'task';
 
-export const LECTURE_STATUSES = ['todo', 'watched', 'notes', 'revised'] as const;
-export const GENERIC_STATUSES = ['todo', 'doing', 'done'] as const;
-export type ItemStatus = (typeof LECTURE_STATUSES)[number] | (typeof GENERIC_STATUSES)[number];
+export const STATUSES = ['todo', 'doing', 'done'] as const;
+export type ItemStatus = (typeof STATUSES)[number];
 
 export interface Item {
   id: string;
@@ -72,6 +74,8 @@ export interface CalendarEvent {
   id: string;
   title: string;
   date: ISODate;
+  /** All-day events show in the all-day row; start/end are kept but ignored. */
+  allDay?: boolean;
   /** `HH:MM`, local time. */
   start: string;
   end: string;
@@ -79,8 +83,10 @@ export interface CalendarEvent {
 }
 
 export interface Settings {
-  /** Planning capacity in hours, indexed Mon=0 … Sun=6. */
-  capacity: number[];
+  /** Planning windows and global adjustment, versioned by effective date. */
+  capacityRules: CapacityRule[];
+  /** Per-day capacity tweaks. */
+  dayCapacity: Record<ISODate, DayCapacity>;
 }
 
 export interface AppData {
@@ -118,6 +124,6 @@ export function emptyData(): AppData {
     events: [],
     dayNotes: {},
     monthNotes: {},
-    settings: { capacity: [2, 2, 2, 2, 2, 5, 5] },
+    settings: { capacityRules: defaultRules(), dayCapacity: {} },
   };
 }

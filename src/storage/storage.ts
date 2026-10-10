@@ -1,6 +1,8 @@
 import { get, set } from 'idb-keyval';
 import type { AppData } from '../model/types';
 import { emptyData } from '../model/types';
+import { migrateStatus } from '../model/selectors';
+import { defaultRules, rulesFromLegacyHours } from '../model/capacity';
 
 /**
  * Persistence boundary. v1 keeps data in IndexedDB; v2 adds a Google Drive
@@ -36,11 +38,22 @@ export function parseAppData(raw: unknown): AppData {
   return {
     ...base,
     ...r,
+    items: r.items!.map((i) => ({ ...i, status: migrateStatus(i.status) })),
     events: Array.isArray(r.events) ? r.events : [],
     dayNotes: r.dayNotes ?? {},
     monthNotes: r.monthNotes ?? {},
-    settings: { ...base.settings, ...r.settings },
+    settings: parseSettings(r.settings),
   } as AppData;
+}
+
+function parseSettings(raw: unknown): AppData['settings'] {
+  const s = (raw ?? {}) as Partial<AppData['settings']> & { capacity?: number[] };
+  const capacityRules = Array.isArray(s.capacityRules) && s.capacityRules.length
+    ? s.capacityRules
+    : Array.isArray(s.capacity) && s.capacity.length === 7
+      ? rulesFromLegacyHours(s.capacity) // before planning windows existed
+      : defaultRules();
+  return { capacityRules, dayCapacity: s.dayCapacity ?? {} };
 }
 
 export function exportJson(data: AppData): string {

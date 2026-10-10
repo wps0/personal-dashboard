@@ -1,4 +1,5 @@
 @import "tailwindcss";
+@import "@fontsource-variable/inter";
 
 @theme {
   --color-bg: #0b0d10;
@@ -12,7 +13,7 @@
   --color-danger: #f87171;
   --color-warn: #fbbf24;
   --color-ok: #34d399;
-  --font-sans: "Inter", ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-sans: "Inter Variable", "Inter", ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
   --font-mono: "JetBrains Mono", ui-monospace, "SF Mono", Menlo, Consolas, monospace;
 }
 
@@ -70,15 +71,21 @@
   }
   body {
     @apply bg-bg text-fg font-sans text-[13px] leading-snug antialiased;
+    font-feature-settings: "cv11", "ss03";
   }
   input,
   textarea,
   select {
     @apply bg-transparent outline-none;
   }
-  :focus-visible {
+  /* Text fields show focus with their own border; everything else gets a ring. */
+  :focus-visible:not(input, textarea) {
     outline: 1px solid var(--color-accent);
     outline-offset: 1px;
+  }
+  input:focus-visible,
+  textarea:focus-visible {
+    outline: none;
   }
   ::selection {
     @apply bg-accent/30;
@@ -87,16 +94,22 @@
 
 @layer components {
   .field {
-    @apply rounded border border-line bg-raised px-2 py-1 focus:border-accent/60;
+    @apply rounded-md border border-line bg-raised px-2 py-1 focus:border-accent/60;
   }
   .btn {
-    @apply rounded border border-line bg-raised px-2 py-1 text-fg hover:border-accent/60 hover:text-strong disabled:opacity-40;
+    @apply inline-flex h-7 items-center gap-1 rounded-md border border-line bg-raised px-2.5 text-fg hover:border-dim/50 hover:text-strong disabled:opacity-40;
+  }
+  .btn-primary {
+    @apply inline-flex h-8 items-center gap-1.5 rounded-full bg-accent px-4 font-medium text-white hover:brightness-110 disabled:opacity-40;
   }
   .btn-ghost {
     @apply rounded px-1.5 py-0.5 text-dim hover:bg-raised hover:text-fg;
   }
   .label {
-    @apply font-mono text-[11px] tracking-wide text-dim uppercase;
+    @apply text-[11px] font-medium tracking-wide text-dim uppercase;
+  }
+  .icon-btn {
+    @apply inline-flex h-7 w-7 items-center justify-center rounded-full text-dim hover:bg-raised hover:text-fg;
   }
   .scroll-thin {
     scrollbar-width: thin;
@@ -112,4 +125,32 @@
   .prose-md p { @apply my-1.5; }
   .prose-md a { @apply text-accent underline; }
   .prose-md code { @apply rounded bg-raised px-1 font-mono text-[12px]; }
+}
+
+/* Calendar block colors. Area colors are light, so text on them is dark in both themes. */
+@theme {
+  --color-event: #8ab4f8;
+  --color-on-block: #0b1626;
+}
+@layer theme {
+  :root[data-theme="light"] {
+    --color-event: #039be5;
+  }
+  @media (prefers-color-scheme: light) {
+    :root:not([data-theme="dark"]) {
+      --color-event: #039be5;
+    }
+  }
+}
+
+/* Reserved time (sleep, work): diagonal hatching, informational only. */
+@layer components {
+  .reserved {
+    background-image: repeating-linear-gradient(
+      135deg,
+      color-mix(in srgb, var(--color-dim) 22%, transparent) 0 1px,
+      transparent 1px 7px
+    );
+    background-color: color-mix(in srgb, var(--color-dim) 5%, transparent);
+  }
 }

@@ -30,7 +30,7 @@ export function ProgressRing({ percent, color, size = 56, stroke = 5 }: Props) {
         y="50%"
         dominantBaseline="central"
         textAnchor="middle"
-        className="fill-fg font-mono"
+        className="fill-fg tabular-nums"
         fontSize={size * 0.24}
       >
         {p}%

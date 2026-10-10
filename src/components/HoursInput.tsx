@@ -37,7 +37,7 @@ export function HoursInput({ value, onChange, placeholder = '–', className = '
       onBlur={commit}
       onKeyDown={(e) => e.key === 'Enter' && (e.currentTarget as HTMLInputElement).blur()}
       onPointerDown={(e) => e.stopPropagation()}
-      className={`w-10 rounded px-1 text-right font-mono hover:bg-raised focus:bg-raised ${className}`}
+      className={`w-10 rounded px-1 text-right tabular-nums hover:bg-raised focus:bg-raised ${className}`}
     />
   );
 }

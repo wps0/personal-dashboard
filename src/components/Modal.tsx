@@ -3,7 +3,8 @@ import { useEffect, type ReactNode } from 'react';
 /** Centered overlay; closes on Esc or backdrop click. */
 export function Modal({ onClose, children, width = 'max-w-xl' }: { onClose(): void; children: ReactNode; width?: string }) {
   useEffect(() => {
-    const onKey = (e: KeyboardEvent) => e.key === 'Escape' && onClose();
+    // defaultPrevented: a dropdown or popover inside the modal already handled this Esc.
+    const onKey = (e: KeyboardEvent) => e.key === 'Escape' && !e.defaultPrevented && onClose();
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
   }, [onClose]);

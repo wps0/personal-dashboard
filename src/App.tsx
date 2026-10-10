@@ -1,5 +1,5 @@
-import { useEffect } from 'react';
-import { EventOverlay } from './components/EventOverlay';
+import { CircleGauge, Monitor, Moon, Sun } from 'lucide-react';
+import { useEffect, type ReactNode } from 'react';
 import { ItemOverlay } from './components/ItemOverlay';
 import { dayName, shortDate, todayISO } from './model/dates';
 import { sampleData } from './model/sample';
@@ -22,7 +22,7 @@ const NAV: { route: Route; label: string }[] = [
 ];
 
 const THEME_NEXT: Record<ThemeChoice, ThemeChoice> = { system: 'light', light: 'dark', dark: 'system' };
-const THEME_LABEL: Record<ThemeChoice, string> = { system: '◐ auto', light: '☼ light', dark: '☾ dark' };
+const THEME_ICON: Record<ThemeChoice, ReactNode> = { system: <Monitor size={15} />, light: <Sun size={15} />, dark: <Moon size={15} /> };
 
 export default function App() {
   const route = useRoute();
@@ -34,8 +34,8 @@ export default function App() {
   return (
     <div className="flex h-full flex-col">
       <header className="flex shrink-0 items-center gap-1 border-b border-line bg-panel px-3 py-1.5">
-        <span className="mr-3 font-mono text-[12px] font-semibold tracking-tight text-strong">
-          <span className="text-accent">◔</span> dashboard
+        <span className="mr-3 flex items-center gap-1.5 text-[14px] font-semibold tracking-tight text-strong">
+          <CircleGauge size={18} className="text-accent" /> Dashboard
         </span>
         {NAV.map((n) => (
           <a
@@ -46,16 +46,15 @@ export default function App() {
             {n.label}
           </a>
         ))}
-        <span className="ml-auto font-mono text-[11px] text-dim">
+        <span className="ml-auto text-[12px] text-dim tabular-nums">
           {dayName(today)} {shortDate(today)}
         </span>
-        <button className="btn-ghost ml-2 font-mono text-[11px]" onClick={() => setTheme(THEME_NEXT[theme])} title={`Theme: ${theme} (click to change)`}>
-          {THEME_LABEL[theme]}
+        <button className="icon-btn ml-1" onClick={() => setTheme(THEME_NEXT[theme])} title={`Theme: ${theme === 'system' ? 'auto (follows system)' : theme} — click to change`}>
+          {THEME_ICON[theme]}
         </button>
       </header>
       <main className="min-h-0 flex-1">{!hasAreas && route.name !== 'settings' ? <Welcome /> : <Page route={route} />}</main>
       <ItemOverlay />
-      <EventOverlay />
     </div>
   );
 }
@@ -67,7 +66,7 @@ function Page({ route }: { route: Route }) {
     case 'week':
       return <WeekView week={route.week} />;
     case 'calendar':
-      return <CalendarView week={route.week} />;
+      return <CalendarView view={route.view} date={route.date} />;
     case 'projects':
       return <ProjectsView selectedId={route.id} />;
     case 'settings':
@@ -77,13 +76,14 @@ function Page({ route }: { route: Route }) {
 
 /** Esc closes the project side panel (overlays handle Esc themselves first). */
 function useEscapeClosesProject(route: Route) {
-  const overlayOpen = useUi((s) => s.openItemId !== null || s.openEvent !== null);
+  const overlayOpen = useUi((s) => s.openItemId !== null || s.openEventId !== null || s.draft !== null);
   const panelOpen = route.name === 'projects' && route.id !== undefined;
   useEffect(() => {
     if (!panelOpen || overlayOpen) return;
     const onKey = (e: KeyboardEvent) => {
       const t = e.target as HTMLElement;
-      if (e.key === 'Escape' && !['INPUT', 'TEXTAREA', 'SELECT'].includes(t.tagName)) navigate({ name: 'projects' });
+      // defaultPrevented: a dropdown or popover already handled this Esc.
+      if (e.key === 'Escape' && !e.defaultPrevented && !['INPUT', 'TEXTAREA', 'SELECT'].includes(t.tagName)) navigate({ name: 'projects' });
     };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);

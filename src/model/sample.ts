@@ -58,7 +58,7 @@ export function sampleData(today = todayISO()): AppData {
         kind: 'lecture',
         estimateHours: 1.5,
         heldOn: date,
-        status: k < 3 ? 'notes' : k === 3 ? 'watched' : 'todo',
+        status: k < 3 ? 'done' : k === 3 ? 'doing' : 'todo',
       }),
     );
   }
@@ -72,7 +72,7 @@ export function sampleData(today = todayISO()): AppData {
 
   const net = project('uni', 'Computer Networks', { progressMode: 'hours' });
   for (let k = 0; k < 6; k++) {
-    item(net, `Lecture ${k + 1}`, { kind: 'lecture', estimateHours: 1.5, status: k < 2 ? 'revised' : 'todo' });
+    item(net, `Lecture ${k + 1}`, { kind: 'lecture', estimateHours: 1.5, status: k < 2 ? 'done' : 'todo' });
   }
   const lab = item(net, 'Lab report: TCP congestion', { kind: 'assignment', estimateHours: 3, dueDate: addDays(today, 9) });
   alloc(lab, addDays(monday, 3), 1.5);
@@ -101,6 +101,7 @@ export function sampleData(today = todayISO()): AppData {
   event(addDays(monday, 2), '14:15', '15:45', 'Networks lab (USOS)');
   event(addDays(monday, 8), '10:15', '12:00', 'OS lecture (USOS)', 'Room 3180');
   event(today, '19:00', '20:30', 'Climbing');
+  d.events.push({ id: id('e'), date: addDays(today, 2), allDay: true, start: '00:00', end: '23:59', title: 'Mum’s birthday' });
   event(addDays(today, 1), '08:30', '09:00', 'Dentist');
   event(addDays(today, 2), '09:30', '10:00', 'Team standup');
   event(addDays(today, 2), '14:00', '14:30', '1:1 with manager');
