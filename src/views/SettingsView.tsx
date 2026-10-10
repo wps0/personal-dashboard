@@ -5,6 +5,7 @@ import { AREA_COLORS, emptyData } from '../model/types';
 import { exportJson, parseAppData } from '../storage/storage';
 import { useData, useStore } from '../store';
 import { CapacitySettings } from './CapacitySettings';
+import { GoogleSettings } from '../components/GoogleSettings';
 import { Select } from '../components/ui/Select';
 
 const CAL_VIEW_OPTIONS = [
@@ -70,6 +71,10 @@ export function SettingsView() {
             />
             <span className="text-[12px] text-dim">The calendar opens in this view whenever you come to it from another page.</span>
           </label>
+        </Section>
+
+        <Section title="Google Calendar" hint="Show your Google calendars next to your plan (read-only for now).">
+          <GoogleSettings />
         </Section>
 
         <Section title="Capacity & reserved time" hint="When you can plan work, and which hours are taken (sleep, work).">
