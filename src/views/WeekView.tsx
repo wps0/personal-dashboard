@@ -220,7 +220,11 @@ const stop = (e: { stopPropagation(): void }) => e.stopPropagation();
  */
 const AllocationBlock = memo(function AllocationBlock({ alloc, lookups, showDate }: { alloc: Allocation; lookups: Lookups; showDate?: boolean }) {
   const { attributes, listeners, setNodeRef, isDragging } = useDraggable({
-    id: `alloc:${alloc.id}`,
+    // A missed session is rendered twice (in its day and in the overdue tray, where
+    // showDate is set). Each copy needs its own drag id: with a shared id dnd-kit
+    // measured whichever copy registered last, so dragging the day copy behaved as if
+    // the tray copy had been grabbed (preview offset, wrong drop target).
+    id: `alloc:${alloc.id}${showDate ? ':missed' : ''}`,
     data: { kind: 'alloc', alloc } satisfies DragData,
   });
   const item = lookups.item(alloc.itemId);
