@@ -14,17 +14,17 @@ export function WeekNav({ monday }: { monday: ISODate }) {
 
   return (
     <div className="flex items-center gap-1">
-      <a className="btn h-8 rounded-full px-4" href={href({ name: 'week' })}>
+      <a className="btn h-8 rounded-full px-4" href={href({ name: 'week' })} title="This week (t)">
         Today
       </a>
-      <a className="icon-btn" href={href({ name: 'week', week: addDays(monday, -7) })} aria-label="Previous week">
+      <a className="icon-btn" href={href({ name: 'week', week: addDays(monday, -7) })} aria-label="Previous week" title="Previous week (k)">
         <ChevronLeft size={18} />
       </a>
-      <a className="icon-btn" href={href({ name: 'week', week: addDays(monday, 7) })} aria-label="Next week">
+      <a className="icon-btn" href={href({ name: 'week', week: addDays(monday, 7) })} aria-label="Next week" title="Next week (j)">
         <ChevronRight size={18} />
       </a>
       <Popover open={open} onOpenChange={setOpen}>
-        <PopoverTrigger className="ml-1 flex items-center gap-1.5 rounded-md px-2 py-1 hover:bg-raised" title="Pick a week">
+        <PopoverTrigger className="ml-1 flex items-center gap-1.5 rounded-md px-2 py-1 hover:bg-raised" title="Pick a week (g)">
           <span className="text-lg text-strong">{formatMonthYear(addDays(monday, 3))}</span>
           <span className="text-dim tabular-nums">
             W{isoWeek(monday)} · {shortDate(monday)} – {shortDate(addDays(monday, 6))}

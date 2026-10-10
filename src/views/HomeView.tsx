@@ -11,13 +11,26 @@ import { allocationsByItem, isItemDone, missedAllocations, projectStats, urgency
 import type { Allocation, ISODate } from '../model/types';
 import { href, navigate } from '../router';
 import { useStore } from '../store';
-import { useUi } from '../ui';
+import { useNavTarget } from '../keyboard';
+import { nextHourDraft, useUi } from '../ui';
+import { removeSession, toggleSession } from '../actions';
+import { blockKeys } from '../keyboard';
 
 /** Landing page: three days (today by default; ‹ › move a day at a time), what's planned, and how projects stand. */
 export function HomeView({ date }: { date?: ISODate }) {
   const today = todayISO();
   const start = date && /^\d{4}-\d{2}-\d{2}$/.test(date) ? date : today;
   const days = useMemo(() => [start, addDays(start, 1), addDays(start, 2)], [start]);
+  useNavTarget({
+    next: () => go(addDays(start, 1), today),
+    prev: () => go(addDays(start, -1), today),
+    today: () => go(today, today),
+    goTo: (d) => go(d, today),
+    create: () => {
+      if (start > today || addDays(start, 2) < today) go(today, today);
+      useUi.getState().setDraft(nextHourDraft());
+    },
+  });
   return (
     <div className="grid h-full grid-cols-1 gap-2 overflow-y-auto p-2 lg:grid-cols-[minmax(0,1fr)_380px] lg:overflow-hidden">
       <div className="flex h-[70vh] min-h-0 flex-col rounded-lg border border-line bg-panel lg:h-full">
@@ -46,13 +59,13 @@ function DayNav({ start, today }: { start: ISODate; today: ISODate }) {
   const end = addDays(start, 2);
   return (
     <div className="flex shrink-0 items-center gap-1 border-b border-line px-2 py-1.5">
-      <button className="btn h-7 rounded-full px-3" onClick={() => go(today, today)} disabled={start === today}>
+      <button className="btn h-7 rounded-full px-3" onClick={() => go(today, today)} disabled={start === today} title="Today (t)">
         Today
       </button>
-      <button className="icon-btn" aria-label="Previous day" onClick={() => go(addDays(start, -1), today)}>
+      <button className="icon-btn" aria-label="Previous day" title="Previous day (k)" onClick={() => go(addDays(start, -1), today)}>
         <ChevronLeft size={18} />
       </button>
-      <button className="icon-btn" aria-label="Next day" onClick={() => go(addDays(start, 1), today)}>
+      <button className="icon-btn" aria-label="Next day" title="Next day (j)" onClick={() => go(addDays(start, 1), today)}>
         <ChevronRight size={18} />
       </button>
       <Popover open={open} onOpenChange={setOpen}>
@@ -147,10 +160,13 @@ const PlannedRow = memo(function PlannedRow({ alloc, lookups }: { alloc: Allocat
   if (!item) return null;
   return (
     <li
+      tabIndex={0}
+      data-block
+      onKeyDown={blockKeys({ open: () => openItem(item.id), toggle: () => toggleSession(alloc.id), remove: () => removeSession(alloc.id) })}
       className="flex animate-fade-in items-center gap-1.5 rounded-md border-l-2 bg-raised py-0.5 pr-1.5 pl-1.5 transition-colors duration-150 hover:bg-line/60"
       style={{ borderLeftColor: lookups.color(item) }}
     >
-      <input type="checkbox" className="accent-ok" checked={alloc.done} onChange={() => useStore.getState().toggleAllocation(alloc.id)} />
+      <input type="checkbox" className="accent-ok" checked={alloc.done} onChange={() => toggleSession(alloc.id)} />
       <button className="min-w-0 flex-1 text-left leading-tight" onClick={() => openItem(item.id)}>
         <div className={`truncate transition-colors duration-200 ${alloc.done ? 'text-dim' : ''}`}>
           {isItemDone(item) && <span className="text-ok">✓ </span>}

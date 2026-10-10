@@ -23,7 +23,10 @@ import { backlogItems, defaultAllocationHours, isItemDone, missedAllocations, pl
 import type { Allocation, ISODate, Item } from '../model/types';
 import { useStore } from '../store';
 import { useUi } from '../ui';
-import { withUndo } from '../toast';
+import { useNavTarget } from '../keyboard';
+import { navigate } from '../router';
+import { completeItem, planSession, removeSession, toggleSession, updateSession } from '../actions';
+import { blockKeys } from '../keyboard';
 
 type DragData = { kind: 'item'; item: Item; remaining?: number } | { kind: 'alloc'; alloc: Allocation };
 
@@ -38,6 +41,14 @@ export function WeekView({ week }: { week?: ISODate }) {
   const today = todayISO();
   const monday = startOfWeek(week && /^\d{4}-\d{2}-\d{2}$/.test(week) ? week : today);
   const [dragging, setDragging] = useState<DragData | null>(null);
+  const thisWeek = startOfWeek(today);
+  const goWeek = (d: ISODate) => navigate({ name: 'week', week: startOfWeek(d) === thisWeek ? undefined : startOfWeek(d) });
+  useNavTarget({
+    next: () => goWeek(addDays(monday, 7)),
+    prev: () => goWeek(addDays(monday, -7)),
+    today: () => goWeek(today),
+    goTo: goWeek,
+  });
 
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
@@ -50,18 +61,17 @@ export function WeekView({ week }: { week?: ISODate }) {
     const drag = e.active.data.current as DragData | undefined;
     const target = e.over?.id;
     if (!drag || typeof target !== 'string') return;
-    const { addAllocation, updateAllocation, deleteAllocation } = useStore.getState();
     if (target.startsWith('day:')) {
       const date = target.slice(4);
-      if (drag.kind === 'item') addAllocation(drag.item.id, date, defaultAllocationHours(drag.remaining));
-      else if (drag.alloc.date !== date) updateAllocation(drag.alloc.id, { date });
+      if (drag.kind === 'item') planSession(drag.item.id, date, defaultAllocationHours(drag.remaining));
+      else if (drag.alloc.date !== date) updateSession(drag.alloc.id, { date });
     } else if (target === 'backlog' && drag.kind === 'alloc' && !drag.alloc.done) {
-      withUndo('Unscheduled', () => deleteAllocation(drag.alloc.id));
+      removeSession(drag.alloc.id, 'Unscheduled');
     }
   };
 
   return (
-    <DndContext sensors={sensors} onDragStart={onDragStart} onDragEnd={onDragEnd} onDragCancel={() => setDragging(null)}>
+    <DndContext sensors={sensors} onDragStart={onDragStart} onDragEnd={onDragEnd} onDragCancel={() => setDragging(null)} accessibility={{ screenReaderInstructions: { draggable: 'Enter opens, Space marks done, Delete removes, arrow keys move between items. Drag with the mouse or a finger to move.' } }}>
       <div className="flex h-full flex-col">
         <div className="flex shrink-0 items-center gap-2 border-b border-line px-3 py-1">
           <WeekNav monday={monday} />
@@ -220,6 +230,12 @@ const AllocationBlock = memo(function AllocationBlock({ alloc, lookups, showDate
       ref={setNodeRef}
       {...attributes}
       {...listeners}
+      data-block
+      onKeyDown={blockKeys({
+        open: () => useUi.getState().openItem(item.id),
+        toggle: () => toggleSession(alloc.id),
+        remove: () => removeSession(alloc.id),
+      })}
       className={`block-interactive group flex cursor-grab touch-none items-center gap-1.5 rounded-md border-l-2 bg-raised py-0.5 pr-1 pl-1.5 active:cursor-grabbing ${
         isDragging ? 'opacity-30' : ''
       }`}
@@ -233,7 +249,6 @@ const AllocationBlock = memo(function AllocationBlock({ alloc, lookups, showDate
 const AllocationContent = memo(function AllocationContent(props: { alloc: Allocation; item: Item; projectName?: string; showDate?: boolean }) {
   const { alloc, item, projectName, showDate } = props;
   const openItem = useUi((s) => s.openItem);
-  const { toggleAllocation, updateAllocation, deleteAllocation, updateItem } = useStore.getState();
   const itemDone = isItemDone(item);
   return (
     <>
@@ -242,7 +257,7 @@ const AllocationContent = memo(function AllocationContent(props: { alloc: Alloca
         checked={alloc.done}
         title={alloc.done ? 'Done — uncheck to undo' : 'Mark this session done (logs its hours)'}
         onPointerDown={stop}
-        onChange={() => toggleAllocation(alloc.id)}
+        onChange={() => toggleSession(alloc.id)}
         className="accent-ok"
       />
       <button className="min-w-0 flex-1 text-left leading-tight" onClick={() => openItem(item.id)} title="Open task details">
@@ -266,12 +281,12 @@ const AllocationContent = memo(function AllocationContent(props: { alloc: Alloca
             className="btn-ghost px-1 text-[11px]"
             title="Mark the whole task complete"
             onPointerDown={stop}
-            onClick={() => withUndo(`Completed “${item.title}”`, () => updateItem(item.id, { status: 'done' }))}
+            onClick={() => completeItem(item)}
           >
             ✓✓
           </button>
         )}
-        <button className="btn-ghost px-1 hover:text-danger" title="Remove from plan" onPointerDown={stop} onClick={() => withUndo('Removed from plan', () => deleteAllocation(alloc.id))}>
+        <button className="btn-ghost px-1 hover:text-danger" title="Remove from plan" onPointerDown={stop} onClick={() => removeSession(alloc.id)}>
           ×
         </button>
       </div>
@@ -279,14 +294,14 @@ const AllocationContent = memo(function AllocationContent(props: { alloc: Alloca
         <HoursInput
           value={alloc.actualHours ?? alloc.plannedHours}
           title={`Actual hours (planned ${alloc.plannedHours}h)`}
-          onChange={(h) => updateAllocation(alloc.id, { actualHours: h })}
+          onChange={(h) => updateSession(alloc.id, { actualHours: h }, 'Hours changed')}
           className="text-[11px] text-ok"
         />
       ) : (
         <HoursInput
           value={alloc.plannedHours}
           title="Planned hours"
-          onChange={(h) => (h ? updateAllocation(alloc.id, { plannedHours: h }) : deleteAllocation(alloc.id))}
+          onChange={(h) => (h ? updateSession(alloc.id, { plannedHours: h }, 'Hours changed') : removeSession(alloc.id))}
           className="text-[11px]"
         />
       )}
@@ -406,6 +421,8 @@ const BacklogItem = memo(function BacklogItem({ item, remaining, lookups, today 
       ref={setNodeRef}
       {...attributes}
       {...listeners}
+      data-block
+      onKeyDown={blockKeys({ open: () => openItem(item.id) })}
       onClick={() => openItem(item.id)}
       className={`flex cursor-grab touch-none items-center gap-1.5 rounded-md border-l-2 px-1.5 py-0.5 transition-[background-color,transform] duration-150 hover:bg-raised active:scale-[0.985] active:cursor-grabbing ${
         isDragging ? 'opacity-30' : ''

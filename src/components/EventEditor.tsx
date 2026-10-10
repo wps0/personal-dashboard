@@ -2,7 +2,7 @@ import { AlignLeft, Clock, Trash2, X } from 'lucide-react';
 import { withUndo } from '../toast';
 import { formatLong } from '../model/dates';
 import { fromMinutes, toMinutes } from '../model/time';
-import type { CalendarEvent, ISODate } from '../model/types';
+import type { CalendarEvent } from '../model/types';
 import { useStore } from '../store';
 import { useUi, type Draft } from '../ui';
 import { BufferedInput, BufferedTextarea } from './Buffered';
@@ -139,9 +139,4 @@ export function EventEditor({ eventId }: { eventId: string }) {
       <p className="mt-3 pl-7 text-[11px] text-dim">Local event · syncs with Google Calendar in v2</p>
     </div>
   );
-}
-
-/** A draft for a click at `start` minutes on `date` (GCal: 1 h block on the half hour). */
-export function draftAt(date: ISODate, start: number, end?: number, allDay = false): Draft {
-  return { date, start: fromMinutes(start), end: fromMinutes(end ?? start + 60), allDay, title: '', notes: '' };
 }

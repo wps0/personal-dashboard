@@ -3,13 +3,14 @@ import { useEffect, useMemo } from 'react';
 import { MiniMonth } from '../components/MiniMonth';
 import { MonthGrid } from '../components/MonthGrid';
 import { TimeGrid } from '../components/TimeGrid';
-import { draftAt } from '../components/EventEditor';
+
 import { Select } from '../components/ui/Select';
 import { addDays, addMonths, firstOfMonth, formatMonthYear, monthGrid, startOfWeek, todayISO } from '../model/dates';
 import type { ISODate } from '../model/types';
 import { navigate, type CalView } from '../router';
 import { useStore } from '../store';
-import { useUi } from '../ui';
+import { nextHourDraft, useUi } from '../ui';
+import { useNavTarget } from '../keyboard';
 
 const VIEW_OPTIONS = [
   { value: 'day', label: 'Day' },
@@ -64,6 +65,18 @@ export function CalendarView({ view: routeView, date: routeDate }: { view?: CalV
     if (draftDate && !days.includes(draftDate)) go(view, draftDate);
   }, [draftDate]);
 
+  useNavTarget({
+    next: () => go(view, step(view, date, 1)),
+    prev: () => go(view, step(view, date, -1)),
+    today: () => go(view, today),
+    goTo: (d) => go(view, d),
+    view: (v) => go(v, date),
+    create: () => {
+      if (!days.includes(today)) go(view, today);
+      useUi.getState().setDraft(nextHourDraft());
+    },
+  });
+
   const range: [ISODate, ISODate] = view === 'month' ? [firstOfMonth(date), addDays(addMonths(date, 1), -1)] : [days[0], days[days.length - 1]];
 
   return (
@@ -72,9 +85,8 @@ export function CalendarView({ view: routeView, date: routeDate }: { view?: CalV
         <button
           className="flex h-12 w-fit items-center gap-2 rounded-2xl bg-raised pr-5 pl-4 font-medium text-strong shadow-md ring-1 ring-line hover:brightness-110"
           onClick={() => {
-            const start = Math.min(new Date().getHours() + 1, 22) * 60;
             if (!days.includes(today)) go(view, today);
-            useUi.getState().setDraft(draftAt(today, start, Math.min(start + useStore.getState().data.settings.defaultEventMinutes, 24 * 60 - 1)));
+            useUi.getState().setDraft(nextHourDraft());
           }}
         >
           <Plus size={20} className="text-accent" /> Create
@@ -84,13 +96,13 @@ export function CalendarView({ view: routeView, date: routeDate }: { view?: CalV
       </aside>
       <div className="flex min-w-0 flex-1 flex-col">
         <div className="flex shrink-0 items-center gap-2 px-3 py-2">
-          <button className="btn h-8 rounded-full px-4" onClick={() => go(view, today)}>
+          <button className="btn h-8 rounded-full px-4" onClick={() => go(view, today)} title="Today (t)">
             Today
           </button>
-          <button className="icon-btn" aria-label="Previous" onClick={() => go(view, step(view, date, -1))}>
+          <button className="icon-btn" aria-label="Previous" title="Previous (k)" onClick={() => go(view, step(view, date, -1))}>
             <ChevronLeft size={18} />
           </button>
-          <button className="icon-btn" aria-label="Next" onClick={() => go(view, step(view, date, 1))}>
+          <button className="icon-btn" aria-label="Next" title="Next (j)" onClick={() => go(view, step(view, date, 1))}>
             <ChevronRight size={18} />
           </button>
           <h1 className="ml-1 text-lg font-normal text-strong">{title(view, days, date)}</h1>

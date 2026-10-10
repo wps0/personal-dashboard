@@ -16,6 +16,8 @@ import type { Allocation, Item, ItemKind, ProgressMode, Project } from '../model
 import { href, navigate } from '../router';
 import { useStore } from '../store';
 import { useUi } from '../ui';
+import { deleteItem as deleteItemAction } from '../actions';
+import { blockKeys } from '../keyboard';
 
 type Tab = 'items' | 'overview' | 'log';
 
@@ -169,7 +171,7 @@ function ItemsTab({ project }: { project: Project }) {
 
 const ItemRow = memo(function ItemRow({ item, allocs, today }: { item: Item; allocs: Allocation[]; today: string }) {
   const openItem = useUi((s) => s.openItem);
-  const { updateItem, deleteItem } = useStore.getState();
+  const { updateItem } = useStore.getState();
   const done = isItemDone(item);
   const planned = plannedHours(allocs);
 
@@ -179,7 +181,13 @@ const ItemRow = memo(function ItemRow({ item, allocs, today }: { item: Item; all
         <StatusSelect value={item.status} onChange={(status) => updateItem(item.id, { status })} className="h-6 w-full text-[12px]" />
       </td>
       <td className="px-1 py-0.5">
-        <button className="flex w-full min-w-0 items-center gap-1.5 rounded px-1 text-left hover:bg-raised" onClick={() => openItem(item.id)} title="Open task details">
+        <button
+          data-block
+          onKeyDown={blockKeys({ remove: () => deleteItemAction(item) })}
+          className="flex w-full min-w-0 items-center gap-1.5 rounded px-1 text-left hover:bg-raised"
+          onClick={() => openItem(item.id)}
+          title="Open task details"
+        >
           <span className="tabular-nums text-[10px] text-dim">{KIND_BADGE[item.kind]}</span>
           <span className="truncate">
             <span className={`strike ${done ? 'is-struck' : ''}`}>{item.title}</span>
@@ -208,7 +216,7 @@ const ItemRow = memo(function ItemRow({ item, allocs, today }: { item: Item; all
         <button
           className="invisible text-dim group-hover:visible hover:text-danger"
           title="Delete item"
-          onClick={() => withUndo(`Deleted “${item.title}”`, () => deleteItem(item.id))}
+          onClick={() => deleteItemAction(item)}
         >
           ×
         </button>
@@ -234,6 +242,7 @@ function AddItem({ projectId }: { projectId: string }) {
       <Select value={kind} onChange={setKind} options={KIND_OPTIONS} className="w-32" ariaLabel="Kind" />
       <input
         className="field min-w-40 flex-1"
+        data-new-item
         placeholder="New item… (Enter)"
         value={title}
         onChange={(e) => setTitle(e.target.value)}
