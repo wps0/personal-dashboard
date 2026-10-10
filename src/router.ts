@@ -4,7 +4,7 @@ export const CAL_VIEWS = ['day', '3day', 'week', 'month'] as const;
 export type CalView = (typeof CAL_VIEWS)[number];
 
 export type Route =
-  | { name: 'home' }
+  | { name: 'home'; date?: string }
   | { name: 'week'; week?: string }
   | { name: 'calendar'; view?: CalView; date?: string }
   | { name: 'projects'; id?: string }
@@ -24,6 +24,8 @@ export function parseHash(hash: string): Route {
       return { name: 'projects', id: parts[1] };
     case 'settings':
       return { name: 'settings' };
+    case 'home':
+      return { name: 'home', date: parts[1] };
     default:
       return { name: 'home' };
   }
@@ -32,7 +34,7 @@ export function parseHash(hash: string): Route {
 export function href(route: Route): string {
   switch (route.name) {
     case 'home':
-      return '#/';
+      return route.date ? `#/home/${route.date}` : '#/';
     case 'week':
       return route.week ? `#/week/${route.week}` : '#/week';
     case 'calendar':

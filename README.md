@@ -40,8 +40,9 @@ On first launch, choose **Load sample data** to explore, or create empty areas.
 
 ## How it works
 
-- **Home** (`#/`): a 3-day calendar, the planned sessions for those days, and
-  a project overview sorted by the nearest deadline.
+- **Home** (`#/`): a 3-day calendar (‹ › to move a day at a time, or pick a
+  date), the planned sessions for those days, and a project overview sorted by
+  the nearest deadline.
 - **Week** (`#/week`): the bullet journal. Mon–Fri on top, then Sat, Sun and
   the backlog.
   - Drag a backlog item onto a day to plan time. Drag it onto another day too

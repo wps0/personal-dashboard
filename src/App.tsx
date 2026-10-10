@@ -62,7 +62,7 @@ export default function App() {
 function Page({ route }: { route: Route }) {
   switch (route.name) {
     case 'home':
-      return <HomeView />;
+      return <HomeView date={route.date} />;
     case 'week':
       return <WeekView week={route.week} />;
     case 'calendar':

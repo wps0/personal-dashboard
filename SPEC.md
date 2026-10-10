@@ -56,9 +56,11 @@ CalendarEvent   { date, start, end, title, notes }   local in v1; Google Calenda
 ## 3. Views
 
 ### 3.0 Home (landing page)
-- A 3-day calendar (today plus the next two days).
-- The planned sessions for those days, with checkboxes and a link to the
-  missed ones.
+- A 3-day calendar, starting today by default. ‹ › move it one day at a time,
+  Today jumps back, and the date label opens a mini month
+  (`#/home/<start date>`).
+- The planned sessions for the same three days (labelled Yesterday / Today /
+  Tomorrow where that fits), with checkboxes and a link to the missed ones.
 - A compact project overview (ring, X/Y done, next deadline), sorted by the
   nearest deadline.
 

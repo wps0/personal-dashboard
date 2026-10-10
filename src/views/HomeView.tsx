@@ -1,4 +1,7 @@
-import { memo, useMemo } from 'react';
+import { ChevronDown, ChevronLeft, ChevronRight } from 'lucide-react';
+import { memo, useMemo, useState } from 'react';
+import { MiniMonth } from '../components/MiniMonth';
+import { Popover, PopoverContent, PopoverTrigger } from '../components/ui/Popover';
 import { ProgressRing } from '../components/ProgressRing';
 import { TimeGrid } from '../components/TimeGrid';
 import { fmtH, URGENCY_CLASS } from '../format';
@@ -10,19 +13,23 @@ import { href, navigate } from '../router';
 import { useStore } from '../store';
 import { useUi } from '../ui';
 
-/** Landing page: the next three days, what's planned, and how projects stand. */
-export function HomeView() {
+/** Landing page: three days (today by default; ‹ › move a day at a time), what's planned, and how projects stand. */
+export function HomeView({ date }: { date?: ISODate }) {
   const today = todayISO();
-  const days = useMemo(() => [today, addDays(today, 1), addDays(today, 2)], [today]);
+  const start = date && /^\d{4}-\d{2}-\d{2}$/.test(date) ? date : today;
+  const days = useMemo(() => [start, addDays(start, 1), addDays(start, 2)], [start]);
   return (
     <div className="grid h-full grid-cols-1 gap-2 overflow-y-auto p-2 lg:grid-cols-[minmax(0,1fr)_380px] lg:overflow-hidden">
-      <div className="h-[70vh] min-h-0 rounded-lg border border-line bg-panel lg:h-full">
-        <TimeGrid
-          days={days}
-          hourHeight={44}
-          scrollToHour={Math.max(0, new Date().getHours() - 2)}
-          onDayClick={(d) => navigate({ name: 'calendar', view: 'day', date: d })}
-        />
+      <div className="flex h-[70vh] min-h-0 flex-col rounded-lg border border-line bg-panel lg:h-full">
+        <DayNav start={start} today={today} />
+        <div className="min-h-0 flex-1">
+          <TimeGrid
+            days={days}
+            hourHeight={44}
+            scrollToHour={Math.max(0, new Date().getHours() - 2)}
+            onDayClick={(d) => navigate({ name: 'calendar', view: 'day', date: d })}
+          />
+        </div>
       </div>
       <div className="flex min-h-0 flex-col gap-2">
         <Planned days={days} />
@@ -32,12 +39,62 @@ export function HomeView() {
   );
 }
 
+const go = (d: ISODate, today: ISODate) => navigate({ name: 'home', date: d === today ? undefined : d });
+
+function DayNav({ start, today }: { start: ISODate; today: ISODate }) {
+  const [open, setOpen] = useState(false);
+  const end = addDays(start, 2);
+  return (
+    <div className="flex shrink-0 items-center gap-1 border-b border-line px-2 py-1.5">
+      <button className="btn h-7 rounded-full px-3" onClick={() => go(today, today)} disabled={start === today}>
+        Today
+      </button>
+      <button className="icon-btn" aria-label="Previous day" onClick={() => go(addDays(start, -1), today)}>
+        <ChevronLeft size={18} />
+      </button>
+      <button className="icon-btn" aria-label="Next day" onClick={() => go(addDays(start, 1), today)}>
+        <ChevronRight size={18} />
+      </button>
+      <Popover open={open} onOpenChange={setOpen}>
+        <PopoverTrigger className="flex items-center gap-1 rounded-md px-2 py-0.5 text-strong hover:bg-raised" title="Pick a date">
+          {formatRange(start, end)}
+          <ChevronDown size={14} className="text-dim" />
+        </PopoverTrigger>
+        <PopoverContent align="start" className="p-3">
+          <MiniMonth
+            selected={start}
+            range={[start, end]}
+            onSelect={(d) => {
+              go(d, today);
+              setOpen(false);
+            }}
+          />
+        </PopoverContent>
+      </Popover>
+    </div>
+  );
+}
+
+/** "10 – 12 Oct", or "30 Oct – 1 Nov". */
+function formatRange(a: ISODate, b: ISODate): string {
+  return a.slice(0, 7) === b.slice(0, 7) ? `${Number(a.slice(8))} – ${shortDate(b)}` : `${shortDate(a)} – ${shortDate(b)}`;
+}
+
+/** "Today", "Tomorrow", "Yesterday", or the weekday. */
+function relativeDay(d: ISODate, today: ISODate): string {
+  if (d === today) return 'Today';
+  if (d === addDays(today, 1)) return 'Tomorrow';
+  if (d === addDays(today, -1)) return 'Yesterday';
+  return dayName(d);
+}
+
 function Planned({ days }: { days: ISODate[] }) {
   const allocations = useStore((s) => s.data.allocations);
   const items = useStore((s) => s.data.items);
   const projects = useStore((s) => s.data.projects);
   const lookups = useLookups();
-  const missed = useMemo(() => missedAllocations({ items, allocations, projects }, days[0]).length, [items, allocations, projects, days]);
+  const today = todayISO();
+  const missed = useMemo(() => missedAllocations({ items, allocations, projects }, today).length, [items, allocations, projects, today]);
   const byDay = useMemo(
     () =>
       days.map((d) => ({
@@ -61,12 +118,10 @@ function Planned({ days }: { days: ISODate[] }) {
         </a>
       </header>
       <div className="scroll-thin min-h-0 flex-1 overflow-y-auto p-1">
-        {byDay.map(({ date, allocs }, i) => (
+        {byDay.map(({ date, allocs }) => (
           <div key={date} className="mb-1.5">
             <div className="flex items-baseline gap-1.5 px-1">
-              <span className={`text-[12px] font-semibold ${i === 0 ? 'text-accent' : 'text-strong'}`}>
-                {i === 0 ? 'Today' : i === 1 ? 'Tomorrow' : dayName(date)}
-              </span>
+              <span className={`text-[12px] font-semibold ${date === today ? 'text-accent' : 'text-strong'}`}>{relativeDay(date, today)}</span>
               <span className="tabular-nums text-[11px] text-dim">{shortDate(date)}</span>
               <span className="ml-auto tabular-nums text-[11px] text-dim">{fmtH(allocs.reduce((s, a) => s + a.plannedHours, 0))}</span>
             </div>
