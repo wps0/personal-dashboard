@@ -1,0 +1,65 @@
+@import "tailwindcss";
+
+@theme {
+  --color-bg: #0b0d10;
+  --color-panel: #111419;
+  --color-raised: #181c22;
+  --color-line: #232830;
+  --color-fg: #d6dbe1;
+  --color-dim: #7d8590;
+  --color-accent: #60a5fa;
+  --color-danger: #f87171;
+  --color-warn: #fbbf24;
+  --color-ok: #34d399;
+  --font-sans: "Inter", ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+}
+
+@layer base {
+  html,
+  body,
+  #root {
+    height: 100%;
+  }
+  body {
+    @apply bg-bg text-fg font-sans text-[13px] leading-snug antialiased;
+    color-scheme: dark;
+  }
+  input,
+  textarea,
+  select {
+    @apply bg-transparent outline-none;
+  }
+  ::selection {
+    @apply bg-accent/30;
+  }
+}
+
+@layer components {
+  .field {
+    @apply rounded border border-line bg-raised px-2 py-1 focus:border-accent/60;
+  }
+  .btn {
+    @apply rounded border border-line bg-raised px-2 py-1 text-fg hover:border-accent/60 hover:text-white disabled:opacity-40;
+  }
+  .btn-ghost {
+    @apply rounded px-1.5 py-0.5 text-dim hover:bg-raised hover:text-fg;
+  }
+  .label {
+    @apply font-mono text-[11px] tracking-wide text-dim uppercase;
+  }
+  .scroll-thin {
+    scrollbar-width: thin;
+    scrollbar-color: var(--color-line) transparent;
+  }
+  .prose-md h1, .prose-md h2, .prose-md h3 {
+    @apply mt-3 mb-1 font-semibold text-white;
+  }
+  .prose-md h1 { @apply text-lg; }
+  .prose-md h2 { @apply text-base; }
+  .prose-md ul { @apply ml-4 list-disc; }
+  .prose-md ol { @apply ml-4 list-decimal; }
+  .prose-md p { @apply my-1.5; }
+  .prose-md a { @apply text-accent underline; }
+  .prose-md code { @apply rounded bg-raised px-1 font-mono text-[12px]; }
+}

@@ -5,8 +5,8 @@ deadlines, a weekly bullet-journal plan with hours per day, and (later) a
 two-way Google Calendar integration. Primary user: a working SWE-SRE who also
 studies CS and accumulates a backlog of lectures and projects.
 
-Status: **decisions from the initial grilling session (2026-10-10).** Items
-marked _TBD_ are still open.
+Status: **decisions from the initial grilling session (2026-10-10).** v1 (the local
+UI) is implemented; see README.md.
 
 ## 1. Architecture
 
@@ -17,7 +17,7 @@ marked _TBD_ are still open.
 | Storage (v2) | Same interface, backed by a JSON file in the user's Google Drive (`drive.file` scope — the app sees only files it creates). |
 | Auth (v2) | Google sign-in with an OAuth Client ID from a GCP project the user owns, in "testing" mode. One login covers Drive and Calendar. |
 | Devices | Desktop-first, phone usable. The week grid targets laptop/desktop; on narrow screens it collapses to a single-day/list view for quick check-offs. Installable as a PWA. |
-| Stack | _TBD_ |
+| Stack | React + TypeScript + Vite, Tailwind CSS, dnd-kit (drag and drop), Zustand (state). Open to revisiting. |
 | Visual style | Dense, dark-first dev-tool look (Linear/Grafana-like): compact, monospace accents. |
 
 ## 2. Data model
@@ -83,7 +83,12 @@ Each day box is a hybrid of three parts:
 - **Overdue tray.** Unfinished allocations from past days move to a "missed"
   tray that is visible on today, so you reschedule them deliberately. They are
   never moved automatically.
-- **Month / Someday** box: items with no allocations yet, or due later.
+- **Month / Someday** box has two tabs:
+  - *Backlog*: open items that still need time on the plan. For items with an
+    estimate, that is while spent + planned hours are below the estimate; for
+    items without one, it is while they have no open allocation. It can be
+    filtered by area, and it holds the overdue tray.
+  - *Month notes*: freeform text for the month.
 
 ### 3.3 Project detail
 The project's items (with allocations and status), its overview doc and its
