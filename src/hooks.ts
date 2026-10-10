@@ -2,6 +2,8 @@ import { useMemo, useRef } from 'react';
 import { capacityFor, type CapacityInfo } from './model/capacity';
 import type { Area, CalendarEvent, ISODate, Item, Project } from './model/types';
 import { useStore } from './store';
+import { useGoogleEvents } from './google/useGoogleEvents';
+import { fromMinutes } from './model/time';
 
 export interface Lookups {
   item(id: string): Item | undefined;
@@ -34,16 +36,27 @@ export function useLookups(): Lookups {
   }, [items, projects, areas]);
 }
 
-/** Capacity per day; only recomputed when events or capacity settings change. */
+/**
+ * Capacity per day; only recomputed when events or capacity settings change.
+ * Busy Google Calendar events count too.
+ */
 export function useCapacities(days: ISODate[]): Map<ISODate, CapacityInfo> {
   const events = useStore((s) => s.data.events);
   const settings = useStore((s) => s.data.settings);
+  const google = useGoogleEvents(days);
   return useMemo(() => {
     const want = new Set(days);
     const byDay = new Map<ISODate, CalendarEvent[]>();
     for (const e of events) if (want.has(e.date)) byDay.set(e.date, [...(byDay.get(e.date) ?? []), e]);
+    for (const [d, list] of google) {
+      if (!want.has(d)) continue;
+      const busy = list
+        .filter((g) => g.busy)
+        .map((g): CalendarEvent => ({ id: g.key, title: g.title, date: d, start: fromMinutes(g.startMin), end: fromMinutes(Math.min(g.endMin, 1439)) }));
+      byDay.set(d, [...(byDay.get(d) ?? []), ...busy]);
+    }
     return new Map(days.map((d) => [d, capacityFor(d, settings.capacityRules, settings.dayCapacity, byDay.get(d) ?? [])]));
-  }, [days, events, settings]);
+  }, [days, events, settings, google]);
 }
 
 /** Animation class for a change of the first visible day (or period): content slides in from the side we moved toward. */
