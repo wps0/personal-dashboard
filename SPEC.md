@@ -205,7 +205,7 @@ choice is stored per device.
   - Inter font, and styled dropdowns, date and time pickers throughout.
   - Resizable projects split; editable log entries; three task statuses.
   - Inferred, versioned capacity; reserved time.
-- **Next iteration — keyboard shortcuts** (see 5.1).
+- **v1.3 — keyboard shortcuts.** ✅ See 5.1.
 - **v2 — Google.** Sign-in, Drive sync, Calendar two-way (the local events
   become Google events, and time blocks go to a "Study/Projects" calendar),
   USOS rules.
@@ -221,35 +221,41 @@ choice is stored per device.
     Fetching feeds needs a CORS proxy or a small backend, which this
     serverless app avoids today, so it needs a design decision first.
 
-### 5.1 Keyboard shortcuts (next iteration)
+### 5.1 Keyboard shortcuts ✅
 
-Follow Google Calendar wherever an equivalent exists, and Gmail-style
-conventions for everything else. Single-key shortcuts are disabled while
-typing in a field, and Ctrl/Cmd combinations are left to the browser.
+Shortcuts follow Google Calendar wherever an equivalent exists. Single-key
+shortcuts are off while typing in a field and while a popover or dialog is
+open. Ctrl/Cmd combinations are left to the browser, except Ctrl/Cmd+Z. Press
+`?` in the app (or the keyboard icon in the header) for the list.
 
-| Keys | Action | Source |
-|---|---|---|
-| `j` / `n` | Next period (week, or 3 days on Home) | Google Calendar |
-| `k` / `p` | Previous period | Google Calendar |
-| `t` | Jump to today | Google Calendar |
-| `g` | Go to date (opens the week picker) | Google Calendar |
-| `w` | Calendar week view | Google Calendar |
-| `x` | Home (3-day view; GCal's "custom view") | Google Calendar |
-| `1`–`5` | Home / Week (journal) / Calendar / Projects / Settings | GCal-style numeric view keys |
-| `c` | Create: an event in the calendar, a task elsewhere | Google Calendar |
-| `e` / `Enter` | Open details of the selected task or event | Google Calendar |
-| `Delete` / `Backspace` | Delete the selected event or session (with undo) | Google Calendar |
-| `Esc` | Close the overlay, then the side panel | Google Calendar |
-| `?` | Shortcut help | Google Calendar / Gmail |
-| `/` | Search (once search exists) | Google Calendar / Gmail |
-| Arrow keys | Move the selection between blocks and days | — |
-| `Space` | Toggle the selected session done | — |
-| `Ctrl+Z` | Undo the last change | standard |
+| Keys | Action |
+|---|---|
+| `j` / `n`, `k` / `p` | Next / previous period: a day on Home, a week in the journal, the current view's period in the calendar |
+| `t` | Today |
+| `g` | Go to date (mini-month dialog) |
+| `1`–`5` | Home / Week (journal) / Calendar / Projects / Settings |
+| `d` / `x` / `w` / `m` | Calendar Day / 3 days / Week / Month (opens the calendar from other pages) |
+| `c` | Create an event at the next full hour. With a project open, focus its "new item" field instead. From the journal or settings, open the calendar with the draft. |
+| `↑ ↓ ← →` | Move the selection to the nearest block in that direction (spatial: works in grids, the journal, the backlog and lists) |
+| `e` / `Enter` | Open the selected block (event editor or task overlay) |
+| `Space` | Toggle the selected session done |
+| `Delete` / `Backspace` | Delete the selected event, remove the session, or delete the item (with Undo). The selection moves to a neighbour. |
+| `Ctrl+Z` | Undo |
+| `Esc` | Close the popover or dialog, then the side panel |
+| `?` | Shortcut help |
 
-Open questions for that iteration:
-- **Selection model.** Probably a focus ring on the blocks, so arrow keys and
-  `e` have a target.
-- **Undo.** Whether it covers every change or only deletes.
+**Decisions**
+- **Selection is keyboard focus.** Blocks carry `data-block`. The focused
+  block gets a strong ring, and arrow keys pick the nearest block on screen
+  in that direction.
+- **Undo history** (up to 50 steps) covers creating, deleting, completing,
+  moving, resizing, scheduling and ticking off. Direct manipulation is
+  recorded quietly, without a toast. A step only undoes while the data is
+  exactly what it left behind, so several Ctrl+Z presses walk back in order,
+  and undo never drops a change it didn't record. Text edits use the field's
+  own undo.
+- **Later:** redo (Ctrl+Shift+Z), `/` search, and keyboard dragging (dnd-kit's
+  keyboard sensor).
 
 ### 5.2 Curriculum import (long-term)
 

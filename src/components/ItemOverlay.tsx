@@ -1,5 +1,4 @@
 import { useMemo, useState, type ReactNode } from 'react';
-import { withUndo } from '../toast';
 import { BufferedInput, BufferedTextarea } from './Buffered';
 import { DateField } from './DateField';
 import { StatusSelect } from './StatusSelect';
@@ -18,6 +17,7 @@ const KIND_OPTIONS = KINDS.map((k): Option<ItemKind> => ({ value: k, label: k[0]
 import { navigate } from '../router';
 import { useStore } from '../store';
 import { useUi } from '../ui';
+import { completeItem, deleteItem as deleteItemAction, removeSession, toggleSession } from '../actions';
 
 /** Task details: fields, planned sessions, notes. Opened by clicking any task. */
 export function ItemOverlay() {
@@ -33,7 +33,7 @@ export function ItemOverlay() {
 }
 
 function ItemDetails({ item, onClose }: { item: Item; onClose(): void }) {
-  const { updateItem, deleteItem, addAllocation } = useStore.getState();
+  const { updateItem, addAllocation } = useStore.getState();
   const projects = useStore((s) => s.data.projects);
   const areas = useStore((s) => s.data.areas);
   const allAllocs = useStore((s) => s.data.allocations);
@@ -158,7 +158,7 @@ function ItemDetails({ item, onClose }: { item: Item; onClose(): void }) {
 
       <footer className="flex items-center gap-2 border-t border-line px-3 py-2">
         {!isItemDone(item) && (
-          <button className="btn" onClick={() => withUndo(`Completed “${item.title}”`, () => set({ status: 'done' }))}>
+          <button className="btn" onClick={() => completeItem(item)}>
             ✓ mark complete
           </button>
         )}
@@ -178,7 +178,7 @@ function ItemDetails({ item, onClose }: { item: Item; onClose(): void }) {
           onClick={() => {
             {
               onClose();
-              withUndo(`Deleted “${item.title}”`, () => deleteItem(item.id));
+              deleteItemAction(item);
             }
           }}
         >
@@ -190,12 +190,12 @@ function ItemDetails({ item, onClose }: { item: Item; onClose(): void }) {
 }
 
 function SessionRow({ alloc, today }: { alloc: Allocation; today: string }) {
-  const { updateAllocation, toggleAllocation, deleteAllocation } = useStore.getState();
+  const { updateAllocation } = useStore.getState();
   const missed = !alloc.done && alloc.date < today;
   return (
     <tr className="group">
       <td className="px-1">
-        <input type="checkbox" checked={alloc.done} onChange={() => toggleAllocation(alloc.id)} className="accent-ok" />
+        <input type="checkbox" checked={alloc.done} onChange={() => toggleSession(alloc.id)} className="accent-ok" />
       </td>
       <td className="px-1">
         <DateField
@@ -232,7 +232,7 @@ function SessionRow({ alloc, today }: { alloc: Allocation; today: string }) {
         )}
       </td>
       <td className="px-1 text-right">
-        <button className="icon-btn invisible h-6 w-6 group-hover:visible hover:!text-danger" onClick={() => withUndo('Session removed', () => deleteAllocation(alloc.id))} title="Remove session">
+        <button className="icon-btn invisible h-6 w-6 group-hover:visible hover:!text-danger" onClick={() => removeSession(alloc.id, 'Session removed')} title="Remove session">
           <Trash2 size={13} />
         </button>
       </td>

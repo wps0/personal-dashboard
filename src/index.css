@@ -350,3 +350,13 @@
     transition-duration: 1ms !important;
   }
 }
+
+/* Keyboard selection: the focused block gets a clear ring (arrow keys move it). */
+@layer components {
+  [data-block]:focus-visible {
+    /* Strong text color contrasts with every block color, in both themes. */
+    outline: 2px solid var(--color-strong);
+    outline-offset: 2px;
+    z-index: 25;
+  }
+}

@@ -19,10 +19,12 @@ import { isItemDone } from '../model/selectors';
 import { fromMinutes, layoutSpans, slotRange, snap, toMinutes } from '../model/time';
 import type { Allocation, CalendarEvent, ISODate } from '../model/types';
 import { useStore } from '../store';
-import { useUi } from '../ui';
+import { draftAt, useUi } from '../ui';
 import { CapacityBadge } from './CapacityBadge';
-import { DraftEditor, EventEditor, draftAt } from './EventEditor';
+import { DraftEditor, EventEditor } from './EventEditor';
 import { Popover, PopoverAnchor, PopoverContent } from './ui/Popover';
+import { deleteEvent, removeSession, toggleSession, updateEvent, updateSession } from '../actions';
+import { blockKeys } from '../keyboard';
 
 interface Props {
   days: ISODate[];
@@ -94,10 +96,8 @@ export function TimeGrid({ days, hourHeight = 48, scrollToHour = 7, onDayClick }
     const target = e.over?.id;
     if (!drag || typeof target !== 'string') return;
     const [zone, date] = target.split('|');
-    const { updateAllocation, updateEvent } = useStore.getState();
-
     if (zone === 'strip') {
-      if (drag.kind === 'alloc') updateAllocation(drag.alloc.id, { date, start: undefined });
+      if (drag.kind === 'alloc') updateSession(drag.alloc.id, { date, start: undefined });
       else updateEvent(drag.event.id, { date, allDay: true });
       return;
     }
@@ -106,7 +106,7 @@ export function TimeGrid({ days, hourHeight = 48, scrollToHour = 7, onDayClick }
     const top = pointerY.current - grab.current - col.getBoundingClientRect().top;
     const start = Math.max(0, Math.min(DAY_MIN - 15, snap((top / hourHeight) * 60)));
     if (drag.kind === 'alloc') {
-      updateAllocation(drag.alloc.id, { date, start: fromMinutes(start) });
+      updateSession(drag.alloc.id, { date, start: fromMinutes(start) });
     } else {
       const ev = drag.event;
       const len = ev.allDay ? 60 : toMinutes(ev.end) - toMinutes(ev.start);
@@ -116,6 +116,7 @@ export function TimeGrid({ days, hourHeight = 48, scrollToHour = 7, onDayClick }
 
   return (
     <DndContext
+      accessibility={{ screenReaderInstructions: { draggable: 'Enter opens, Space marks done, Delete removes, arrow keys move between items. Drag with the mouse or a finger to move.' } }}
       sensors={sensors}
       onDragStart={onDragStart}
       onDragEnd={onDragEnd}
@@ -290,6 +291,8 @@ const AllDayChip = memo(function AllDayChip({ event }: { event: CalendarEvent })
           ref={setNodeRef}
           {...attributes}
           {...listeners}
+          data-block
+          onKeyDown={blockKeys({ open: () => useUi.getState().openEvent(event.id), remove: () => deleteEvent(event) })}
           onClick={() => !clicksSuppressed() && useUi.getState().openEvent(event.id)}
           className={`block-interactive cursor-pointer touch-none truncate rounded px-1.5 py-px text-[11px] font-medium ${isDragging ? 'opacity-30' : ''}`}
           style={{ background: 'var(--color-event)', color: 'var(--color-on-block)' }}
@@ -314,6 +317,8 @@ const StripChip = memo(function StripChip({ alloc, lookups }: { alloc: Allocatio
       ref={setNodeRef}
       {...attributes}
       {...listeners}
+      data-block
+      onKeyDown={blockKeys({ open: () => useUi.getState().openItem(alloc.itemId), toggle: () => toggleSession(alloc.id), remove: () => removeSession(alloc.id) })}
       onClick={() => !clicksSuppressed() && useUi.getState().openItem(alloc.itemId)}
       className={`block-interactive flex cursor-pointer touch-none items-center gap-1 truncate rounded border-l-4 px-1.5 py-px text-[11px] font-medium ${isDragging ? 'opacity-30' : ''} ${
         alloc.done ? 'line-through opacity-60' : ''
@@ -517,7 +522,7 @@ const EventBlock = memo(function EventBlock({ event, pos = { lane: 0, lanes: 1 }
   const open = useUi((s) => s.openEventId === event.id);
   const { attributes, listeners, setNodeRef, isDragging } = useDraggable({ id: `event:${event.id}`, data: { kind: 'event', event } satisfies Drag });
   const start = toMinutes(event.start);
-  const { previewEnd, handleProps } = useResize(start, hourHeight, (end) => useStore.getState().updateEvent(event.id, { end: fromMinutes(end) }));
+  const { previewEnd, handleProps } = useResize(start, hourHeight, (end) => updateEvent(event.id, { end: fromMinutes(end) }, 'Event resized'));
   const end = previewEnd ?? toMinutes(event.end);
   const height = ((end - start) / 60) * hourHeight;
 
@@ -528,6 +533,8 @@ const EventBlock = memo(function EventBlock({ event, pos = { lane: 0, lanes: 1 }
           ref={setNodeRef}
           {...attributes}
           {...listeners}
+          data-block
+          onKeyDown={blockKeys({ open: () => useUi.getState().openEvent(event.id), remove: () => deleteEvent(event) })}
           onClick={() => !clicksSuppressed() && useUi.getState().openEvent(event.id)}
           className={`block-interactive absolute z-10 cursor-pointer touch-none overflow-hidden rounded-md px-1.5 py-0.5 text-[11px] leading-tight ${
             isDragging ? 'opacity-30' : ''
@@ -558,7 +565,7 @@ const AllocBlock = memo(function AllocBlock(props: { alloc: Allocation; pos?: Po
   const item = lookups.item(alloc.itemId);
   const start = toMinutes(alloc.start!);
   const { previewEnd, handleProps } = useResize(start, hourHeight, (end) =>
-    useStore.getState().updateAllocation(alloc.id, { plannedHours: (end - start) / 60 }),
+    updateSession(alloc.id, { plannedHours: (end - start) / 60 }, 'Session resized'),
   );
   const end = previewEnd ?? start + alloc.plannedHours * 60;
   const height = ((end - start) / 60) * hourHeight;
@@ -569,6 +576,8 @@ const AllocBlock = memo(function AllocBlock(props: { alloc: Allocation; pos?: Po
       ref={setNodeRef}
       {...attributes}
       {...listeners}
+      data-block
+      onKeyDown={blockKeys({ open: () => useUi.getState().openItem(alloc.itemId), toggle: () => toggleSession(alloc.id), remove: () => removeSession(alloc.id) })}
       onClick={() => !clicksSuppressed() && useUi.getState().openItem(alloc.itemId)}
       className={`block-interactive absolute z-10 cursor-pointer touch-none overflow-hidden rounded-md border-l-4 px-1.5 py-0.5 text-[11px] leading-tight ${
         isDragging ? 'opacity-30' : done ? 'opacity-60' : ''

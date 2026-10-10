@@ -1,5 +1,7 @@
-import { CircleGauge, Monitor, Moon, Sun } from 'lucide-react';
+import { CircleGauge, Keyboard, Monitor, Moon, Sun } from 'lucide-react';
 import { Toaster } from './components/Toaster';
+import { ShortcutDialogs } from './components/ShortcutDialogs';
+import { useGlobalShortcuts } from './keyboard';
 import { useEffect, type ReactNode } from 'react';
 import { ItemOverlay } from './components/ItemOverlay';
 import { sampleData } from './model/sample';
@@ -29,6 +31,7 @@ export default function App() {
   const hasAreas = useStore((s) => s.data.areas.length > 0);
   const [theme, setTheme] = useTheme();
   useEscapeClosesProject(route);
+  useGlobalShortcuts(route);
 
   return (
     <div className="flex h-full flex-col">
@@ -40,12 +43,16 @@ export default function App() {
           <a
             key={n.label}
             href={href(n.route)}
+            title={`${n.label} (${NAV.indexOf(n) + 1})`}
             className={`rounded-md px-2.5 py-1 transition-colors duration-150 ${n.route.name === route.name ? 'bg-raised text-strong' : 'text-dim hover:bg-raised/60 hover:text-fg'}`}
           >
             {n.label}
           </a>
         ))}
-        <button className="icon-btn ml-auto" onClick={() => setTheme(THEME_NEXT[theme])} title={`Theme: ${theme === 'system' ? 'auto (follows system)' : theme} — click to change`}>
+        <button className="icon-btn ml-auto" onClick={() => useUi.getState().setDialog('help')} title="Keyboard shortcuts (?)" aria-label="Keyboard shortcuts">
+          <Keyboard size={16} />
+        </button>
+        <button className="icon-btn" onClick={() => setTheme(THEME_NEXT[theme])} title={`Theme: ${theme === 'system' ? 'auto (follows system)' : theme} — click to change`}>
           {THEME_ICON[theme]}
         </button>
       </header>
@@ -54,6 +61,7 @@ export default function App() {
         {!hasAreas && route.name !== 'settings' ? <Welcome /> : <Page route={route} />}
       </main>
       <ItemOverlay />
+      <ShortcutDialogs />
       <Toaster />
     </div>
   );
@@ -76,7 +84,7 @@ function Page({ route }: { route: Route }) {
 
 /** Esc closes the project side panel (overlays handle Esc themselves first). */
 function useEscapeClosesProject(route: Route) {
-  const overlayOpen = useUi((s) => s.openItemId !== null || s.openEventId !== null || s.draft !== null);
+  const overlayOpen = useUi((s) => s.openItemId !== null || s.openEventId !== null || s.draft !== null || s.dialog !== null);
   const panelOpen = route.name === 'projects' && route.id !== undefined;
   useEffect(() => {
     if (!panelOpen || overlayOpen) return;

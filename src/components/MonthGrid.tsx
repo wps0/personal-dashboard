@@ -15,9 +15,11 @@ import { useLookups, useSlide, type Lookups } from '../hooks';
 import { monthGrid, todayISO } from '../model/dates';
 import type { Allocation, CalendarEvent, ISODate } from '../model/types';
 import { useStore } from '../store';
-import { useUi } from '../ui';
-import { DraftEditor, EventEditor, draftAt } from './EventEditor';
+import { draftAt, useUi } from '../ui';
+import { DraftEditor, EventEditor } from './EventEditor';
 import { Popover, PopoverAnchor, PopoverContent } from './ui/Popover';
+import { deleteEvent, removeSession, toggleSession, updateEvent, updateSession } from '../actions';
+import { blockKeys } from '../keyboard';
 
 type Entry = { kind: 'event'; event: CalendarEvent } | { kind: 'alloc'; alloc: Allocation };
 
@@ -45,11 +47,11 @@ export function MonthGrid({ date, onDayClick }: { date: ISODate; onDayClick(d: I
     const target = e.over?.id;
     if (!entry || typeof target !== 'string') return;
     const day = target.slice('cell|'.length);
-    if (entry.kind === 'event') useStore.getState().updateEvent(entry.event.id, { date: day });
-    else useStore.getState().updateAllocation(entry.alloc.id, { date: day });
+    if (entry.kind === 'event') updateEvent(entry.event.id, { date: day });
+    else updateSession(entry.alloc.id, { date: day });
   };
   return (
-    <DndContext sensors={sensors} onDragStart={onDragStart} onDragEnd={onDragEnd} onDragCancel={() => setDragging(null)}>
+    <DndContext sensors={sensors} onDragStart={onDragStart} onDragEnd={onDragEnd} onDragCancel={() => setDragging(null)} accessibility={{ screenReaderInstructions: { draggable: 'Enter opens, Space marks done, Delete removes, arrow keys move between items. Drag with the mouse or a finger to move.' } }}>
       <MonthBody date={date} onDayClick={onDayClick} />
       <DragOverlay dropAnimation={null}>{dragging && <Ghost entry={dragging} />}</DragOverlay>
     </DndContext>
@@ -155,6 +157,8 @@ const EventChip = memo(function EventChip({ event }: { event: CalendarEvent }) {
           ref={setNodeRef}
           {...attributes}
           {...listeners}
+          data-block
+          onKeyDown={blockKeys({ open: () => useUi.getState().openEvent(event.id), remove: () => deleteEvent(event) })}
           onClick={() => !clicksSuppressed() && useUi.getState().openEvent(event.id)}
           className={`block-interactive flex shrink-0 cursor-pointer touch-none items-center gap-1 truncate rounded px-1 text-[11px] ${isDragging ? 'opacity-30' : ''} ${
             event.allDay ? 'font-medium' : 'hover:bg-raised'
@@ -187,6 +191,8 @@ const AllocChip = memo(function AllocChip({ alloc, lookups }: { alloc: Allocatio
       ref={setNodeRef}
       {...attributes}
       {...listeners}
+      data-block
+      onKeyDown={blockKeys({ open: () => useUi.getState().openItem(alloc.itemId), toggle: () => toggleSession(alloc.id), remove: () => removeSession(alloc.id) })}
       onClick={() => !clicksSuppressed() && useUi.getState().openItem(alloc.itemId)}
       className={`block-interactive flex shrink-0 cursor-pointer touch-none items-center gap-1 truncate rounded border-l-4 px-1 text-[11px] ${isDragging ? 'opacity-30' : ''} ${
         alloc.done ? 'line-through opacity-60' : ''
