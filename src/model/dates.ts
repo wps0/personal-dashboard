@@ -66,3 +66,9 @@ export function countdown(due: ISODate, today: ISODate): string {
   if (n > 0) return `in ${n}d`;
   return `${-n}d ago`;
 }
+
+/** ISO-8601 week number (weeks start Monday; week 1 contains the first Thursday). */
+export function isoWeek(s: ISODate): number {
+  const thursday = addDays(s, 3 - weekdayIndex(s));
+  return Math.floor(daysBetween(`${thursday.slice(0, 4)}-01-01`, thursday) / 7) + 1;
+}

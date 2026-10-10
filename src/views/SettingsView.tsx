@@ -63,7 +63,7 @@ export function SettingsView() {
                       key={c}
                       aria-label={`Color ${c}`}
                       onClick={() => updateArea(a.id, { color: c })}
-                      className={`h-3.5 w-3.5 rounded-full ${a.color === c ? 'ring-2 ring-white/70' : 'opacity-50 hover:opacity-100'}`}
+                      className={`h-3.5 w-3.5 rounded-full ${a.color === c ? 'ring-2 ring-fg' : 'opacity-50 hover:opacity-100'}`}
                       style={{ background: c }}
                     />
                   ))}

@@ -2,6 +2,9 @@ import { daysBetween } from './dates';
 import type { Allocation, AppData, ISODate, Item, ItemKind, ItemStatus, Project } from './types';
 import { GENERIC_STATUSES, LECTURE_STATUSES } from './types';
 
+/** The slices planning selectors need; lets callers memoize on just these. */
+export type PlanData = Pick<AppData, 'items' | 'allocations' | 'projects'>;
+
 export function statusesFor(kind: ItemKind): readonly ItemStatus[] {
   return kind === 'lecture' ? LECTURE_STATUSES : GENERIC_STATUSES;
 }
@@ -19,7 +22,7 @@ export function actualHours(allocs: Allocation[]): number {
   return allocs.reduce((s, a) => s + (a.done ? (a.actualHours ?? a.plannedHours) : 0), 0);
 }
 
-export function allocationsByItem(data: AppData): Map<string, Allocation[]> {
+export function allocationsByItem(data: Pick<AppData, 'allocations'>): Map<string, Allocation[]> {
   const m = new Map<string, Allocation[]>();
   for (const a of data.allocations) {
     const list = m.get(a.itemId);
@@ -92,7 +95,7 @@ export function urgency(due: ISODate, today: ISODate): Urgency {
  * - without an estimate: no open or upcoming allocation.
  * Sorted by {@link compareItems}.
  */
-export function backlogItems(data: AppData, today: ISODate): { item: Item; remaining?: number }[] {
+export function backlogItems(data: PlanData, today: ISODate): { item: Item; remaining?: number }[] {
   const allocs = allocationsByItem(data);
   const activeProjects = new Set(data.projects.filter((p) => !p.archived).map((p) => p.id));
   const out: { item: Item; remaining?: number }[] = [];
@@ -113,7 +116,7 @@ export function backlogItems(data: AppData, today: ISODate): { item: Item; remai
 }
 
 /** Allocations on past days that weren't checked off, for items still open. */
-export function missedAllocations(data: AppData, today: ISODate): Allocation[] {
+export function missedAllocations(data: PlanData, today: ISODate): Allocation[] {
   const items = new Map(data.items.map((i) => [i.id, i]));
   return data.allocations
     .filter((a) => {

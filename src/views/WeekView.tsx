@@ -10,57 +10,30 @@ import {
   type DragEndEvent,
   type DragStartEvent,
 } from '@dnd-kit/core';
-import { useMemo, useState, type ReactNode } from 'react';
+import { memo, useMemo, useRef, useState, type ReactNode } from 'react';
+import { BufferedTextarea } from '../components/Buffered';
 import { HoursInput } from '../components/HoursInput';
-import {
-  addDays,
-  countdown,
-  dayName,
-  monthKey,
-  monthName,
-  shortDate,
-  startOfWeek,
-  todayISO,
-  weekdayIndex,
-} from '../model/dates';
-import {
-  backlogItems,
-  defaultAllocationHours,
-  isItemDone,
-  missedAllocations,
-  plannedHours,
-  urgency,
-} from '../model/selectors';
-import type { Allocation, AppData, Area, ISODate, Item, Project } from '../model/types';
-import { href, navigate } from '../router';
-import { useData, useStore } from '../store';
-import { URGENCY_CLASS } from './ProjectsView';
-
-/** Lookups shared by every block in the view. */
-interface Ctx {
-  item: (id: string) => Item | undefined;
-  project: (id: string) => Project | undefined;
-  area: (id: string) => Area | undefined;
-}
-
-function useCtx(data: AppData): Ctx {
-  return useMemo(() => {
-    const items = new Map(data.items.map((i) => [i.id, i]));
-    const projects = new Map(data.projects.map((p) => [p.id, p]));
-    const areas = new Map(data.areas.map((a) => [a.id, a]));
-    return { item: (id) => items.get(id), project: (id) => projects.get(id), area: (id) => areas.get(id) };
-  }, [data.items, data.projects, data.areas]);
-}
+import { WeekNav } from '../components/WeekNav';
+import { fmtH, URGENCY_CLASS } from '../format';
+import { useLookups, type Lookups } from '../hooks';
+import { addDays, countdown, dayName, monthKey, monthName, shortDate, startOfWeek, todayISO, weekdayIndex } from '../model/dates';
+import { backlogItems, defaultAllocationHours, isItemDone, missedAllocations, plannedHours, urgency } from '../model/selectors';
+import type { Allocation, ISODate, Item } from '../model/types';
+import { useStore } from '../store';
+import { useUi } from '../ui';
 
 type DragData = { kind: 'item'; item: Item; remaining?: number } | { kind: 'alloc'; alloc: Allocation };
 
+const NO_ALLOCS: Allocation[] = [];
+
+/**
+ * The drag-and-drop context lives here and must not re-render on data changes:
+ * when it does, dnd-kit re-renders every draggable. Data subscriptions live in
+ * the children (WeekGrid, WeekTotal) instead.
+ */
 export function WeekView({ week }: { week?: ISODate }) {
-  const data = useData();
-  const ctx = useCtx(data);
-  const { addAllocation, updateAllocation, deleteAllocation } = useStore.getState();
   const today = todayISO();
   const monday = startOfWeek(week && /^\d{4}-\d{2}-\d{2}$/.test(week) ? week : today);
-  const days = Array.from({ length: 7 }, (_, i) => addDays(monday, i));
   const [dragging, setDragging] = useState<DragData | null>(null);
 
   const sensors = useSensors(
@@ -68,22 +41,13 @@ export function WeekView({ week }: { week?: ISODate }) {
     useSensor(TouchSensor, { activationConstraint: { delay: 200, tolerance: 6 } }),
   );
 
-  const byDate = useMemo(() => {
-    const m = new Map<ISODate, Allocation[]>();
-    for (const a of data.allocations) {
-      const list = m.get(a.date);
-      if (list) list.push(a);
-      else m.set(a.date, [a]);
-    }
-    return m;
-  }, [data.allocations]);
-
   const onDragStart = (e: DragStartEvent) => setDragging(e.active.data.current as DragData);
   const onDragEnd = (e: DragEndEvent) => {
     setDragging(null);
     const drag = e.active.data.current as DragData | undefined;
     const target = e.over?.id;
     if (!drag || typeof target !== 'string') return;
+    const { addAllocation, updateAllocation, deleteAllocation } = useStore.getState();
     if (target.startsWith('day:')) {
       const date = target.slice(4);
       if (drag.kind === 'item') addAllocation(drag.item.id, date, defaultAllocationHours(drag.remaining));
@@ -93,76 +57,113 @@ export function WeekView({ week }: { week?: ISODate }) {
     }
   };
 
-  const weekPlanned = days.reduce((s, d) => s + plannedHours(byDate.get(d) ?? []), 0);
-  const weekCapacity = data.settings.capacity.reduce((s, h) => s + h, 0);
-  const dayBox = (date: ISODate) => (
-    <DayBox
-      key={date}
-      date={date}
-      today={today}
-      allocs={byDate.get(date) ?? []}
-      capacity={data.settings.capacity[weekdayIndex(date)]}
-      note={data.dayNotes[date] ?? ''}
-      ctx={ctx}
-    />
-  );
-
   return (
     <DndContext sensors={sensors} onDragStart={onDragStart} onDragEnd={onDragEnd} onDragCancel={() => setDragging(null)}>
       <div className="flex h-full flex-col">
         <div className="flex shrink-0 items-center gap-2 border-b border-line px-3 py-1">
-          <a className="btn-ghost" href={href({ name: 'week', week: addDays(monday, -7) })} title="Previous week">
-            ←
-          </a>
-          <a className="btn-ghost" href={href({ name: 'week', week: addDays(monday, 7) })} title="Next week">
-            →
-          </a>
-          <span className="font-mono text-[12px] text-white">
-            {shortDate(monday)} – {shortDate(addDays(monday, 6))}
-          </span>
-          {monday !== startOfWeek(today) && (
-            <a className="btn-ghost text-[11px]" href={href({ name: 'week' })}>
-              today
-            </a>
-          )}
-          <span className={`ml-auto font-mono text-[11px] ${weekPlanned > weekCapacity ? 'text-danger' : 'text-dim'}`}>
-            week {fmtH(weekPlanned)} / {fmtH(weekCapacity)}
-          </span>
+          <WeekNav view="week" monday={monday} />
+          <WeekTotal monday={monday} />
         </div>
-        <div className="scroll-thin min-h-0 flex-1 overflow-y-auto p-2 md:overflow-hidden">
-          <div className="grid gap-2 md:h-full md:grid-rows-[minmax(0,1.35fr)_minmax(0,1fr)]">
-            <div className="grid gap-2 md:min-h-0 md:grid-cols-5">{days.slice(0, 5).map(dayBox)}</div>
-            <div className="grid gap-2 md:min-h-0 md:grid-cols-5">
-              <div className="grid gap-2 md:col-span-2 md:min-h-0 md:grid-cols-2">{days.slice(5).map(dayBox)}</div>
-              <BacklogBox data={data} ctx={ctx} today={today} month={monthKey(addDays(monday, 3))} />
-            </div>
-          </div>
-        </div>
+        <WeekGrid monday={monday} today={today} />
       </div>
-      <DragOverlay dropAnimation={null}>{dragging && <DragPreview drag={dragging} ctx={ctx} />}</DragOverlay>
+      <DragOverlay dropAnimation={null}>{dragging && <DragPreview drag={dragging} />}</DragOverlay>
     </DndContext>
   );
 }
 
-const fmtH = (n: number) => `${Number.isInteger(n) ? n : n.toFixed(2).replace(/0$/, '')}h`;
+function WeekTotal({ monday }: { monday: ISODate }) {
+  const planned = useStore((s) => {
+    const end = addDays(monday, 6);
+    return s.data.allocations.reduce((sum, a) => (a.date >= monday && a.date <= end ? sum + a.plannedHours : sum), 0);
+  });
+  const capacity = useStore((s) => s.data.settings.capacity.reduce((sum, h) => sum + h, 0));
+  return (
+    <span className={`ml-auto font-mono text-[11px] ${planned > capacity ? 'text-danger' : 'text-dim'}`}>
+      week {fmtH(planned)} / {fmtH(capacity)}
+    </span>
+  );
+}
 
-function DayBox(props: { date: ISODate; today: ISODate; allocs: Allocation[]; capacity: number; note: string; ctx: Ctx }) {
-  const { date, today, allocs, capacity, note, ctx } = props;
-  const setDayNote = useStore((s) => s.setDayNote);
-  const { setNodeRef, isOver } = useDroppable({ id: `day:${date}` });
-  const planned = plannedHours(allocs);
-  const isToday = date === today;
-  const over = planned > capacity;
+function WeekGrid({ monday, today }: { monday: ISODate; today: ISODate }) {
+  const allocations = useStore((s) => s.data.allocations);
+  const capacity = useStore((s) => s.data.settings.capacity);
+  const lookups = useLookups();
+  const days = useMemo(() => Array.from({ length: 7 }, (_, i) => addDays(monday, i)), [monday]);
 
+  // Days whose sessions didn't change keep the same array, so their memoized boxes skip re-rendering.
+  const prevByDate = useRef(new Map<ISODate, Allocation[]>());
+  const byDate = useMemo(() => {
+    const m = new Map<ISODate, Allocation[]>();
+    for (const a of allocations) {
+      const list = m.get(a.date);
+      if (list) list.push(a);
+      else m.set(a.date, [a]);
+    }
+    for (const [date, list] of m) {
+      list.sort((a, b) => (a.start ?? '99').localeCompare(b.start ?? '99'));
+      const prev = prevByDate.current.get(date);
+      if (prev && prev.length === list.length && prev.every((a, i) => a === list[i])) m.set(date, prev);
+    }
+    prevByDate.current = m;
+    return m;
+  }, [allocations]);
+
+  const dayBox = (date: ISODate) => (
+    <DayBox
+      key={date}
+      date={date}
+      isToday={date === today}
+      isPast={date < today}
+      allocs={byDate.get(date) ?? NO_ALLOCS}
+      capacity={capacity[weekdayIndex(date)]}
+      lookups={lookups}
+    />
+  );
+
+  return (
+    <div className="scroll-thin min-h-0 flex-1 overflow-y-auto p-2 md:overflow-hidden">
+      <div className="grid gap-2 md:h-full md:grid-rows-[minmax(0,1.35fr)_minmax(0,1fr)]">
+        <div className="grid gap-2 md:min-h-0 md:grid-cols-5">{days.slice(0, 5).map(dayBox)}</div>
+        <div className="grid gap-2 md:min-h-0 md:grid-cols-5">
+          <div className="grid gap-2 md:col-span-2 md:min-h-0 md:grid-cols-2">{days.slice(5).map(dayBox)}</div>
+          <BacklogBox lookups={lookups} today={today} month={monthKey(addDays(monday, 3))} />
+        </div>
+      </div>
+    </div>
+  );
+}
+
+interface DayBoxProps {
+  date: ISODate;
+  isToday: boolean;
+  isPast: boolean;
+  allocs: Allocation[];
+  capacity: number;
+  lookups: Lookups;
+}
+
+/** Droppable shell; re-renders on every drag transition, so the content below is memoized. */
+const DayBox = memo(function DayBox(props: DayBoxProps) {
+  const { setNodeRef, isOver } = useDroppable({ id: `day:${props.date}` });
   return (
     <section
       ref={setNodeRef}
       className={`flex min-h-40 flex-col rounded border bg-panel md:min-h-0 ${
-        isOver ? 'border-accent' : isToday ? 'border-accent/50' : 'border-line'
-      } ${date < today ? 'opacity-75' : ''}`}
+        isOver ? 'border-accent' : props.isToday ? 'border-accent/50' : 'border-line'
+      } ${props.isPast ? 'opacity-75' : ''}`}
     >
+      <DayContent {...props} />
+    </section>
+  );
+});
+
+const DayContent = memo(function DayContent({ date, isToday, allocs, capacity, lookups }: DayBoxProps) {
+  const planned = plannedHours(allocs);
+  const over = planned > capacity;
+  return (
+    <>
       <header className="flex items-baseline gap-1.5 border-b border-line px-2 py-1">
-        <span className={`font-semibold ${isToday ? 'text-accent' : 'text-white'}`}>{dayName(date)}</span>
+        <span className={`font-semibold ${isToday ? 'text-accent' : 'text-strong'}`}>{dayName(date)}</span>
         <span className="font-mono text-[11px] text-dim">{shortDate(date)}</span>
         <span
           className={`ml-auto font-mono text-[11px] ${over ? 'text-danger' : planned > 0 ? 'text-fg' : 'text-dim/60'}`}
@@ -174,32 +175,40 @@ function DayBox(props: { date: ISODate; today: ISODate; allocs: Allocation[]; ca
       {allocs.length > 0 && (
         <ul className="scroll-thin max-h-[60%] shrink-0 space-y-px overflow-y-auto p-1">
           {allocs.map((a) => (
-            <AllocationBlock key={a.id} alloc={a} ctx={ctx} />
+            <AllocationBlock key={a.id} alloc={a} lookups={lookups} />
           ))}
         </ul>
       )}
-      <textarea
-        className="scroll-thin min-h-12 w-full flex-1 resize-none px-2 py-1 text-[12px] placeholder:text-dim/40"
-        placeholder="notes…"
-        value={note}
-        onChange={(e) => setDayNote(date, e.target.value)}
-      />
-    </section>
+      <DayNote date={date} />
+    </>
+  );
+});
+
+function DayNote({ date }: { date: ISODate }) {
+  const note = useStore((s) => s.data.dayNotes[date] ?? '');
+  return (
+    <BufferedTextarea
+      className="scroll-thin min-h-12 w-full flex-1 resize-none px-2 py-1 text-[12px] placeholder:text-dim/40"
+      placeholder="notes…"
+      value={note}
+      onCommit={(text) => useStore.getState().setDayNote(date, text)}
+    />
   );
 }
 
-function AllocationBlock({ alloc, ctx, showDate }: { alloc: Allocation; ctx: Ctx; showDate?: boolean }) {
-  const { toggleAllocation, updateAllocation, deleteAllocation, updateItem } = useStore.getState();
+const stop = (e: { stopPropagation(): void }) => e.stopPropagation();
+
+/**
+ * Draggable shell. dnd-kit re-renders every draggable when a drag starts or the
+ * drop target changes, so the shell stays thin and the content is memoized.
+ */
+const AllocationBlock = memo(function AllocationBlock({ alloc, lookups, showDate }: { alloc: Allocation; lookups: Lookups; showDate?: boolean }) {
   const { attributes, listeners, setNodeRef, isDragging } = useDraggable({
     id: `alloc:${alloc.id}`,
     data: { kind: 'alloc', alloc } satisfies DragData,
   });
-  const item = ctx.item(alloc.itemId);
+  const item = lookups.item(alloc.itemId);
   if (!item) return null;
-  const project = ctx.project(item.projectId);
-  const color = (project && ctx.area(project.areaId)?.color) ?? '#94a3b8';
-  const itemDone = isItemDone(item);
-
   return (
     <li
       ref={setNodeRef}
@@ -208,51 +217,55 @@ function AllocationBlock({ alloc, ctx, showDate }: { alloc: Allocation; ctx: Ctx
       className={`group flex cursor-grab touch-none items-center gap-1.5 rounded border-l-2 bg-raised py-0.5 pr-1 pl-1.5 active:cursor-grabbing ${
         isDragging ? 'opacity-30' : ''
       }`}
-      style={{ borderLeftColor: color }}
+      style={{ borderLeftColor: lookups.color(item) }}
     >
+      <AllocationContent alloc={alloc} item={item} projectName={lookups.project(item.projectId)?.name} showDate={showDate} />
+    </li>
+  );
+});
+
+const AllocationContent = memo(function AllocationContent(props: { alloc: Allocation; item: Item; projectName?: string; showDate?: boolean }) {
+  const { alloc, item, projectName, showDate } = props;
+  const openItem = useUi((s) => s.openItem);
+  const { toggleAllocation, updateAllocation, deleteAllocation, updateItem } = useStore.getState();
+  const itemDone = isItemDone(item);
+  return (
+    <>
       <input
         type="checkbox"
         checked={alloc.done}
         title={alloc.done ? 'Done — uncheck to undo' : 'Mark this session done (logs its hours)'}
-        onPointerDown={(e) => e.stopPropagation()}
+        onPointerDown={stop}
         onChange={() => toggleAllocation(alloc.id)}
         className="accent-ok"
       />
-      <div className="min-w-0 flex-1 leading-tight">
+      <button className="min-w-0 flex-1 text-left leading-tight" onClick={() => openItem(item.id)} title="Open task details">
         <div className={`truncate ${alloc.done ? 'text-dim line-through' : ''}`}>
-          {itemDone && <span className="text-ok" title="Item complete">✓ </span>}
+          {itemDone && <span className="text-ok">✓ </span>}
+          {alloc.start && <span className="font-mono text-[11px] text-dim">{alloc.start} </span>}
           {item.title}
         </div>
         <div className="truncate text-[10px] text-dim">
-          {showDate && <span className="font-mono text-danger">{dayName(alloc.date)} {shortDate(alloc.date)} · </span>}
-          {project?.name}
+          {showDate && (
+            <span className="font-mono text-danger">
+              {dayName(alloc.date)} {shortDate(alloc.date)} ·{' '}
+            </span>
+          )}
+          {projectName}
         </div>
-      </div>
+      </button>
       <div className="flex shrink-0 items-center opacity-0 group-hover:opacity-100 focus-within:opacity-100">
         {!itemDone && (
           <button
             className="btn-ghost px-1 text-[11px]"
-            title="Mark the whole item complete"
-            onPointerDown={(e) => e.stopPropagation()}
+            title="Mark the whole task complete"
+            onPointerDown={stop}
             onClick={() => updateItem(item.id, { status: item.kind === 'lecture' ? 'notes' : 'done' })}
           >
             ✓✓
           </button>
         )}
-        <button
-          className="btn-ghost px-1 text-[11px]"
-          title="Open project"
-          onPointerDown={(e) => e.stopPropagation()}
-          onClick={() => project && navigate({ name: 'project', id: project.id })}
-        >
-          ↗
-        </button>
-        <button
-          className="btn-ghost px-1 hover:text-danger"
-          title="Remove from plan"
-          onPointerDown={(e) => e.stopPropagation()}
-          onClick={() => deleteAllocation(alloc.id)}
-        >
+        <button className="btn-ghost px-1 hover:text-danger" title="Remove from plan" onPointerDown={stop} onClick={() => deleteAllocation(alloc.id)}>
           ×
         </button>
       </div>
@@ -271,57 +284,62 @@ function AllocationBlock({ alloc, ctx, showDate }: { alloc: Allocation; ctx: Ctx
           className="text-[11px]"
         />
       )}
-    </li>
+    </>
   );
-}
+});
 
-function BacklogBox({ data, ctx, today, month }: { data: AppData; ctx: Ctx; today: ISODate; month: string }) {
-  const setMonthNote = useStore((s) => s.setMonthNote);
-  const [tab, setTab] = useState<'backlog' | 'notes'>('backlog');
-  const [areaFilter, setAreaFilter] = useState<string | null>(null);
+const BacklogBox = memo(function BacklogBox(props: { lookups: Lookups; today: ISODate; month: string }) {
   const { setNodeRef, isOver } = useDroppable({ id: 'backlog' });
-  const missed = missedAllocations(data, today);
-  const backlog = backlogItems(data, today).filter(
-    (b) => !areaFilter || ctx.project(b.item.projectId)?.areaId === areaFilter,
-  );
-
   return (
     <section
       ref={setNodeRef}
       className={`flex min-h-64 flex-col rounded border bg-panel md:col-span-3 md:min-h-0 ${isOver ? 'border-accent' : 'border-line'}`}
     >
+      <BacklogContents {...props} />
+    </section>
+  );
+});
+
+const BacklogContents = memo(function BacklogContents({ lookups, today, month }: { lookups: Lookups; today: ISODate; month: string }) {
+  const items = useStore((s) => s.data.items);
+  const allocations = useStore((s) => s.data.allocations);
+  const projects = useStore((s) => s.data.projects);
+  const areas = useStore((s) => s.data.areas);
+  const [tab, setTab] = useState<'backlog' | 'notes'>('backlog');
+  const [areaFilter, setAreaFilter] = useState<string | null>(null);
+
+  const { backlog, missed } = useMemo(() => {
+    const slice = { items, allocations, projects };
+    return { backlog: backlogItems(slice, today), missed: missedAllocations(slice, today) };
+  }, [items, allocations, projects, today]);
+  const visible = areaFilter ? backlog.filter((b) => lookups.project(b.item.projectId)?.areaId === areaFilter) : backlog;
+
+  return (
+    <>
       <header className="flex items-center gap-1 border-b border-line px-1.5 py-1">
         <Tab active={tab === 'backlog'} onClick={() => setTab('backlog')}>
-          backlog <span className="text-dim/70">{backlogItems(data, today).length}</span>
+          backlog <span className="text-dim/70">{backlog.length}</span>
         </Tab>
         <Tab active={tab === 'notes'} onClick={() => setTab('notes')}>
           {monthName(month)}
         </Tab>
         {tab === 'backlog' && (
           <div className="ml-auto flex gap-0.5">
-            {[null, ...data.areas.map((a) => a.id)].map((id) => {
-              const a = id ? ctx.area(id) : undefined;
-              return (
-                <button
-                  key={id ?? 'all'}
-                  onClick={() => setAreaFilter(id)}
-                  className={`flex items-center gap-1 rounded px-1.5 text-[11px] ${areaFilter === id ? 'bg-raised text-fg' : 'text-dim hover:text-fg'}`}
-                >
-                  {a && <span className="h-1.5 w-1.5 rounded-full" style={{ background: a.color }} />}
-                  {a ? a.name : 'all'}
-                </button>
-              );
-            })}
+            {[null, ...areas].map((a) => (
+              <button
+                key={a?.id ?? 'all'}
+                onClick={() => setAreaFilter(a?.id ?? null)}
+                className={`flex items-center gap-1 rounded px-1.5 text-[11px] ${areaFilter === (a?.id ?? null) ? 'bg-raised text-fg' : 'text-dim hover:text-fg'}`}
+              >
+                {a && <span className="h-1.5 w-1.5 rounded-full" style={{ background: a.color }} />}
+                {a ? a.name : 'all'}
+              </button>
+            ))}
           </div>
         )}
       </header>
       {tab === 'notes' ? (
-        <textarea
-          className="scroll-thin w-full flex-1 resize-none px-2 py-1 text-[12px] placeholder:text-dim/40"
-          placeholder={`Notes and goals for ${monthName(month)}…`}
-          value={data.monthNotes[month] ?? ''}
-          onChange={(e) => setMonthNote(month, e.target.value)}
-        />
+        <MonthNote month={month} />
       ) : (
         <div className="scroll-thin min-h-0 flex-1 overflow-y-auto p-1">
           {missed.length > 0 && (
@@ -329,25 +347,37 @@ function BacklogBox({ data, ctx, today, month }: { data: AppData; ctx: Ctx; toda
               <div className="label mb-1 px-1 !text-danger">missed · drag to a day to reschedule</div>
               <ul className="space-y-px">
                 {missed.map((a) => (
-                  <AllocationBlock key={a.id} alloc={a} ctx={ctx} showDate />
+                  <AllocationBlock key={a.id} alloc={a} lookups={lookups} showDate />
                 ))}
               </ul>
             </div>
           )}
-          {backlog.length === 0 ? (
+          {visible.length === 0 ? (
             <p className="p-3 text-center text-dim">
               Nothing left to schedule{areaFilter ? ' in this area' : ''}. Drop a block here to unschedule it.
             </p>
           ) : (
             <ul className="grid grid-cols-1 gap-px xl:grid-cols-2">
-              {backlog.map((b) => (
-                <BacklogItem key={b.item.id} item={b.item} remaining={b.remaining} ctx={ctx} today={today} />
+              {visible.map((b) => (
+                <BacklogItem key={b.item.id} item={b.item} remaining={b.remaining} lookups={lookups} today={today} />
               ))}
             </ul>
           )}
         </div>
       )}
-    </section>
+    </>
+  );
+});
+
+function MonthNote({ month }: { month: string }) {
+  const note = useStore((s) => s.data.monthNotes[month] ?? '');
+  return (
+    <BufferedTextarea
+      className="scroll-thin w-full flex-1 resize-none px-2 py-1 text-[12px] placeholder:text-dim/40"
+      placeholder={`Notes and goals for ${monthName(month)}…`}
+      value={note}
+      onCommit={(text) => useStore.getState().setMonthNote(month, text)}
+    />
   );
 }
 
@@ -359,53 +389,59 @@ function Tab({ active, onClick, children }: { active: boolean; onClick(): void; 
   );
 }
 
-function BacklogItem({ item, remaining, ctx, today }: { item: Item; remaining?: number; ctx: Ctx; today: ISODate }) {
+const BacklogItem = memo(function BacklogItem({ item, remaining, lookups, today }: { item: Item; remaining?: number; lookups: Lookups; today: ISODate }) {
+  const openItem = useUi((s) => s.openItem);
   const { attributes, listeners, setNodeRef, isDragging } = useDraggable({
     id: `item:${item.id}`,
     data: { kind: 'item', item, remaining } satisfies DragData,
   });
-  const project = ctx.project(item.projectId);
-  const color = (project && ctx.area(project.areaId)?.color) ?? '#94a3b8';
   return (
     <li
       ref={setNodeRef}
       {...attributes}
       {...listeners}
+      onClick={() => openItem(item.id)}
       className={`flex cursor-grab touch-none items-center gap-1.5 rounded border-l-2 px-1.5 py-0.5 hover:bg-raised active:cursor-grabbing ${
         isDragging ? 'opacity-30' : ''
       }`}
-      style={{ borderLeftColor: color }}
-      title="Drag onto a day to plan time for it"
+      style={{ borderLeftColor: lookups.color(item) }}
+      title="Drag onto a day to plan time · click for details"
     >
+      <BacklogContent item={item} remaining={remaining} projectName={lookups.project(item.projectId)?.name} today={today} />
+    </li>
+  );
+});
+
+const BacklogContent = memo(function BacklogContent(props: { item: Item; remaining?: number; projectName?: string; today: ISODate }) {
+  const { item, remaining, projectName, today } = props;
+  return (
+    <>
       <div className="min-w-0 flex-1 leading-tight">
         <div className="truncate">{item.title}</div>
         <div className="truncate text-[10px] text-dim">
-          {project?.name}
+          {projectName}
           {item.heldOn && !item.dueDate && <> · held {shortDate(item.heldOn)}</>}
         </div>
       </div>
       {item.dueDate && (
-        <span className={`shrink-0 font-mono text-[11px] ${URGENCY_CLASS[urgency(item.dueDate, today)]}`}>
-          {countdown(item.dueDate, today)}
-        </span>
+        <span className={`shrink-0 font-mono text-[11px] ${URGENCY_CLASS[urgency(item.dueDate, today)]}`}>{countdown(item.dueDate, today)}</span>
       )}
       <span className="w-10 shrink-0 text-right font-mono text-[11px] text-dim" title="Hours left to plan">
         {remaining != null ? fmtH(remaining) : ''}
       </span>
-    </li>
+    </>
   );
-}
+});
 
-function DragPreview({ drag, ctx }: { drag: DragData; ctx: Ctx }) {
-  const item = drag.kind === 'item' ? drag.item : ctx.item(drag.alloc.itemId);
+function DragPreview({ drag }: { drag: DragData }) {
+  const lookups = useLookups();
+  const item = drag.kind === 'item' ? drag.item : lookups.item(drag.alloc.itemId);
   if (!item) return null;
-  const project = ctx.project(item.projectId);
-  const color = (project && ctx.area(project.areaId)?.color) ?? '#94a3b8';
   const hours = drag.kind === 'item' ? defaultAllocationHours(drag.remaining) : drag.alloc.plannedHours;
   return (
     <div
-      className="flex w-56 cursor-grabbing items-center gap-2 rounded border border-accent/50 border-l-2 bg-raised px-2 py-1 shadow-lg shadow-black/50"
-      style={{ borderLeftColor: color }}
+      className="flex w-56 cursor-grabbing items-center gap-2 rounded border border-l-2 border-accent/50 bg-raised px-2 py-1 shadow-lg shadow-black/50"
+      style={{ borderLeftColor: lookups.color(item) }}
     >
       <span className="min-w-0 flex-1 truncate">{item.title}</span>
       <span className="font-mono text-[11px] text-dim">{fmtH(hours)}</span>

@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import type { Allocation, AppData, Area, ISODate, Item, Project } from './model/types';
+import type { Allocation, AppData, Area, CalendarEvent, ISODate, Item, Project } from './model/types';
 import { AREA_COLORS, emptyData } from './model/types';
 
 const uid = () => crypto.randomUUID();
@@ -22,10 +22,14 @@ export interface Actions {
   updateItem(id: string, patch: Partial<Omit<Item, 'id'>>): void;
   deleteItem(id: string): void;
 
-  addAllocation(itemId: string, date: ISODate, plannedHours: number): void;
+  addAllocation(itemId: string, date: ISODate, plannedHours: number, start?: string): string;
   updateAllocation(id: string, patch: Partial<Omit<Allocation, 'id'>>): void;
   toggleAllocation(id: string): void;
   deleteAllocation(id: string): void;
+
+  addEvent(event: Omit<CalendarEvent, 'id'>): string;
+  updateEvent(id: string, patch: Partial<Omit<CalendarEvent, 'id'>>): void;
+  deleteEvent(id: string): void;
 
   setDayNote(date: ISODate, text: string): void;
   setMonthNote(key: string, text: string): void;
@@ -107,8 +111,11 @@ export const useStore = create<State>()((set, get) => {
     updateItem: (id, patch) => update((d) => ({ items: patchById(d.items, id, patch) })),
     deleteItem: (id) => update((d) => withoutItems(d, new Set([id]))),
 
-    addAllocation: (itemId, date, plannedHours) =>
-      update((d) => ({ allocations: [...d.allocations, { id: uid(), itemId, date, plannedHours, done: false }] })),
+    addAllocation: (itemId, date, plannedHours, start) => {
+      const id = uid();
+      update((d) => ({ allocations: [...d.allocations, { id, itemId, date, plannedHours, done: false, start }] }));
+      return id;
+    },
     updateAllocation: (id, patch) => update((d) => ({ allocations: patchById(d.allocations, id, patch) })),
     toggleAllocation: (id) =>
       update((d) => ({
@@ -117,6 +124,14 @@ export const useStore = create<State>()((set, get) => {
         ),
       })),
     deleteAllocation: (id) => update((d) => ({ allocations: d.allocations.filter((a) => a.id !== id) })),
+
+    addEvent: (event) => {
+      const id = uid();
+      update((d) => ({ events: [...d.events, { ...event, id }] }));
+      return id;
+    },
+    updateEvent: (id, patch) => update((d) => ({ events: patchById(d.events, id, patch) })),
+    deleteEvent: (id) => update((d) => ({ events: d.events.filter((e) => e.id !== id) })),
 
     setDayNote: (date, text) => update((d) => ({ dayNotes: { ...d.dayNotes, [date]: text } })),
     setMonthNote: (key, text) => update((d) => ({ monthNotes: { ...d.monthNotes, [key]: text } })),
@@ -127,5 +142,5 @@ export const useStore = create<State>()((set, get) => {
   };
 });
 
-/** Convenience hook for the data slice. */
+/** Subscribes to the whole data object. Prefer narrow selectors in hot components. */
 export const useData = () => useStore((s) => s.data);

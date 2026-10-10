@@ -6,6 +6,7 @@
   --color-raised: #181c22;
   --color-line: #232830;
   --color-fg: #d6dbe1;
+  --color-strong: #ffffff;
   --color-dim: #7d8590;
   --color-accent: #60a5fa;
   --color-danger: #f87171;
@@ -15,7 +16,53 @@
   --font-mono: "JetBrains Mono", ui-monospace, "SF Mono", Menlo, Consolas, monospace;
 }
 
+/*
+ * Light palette. Applied when the user picks light, or when following a light
+ * system theme (no explicit choice stored, see src/theme.ts).
+ */
+@layer theme {
+  :root[data-theme="light"] {
+    --color-bg: #f5f6f8;
+    --color-panel: #ffffff;
+    --color-raised: #eceff3;
+    --color-line: #dce0e5;
+    --color-fg: #24292f;
+    --color-strong: #0b0d10;
+    --color-dim: #626a73;
+    --color-accent: #2563eb;
+    --color-danger: #d42a2a;
+    --color-warn: #b45309;
+    --color-ok: #047857;
+  }
+  @media (prefers-color-scheme: light) {
+    :root:not([data-theme="dark"]) {
+      --color-bg: #f5f6f8;
+      --color-panel: #ffffff;
+      --color-raised: #eceff3;
+      --color-line: #dce0e5;
+      --color-fg: #24292f;
+      --color-strong: #0b0d10;
+      --color-dim: #626a73;
+      --color-accent: #2563eb;
+      --color-danger: #d42a2a;
+      --color-warn: #b45309;
+      --color-ok: #047857;
+    }
+  }
+}
+
 @layer base {
+  :root {
+    color-scheme: dark;
+  }
+  :root[data-theme="light"] {
+    color-scheme: light;
+  }
+  @media (prefers-color-scheme: light) {
+    :root:not([data-theme="dark"]) {
+      color-scheme: light;
+    }
+  }
   html,
   body,
   #root {
@@ -23,12 +70,15 @@
   }
   body {
     @apply bg-bg text-fg font-sans text-[13px] leading-snug antialiased;
-    color-scheme: dark;
   }
   input,
   textarea,
   select {
     @apply bg-transparent outline-none;
+  }
+  :focus-visible {
+    outline: 1px solid var(--color-accent);
+    outline-offset: 1px;
   }
   ::selection {
     @apply bg-accent/30;
@@ -40,7 +90,7 @@
     @apply rounded border border-line bg-raised px-2 py-1 focus:border-accent/60;
   }
   .btn {
-    @apply rounded border border-line bg-raised px-2 py-1 text-fg hover:border-accent/60 hover:text-white disabled:opacity-40;
+    @apply rounded border border-line bg-raised px-2 py-1 text-fg hover:border-accent/60 hover:text-strong disabled:opacity-40;
   }
   .btn-ghost {
     @apply rounded px-1.5 py-0.5 text-dim hover:bg-raised hover:text-fg;
@@ -53,7 +103,7 @@
     scrollbar-color: var(--color-line) transparent;
   }
   .prose-md h1, .prose-md h2, .prose-md h3 {
-    @apply mt-3 mb-1 font-semibold text-white;
+    @apply mt-3 mb-1 font-semibold text-strong;
   }
   .prose-md h1 { @apply text-lg; }
   .prose-md h2 { @apply text-base; }

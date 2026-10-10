@@ -37,8 +37,8 @@ export function sampleData(today = todayISO()): AppData {
     d.items.push(i);
     return i;
   };
-  const alloc = (i: Item, date: string, plannedHours: number, done = false): Allocation => {
-    const a: Allocation = { id: id('a'), itemId: i.id, date, plannedHours, done, actualHours: done ? plannedHours : undefined };
+  const alloc = (i: Item, date: string, plannedHours: number, done = false, start?: string): Allocation => {
+    const a: Allocation = { id: id('a'), itemId: i.id, date, plannedHours, done, actualHours: done ? plannedHours : undefined, start };
     d.allocations.push(a);
     return a;
   };
@@ -91,6 +91,19 @@ export function sampleData(today = todayISO()): AppData {
   const k8s = item(homelab, 'Set up k3s', { estimateHours: 4 });
   item(homelab, 'Migrate Nextcloud');
   alloc(k8s, addDays(monday, 6), 2);
+  alloc(lectures[lectures.length - 2], today, 1.5, false, '17:00');
+  alloc(assignment, addDays(today, 1), 2, false, '10:00');
+
+  // Calendar events (local until Google Calendar sync). Timetable entries mimic USOS.
+  const event = (date: string, start: string, end: string, title: string, notes?: string) =>
+    d.events.push({ id: id('e'), date, start, end, title, notes });
+  event(addDays(monday, 1), '10:15', '12:00', 'OS lecture (USOS)', 'Room 3180');
+  event(addDays(monday, 2), '14:15', '15:45', 'Networks lab (USOS)');
+  event(addDays(monday, 8), '10:15', '12:00', 'OS lecture (USOS)', 'Room 3180');
+  event(today, '19:00', '20:30', 'Climbing');
+  event(addDays(today, 1), '08:30', '09:00', 'Dentist');
+  event(addDays(today, 2), '09:30', '10:00', 'Team standup');
+  event(addDays(today, 2), '14:00', '14:30', '1:1 with manager');
 
   d.dayNotes[today] = 'Freeform notes for the day go here.';
   return d;

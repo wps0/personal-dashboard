@@ -1,34 +1,47 @@
-import { shortDate, dayName, todayISO } from './model/dates';
+import { useEffect } from 'react';
+import { EventOverlay } from './components/EventOverlay';
+import { ItemOverlay } from './components/ItemOverlay';
+import { dayName, shortDate, todayISO } from './model/dates';
 import { sampleData } from './model/sample';
-import { href, useRoute, type Route } from './router';
-import { useData, useStore } from './store';
-import { ProjectDetail } from './views/ProjectDetail';
+import { href, navigate, useRoute, type Route } from './router';
+import { useStore } from './store';
+import { useTheme, type ThemeChoice } from './theme';
+import { useUi } from './ui';
+import { CalendarView } from './views/CalendarView';
+import { HomeView } from './views/HomeView';
 import { ProjectsView } from './views/ProjectsView';
 import { SettingsView } from './views/SettingsView';
 import { WeekView } from './views/WeekView';
 
-const NAV: { route: Route; label: string; key: Route['name'][] }[] = [
-  { route: { name: 'week' }, label: 'Week', key: ['week'] },
-  { route: { name: 'projects' }, label: 'Projects', key: ['projects', 'project'] },
-  { route: { name: 'settings' }, label: 'Settings', key: ['settings'] },
+const NAV: { route: Route; label: string }[] = [
+  { route: { name: 'home' }, label: 'Home' },
+  { route: { name: 'week' }, label: 'Week' },
+  { route: { name: 'calendar' }, label: 'Calendar' },
+  { route: { name: 'projects' }, label: 'Projects' },
+  { route: { name: 'settings' }, label: 'Settings' },
 ];
+
+const THEME_NEXT: Record<ThemeChoice, ThemeChoice> = { system: 'light', light: 'dark', dark: 'system' };
+const THEME_LABEL: Record<ThemeChoice, string> = { system: '◐ auto', light: '☼ light', dark: '☾ dark' };
 
 export default function App() {
   const route = useRoute();
-  const data = useData();
+  const hasAreas = useStore((s) => s.data.areas.length > 0);
+  const [theme, setTheme] = useTheme();
   const today = todayISO();
+  useEscapeClosesProject(route);
 
   return (
     <div className="flex h-full flex-col">
       <header className="flex shrink-0 items-center gap-1 border-b border-line bg-panel px-3 py-1.5">
-        <span className="mr-3 font-mono text-[12px] font-semibold tracking-tight text-white">
+        <span className="mr-3 font-mono text-[12px] font-semibold tracking-tight text-strong">
           <span className="text-accent">◔</span> dashboard
         </span>
         {NAV.map((n) => (
           <a
             key={n.label}
             href={href(n.route)}
-            className={`rounded px-2 py-0.5 ${n.key.includes(route.name) ? 'bg-raised text-white' : 'text-dim hover:text-fg'}`}
+            className={`rounded px-2 py-0.5 ${n.route.name === route.name ? 'bg-raised text-strong' : 'text-dim hover:text-fg'}`}
           >
             {n.label}
           </a>
@@ -36,42 +49,58 @@ export default function App() {
         <span className="ml-auto font-mono text-[11px] text-dim">
           {dayName(today)} {shortDate(today)}
         </span>
+        <button className="btn-ghost ml-2 font-mono text-[11px]" onClick={() => setTheme(THEME_NEXT[theme])} title={`Theme: ${theme} (click to change)`}>
+          {THEME_LABEL[theme]}
+        </button>
       </header>
-      <main className="min-h-0 flex-1">
-        {data.areas.length === 0 && route.name !== 'settings' ? <Welcome /> : <Page route={route} />}
-      </main>
+      <main className="min-h-0 flex-1">{!hasAreas && route.name !== 'settings' ? <Welcome /> : <Page route={route} />}</main>
+      <ItemOverlay />
+      <EventOverlay />
     </div>
   );
 }
 
 function Page({ route }: { route: Route }) {
   switch (route.name) {
+    case 'home':
+      return <HomeView />;
     case 'week':
       return <WeekView week={route.week} />;
+    case 'calendar':
+      return <CalendarView week={route.week} />;
     case 'projects':
-      return <ProjectsView />;
-    case 'project':
-      return <ProjectDetail id={route.id} />;
+      return <ProjectsView selectedId={route.id} />;
     case 'settings':
       return <SettingsView />;
   }
 }
 
+/** Esc closes the project side panel (overlays handle Esc themselves first). */
+function useEscapeClosesProject(route: Route) {
+  const overlayOpen = useUi((s) => s.openItemId !== null || s.openEvent !== null);
+  const panelOpen = route.name === 'projects' && route.id !== undefined;
+  useEffect(() => {
+    if (!panelOpen || overlayOpen) return;
+    const onKey = (e: KeyboardEvent) => {
+      const t = e.target as HTMLElement;
+      if (e.key === 'Escape' && !['INPUT', 'TEXTAREA', 'SELECT'].includes(t.tagName)) navigate({ name: 'projects' });
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [panelOpen, overlayOpen]);
+}
+
 function Welcome() {
-  const replaceAll = useStore((s) => s.replaceAll);
-  const addArea = useStore((s) => s.addArea);
+  const { replaceAll, addArea } = useStore.getState();
   return (
     <div className="mx-auto mt-24 max-w-md space-y-4 px-4">
-      <h1 className="text-lg font-semibold text-white">Nothing here yet</h1>
+      <h1 className="text-lg font-semibold text-strong">Nothing here yet</h1>
       <p className="text-dim">
         Projects live in <b className="text-fg">areas</b> such as University, Work or Personal. Start with a few empty areas,
-        or load sample data to try out the week view.
+        or load sample data to try things out.
       </p>
       <div className="flex gap-2">
-        <button
-          className="btn"
-          onClick={() => ['University', 'Work', 'Personal'].forEach((n) => addArea(n))}
-        >
+        <button className="btn" onClick={() => ['University', 'Work', 'Personal'].forEach((n) => addArea(n))}>
           Create University / Work / Personal
         </button>
         <button className="btn" onClick={() => replaceAll(sampleData())}>

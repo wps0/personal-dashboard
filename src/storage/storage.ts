@@ -36,6 +36,7 @@ export function parseAppData(raw: unknown): AppData {
   return {
     ...base,
     ...r,
+    events: Array.isArray(r.events) ? r.events : [],
     dayNotes: r.dayNotes ?? {},
     monthNotes: r.monthNotes ?? {},
     settings: { ...base.settings, ...r.settings },

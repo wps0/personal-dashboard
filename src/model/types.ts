@@ -47,6 +47,8 @@ export interface Item {
   /** When the class took place (lectures); not a deadline. */
   heldOn?: ISODate;
   estimateHours?: number;
+  /** Markdown notes: details, links, where you stopped. */
+  notes?: string;
   createdAt: string;
 }
 
@@ -59,6 +61,21 @@ export interface Allocation {
   done: boolean;
   /** Hours actually spent; set to plannedHours when checked off, editable. */
   actualHours?: number;
+  /** Optional start time `HH:MM`; makes the slice a time block on the calendar. */
+  start?: string;
+}
+
+/**
+ * A calendar event. Local-only in v1; shaped so v2 can sync it with Google Calendar.
+ */
+export interface CalendarEvent {
+  id: string;
+  title: string;
+  date: ISODate;
+  /** `HH:MM`, local time. */
+  start: string;
+  end: string;
+  notes?: string;
 }
 
 export interface Settings {
@@ -72,6 +89,7 @@ export interface AppData {
   projects: Project[];
   items: Item[];
   allocations: Allocation[];
+  events: CalendarEvent[];
   /** Freeform text per day. */
   dayNotes: Record<ISODate, string>;
   /** Freeform text per month, keyed `YYYY-MM`. */
@@ -97,6 +115,7 @@ export function emptyData(): AppData {
     projects: [],
     items: [],
     allocations: [],
+    events: [],
     dayNotes: {},
     monthNotes: {},
     settings: { capacity: [2, 2, 2, 2, 2, 5, 5] },
