@@ -16,6 +16,20 @@ npm test           # unit tests (model logic, storage)
 npm run build      # typecheck + production build into dist/
 ```
 
+### Without installing Node (Podman)
+
+`scripts/dev-container.sh` runs everything in a throwaway rootless Podman
+container (`node:22`). Nothing is installed on the host, and `node_modules`
+lives in a named volume instead of your checkout.
+
+```sh
+./scripts/dev-container.sh            # dev server → http://localhost:5173
+./scripts/dev-container.sh npm test   # any other command
+```
+
+To remove everything it created, run
+`podman volume rm dashboard-node-modules && podman rmi docker.io/library/node:22`.
+
 On first launch, choose **Load sample data** to explore, or create empty areas.
 
 ## How it works
