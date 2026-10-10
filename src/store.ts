@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import type { Allocation, AppData, Area, CalendarEvent, ISODate, Item, Project } from './model/types';
+import type { Allocation, AppData, Area, CalendarEvent, CalView, ISODate, Item, Project } from './model/types';
 import { AREA_COLORS, emptyData } from './model/types';
 import { withRuleChange, type CapacityRule, type DayCapacity } from './model/capacity';
 import { todayISO } from './model/dates';
@@ -39,6 +39,7 @@ export interface Actions {
   /** Changes planning windows / global adjustment from today on (past days keep theirs). */
   changeCapacityRule(patch: Partial<Omit<CapacityRule, 'from'>>): void;
   setDefaultEventMinutes(minutes: number): void;
+  setDefaultCalendarView(view: CalView): void;
   /** Per-day tweak; ignored for past days. `null` resets the day. */
   setDayCapacity(date: ISODate, patch: DayCapacity | null): void;
 }
@@ -149,6 +150,7 @@ export const useStore = create<State>()((set, get) => {
     setMonthNote: (key, text) => update((d) => ({ monthNotes: { ...d.monthNotes, [key]: text } })),
     changeCapacityRule: (patch) =>
       update((d) => ({ settings: { ...d.settings, capacityRules: withRuleChange(d.settings.capacityRules, todayISO(), patch) } })),
+    setDefaultCalendarView: (view) => update((d) => ({ settings: { ...d.settings, defaultCalendarView: view } })),
     setDefaultEventMinutes: (minutes) => update((d) => ({ settings: { ...d.settings, defaultEventMinutes: minutes } })),
     setDayCapacity: (date, patch) => {
       if (date < todayISO()) return;

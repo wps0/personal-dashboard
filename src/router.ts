@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 
-export const CAL_VIEWS = ['day', '3day', 'week', 'month'] as const;
-export type CalView = (typeof CAL_VIEWS)[number];
+import { CAL_VIEWS, type CalView } from './model/types';
+export type { CalView };
 
 export type Route =
   | { name: 'home'; date?: string }

@@ -18,17 +18,6 @@ const VIEW_OPTIONS = [
   { value: 'month', label: 'Month' },
 ] as const;
 
-const VIEW_KEY = 'personal-dashboard/calendar-view';
-
-function lastView(): CalView {
-  try {
-    const v = localStorage.getItem(VIEW_KEY);
-    return v === 'day' || v === '3day' || v === 'month' ? v : 'week';
-  } catch {
-    return 'week';
-  }
-}
-
 /** The days a view shows for an anchor date. */
 function visibleDays(view: CalView, date: ISODate): ISODate[] {
   switch (view) {
@@ -61,19 +50,13 @@ function title(view: CalView, days: ISODate[], date: ISODate): string {
 }
 
 export function CalendarView({ view: routeView, date: routeDate }: { view?: CalView; date?: ISODate }) {
-  const view = routeView ?? lastView();
+  // Coming from another page (no view in the URL) always opens the default view.
+  const defaultView = useStore((s) => s.data.settings.defaultCalendarView);
+  const view = routeView ?? defaultView;
   const today = todayISO();
   const date = routeDate && /^\d{4}-\d{2}-\d{2}$/.test(routeDate) ? routeDate : today;
   const days = useMemo(() => visibleDays(view, view === 'month' ? firstOfMonth(date) : date), [view, date]);
   const go = (v: CalView, d: ISODate) => navigate({ name: 'calendar', view: v, date: d === today ? undefined : d });
-
-  useEffect(() => {
-    try {
-      localStorage.setItem(VIEW_KEY, view);
-    } catch {
-      // Per-device convenience only.
-    }
-  }, [view]);
 
   // If the draft's date is changed to one outside the view, follow it.
   const draftDate = useUi((s) => s.draft?.date);

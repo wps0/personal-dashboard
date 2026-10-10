@@ -126,8 +126,9 @@ The project's items, overview doc and progress log, as tabs in the side panel.
   visible range is tinted), and "My calendars" toggles to show or hide events
   and each area's sessions (stored per device).
 - **Toolbar:** Today, ‹ ›, the period title, and a view switcher
-  (Day / 3 days / Week / Month, remembered per device). Routes look like
-  `#/calendar/<view>/<date>`.
+  (Day / 3 days / Week / Month). Routes look like `#/calendar/<view>/<date>`.
+  Coming to the calendar from another page always opens the **default view**
+  (Settings → Calendar, Week by default) at today.
 - **Time grid:**
   - Click a slot for an event of the default length (Settings → Calendar,
     1 h by default), starting on the half hour, or on the quarter hour for
@@ -151,7 +152,23 @@ opens an overlay with:
 - markdown notes;
 - mark complete, open project, and delete.
 
-### 3.6 Theme
+### 3.6 Feedback and motion
+- Every interactive element has hover and press states, and buttons press in
+  slightly.
+- Popovers and menus grow from their trigger and shrink away; dialogs rise in.
+- Pages fade in, and changing period (week, day, month, mini month) slides in
+  from the direction you moved.
+- Blocks settle in when created or dropped, slide to their new position, lift
+  while dragged, and drop targets light up. Done items get a strike-through
+  that draws across, and checkboxes pop.
+- Progress rings fill up on load.
+- **Toasts with Undo** confirm deletions and completions. Undo restores the
+  data from just before the action, but only if nothing changed since, so it
+  can never drop later edits. This replaces confirm dialogs, except for
+  deleting a project or area and for import/reset.
+- Everything respects `prefers-reduced-motion`.
+
+### 3.7 Theme
 Auto (follows the system) / light / dark. The toggle is in the header, and the
 choice is stored per device.
 

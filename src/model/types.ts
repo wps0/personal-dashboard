@@ -9,6 +9,9 @@ export interface Area {
   color: string;
 }
 
+export const CAL_VIEWS = ['day', '3day', 'week', 'month'] as const;
+export type CalView = (typeof CAL_VIEWS)[number];
+
 export type ProgressMode = 'checklist' | 'hours' | 'manual';
 
 export interface LogEntry {
@@ -89,6 +92,8 @@ export interface Settings {
   dayCapacity: Record<ISODate, DayCapacity>;
   /** Length of an event created by clicking the calendar. */
   defaultEventMinutes: number;
+  /** View the calendar opens in when you navigate to it. */
+  defaultCalendarView: CalView;
 }
 
 export interface AppData {
@@ -126,6 +131,6 @@ export function emptyData(): AppData {
     events: [],
     dayNotes: {},
     monthNotes: {},
-    settings: { capacityRules: defaultRules(), dayCapacity: {}, defaultEventMinutes: 60 },
+    settings: { capacityRules: defaultRules(), dayCapacity: {}, defaultEventMinutes: 60, defaultCalendarView: 'week' },
   };
 }

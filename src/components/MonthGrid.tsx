@@ -11,7 +11,7 @@ import {
   type DragStartEvent,
 } from '@dnd-kit/core';
 import { memo, useMemo, useState } from 'react';
-import { useLookups, type Lookups } from '../hooks';
+import { useLookups, useSlide, type Lookups } from '../hooks';
 import { monthGrid, todayISO } from '../model/dates';
 import type { Allocation, CalendarEvent, ISODate } from '../model/types';
 import { useStore } from '../store';
@@ -64,6 +64,7 @@ function MonthBody({ date, onDayClick }: { date: ISODate; onDayClick(d: ISODate)
   const days = useMemo(() => monthGrid(date), [date]);
   const month = date.slice(0, 7);
   const today = todayISO();
+  const slide = useSlide(date);
 
   const byDay = useMemo(() => {
     const want = new Set(days);
@@ -83,7 +84,7 @@ function MonthBody({ date, onDayClick }: { date: ISODate; onDayClick(d: ISODate)
   }, [days, events, allocations, hidden, lookups]);
 
   return (
-    <div className="flex h-full min-h-0 flex-col">
+    <div className="flex h-full min-h-0 flex-col overflow-hidden select-none">
       <div className="grid shrink-0 grid-cols-7">
         {WEEKDAYS.map((d) => (
           <div key={d} className="py-1 text-center text-[11px] font-medium text-dim uppercase">
@@ -91,7 +92,7 @@ function MonthBody({ date, onDayClick }: { date: ISODate; onDayClick(d: ISODate)
           </div>
         ))}
       </div>
-      <div className="grid min-h-0 flex-1 grid-cols-7 grid-rows-6 border-t border-l border-line">
+      <div key={date} className={`grid min-h-0 flex-1 grid-cols-7 grid-rows-6 border-t border-l border-line ${slide}`}>
         {days.map((d) => (
           <Cell key={d} date={d} entries={byDay.get(d)!} outside={d.slice(0, 7) !== month} isToday={d === today} lookups={lookups} onDayClick={onDayClick} />
         ))}
@@ -121,13 +122,13 @@ const Cell = memo(function Cell({ date, entries, outside, isToday, lookups, onDa
         if (e.target !== e.currentTarget || clicksSuppressed()) return;
         useUi.getState().setDraft(draftAt(date, 9 * 60, 10 * 60, true));
       }}
-      className={`flex min-h-0 cursor-pointer flex-col gap-px overflow-hidden border-r border-b border-line px-1 pb-1 ${isOver ? 'bg-accent/10' : ''} ${
+      className={`drop-target flex min-h-0 cursor-pointer flex-col gap-px overflow-hidden border-r border-b border-line px-1 pb-1 hover:bg-raised/40 ${isOver ? 'is-over bg-accent/10' : ''} ${
         outside ? 'bg-raised/40' : ''
       }`}
     >
       <button
         onClick={() => onDayClick(date)}
-        className={`mx-auto my-0.5 flex h-6 min-w-6 items-center justify-center rounded-full px-1 text-[12px] tabular-nums ${
+        className={`mx-auto my-0.5 flex h-6 min-w-6 items-center justify-center rounded-full px-1 text-[12px] tabular-nums transition-colors duration-150 ${
           isToday ? 'bg-accent font-medium text-white' : outside ? 'text-dim hover:bg-raised' : 'text-strong hover:bg-raised'
         }`}
       >
@@ -155,7 +156,7 @@ const EventChip = memo(function EventChip({ event }: { event: CalendarEvent }) {
           {...attributes}
           {...listeners}
           onClick={() => !clicksSuppressed() && useUi.getState().openEvent(event.id)}
-          className={`flex shrink-0 cursor-pointer touch-none items-center gap-1 truncate rounded px-1 text-[11px] ${isDragging ? 'opacity-30' : ''} ${
+          className={`block-interactive flex shrink-0 cursor-pointer touch-none items-center gap-1 truncate rounded px-1 text-[11px] ${isDragging ? 'opacity-30' : ''} ${
             event.allDay ? 'font-medium' : 'hover:bg-raised'
           }`}
           style={event.allDay ? { background: 'var(--color-event)', color: 'var(--color-on-block)' } : undefined}
@@ -187,7 +188,7 @@ const AllocChip = memo(function AllocChip({ alloc, lookups }: { alloc: Allocatio
       {...attributes}
       {...listeners}
       onClick={() => !clicksSuppressed() && useUi.getState().openItem(alloc.itemId)}
-      className={`flex shrink-0 cursor-pointer touch-none items-center gap-1 truncate rounded border-l-4 px-1 text-[11px] ${isDragging ? 'opacity-30' : ''} ${
+      className={`block-interactive flex shrink-0 cursor-pointer touch-none items-center gap-1 truncate rounded border-l-4 px-1 text-[11px] ${isDragging ? 'opacity-30' : ''} ${
         alloc.done ? 'line-through opacity-60' : ''
       }`}
       style={{ borderLeftColor: lookups.color(item), background: `color-mix(in srgb, ${lookups.color(item)} 22%, transparent)` }}
@@ -203,7 +204,7 @@ function DraftChip() {
   return (
     <Popover open onOpenChange={(o) => !o && useUi.getState().setDraft(null)}>
       <PopoverAnchor asChild>
-        <div className="shrink-0 truncate rounded px-1 text-[11px] font-medium shadow-md" style={{ background: 'var(--color-event)', color: 'var(--color-on-block)' }}>
+        <div className="shrink-0 animate-pop-in truncate rounded px-1 text-[11px] font-medium shadow-md" style={{ background: 'var(--color-event)', color: 'var(--color-on-block)' }}>
           {title || '(No title)'}
         </div>
       </PopoverAnchor>
@@ -217,5 +218,5 @@ function DraftChip() {
 function Ghost({ entry }: { entry: Entry }) {
   const lookups = useLookups();
   const title = entry.kind === 'event' ? entry.event.title : (lookups.item(entry.alloc.itemId)?.title ?? '');
-  return <div className="w-36 truncate rounded bg-raised px-1.5 py-0.5 text-[11px] shadow-xl ring-1 ring-accent/50">{title}</div>;
+  return <div className="w-36 animate-lift truncate rounded bg-raised px-1.5 py-0.5 text-[11px] shadow-xl ring-1 ring-accent/50">{title}</div>;
 }

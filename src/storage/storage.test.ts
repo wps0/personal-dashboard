@@ -32,6 +32,13 @@ describe('storage', () => {
     expect(parseAppData({ ...base, settings: { defaultEventMinutes: 'x' } }).settings.defaultEventMinutes).toBe(60);
   });
 
+  it('keeps a valid default calendar view, falling back to week', () => {
+    const base = { version: 1, areas: [], projects: [], items: [], allocations: [] };
+    expect(parseAppData({ ...base, settings: { defaultCalendarView: 'month' } }).settings.defaultCalendarView).toBe('month');
+    expect(parseAppData({ ...base, settings: { defaultCalendarView: 'year' } }).settings.defaultCalendarView).toBe('week');
+    expect(parseAppData(base).settings.defaultCalendarView).toBe('week');
+  });
+
   it('migrates old data: fixed capacity hours and lecture statuses', () => {
     const d = parseAppData({
       version: 1,

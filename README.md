@@ -52,7 +52,8 @@ On first launch, choose **Load sample data** to explore, or create empty areas.
   - Drop a session on the backlog to unschedule it.
   - Click the week label to jump to any week.
 - **Calendar** (`#/calendar`): Google-Calendar-style Day / 3-day / Week /
-  Month views, with a mini month and layer toggles in the sidebar.
+  Month views, with a mini month and layer toggles in the sidebar. It opens in
+  the default view set in Settings.
   - Click the grid to create an event of the default length (set in Settings),
     or drag to select any length in 15-minute steps. A floating card opens next
     to the selection.
@@ -67,6 +68,8 @@ On first launch, choose **Load sample data** to explore, or create empty areas.
   creates "Lecture 1…13" in one go.
 - **Task overlay**: click any task, anywhere, for its details, sessions and
   notes.
+- **Undo**: deleting or completing something shows a toast with **Undo**
+  (bottom left).
 - **Capacity**: each day's "planned/capacity" badge opens the breakdown
   (planning window − events + adjustments) and ± / fixed controls for that
   day.
@@ -91,7 +94,8 @@ Enable it once under repo Settings → Pages → Source: **GitHub Actions**.
 | `src/storage/` | `Storage` interface, IndexedDB implementation, import validation |
 | `src/views/` | Home, Week, Calendar, Projects (+ side panel), Settings |
 | `src/components/` | TimeGrid, MonthGrid, event editor, task overlay, mini month, date/time pickers, capacity badge |
-| `src/components/ui/` | Radix-based Select and Popover wrappers |
+| `src/components/ui/` | Select (lightweight listbox) and Popover (Radix) wrappers |
+| `src/toast.ts` | Toasts and snapshot-based Undo (`withUndo`) |
 
 **Performance notes.** Components subscribe to the narrowest store slice
 they need. Text fields buffer keystrokes and write to the store after a pause.

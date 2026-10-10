@@ -1,4 +1,5 @@
 import { AlignLeft, Clock, Trash2, X } from 'lucide-react';
+import { withUndo } from '../toast';
 import { formatLong } from '../model/dates';
 import { fromMinutes, toMinutes } from '../model/time';
 import type { CalendarEvent, ISODate } from '../model/types';
@@ -47,7 +48,8 @@ export function DraftEditor() {
   if (!draft) return null;
   const save = () => {
     const { title, notes, ...when } = draft;
-    useStore.getState().addEvent({ ...when, title: title.trim() || '(No title)', notes: notes.trim() || undefined });
+    const name = title.trim() || '(No title)';
+    withUndo(`Created “${name}”`, () => useStore.getState().addEvent({ ...when, title: name, notes: notes.trim() || undefined }));
     setDraft(null);
   };
   return (
@@ -58,7 +60,7 @@ export function DraftEditor() {
         </button>
       </div>
       <input
-        autoFocus
+        data-autofocus
         value={draft.title}
         placeholder="Add title"
         aria-label="Title"
@@ -103,7 +105,7 @@ export function EventEditor({ eventId }: { eventId: string }) {
           title="Delete"
           onClick={() => {
             close();
-            deleteEvent(event.id);
+            withUndo(`Deleted “${event.title}”`, () => deleteEvent(event.id));
           }}
         >
           <Trash2 size={16} />

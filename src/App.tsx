@@ -1,7 +1,7 @@
 import { CircleGauge, Monitor, Moon, Sun } from 'lucide-react';
+import { Toaster } from './components/Toaster';
 import { useEffect, type ReactNode } from 'react';
 import { ItemOverlay } from './components/ItemOverlay';
-import { dayName, shortDate, todayISO } from './model/dates';
 import { sampleData } from './model/sample';
 import { href, navigate, useRoute, type Route } from './router';
 import { useStore } from './store';
@@ -28,7 +28,6 @@ export default function App() {
   const route = useRoute();
   const hasAreas = useStore((s) => s.data.areas.length > 0);
   const [theme, setTheme] = useTheme();
-  const today = todayISO();
   useEscapeClosesProject(route);
 
   return (
@@ -41,20 +40,21 @@ export default function App() {
           <a
             key={n.label}
             href={href(n.route)}
-            className={`rounded px-2 py-0.5 ${n.route.name === route.name ? 'bg-raised text-strong' : 'text-dim hover:text-fg'}`}
+            className={`rounded-md px-2.5 py-1 transition-colors duration-150 ${n.route.name === route.name ? 'bg-raised text-strong' : 'text-dim hover:bg-raised/60 hover:text-fg'}`}
           >
             {n.label}
           </a>
         ))}
-        <span className="ml-auto text-[12px] text-dim tabular-nums">
-          {dayName(today)} {shortDate(today)}
-        </span>
-        <button className="icon-btn ml-1" onClick={() => setTheme(THEME_NEXT[theme])} title={`Theme: ${theme === 'system' ? 'auto (follows system)' : theme} — click to change`}>
+        <button className="icon-btn ml-auto" onClick={() => setTheme(THEME_NEXT[theme])} title={`Theme: ${theme === 'system' ? 'auto (follows system)' : theme} — click to change`}>
           {THEME_ICON[theme]}
         </button>
       </header>
-      <main className="min-h-0 flex-1">{!hasAreas && route.name !== 'settings' ? <Welcome /> : <Page route={route} />}</main>
+      {/* Keyed by page so switching tabs fades the new page in. */}
+      <main key={route.name} className="min-h-0 flex-1 animate-fade-in">
+        {!hasAreas && route.name !== 'settings' ? <Welcome /> : <Page route={route} />}
+      </main>
       <ItemOverlay />
+      <Toaster />
     </div>
   );
 }

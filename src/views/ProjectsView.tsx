@@ -62,7 +62,7 @@ export function ProjectsView({ selectedId }: { selectedId?: string }) {
         </div>
       )}
       {selected ? (
-        <div className="min-w-0 flex-1">
+        <div key={selected.id} className="min-w-0 flex-1 animate-slide-in-right">
           <ProjectPanel key={selected.id} project={selected} percent={stats.get(selected.id)?.percent ?? 0} />
         </div>
       ) : (
@@ -147,7 +147,7 @@ function AreaSection(props: { area: Area; projects: Project[]; stats: Map<string
         ) : (
           <button
             onClick={() => setAdding(true)}
-            className="min-h-[82px] rounded border border-dashed border-line text-dim hover:border-accent/50 hover:text-fg"
+            className="min-h-[82px] rounded-lg border border-dashed border-line text-dim transition-colors duration-150 hover:border-accent/50 hover:bg-raised/40 hover:text-fg"
           >
             + project
           </button>
@@ -162,7 +162,7 @@ const ProjectCard = memo(function ProjectCard(props: { project: Project; color: 
   return (
     <a
       href={href({ name: 'projects', id: selected ? undefined : project.id })}
-      className={`flex items-center gap-3 rounded border p-3 hover:bg-raised ${
+      className={`flex items-center gap-3 rounded-lg border p-3 transition-[background-color,border-color,box-shadow,transform] duration-150 hover:-translate-y-0.5 hover:bg-raised hover:shadow-lg hover:shadow-black/20 active:translate-y-0 active:scale-[0.99] ${
         selected ? 'border-accent bg-raised' : 'border-line bg-panel hover:border-accent/50'
       } ${project.archived ? 'opacity-50' : ''}`}
     >

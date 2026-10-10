@@ -146,12 +146,15 @@ const PlannedRow = memo(function PlannedRow({ alloc, lookups }: { alloc: Allocat
   const item = lookups.item(alloc.itemId);
   if (!item) return null;
   return (
-    <li className="flex items-center gap-1.5 rounded border-l-2 bg-raised py-0.5 pr-1.5 pl-1.5" style={{ borderLeftColor: lookups.color(item) }}>
+    <li
+      className="flex animate-fade-in items-center gap-1.5 rounded-md border-l-2 bg-raised py-0.5 pr-1.5 pl-1.5 transition-colors duration-150 hover:bg-line/60"
+      style={{ borderLeftColor: lookups.color(item) }}
+    >
       <input type="checkbox" className="accent-ok" checked={alloc.done} onChange={() => useStore.getState().toggleAllocation(alloc.id)} />
       <button className="min-w-0 flex-1 text-left leading-tight" onClick={() => openItem(item.id)}>
-        <div className={`truncate ${alloc.done ? 'text-dim line-through' : ''}`}>
+        <div className={`truncate transition-colors duration-200 ${alloc.done ? 'text-dim' : ''}`}>
           {isItemDone(item) && <span className="text-ok">✓ </span>}
-          {item.title}
+          <span className={`strike ${alloc.done ? 'is-struck' : ''}`}>{item.title}</span>
         </div>
         <div className="truncate text-[10px] text-dim">{lookups.project(item.projectId)?.name}</div>
       </button>
@@ -188,7 +191,7 @@ function Projects() {
       <ul className="scroll-thin min-h-0 flex-1 overflow-y-auto p-1">
         {rows.map(({ p, s }) => (
           <li key={p.id}>
-            <a href={href({ name: 'projects', id: p.id })} className="flex items-center gap-2 rounded px-1 py-1 hover:bg-raised">
+            <a href={href({ name: 'projects', id: p.id })} className="flex items-center gap-2 rounded-md px-1 py-1 transition-colors duration-150 hover:bg-raised">
               <ProgressRing percent={s.percent} color={lookups.area(p.areaId)?.color ?? '#94a3b8'} size={30} stroke={3} />
               <div className="min-w-0 flex-1 leading-tight">
                 <div className="truncate text-strong">{p.name}</div>

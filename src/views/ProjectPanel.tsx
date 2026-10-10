@@ -1,4 +1,5 @@
 import { memo, useMemo, useState } from 'react';
+import { withUndo } from '../toast';
 import { BufferedTextarea } from '../components/Buffered';
 import { DateField } from '../components/DateField';
 import { StatusSelect } from '../components/StatusSelect';
@@ -27,12 +28,12 @@ export function ProjectPanel({ project, percent }: { project: Project; percent: 
       <Header project={project} percent={percent} color={color} />
       <div className="flex shrink-0 gap-1 border-b border-line px-3 py-1">
         {(['items', 'overview', 'log'] as const).map((t) => (
-          <button key={t} className={`label rounded px-1.5 py-0.5 ${tab === t ? 'bg-raised !text-fg' : 'hover:!text-fg'}`} onClick={() => setTab(t)}>
+          <button key={t} className={`label rounded px-1.5 py-0.5 transition-colors duration-150 ${tab === t ? 'bg-raised !text-fg' : 'hover:!text-fg'}`} onClick={() => setTab(t)}>
             {t === 'log' ? `log (${project.log.length})` : t}
           </button>
         ))}
       </div>
-      <div className="min-h-0 flex-1">
+      <div key={tab} className="min-h-0 flex-1 animate-fade-in">
         {tab === 'items' && <ItemsTab project={project} />}
         {tab === 'overview' && <Overview project={project} />}
         {tab === 'log' && <Log project={project} />}
@@ -91,7 +92,7 @@ function Header({ project, percent, color }: { project: Project; percent: number
             onClick={() => {
               if (confirm(`Delete "${project.name}" with all its items and planned time?`)) {
                 navigate({ name: 'projects' });
-                deleteProject(project.id);
+                withUndo(`Deleted “${project.name}”`, () => deleteProject(project.id));
               }
             }}
           >
@@ -173,14 +174,16 @@ const ItemRow = memo(function ItemRow({ item, allocs, today }: { item: Item; all
   const planned = plannedHours(allocs);
 
   return (
-    <tr className={`group border-b border-line/50 hover:bg-panel ${done ? 'text-dim' : ''}`}>
+    <tr className={`group border-b border-line/50 transition-colors duration-150 hover:bg-raised/50 ${done ? 'text-dim' : ''}`}>
       <td className="px-1 py-0.5">
         <StatusSelect value={item.status} onChange={(status) => updateItem(item.id, { status })} className="h-6 w-full text-[12px]" />
       </td>
       <td className="px-1 py-0.5">
         <button className="flex w-full min-w-0 items-center gap-1.5 rounded px-1 text-left hover:bg-raised" onClick={() => openItem(item.id)} title="Open task details">
           <span className="tabular-nums text-[10px] text-dim">{KIND_BADGE[item.kind]}</span>
-          <span className={`truncate ${done ? 'line-through' : ''}`}>{item.title}</span>
+          <span className="truncate">
+            <span className={`strike ${done ? 'is-struck' : ''}`}>{item.title}</span>
+          </span>
           {item.notes && <span className="text-[10px] text-dim" title="Has notes">✎</span>}
         </button>
       </td>
@@ -205,7 +208,7 @@ const ItemRow = memo(function ItemRow({ item, allocs, today }: { item: Item; all
         <button
           className="invisible text-dim group-hover:visible hover:text-danger"
           title="Delete item"
-          onClick={() => (allocs.length === 0 || confirm(`Delete "${item.title}" and its planned time?`)) && deleteItem(item.id)}
+          onClick={() => withUndo(`Deleted “${item.title}”`, () => deleteItem(item.id))}
         >
           ×
         </button>
@@ -329,7 +332,7 @@ function Log({ project }: { project: Project }) {
       </button>
       <ul className="scroll-thin min-h-0 flex-1 space-y-2 overflow-y-auto">
         {project.log.map((l) => (
-          <LogEntryRow key={l.id} projectId={project.id} entry={l} onDelete={() => confirm('Delete this entry?') && deleteLog(project.id, l.id)} />
+          <LogEntryRow key={l.id} projectId={project.id} entry={l} onDelete={() => withUndo('Log entry deleted', () => deleteLog(project.id, l.id))} />
         ))}
       </ul>
     </div>

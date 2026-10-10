@@ -12,7 +12,7 @@ import {
 } from '@dnd-kit/core';
 import { memo, useEffect, useLayoutEffect, useMemo, useRef, useState, type MouseEvent as ReactMouseEvent, type PointerEvent as ReactPointerEvent } from 'react';
 import { fmtH } from '../format';
-import { useCapacities, useLookups, type Lookups } from '../hooks';
+import { useCapacities, useLookups, useSlide, type Lookups } from '../hooks';
 import { reservedFor } from '../model/capacity';
 import { dayName, todayISO } from '../model/dates';
 import { isItemDone } from '../model/selectors';
@@ -180,11 +180,12 @@ function GridBody({ days, hourHeight, scrollToHour, onDayClick }: BodyProps) {
   }, [allocations, events, days, hidden, lookups]);
 
   const cols = `3.5rem repeat(${days.length}, minmax(0, 1fr))`;
+  const slide = useSlide(days[0]);
 
   return (
-    <div className="relative flex h-full min-h-0 flex-col">
+    <div className="relative flex h-full min-h-0 flex-col overflow-hidden select-none">
       {draftElsewhere && <OffscreenDraft />}
-      <div className="grid shrink-0" style={{ gridTemplateColumns: cols }}>
+      <div key={`h${days[0]}`} className={`grid shrink-0 ${slide}`} style={{ gridTemplateColumns: cols }}>
         <div />
         {days.map((d) => {
           const day = byDay.get(d)!;
@@ -195,7 +196,7 @@ function GridBody({ days, hourHeight, scrollToHour, onDayClick }: BodyProps) {
               <span className={`text-[11px] font-medium uppercase ${isToday ? 'text-accent' : 'text-dim'}`}>{dayName(d)}</span>
               <button
                 onClick={() => onDayClick?.(d)}
-                className={`flex h-10 w-10 items-center justify-center rounded-full text-[22px] tabular-nums ${
+                className={`flex h-10 w-10 items-center justify-center rounded-full text-[22px] tabular-nums transition-colors duration-150 active:scale-95 ${
                   isToday ? 'bg-accent text-white' : 'text-strong hover:bg-raised'
                 }`}
               >
@@ -206,14 +207,14 @@ function GridBody({ days, hourHeight, scrollToHour, onDayClick }: BodyProps) {
           );
         })}
       </div>
-      <div className="grid shrink-0 border-b border-line" style={{ gridTemplateColumns: cols }}>
+      <div key={`s${days[0]}`} className={`grid shrink-0 border-b border-line ${slide}`} style={{ gridTemplateColumns: cols }}>
         <div className="self-end pr-2 pb-1 text-right text-[10px] text-dim">all-day</div>
         {days.map((d) => (
           <Strip key={d} date={d} allocs={byDay.get(d)!.untimed} events={byDay.get(d)!.allDay} lookups={lookups} />
         ))}
       </div>
       <div ref={scrollRef} className="scroll-thin relative min-h-0 flex-1 overflow-y-auto">
-        <div className="grid" style={{ gridTemplateColumns: cols, height: 24 * hourHeight }}>
+        <div key={`g${days[0]}`} className={`grid ${slide}`} style={{ gridTemplateColumns: cols, height: 24 * hourHeight }}>
           <div className="relative">
             {Array.from({ length: 24 }, (_, h) => (
               <span key={h} className="absolute right-2 -translate-y-1/2 text-[10px] text-dim tabular-nums" style={{ top: h * hourHeight }}>
@@ -265,7 +266,7 @@ const Strip = memo(function Strip(props: { date: ISODate; allocs: Allocation[]; 
         if (e.target !== e.currentTarget || clicksSuppressed()) return;
         useUi.getState().setDraft(draftAt(date, 9 * 60, 10 * 60, true));
       }}
-      className={`scroll-thin max-h-24 min-h-7 cursor-pointer space-y-px overflow-y-auto border-l border-line p-0.5 ${isOver ? 'bg-accent/10' : ''}`}
+      className={`drop-target scroll-thin max-h-24 min-h-7 cursor-pointer space-y-px overflow-y-auto border-l border-line p-0.5 hover:bg-raised/50 ${isOver ? 'is-over bg-accent/10' : ''}`}
       title="Click to add an all-day event"
     >
       {events.map((e) => (
@@ -290,7 +291,7 @@ const AllDayChip = memo(function AllDayChip({ event }: { event: CalendarEvent })
           {...attributes}
           {...listeners}
           onClick={() => !clicksSuppressed() && useUi.getState().openEvent(event.id)}
-          className={`cursor-pointer touch-none truncate rounded px-1.5 py-px text-[11px] font-medium ${isDragging ? 'opacity-30' : ''}`}
+          className={`block-interactive cursor-pointer touch-none truncate rounded px-1.5 py-px text-[11px] font-medium ${isDragging ? 'opacity-30' : ''}`}
           style={{ background: 'var(--color-event)', color: 'var(--color-on-block)' }}
         >
           {event.title}
@@ -314,7 +315,7 @@ const StripChip = memo(function StripChip({ alloc, lookups }: { alloc: Allocatio
       {...attributes}
       {...listeners}
       onClick={() => !clicksSuppressed() && useUi.getState().openItem(alloc.itemId)}
-      className={`flex cursor-pointer touch-none items-center gap-1 truncate rounded border-l-4 px-1.5 py-px text-[11px] font-medium ${isDragging ? 'opacity-30' : ''} ${
+      className={`block-interactive flex cursor-pointer touch-none items-center gap-1 truncate rounded border-l-4 px-1.5 py-px text-[11px] font-medium ${isDragging ? 'opacity-30' : ''} ${
         alloc.done ? 'line-through opacity-60' : ''
       }`}
       style={{ background: `color-mix(in srgb, ${lookups.color(item)} 55%, var(--color-panel))`, borderLeftColor: lookups.color(item) }}
@@ -331,7 +332,7 @@ function DraftChip() {
   return (
     <Popover open onOpenChange={(o) => !o && useUi.getState().setDraft(null)}>
       <PopoverAnchor asChild>
-        <div className="truncate rounded px-1.5 py-px text-[11px] font-medium shadow-md" style={{ background: 'var(--color-event)', color: 'var(--color-on-block)' }}>
+        <div className="animate-pop-in truncate rounded px-1.5 py-px text-[11px] font-medium shadow-md" style={{ background: 'var(--color-event)', color: 'var(--color-on-block)' }}>
           {title || '(No title)'}
         </div>
       </PopoverAnchor>
@@ -396,7 +397,7 @@ const Column = memo(function Column({ date, isToday, timed, events, reserved, ho
         useUi.getState().setDraft(draft);
       }}
       onPointerCancel={() => setSel(null)}
-      className={`relative border-l border-line ${isOver ? 'bg-accent/5' : ''}`}
+      className={`drop-target relative border-l border-line ${isOver ? 'is-over bg-accent/5' : ''}`}
       style={{ backgroundImage: `repeating-linear-gradient(to bottom, var(--color-line) 0 1px, transparent 1px ${hourHeight}px)` }}
     >
       {reserved.map((r, i) => (
@@ -442,7 +443,7 @@ function DraftBlock({ hourHeight }: { hourHeight: number }) {
     <Popover open onOpenChange={(o) => !o && useUi.getState().setDraft(null)}>
       <PopoverAnchor asChild>
         <div
-          className="absolute right-1 left-0.5 z-20 overflow-hidden rounded-md px-1.5 py-0.5 text-[11px] leading-tight shadow-lg"
+          className="absolute right-1 left-0.5 z-20 animate-pop-in overflow-hidden rounded-md px-1.5 py-0.5 text-[11px] leading-tight shadow-lg transition-[top,height] duration-150"
           style={{ top: (start / 60) * hourHeight, height: ((end - start) / 60) * hourHeight, background: 'var(--color-event)', color: 'var(--color-on-block)' }}
         >
           <div className="truncate font-medium">{draft.title || '(No title)'}</div>
@@ -528,9 +529,9 @@ const EventBlock = memo(function EventBlock({ event, pos = { lane: 0, lanes: 1 }
           {...attributes}
           {...listeners}
           onClick={() => !clicksSuppressed() && useUi.getState().openEvent(event.id)}
-          className={`absolute z-10 cursor-pointer touch-none overflow-hidden rounded-md px-1.5 py-0.5 text-[11px] leading-tight ${
+          className={`block-interactive absolute z-10 cursor-pointer touch-none overflow-hidden rounded-md px-1.5 py-0.5 text-[11px] leading-tight ${
             isDragging ? 'opacity-30' : ''
-          } ${open ? 'shadow-lg ring-2 ring-bg' : ''}`}
+          } ${open ? 'shadow-lg ring-2 ring-bg' : ''} ${previewEnd != null ? 'resizing' : ''}`}
           style={{ ...blockStyle(start, end, pos, hourHeight), background: 'var(--color-event)', color: 'var(--color-on-block)' }}
         >
           <div className="truncate font-medium">{event.title}</div>
@@ -569,9 +570,9 @@ const AllocBlock = memo(function AllocBlock(props: { alloc: Allocation; pos?: Po
       {...attributes}
       {...listeners}
       onClick={() => !clicksSuppressed() && useUi.getState().openItem(alloc.itemId)}
-      className={`absolute z-10 cursor-pointer touch-none overflow-hidden rounded-md border-l-4 px-1.5 py-0.5 text-[11px] leading-tight ${
+      className={`block-interactive absolute z-10 cursor-pointer touch-none overflow-hidden rounded-md border-l-4 px-1.5 py-0.5 text-[11px] leading-tight ${
         isDragging ? 'opacity-30' : done ? 'opacity-60' : ''
-      }`}
+      } ${previewEnd != null ? 'resizing' : ''}`}
       style={{
         ...blockStyle(start, end, pos, hourHeight),
         background: `color-mix(in srgb, ${lookups.color(item)} 55%, var(--color-panel))`,
@@ -579,7 +580,9 @@ const AllocBlock = memo(function AllocBlock(props: { alloc: Allocation; pos?: Po
       }}
       title={`${item?.title ?? ''}\n${alloc.start} · ${fmtH((end - start) / 60)}`}
     >
-      <div className={`truncate font-medium text-strong ${done ? 'line-through' : ''}`}>{item?.title}</div>
+      <div className="truncate font-medium text-strong">
+        <span className={`strike ${done ? 'is-struck' : ''}`}>{item?.title}</span>
+      </div>
       {height > 26 && (
         <div className="truncate opacity-80">
           {alloc.start} – {fromMinutes(end)} · {item ? lookups.project(item.projectId)?.name : ''}
@@ -595,7 +598,7 @@ function DragGhost({ drag }: { drag: Drag }) {
   const title = drag.kind === 'event' ? drag.event.title : (lookups.item(drag.alloc.itemId)?.title ?? '');
   return (
     <div
-      className="w-40 cursor-grabbing truncate rounded-md px-1.5 py-0.5 text-[11px] font-medium shadow-xl"
+      className="w-40 animate-lift cursor-grabbing truncate rounded-md px-1.5 py-0.5 text-[11px] font-medium shadow-xl"
       style={{ background: drag.kind === 'event' ? 'var(--color-event)' : lookups.color(lookups.item(drag.alloc.itemId)), color: 'var(--color-on-block)' }}
     >
       {title}

@@ -7,6 +7,13 @@ import { useData, useStore } from '../store';
 import { CapacitySettings } from './CapacitySettings';
 import { Select } from '../components/ui/Select';
 
+const CAL_VIEW_OPTIONS = [
+  { value: 'day', label: 'Day' },
+  { value: '3day', label: '3 days' },
+  { value: 'week', label: 'Week' },
+  { value: 'month', label: 'Month' },
+] as const;
+
 const EVENT_LENGTHS = [15, 30, 45, 60, 90, 120].map((m) => ({ value: String(m), label: m < 60 ? `${m} minutes` : m === 60 ? '1 hour' : `${m / 60} hours` }));
 
 export function SettingsView() {
@@ -51,6 +58,17 @@ export function SettingsView() {
               ariaLabel="Default event length"
             />
             <span className="text-[12px] text-dim">Dragging on the calendar still selects any length.</span>
+          </label>
+          <label className="mt-2 flex items-center gap-3">
+            <span className="w-48">Default view</span>
+            <Select
+              value={data.settings.defaultCalendarView}
+              onChange={(v) => useStore.getState().setDefaultCalendarView(v)}
+              options={CAL_VIEW_OPTIONS}
+              className="w-36"
+              ariaLabel="Default calendar view"
+            />
+            <span className="text-[12px] text-dim">The calendar opens in this view whenever you come to it from another page.</span>
           </label>
         </Section>
 

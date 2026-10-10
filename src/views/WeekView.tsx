@@ -15,7 +15,7 @@ import { BufferedTextarea } from '../components/Buffered';
 import { HoursInput } from '../components/HoursInput';
 import { WeekNav } from '../components/WeekNav';
 import { fmtH, URGENCY_CLASS } from '../format';
-import { useCapacities, useLookups, type Lookups } from '../hooks';
+import { useCapacities, useLookups, useSlide, type Lookups } from '../hooks';
 import { CapacityBadge } from '../components/CapacityBadge';
 import type { CapacityInfo } from '../model/capacity';
 import { addDays, countdown, dayName, monthKey, monthName, shortDate, startOfWeek, todayISO } from '../model/dates';
@@ -23,6 +23,7 @@ import { backlogItems, defaultAllocationHours, isItemDone, missedAllocations, pl
 import type { Allocation, ISODate, Item } from '../model/types';
 import { useStore } from '../store';
 import { useUi } from '../ui';
+import { withUndo } from '../toast';
 
 type DragData = { kind: 'item'; item: Item; remaining?: number } | { kind: 'alloc'; alloc: Allocation };
 
@@ -55,7 +56,7 @@ export function WeekView({ week }: { week?: ISODate }) {
       if (drag.kind === 'item') addAllocation(drag.item.id, date, defaultAllocationHours(drag.remaining));
       else if (drag.alloc.date !== date) updateAllocation(drag.alloc.id, { date });
     } else if (target === 'backlog' && drag.kind === 'alloc' && !drag.alloc.done) {
-      deleteAllocation(drag.alloc.id);
+      withUndo('Unscheduled', () => deleteAllocation(drag.alloc.id));
     }
   };
 
@@ -93,6 +94,7 @@ function WeekGrid({ monday, today }: { monday: ISODate; today: ISODate }) {
   const lookups = useLookups();
   const days = useMemo(() => Array.from({ length: 7 }, (_, i) => addDays(monday, i)), [monday]);
   const capacities = useCapacities(days);
+  const slide = useSlide(monday);
 
   // Days whose sessions didn't change keep the same array, so their memoized boxes skip re-rendering.
   const prevByDate = useRef(new Map<ISODate, Allocation[]>());
@@ -125,8 +127,8 @@ function WeekGrid({ monday, today }: { monday: ISODate; today: ISODate }) {
   );
 
   return (
-    <div className="scroll-thin min-h-0 flex-1 overflow-y-auto p-2 md:overflow-hidden">
-      <div className="grid gap-2 md:h-full md:grid-rows-[minmax(0,1.35fr)_minmax(0,1fr)]">
+    <div className="scroll-thin min-h-0 flex-1 overflow-y-auto overflow-x-hidden p-2 md:overflow-hidden">
+      <div key={monday} className={`grid gap-2 md:h-full md:grid-rows-[minmax(0,1.35fr)_minmax(0,1fr)] ${slide}`}>
         <div className="grid gap-2 md:min-h-0 md:grid-cols-5">{days.slice(0, 5).map(dayBox)}</div>
         <div className="grid gap-2 md:min-h-0 md:grid-cols-5">
           <div className="grid gap-2 md:col-span-2 md:min-h-0 md:grid-cols-2">{days.slice(5).map(dayBox)}</div>
@@ -152,8 +154,8 @@ const DayBox = memo(function DayBox(props: DayBoxProps) {
   return (
     <section
       ref={setNodeRef}
-      className={`flex min-h-40 flex-col rounded border bg-panel md:min-h-0 ${
-        isOver ? 'border-accent' : props.isToday ? 'border-accent/50' : 'border-line'
+      className={`drop-target flex min-h-40 flex-col rounded-lg border bg-panel md:min-h-0 ${
+        isOver ? 'is-over border-accent bg-accent/5' : props.isToday ? 'border-accent/50' : 'border-line'
       } ${props.isPast ? 'opacity-75' : ''}`}
     >
       <DayContent {...props} />
@@ -218,7 +220,7 @@ const AllocationBlock = memo(function AllocationBlock({ alloc, lookups, showDate
       ref={setNodeRef}
       {...attributes}
       {...listeners}
-      className={`group flex cursor-grab touch-none items-center gap-1.5 rounded border-l-2 bg-raised py-0.5 pr-1 pl-1.5 active:cursor-grabbing ${
+      className={`block-interactive group flex cursor-grab touch-none items-center gap-1.5 rounded-md border-l-2 bg-raised py-0.5 pr-1 pl-1.5 active:cursor-grabbing ${
         isDragging ? 'opacity-30' : ''
       }`}
       style={{ borderLeftColor: lookups.color(item) }}
@@ -244,10 +246,10 @@ const AllocationContent = memo(function AllocationContent(props: { alloc: Alloca
         className="accent-ok"
       />
       <button className="min-w-0 flex-1 text-left leading-tight" onClick={() => openItem(item.id)} title="Open task details">
-        <div className={`truncate ${alloc.done ? 'text-dim line-through' : ''}`}>
+        <div className={`truncate transition-colors duration-200 ${alloc.done ? 'text-dim' : ''}`}>
           {itemDone && <span className="text-ok">✓ </span>}
           {alloc.start && <span className="tabular-nums text-[11px] text-dim">{alloc.start} </span>}
-          {item.title}
+          <span className={`strike ${alloc.done ? 'is-struck' : ''}`}>{item.title}</span>
         </div>
         <div className="truncate text-[10px] text-dim">
           {showDate && (
@@ -264,12 +266,12 @@ const AllocationContent = memo(function AllocationContent(props: { alloc: Alloca
             className="btn-ghost px-1 text-[11px]"
             title="Mark the whole task complete"
             onPointerDown={stop}
-            onClick={() => updateItem(item.id, { status: 'done' })}
+            onClick={() => withUndo(`Completed “${item.title}”`, () => updateItem(item.id, { status: 'done' }))}
           >
             ✓✓
           </button>
         )}
-        <button className="btn-ghost px-1 hover:text-danger" title="Remove from plan" onPointerDown={stop} onClick={() => deleteAllocation(alloc.id)}>
+        <button className="btn-ghost px-1 hover:text-danger" title="Remove from plan" onPointerDown={stop} onClick={() => withUndo('Removed from plan', () => deleteAllocation(alloc.id))}>
           ×
         </button>
       </div>
@@ -297,7 +299,7 @@ const BacklogBox = memo(function BacklogBox(props: { lookups: Lookups; today: IS
   return (
     <section
       ref={setNodeRef}
-      className={`flex min-h-64 flex-col rounded border bg-panel md:col-span-3 md:min-h-0 ${isOver ? 'border-accent' : 'border-line'}`}
+      className={`drop-target flex min-h-64 flex-col rounded-lg border bg-panel md:col-span-3 md:min-h-0 ${isOver ? 'is-over border-accent bg-accent/5' : 'border-line'}`}
     >
       <BacklogContents {...props} />
     </section>
@@ -387,7 +389,7 @@ function MonthNote({ month }: { month: string }) {
 
 function Tab({ active, onClick, children }: { active: boolean; onClick(): void; children: ReactNode }) {
   return (
-    <button onClick={onClick} className={`label rounded px-1.5 py-0.5 ${active ? 'bg-raised !text-fg' : 'hover:!text-fg'}`}>
+    <button onClick={onClick} className={`label rounded px-1.5 py-0.5 transition-colors duration-150 ${active ? 'bg-raised !text-fg' : 'hover:!text-fg'}`}>
       {children}
     </button>
   );
@@ -405,7 +407,7 @@ const BacklogItem = memo(function BacklogItem({ item, remaining, lookups, today 
       {...attributes}
       {...listeners}
       onClick={() => openItem(item.id)}
-      className={`flex cursor-grab touch-none items-center gap-1.5 rounded border-l-2 px-1.5 py-0.5 hover:bg-raised active:cursor-grabbing ${
+      className={`flex cursor-grab touch-none items-center gap-1.5 rounded-md border-l-2 px-1.5 py-0.5 transition-[background-color,transform] duration-150 hover:bg-raised active:scale-[0.985] active:cursor-grabbing ${
         isDragging ? 'opacity-30' : ''
       }`}
       style={{ borderLeftColor: lookups.color(item) }}
@@ -444,7 +446,7 @@ function DragPreview({ drag }: { drag: DragData }) {
   const hours = drag.kind === 'item' ? defaultAllocationHours(drag.remaining) : drag.alloc.plannedHours;
   return (
     <div
-      className="flex w-56 cursor-grabbing items-center gap-2 rounded border border-l-2 border-accent/50 bg-raised px-2 py-1 shadow-lg shadow-black/50"
+      className="flex w-56 animate-lift cursor-grabbing items-center gap-2 rounded-md border border-l-2 border-accent/50 bg-raised px-2 py-1 shadow-lg shadow-black/50"
       style={{ borderLeftColor: lookups.color(item) }}
     >
       <span className="min-w-0 flex-1 truncate">{item.title}</span>

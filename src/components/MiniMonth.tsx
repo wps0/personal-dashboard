@@ -1,5 +1,6 @@
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { useEffect, useState } from 'react';
+import { useSlide } from '../hooks';
 import { addMonths, firstOfMonth, formatMonthYear, monthGrid, startOfWeek, todayISO } from '../model/dates';
 import type { ISODate } from '../model/types';
 
@@ -25,10 +26,11 @@ export function MiniMonth({ selected, range, onSelect, weekHover }: Props) {
   }, [selected]);
 
   const days = monthGrid(month);
+  const slide = useSlide(month);
   const inRange = (d: ISODate) => (range ? d >= range[0] && d <= range[1] : false);
 
   return (
-    <div className="w-[224px] select-none">
+    <div className="w-[224px] overflow-hidden select-none">
       <div className="mb-1 flex items-center pl-2">
         <span className="flex-1 text-[13px] font-medium text-strong">{formatMonthYear(month)}</span>
         <button className="icon-btn" aria-label="Previous month" onClick={() => setMonth(addMonths(month, -1))}>
@@ -45,18 +47,18 @@ export function MiniMonth({ selected, range, onSelect, weekHover }: Props) {
           </span>
         ))}
       </div>
-      <div className="grid grid-cols-7" onMouseLeave={() => setHoverWeek(null)}>
+      <div key={month} className={`grid grid-cols-7 ${slide}`} onMouseLeave={() => setHoverWeek(null)}>
         {days.map((d) => {
           const isToday = d === today;
           const isSelected = d === selected;
           const outside = d.slice(0, 7) !== month.slice(0, 7);
           const tinted = inRange(d) || (weekHover && hoverWeek === startOfWeek(d));
           return (
-            <div key={d} className={`flex justify-center py-px ${tinted ? 'bg-accent/12' : ''}`}>
+            <div key={d} className={`flex justify-center py-px transition-colors duration-150 ${tinted ? 'bg-accent/12' : ''}`}>
               <button
                 onClick={() => onSelect(d)}
                 onMouseEnter={() => weekHover && setHoverWeek(startOfWeek(d))}
-                className={`flex h-7 w-7 items-center justify-center rounded-full text-[11px] tabular-nums ${
+                className={`flex h-7 w-7 items-center justify-center rounded-full text-[11px] tabular-nums transition-[background-color,transform] duration-150 active:scale-90 ${
                   isToday
                     ? 'bg-accent font-semibold text-white'
                     : isSelected

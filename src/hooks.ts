@@ -1,4 +1,4 @@
-import { useMemo } from 'react';
+import { useMemo, useRef } from 'react';
 import { capacityFor, type CapacityInfo } from './model/capacity';
 import type { Area, CalendarEvent, ISODate, Item, Project } from './model/types';
 import { useStore } from './store';
@@ -45,3 +45,15 @@ export function useCapacities(days: ISODate[]): Map<ISODate, CapacityInfo> {
     return new Map(days.map((d) => [d, capacityFor(d, settings.capacityRules, settings.dayCapacity, byDay.get(d) ?? [])]));
   }, [days, events, settings]);
 }
+
+/** Animation class for a change of the first visible day (or period): content slides in from the side we moved toward. */
+export function useSlide(first: string): string {
+  const prev = useRef(first);
+  const dir = useRef('');
+  if (prev.current !== first) {
+    dir.current = first > prev.current ? 'animate-from-right' : 'animate-from-left';
+    prev.current = first;
+  }
+  return dir.current;
+}
+

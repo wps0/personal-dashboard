@@ -1,4 +1,5 @@
 import { useMemo, useState, type ReactNode } from 'react';
+import { withUndo } from '../toast';
 import { BufferedInput, BufferedTextarea } from './Buffered';
 import { DateField } from './DateField';
 import { StatusSelect } from './StatusSelect';
@@ -157,7 +158,7 @@ function ItemDetails({ item, onClose }: { item: Item; onClose(): void }) {
 
       <footer className="flex items-center gap-2 border-t border-line px-3 py-2">
         {!isItemDone(item) && (
-          <button className="btn" onClick={() => set({ status: 'done' })}>
+          <button className="btn" onClick={() => withUndo(`Completed “${item.title}”`, () => set({ status: 'done' }))}>
             ✓ mark complete
           </button>
         )}
@@ -175,9 +176,9 @@ function ItemDetails({ item, onClose }: { item: Item; onClose(): void }) {
         <button
           className="btn-ghost ml-auto hover:text-danger"
           onClick={() => {
-            if (confirm(`Delete "${item.title}"${allocs.length ? ' and its planned sessions' : ''}?`)) {
+            {
               onClose();
-              deleteItem(item.id);
+              withUndo(`Deleted “${item.title}”`, () => deleteItem(item.id));
             }
           }}
         >
@@ -231,7 +232,7 @@ function SessionRow({ alloc, today }: { alloc: Allocation; today: string }) {
         )}
       </td>
       <td className="px-1 text-right">
-        <button className="icon-btn invisible h-6 w-6 group-hover:visible hover:!text-danger" onClick={() => deleteAllocation(alloc.id)} title="Remove session">
+        <button className="icon-btn invisible h-6 w-6 group-hover:visible hover:!text-danger" onClick={() => withUndo('Session removed', () => deleteAllocation(alloc.id))} title="Remove session">
           <Trash2 size={13} />
         </button>
       </td>

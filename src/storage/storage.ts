@@ -1,6 +1,6 @@
 import { get, set } from 'idb-keyval';
 import type { AppData } from '../model/types';
-import { emptyData } from '../model/types';
+import { CAL_VIEWS, emptyData } from '../model/types';
 import { migrateStatus } from '../model/selectors';
 import { defaultRules, rulesFromLegacyHours } from '../model/capacity';
 
@@ -55,7 +55,8 @@ function parseSettings(raw: unknown): AppData['settings'] {
       : defaultRules();
   const minutes = Number(s.defaultEventMinutes);
   const defaultEventMinutes = Number.isFinite(minutes) && minutes >= 15 && minutes <= 480 ? Math.round(minutes / 15) * 15 : 60;
-  return { capacityRules, dayCapacity: s.dayCapacity ?? {}, defaultEventMinutes };
+  const defaultCalendarView = (CAL_VIEWS as readonly string[]).includes(s.defaultCalendarView as string) ? s.defaultCalendarView! : 'week';
+  return { capacityRules, dayCapacity: s.dayCapacity ?? {}, defaultEventMinutes, defaultCalendarView };
 }
 
 export function exportJson(data: AppData): string {

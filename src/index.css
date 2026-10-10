@@ -171,3 +171,182 @@
     background-color: color-mix(in srgb, var(--color-dim) 5%, transparent);
   }
 }
+
+/* ───────────── Motion ─────────────
+ * Short, physical-feeling transitions so every action gets feedback.
+ * All of it is turned off for prefers-reduced-motion.
+ */
+@theme {
+  --ease-out-soft: cubic-bezier(0.2, 0.8, 0.2, 1);
+  --ease-spring: cubic-bezier(0.34, 1.4, 0.64, 1);
+
+  --animate-fade-in: fade-in 160ms var(--ease-out-soft) both;
+  --animate-pop-in: pop-in 160ms var(--ease-out-soft) both;
+  --animate-pop-out: pop-out 110ms ease-in both;
+  --animate-rise-in: rise-in 220ms var(--ease-out-soft) both;
+  --animate-slide-in-right: slide-in-right 240ms var(--ease-out-soft) both;
+  --animate-from-right: from-right 220ms var(--ease-out-soft) both;
+  --animate-from-left: from-left 220ms var(--ease-out-soft) both;
+  --animate-settle: settle 260ms var(--ease-spring) both;
+  --animate-lift: lift 140ms var(--ease-out-soft) both;
+  --animate-toast-in: toast-in 260ms var(--ease-spring) both;
+
+  @keyframes fade-in {
+    from { opacity: 0; }
+  }
+  @keyframes pop-in {
+    from { opacity: 0; transform: scale(0.96); }
+  }
+  @keyframes pop-out {
+    to { opacity: 0; transform: scale(0.97); }
+  }
+  @keyframes rise-in {
+    from { opacity: 0; transform: translateY(10px) scale(0.98); }
+  }
+  @keyframes slide-in-right {
+    from { opacity: 0; transform: translateX(24px); }
+  }
+  @keyframes from-right {
+    from { opacity: 0.2; transform: translateX(28px); }
+  }
+  @keyframes from-left {
+    from { opacity: 0.2; transform: translateX(-28px); }
+  }
+  @keyframes settle {
+    from { opacity: 0.4; transform: scale(0.94); }
+  }
+  @keyframes lift {
+    to { transform: rotate(1.5deg) scale(1.04); box-shadow: 0 12px 28px -6px rgb(0 0 0 / 0.45); }
+  }
+  @keyframes toast-in {
+    from { opacity: 0; transform: translateY(16px) scale(0.96); }
+  }
+}
+
+@layer components {
+  /* Buttons press in slightly and fade their colors. */
+  .btn,
+  .btn-primary,
+  .icon-btn,
+  .btn-ghost {
+    transition:
+      background-color 150ms,
+      border-color 150ms,
+      color 150ms,
+      transform 120ms var(--ease-out-soft),
+      filter 150ms;
+  }
+  .btn:active:not(:disabled),
+  .btn-primary:active:not(:disabled),
+  .icon-btn:active,
+  .btn-ghost:active {
+    transform: scale(0.94);
+  }
+  .field {
+    transition: border-color 150ms, box-shadow 150ms;
+  }
+  .field:focus,
+  .field:focus-within {
+    box-shadow: 0 0 0 3px color-mix(in srgb, var(--color-accent) 18%, transparent);
+  }
+  /* Calendar and week blocks: hover lift, press, and a short settle when they appear (created or dropped). */
+  .block-interactive {
+    transition:
+      top 180ms var(--ease-out-soft),
+      height 180ms var(--ease-out-soft),
+      left 180ms var(--ease-out-soft),
+      width 180ms var(--ease-out-soft),
+      filter 150ms,
+      box-shadow 150ms,
+      transform 120ms var(--ease-out-soft),
+      opacity 150ms;
+    animation: var(--animate-settle);
+  }
+  .block-interactive:hover {
+    filter: brightness(1.08);
+    box-shadow: 0 4px 12px -4px rgb(0 0 0 / 0.35);
+    z-index: 15;
+  }
+  .block-interactive:active {
+    transform: scale(0.985);
+  }
+  .block-interactive.resizing {
+    transition: none;
+  }
+  /* Popovers and menus: grow from their trigger, shrink away on close (Radix waits for the exit animation). */
+  .popover-motion[data-state="open"] {
+    animation: var(--animate-pop-in);
+    transform-origin: var(--radix-popover-content-transform-origin);
+  }
+  .popover-motion[data-state="closed"] {
+    animation: var(--animate-pop-out);
+    transform-origin: var(--radix-popover-content-transform-origin);
+  }
+  /* Drop targets light up smoothly. */
+  .drop-target {
+    transition: background-color 150ms, border-color 150ms, box-shadow 150ms;
+  }
+  .drop-target.is-over {
+    box-shadow: inset 0 0 0 2px color-mix(in srgb, var(--color-accent) 70%, transparent);
+  }
+  /* Checkboxes: custom box with a check that pops in. */
+  input[type="checkbox"]:not(.sr-only) {
+    appearance: none;
+    flex-shrink: 0;
+    width: 15px;
+    height: 15px;
+    border-radius: 4px;
+    border: 1.5px solid color-mix(in srgb, var(--color-dim) 80%, transparent);
+    background: transparent;
+    display: inline-grid;
+    place-content: center;
+    transition: background-color 150ms, border-color 150ms, transform 120ms var(--ease-out-soft);
+  }
+  input[type="checkbox"]:not(.sr-only):hover {
+    border-color: var(--color-fg);
+  }
+  input[type="checkbox"]:not(.sr-only):active {
+    transform: scale(0.85);
+  }
+  input[type="checkbox"]:not(.sr-only)::after {
+    content: "";
+    width: 9px;
+    height: 5px;
+    border-left: 2px solid var(--color-on-block);
+    border-bottom: 2px solid var(--color-on-block);
+    transform: translateY(-1px) rotate(-45deg) scale(0);
+    transition: transform 180ms var(--ease-spring);
+  }
+  input[type="checkbox"]:not(.sr-only):checked {
+    background: var(--color-ok);
+    border-color: var(--color-ok);
+  }
+  input[type="checkbox"]:not(.sr-only):checked::after {
+    transform: translateY(-1px) rotate(-45deg) scale(1);
+  }
+  input[type="checkbox"].accent-accent:checked {
+    background: var(--color-accent);
+    border-color: var(--color-accent);
+  }
+  /* Strike-through that draws across instead of snapping on. */
+  .strike {
+    background-image: linear-gradient(currentColor, currentColor);
+    background-position: 0 55%;
+    background-repeat: no-repeat;
+    background-size: 0% 1px;
+    transition: background-size 250ms var(--ease-out-soft), color 200ms, opacity 200ms;
+  }
+  .strike.is-struck {
+    background-size: 100% 1px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 1ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 1ms !important;
+  }
+}
