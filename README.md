@@ -52,8 +52,9 @@ On first launch, choose **Load sample data** to explore, or create empty areas.
   - Click the week label to jump to any week.
 - **Calendar** (`#/calendar`): Google-Calendar-style Day / 3-day / Week /
   Month views, with a mini month and layer toggles in the sidebar.
-  - Click or drag on the grid to create an event; a floating card opens next to
-    the selection.
+  - Click the grid to create an event of the default length (set in Settings),
+    or drag to select any length in 15-minute steps. A floating card opens next
+    to the selection.
   - Click the all-day row for an all-day event.
   - Drag blocks to move them; drag a block's bottom edge to resize it.
   - Sessions without a time sit in the all-day row; drag them onto the grid to

@@ -87,6 +87,23 @@
   textarea:focus-visible {
     outline: none;
   }
+  /* Tailwind v4 resets buttons to the default cursor; make interactive things feel clickable. */
+  button:not(:disabled),
+  [role="button"]:not([aria-disabled="true"]),
+  [role="option"],
+  [role="tab"],
+  [role="combobox"],
+  a[href],
+  summary,
+  label:has(> input[type="checkbox"]),
+  input[type="checkbox"],
+  input[type="radio"],
+  input[type="range"] {
+    cursor: pointer;
+  }
+  button:disabled {
+    cursor: not-allowed;
+  }
   ::selection {
     @apply bg-accent/30;
   }

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { fromMinutes, layoutSpans, snap, toMinutes } from './time';
+import { fromMinutes, layoutSpans, slotRange, snap, toMinutes } from './time';
 
 describe('time', () => {
   it('converts HH:MM and minutes', () => {
@@ -31,5 +31,14 @@ describe('time', () => {
     ]);
     expect(l.get('a')).toEqual({ lane: 0, lanes: 1 });
     expect(l.get('b')).toEqual({ lane: 0, lanes: 1 });
+  });
+});
+
+describe('slotRange', () => {
+  it('covers whole 15-minute slots, at least one', () => {
+    expect(slotRange(782, 790)).toEqual([780, 795]); // tiny drag inside 13:00–13:15
+    expect(slotRange(790, 782)).toEqual([780, 795]); // upwards
+    expect(slotRange(780, 815)).toEqual([780, 825]); // 13:00 → 13:35 covers three slots
+    expect(slotRange(1435, 1440)).toEqual([1425, 1440]); // clamped at midnight
   });
 });

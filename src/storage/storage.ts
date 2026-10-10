@@ -53,7 +53,9 @@ function parseSettings(raw: unknown): AppData['settings'] {
     : Array.isArray(s.capacity) && s.capacity.length === 7
       ? rulesFromLegacyHours(s.capacity) // before planning windows existed
       : defaultRules();
-  return { capacityRules, dayCapacity: s.dayCapacity ?? {} };
+  const minutes = Number(s.defaultEventMinutes);
+  const defaultEventMinutes = Number.isFinite(minutes) && minutes >= 15 && minutes <= 480 ? Math.round(minutes / 15) * 15 : 60;
+  return { capacityRules, dayCapacity: s.dayCapacity ?? {}, defaultEventMinutes };
 }
 
 export function exportJson(data: AppData): string {

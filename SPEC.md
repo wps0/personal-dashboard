@@ -127,8 +127,10 @@ The project's items, overview doc and progress log, as tabs in the side panel.
   (Day / 3 days / Week / Month, remembered per device). Routes look like
   `#/calendar/<view>/<date>`.
 - **Time grid:**
-  - Click a slot for a 1 h event on the half hour, or drag to select a range
-    in 15-minute steps. Either opens a floating quick-create card next to the
+  - Click a slot for an event of the default length (Settings → Calendar,
+    1 h by default), starting on the half hour, or on the quarter hour for
+    defaults under 30 min. Drag to select any range in 15-minute steps; even a
+    tiny drag gives a 15-minute event. Either opens a floating quick-create card next to the
     selection, not a modal.
   - Click the all-day row for an all-day event.
   - Drag blocks to move them, and drag a block's bottom edge to resize it.

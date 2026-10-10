@@ -87,6 +87,8 @@ export interface Settings {
   capacityRules: CapacityRule[];
   /** Per-day capacity tweaks. */
   dayCapacity: Record<ISODate, DayCapacity>;
+  /** Length of an event created by clicking the calendar. */
+  defaultEventMinutes: number;
 }
 
 export interface AppData {
@@ -124,6 +126,6 @@ export function emptyData(): AppData {
     events: [],
     dayNotes: {},
     monthNotes: {},
-    settings: { capacityRules: defaultRules(), dayCapacity: {} },
+    settings: { capacityRules: defaultRules(), dayCapacity: {}, defaultEventMinutes: 60 },
   };
 }

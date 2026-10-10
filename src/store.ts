@@ -38,6 +38,7 @@ export interface Actions {
   setMonthNote(key: string, text: string): void;
   /** Changes planning windows / global adjustment from today on (past days keep theirs). */
   changeCapacityRule(patch: Partial<Omit<CapacityRule, 'from'>>): void;
+  setDefaultEventMinutes(minutes: number): void;
   /** Per-day tweak; ignored for past days. `null` resets the day. */
   setDayCapacity(date: ISODate, patch: DayCapacity | null): void;
 }
@@ -148,6 +149,7 @@ export const useStore = create<State>()((set, get) => {
     setMonthNote: (key, text) => update((d) => ({ monthNotes: { ...d.monthNotes, [key]: text } })),
     changeCapacityRule: (patch) =>
       update((d) => ({ settings: { ...d.settings, capacityRules: withRuleChange(d.settings.capacityRules, todayISO(), patch) } })),
+    setDefaultEventMinutes: (minutes) => update((d) => ({ settings: { ...d.settings, defaultEventMinutes: minutes } })),
     setDayCapacity: (date, patch) => {
       if (date < todayISO()) return;
       update((d) => {

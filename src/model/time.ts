@@ -14,6 +14,13 @@ export function snap(min: number, step = 15): number {
   return Math.round(min / step) * step;
 }
 
+/** The 15-minute slots covered by a selection from minute `a` to `b`, as [start, end). Always at least one slot. */
+export function slotRange(a: number, b: number): [number, number] {
+  const first = Math.floor(Math.min(a, b) / 15);
+  const last = Math.min(Math.floor(Math.max(a, b) / 15), (24 * 60) / 15 - 1);
+  return [first * 15, (last + 1) * 15];
+}
+
 export interface Span {
   id: string;
   start: number;

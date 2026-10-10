@@ -16,7 +16,7 @@ import { useCapacities, useLookups, type Lookups } from '../hooks';
 import { reservedFor } from '../model/capacity';
 import { dayName, todayISO } from '../model/dates';
 import { isItemDone } from '../model/selectors';
-import { fromMinutes, layoutSpans, snap, toMinutes } from '../model/time';
+import { fromMinutes, layoutSpans, slotRange, snap, toMinutes } from '../model/time';
 import type { Allocation, CalendarEvent, ISODate } from '../model/types';
 import { useStore } from '../store';
 import { useUi } from '../ui';
@@ -355,8 +355,8 @@ interface ColumnProps {
 const Column = memo(function Column({ date, isToday, timed, events, reserved, hourHeight, lookups }: ColumnProps) {
   const { setNodeRef, isOver } = useDroppable({ id: `col|${date}` });
   const hasDraft = useUi((s) => !!s.draft && !s.draft.allDay && s.draft.date === date);
-  // Slot selection in progress: [anchor, current] minutes.
-  const [sel, setSel] = useState<[number, number] | null>(null);
+  // Slot selection in progress: anchor/current minutes, and whether the pointer moved enough to count as a drag.
+  const [sel, setSel] = useState<{ a: number; b: number; y0: number; dragged: boolean } | null>(null);
 
   const layout = useMemo(
     () =>
@@ -380,20 +380,19 @@ const Column = memo(function Column({ date, isToday, timed, events, reserved, ho
         if (e.button !== 0 || e.target !== e.currentTarget) return;
         e.currentTarget.setPointerCapture(e.pointerId);
         const m = minuteAt(e);
-        setSel([m, m]);
+        setSel({ a: m, b: m, y0: e.clientY, dragged: false });
       }}
-      onPointerMove={(e) => sel && setSel([sel[0], minuteAt(e)])}
+      onPointerMove={(e) => sel && setSel({ ...sel, b: minuteAt(e), dragged: sel.dragged || Math.abs(e.clientY - sel.y0) > 3 })}
       onPointerUp={() => {
         if (!sel) return;
-        const [a, b] = sel;
         setSel(null);
-        const lo = Math.min(a, b);
-        const hi = Math.max(a, b);
-        // A click makes a 1 h event on the half hour; a drag selects in 15-minute steps.
-        const draft =
-          hi - lo < 10
-            ? draftAt(date, Math.min(Math.floor(lo / 30) * 30, DAY_MIN - 60))
-            : draftAt(date, Math.floor(lo / 15) * 15, Math.min(Math.ceil(hi / 15) * 15, DAY_MIN - 1));
+        // A click makes an event of the default length (on the half hour, or the quarter for
+        // defaults under 30 min); any drag selects whole 15-minute slots (min 15 min).
+        const [lo, hi] = slotRange(sel.a, sel.b);
+        const len = useStore.getState().data.settings.defaultEventMinutes;
+        const step = len < 30 ? 15 : 30;
+        const start = Math.min(Math.floor(sel.a / step) * step, DAY_MIN - len);
+        const draft = sel.dragged ? draftAt(date, lo, Math.min(hi, DAY_MIN - 1)) : draftAt(date, start, start + len);
         useUi.getState().setDraft(draft);
       }}
       onPointerCancel={() => setSel(null)}
@@ -415,7 +414,7 @@ const Column = memo(function Column({ date, isToday, timed, events, reserved, ho
       {timed.map((a) => (
         <AllocBlock key={a.id} alloc={a} pos={layout.get(a.id)} hourHeight={hourHeight} lookups={lookups} />
       ))}
-      {sel && <SelectionGhost from={sel[0]} to={sel[1]} hourHeight={hourHeight} />}
+      {sel?.dragged && <SelectionGhost from={sel.a} to={sel.b} hourHeight={hourHeight} />}
       {hasDraft && <DraftBlock hourHeight={hourHeight} />}
       {isToday && <NowLine hourHeight={hourHeight} />}
     </div>
@@ -423,8 +422,7 @@ const Column = memo(function Column({ date, isToday, timed, events, reserved, ho
 });
 
 function SelectionGhost({ from, to, hourHeight }: { from: number; to: number; hourHeight: number }) {
-  const lo = Math.floor(Math.min(from, to) / 15) * 15;
-  const hi = Math.max(lo + 15, Math.ceil(Math.max(from, to) / 15) * 15);
+  const [lo, hi] = slotRange(from, to);
   return (
     <div
       className="pointer-events-none absolute right-1 left-0.5 z-20 rounded-md px-1.5 py-0.5 text-[11px] font-medium shadow-lg"
@@ -502,6 +500,9 @@ function useResize(startMin: number, hourHeight: number, commit: (endMin: number
 
 type Pos = { lane: number; lanes: number };
 
+/** Resize grip height: 6px on normal blocks, a thin edge on short ones so the rest stays clickable. */
+const handleHeight = (blockPx: number) => Math.max(3, Math.min(6, blockPx / 5));
+
 function blockStyle(start: number, end: number, pos: Pos, hourHeight: number) {
   return {
     top: (start / 60) * hourHeight,
@@ -538,7 +539,7 @@ const EventBlock = memo(function EventBlock({ event, pos = { lane: 0, lanes: 1 }
               {event.start} – {fromMinutes(end)}
             </div>
           )}
-          <div {...handleProps} className="absolute right-0 bottom-0 left-0 h-1.5 cursor-ns-resize" />
+          <div {...handleProps} className="absolute right-0 bottom-0 left-0 cursor-ns-resize" style={{ height: handleHeight(height) }} />
         </div>
       </PopoverAnchor>
       {open && (
@@ -584,7 +585,7 @@ const AllocBlock = memo(function AllocBlock(props: { alloc: Allocation; pos?: Po
           {alloc.start} – {fromMinutes(end)} · {item ? lookups.project(item.projectId)?.name : ''}
         </div>
       )}
-      <div {...handleProps} className="absolute right-0 bottom-0 left-0 h-1.5 cursor-ns-resize" />
+      <div {...handleProps} className="absolute right-0 bottom-0 left-0 cursor-ns-resize" style={{ height: handleHeight(height) }} />
     </div>
   );
 });

@@ -91,7 +91,7 @@ export function CalendarView({ view: routeView, date: routeDate }: { view?: CalV
           onClick={() => {
             const start = Math.min(new Date().getHours() + 1, 22) * 60;
             if (!days.includes(today)) go(view, today);
-            useUi.getState().setDraft(draftAt(today, start));
+            useUi.getState().setDraft(draftAt(today, start, Math.min(start + useStore.getState().data.settings.defaultEventMinutes, 24 * 60 - 1)));
           }}
         >
           <Plus size={20} className="text-accent" /> Create

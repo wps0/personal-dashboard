@@ -22,6 +22,14 @@ describe('storage', () => {
     const d = parseAppData({ version: 1, areas: [], projects: [], items: [], allocations: [] });
     expect(d.dayNotes).toEqual({});
     expect(d.settings.capacityRules[0].windows).toHaveLength(7);
+    expect(d.settings.defaultEventMinutes).toBe(60);
+  });
+
+  it('keeps a valid default event length and rejects junk', () => {
+    const base = { version: 1, areas: [], projects: [], items: [], allocations: [] };
+    expect(parseAppData({ ...base, settings: { defaultEventMinutes: 15 } }).settings.defaultEventMinutes).toBe(15);
+    expect(parseAppData({ ...base, settings: { defaultEventMinutes: 0 } }).settings.defaultEventMinutes).toBe(60);
+    expect(parseAppData({ ...base, settings: { defaultEventMinutes: 'x' } }).settings.defaultEventMinutes).toBe(60);
   });
 
   it('migrates old data: fixed capacity hours and lecture statuses', () => {

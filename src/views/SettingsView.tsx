@@ -5,6 +5,9 @@ import { AREA_COLORS, emptyData } from '../model/types';
 import { exportJson, parseAppData } from '../storage/storage';
 import { useData, useStore } from '../store';
 import { CapacitySettings } from './CapacitySettings';
+import { Select } from '../components/ui/Select';
+
+const EVENT_LENGTHS = [15, 30, 45, 60, 90, 120].map((m) => ({ value: String(m), label: m < 60 ? `${m} minutes` : m === 60 ? '1 hour' : `${m / 60} hours` }));
 
 export function SettingsView() {
   const data = useData();
@@ -37,6 +40,20 @@ export function SettingsView() {
   return (
     <div className="scroll-thin h-full overflow-y-auto">
       <div className="mx-auto max-w-4xl space-y-6 p-4">
+        <Section title="Calendar" hint="How events created by clicking the calendar start out.">
+          <label className="flex items-center gap-3">
+            <span className="w-48">Default event length</span>
+            <Select
+              value={String(data.settings.defaultEventMinutes)}
+              onChange={(v) => useStore.getState().setDefaultEventMinutes(Number(v))}
+              options={EVENT_LENGTHS}
+              className="w-36"
+              ariaLabel="Default event length"
+            />
+            <span className="text-[12px] text-dim">Dragging on the calendar still selects any length.</span>
+          </label>
+        </Section>
+
         <Section title="Capacity & reserved time" hint="When you can plan work, and which hours are taken (sleep, work).">
           <CapacitySettings />
         </Section>
