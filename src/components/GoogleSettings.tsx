@@ -1,6 +1,7 @@
 import { Lock, LogOut, RefreshCw } from 'lucide-react';
 import { useGoogle, SCOPES } from '../google/auth';
 import { useGoogleCalendars } from '../google/calendars';
+import { clearGoogleCache } from '../google/useGoogleEvents';
 import { BufferedInput } from './Buffered';
 
 const ORIGIN = typeof window !== 'undefined' ? window.location.origin : '';
@@ -63,7 +64,7 @@ export function GoogleSettings() {
             <span className="text-[13px]">
               Connected{g.email ? <> as <b className="text-strong">{g.email}</b></> : ''}
             </span>
-            <button className="btn" onClick={() => useGoogle.setState({ calendars: [] })} title="Reload the calendar list">
+            <button className="btn" onClick={() => (clearGoogleCache(), useGoogle.setState({ calendars: [] }))} title="Reload calendars and events">
               <RefreshCw size={13} /> Refresh
             </button>
             <button className="btn" onClick={g.signOut}>

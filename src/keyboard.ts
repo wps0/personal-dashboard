@@ -130,7 +130,7 @@ function isTyping(el: Element | null): boolean {
 /** Something floating is open (popover, menu, dialog): leave keys to it. */
 function overlayOpen(): boolean {
   const ui = useUi.getState();
-  return !!(ui.openItemId || ui.openEventId || ui.draft || ui.dialog) || !!document.querySelector('[data-radix-popper-content-wrapper]');
+  return !!(ui.openItemId || ui.openEventId || ui.openGoogleKey || ui.draft || ui.dialog) || !!document.querySelector('[data-radix-popper-content-wrapper]');
 }
 
 /** Global single-key shortcuts (see SHORTCUT_HELP). */

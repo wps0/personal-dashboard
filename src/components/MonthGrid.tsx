@@ -17,11 +17,15 @@ import type { Allocation, CalendarEvent, ISODate } from '../model/types';
 import { useStore } from '../store';
 import { draftAt, useUi } from '../ui';
 import { DraftEditor, EventEditor } from './EventEditor';
+import { GoogleChip } from './GoogleEvent';
+import { useGoogleEvents } from '../google/useGoogleEvents';
+import type { GEvent } from '../google/events';
+import { fromMinutes } from '../model/time';
 import { Popover, PopoverAnchor, PopoverContent } from './ui/Popover';
 import { deleteEvent, removeSession, toggleSession, updateEvent, updateSession } from '../actions';
 import { blockKeys } from '../keyboard';
 
-type Entry = { kind: 'event'; event: CalendarEvent } | { kind: 'alloc'; alloc: Allocation };
+type Entry = { kind: 'event'; event: CalendarEvent } | { kind: 'alloc'; alloc: Allocation } | { kind: 'google'; ev: GEvent };
 
 const WEEKDAYS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
 const MAX_ENTRIES = 3;
@@ -48,7 +52,8 @@ export function MonthGrid({ date, onDayClick }: { date: ISODate; onDayClick(d: I
     if (!entry || typeof target !== 'string') return;
     const day = target.slice('cell|'.length);
     if (entry.kind === 'event') updateEvent(entry.event.id, { date: day });
-    else updateSession(entry.alloc.id, { date: day });
+    else if (entry.kind === 'alloc') updateSession(entry.alloc.id, { date: day });
+    // Google events are read-only and never draggable.
   };
   return (
     <DndContext sensors={sensors} onDragStart={onDragStart} onDragEnd={onDragEnd} onDragCancel={() => setDragging(null)} accessibility={{ screenReaderInstructions: { draggable: 'Enter opens, Space marks done, Delete removes, arrow keys move between items. Drag with the mouse or a finger to move.' } }}>
@@ -68,9 +73,11 @@ function MonthBody({ date, onDayClick }: { date: ISODate; onDayClick(d: ISODate)
   const today = todayISO();
   const slide = useSlide(date);
 
+  const google = useGoogleEvents(days);
   const byDay = useMemo(() => {
     const want = new Set(days);
     const m = new Map<ISODate, Entry[]>(days.map((d) => [d, []]));
+    for (const [d, list] of google) if (want.has(d)) for (const ev of list) m.get(d)!.push({ kind: 'google', ev });
     if (!hidden.includes('events')) for (const e of events) if (want.has(e.date)) m.get(e.date)!.push({ kind: 'event', event: e });
     for (const a of allocations) {
       if (!want.has(a.date)) continue;
@@ -80,10 +87,15 @@ function MonthBody({ date, onDayClick }: { date: ISODate; onDayClick(d: ISODate)
       m.get(a.date)!.push({ kind: 'alloc', alloc: a });
     }
     // All-day first, then by time, then untimed sessions.
-    const key = (x: Entry) => (x.kind === 'event' ? (x.event.allDay ? '0' : `1${x.event.start}`) : x.alloc.start ? `1${x.alloc.start}` : '2');
+    const key = (x: Entry) =>
+      x.kind === 'google'
+        ? x.ev.allDay ? '0' : `1${fromMinutes(x.ev.startMin)}`
+        : x.kind === 'event'
+          ? x.event.allDay ? '0' : `1${x.event.start}`
+          : x.alloc.start ? `1${x.alloc.start}` : '2';
     for (const list of m.values()) list.sort((a, b) => key(a).localeCompare(key(b)));
     return m;
-  }, [days, events, allocations, hidden, lookups]);
+  }, [days, events, allocations, hidden, lookups, google]);
 
   return (
     <div className="flex h-full min-h-0 flex-col overflow-hidden select-none">
@@ -136,7 +148,15 @@ const Cell = memo(function Cell({ date, entries, outside, isToday, lookups, onDa
       >
         {Number(date.slice(8)) === 1 ? new Intl.DateTimeFormat('en-GB', { day: 'numeric', month: 'short' }).format(new Date(date + 'T00:00')) : Number(date.slice(8))}
       </button>
-      {shown.map((x) => (x.kind === 'event' ? <EventChip key={x.event.id} event={x.event} /> : <AllocChip key={x.alloc.id} alloc={x.alloc} lookups={lookups} />))}
+      {shown.map((x) =>
+        x.kind === 'google' ? (
+          <GoogleChip key={x.ev.key} ev={x.ev} variant="month" />
+        ) : x.kind === 'event' ? (
+          <EventChip key={x.event.id} event={x.event} />
+        ) : (
+          <AllocChip key={x.alloc.id} alloc={x.alloc} lookups={lookups} />
+        ),
+      )}
       {more > 0 && (
         <button className="rounded px-1 text-left text-[11px] font-medium text-dim hover:bg-raised" onClick={() => onDayClick(date)}>
           {more} more
@@ -223,6 +243,6 @@ function DraftChip() {
 
 function Ghost({ entry }: { entry: Entry }) {
   const lookups = useLookups();
-  const title = entry.kind === 'event' ? entry.event.title : (lookups.item(entry.alloc.itemId)?.title ?? '');
+  const title = entry.kind === 'event' ? entry.event.title : entry.kind === 'google' ? entry.ev.title : (lookups.item(entry.alloc.itemId)?.title ?? '');
   return <div className="w-36 animate-lift truncate rounded bg-raised px-1.5 py-0.5 text-[11px] shadow-xl ring-1 ring-accent/50">{title}</div>;
 }

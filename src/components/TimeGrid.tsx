@@ -21,6 +21,9 @@ import type { Allocation, CalendarEvent, ISODate } from '../model/types';
 import { useStore } from '../store';
 import { draftAt, useUi } from '../ui';
 import { CapacityBadge } from './CapacityBadge';
+import { GoogleChip, GoogleTimedBlock } from './GoogleEvent';
+import { noGoogleEvents, useGoogleEvents } from '../google/useGoogleEvents';
+import type { GEvent } from '../google/events';
 import { DraftEditor, EventEditor } from './EventEditor';
 import { Popover, PopoverAnchor, PopoverContent } from './ui/Popover';
 import { deleteEvent, removeSession, toggleSession, updateEvent, updateSession } from '../actions';
@@ -154,6 +157,16 @@ function GridBody({ days, hourHeight, scrollToHour, onDayClick }: BodyProps) {
 
   const reserved = useMemo(() => new Map(days.map((d) => [d, reservedFor(rules, d)])), [days, rules]);
 
+  const google = useGoogleEvents(days);
+  const googleByDay = useMemo(() => {
+    const m = new Map<ISODate, { timed: GEvent[]; allDay: GEvent[] }>();
+    for (const d of days) {
+      const list = google.get(d) ?? noGoogleEvents;
+      m.set(d, { timed: list.filter((e) => !e.allDay), allDay: list.filter((e) => e.allDay) });
+    }
+    return m;
+  }, [google, days]);
+
   const byDay = useMemo(() => {
     const want = new Set(days);
     const showEvents = !hidden.includes('events');
@@ -211,7 +224,7 @@ function GridBody({ days, hourHeight, scrollToHour, onDayClick }: BodyProps) {
       <div key={`s${days[0]}`} className={`grid shrink-0 border-b border-line ${slide}`} style={{ gridTemplateColumns: cols }}>
         <div className="self-end pr-2 pb-1 text-right text-[10px] text-dim">all-day</div>
         {days.map((d) => (
-          <Strip key={d} date={d} allocs={byDay.get(d)!.untimed} events={byDay.get(d)!.allDay} lookups={lookups} />
+          <Strip key={d} date={d} allocs={byDay.get(d)!.untimed} events={byDay.get(d)!.allDay} google={googleByDay.get(d)!.allDay} lookups={lookups} />
         ))}
       </div>
       <div ref={scrollRef} className="scroll-thin relative min-h-0 flex-1 overflow-y-auto">
@@ -233,6 +246,7 @@ function GridBody({ days, hourHeight, scrollToHour, onDayClick }: BodyProps) {
                 timed={day.timed.length ? day.timed : EMPTY}
                 events={day.events.length ? day.events : EMPTY}
                 reserved={reserved.get(d)!}
+                google={googleByDay.get(d)!.timed}
                 hourHeight={hourHeight}
                 lookups={lookups}
               />
@@ -256,8 +270,8 @@ function OffscreenDraft() {
   );
 }
 
-const Strip = memo(function Strip(props: { date: ISODate; allocs: Allocation[]; events: CalendarEvent[]; lookups: Lookups }) {
-  const { date, allocs, events, lookups } = props;
+const Strip = memo(function Strip(props: { date: ISODate; allocs: Allocation[]; events: CalendarEvent[]; google: GEvent[]; lookups: Lookups }) {
+  const { date, allocs, events, google, lookups } = props;
   const { setNodeRef, isOver } = useDroppable({ id: `strip|${date}` });
   const hasDraft = useUi((s) => !!s.draft?.allDay && s.draft.date === date);
   return (
@@ -272,6 +286,9 @@ const Strip = memo(function Strip(props: { date: ISODate; allocs: Allocation[]; 
     >
       {events.map((e) => (
         <AllDayChip key={e.id} event={e} />
+      ))}
+      {google.map((e) => (
+        <GoogleChip key={e.key} ev={e} variant="strip" />
       ))}
       {allocs.map((a) => (
         <StripChip key={a.id} alloc={a} lookups={lookups} />
@@ -354,11 +371,13 @@ interface ColumnProps {
   timed: Allocation[];
   events: CalendarEvent[];
   reserved: Span[];
+  /** Read-only Google events for this day. */
+  google: GEvent[];
   hourHeight: number;
   lookups: Lookups;
 }
 
-const Column = memo(function Column({ date, isToday, timed, events, reserved, hourHeight, lookups }: ColumnProps) {
+const Column = memo(function Column({ date, isToday, timed, events, reserved, google, hourHeight, lookups }: ColumnProps) {
   const { setNodeRef, isOver } = useDroppable({ id: `col|${date}` });
   const hasDraft = useUi((s) => !!s.draft && !s.draft.allDay && s.draft.date === date);
   // Slot selection in progress: anchor/current minutes, and whether the pointer moved enough to count as a drag.
@@ -367,10 +386,11 @@ const Column = memo(function Column({ date, isToday, timed, events, reserved, ho
   const layout = useMemo(
     () =>
       layoutSpans([
+        ...google.map((e) => ({ id: e.key, start: e.startMin, end: e.endMin })),
         ...events.map((e) => ({ id: e.id, start: toMinutes(e.start), end: toMinutes(e.end) })),
         ...timed.map((a) => ({ id: a.id, start: toMinutes(a.start!), end: toMinutes(a.start!) + a.plannedHours * 60 })),
       ]),
-    [events, timed],
+    [events, timed, google],
   );
 
   const minuteAt = (e: ReactPointerEvent<HTMLElement>) => {
@@ -416,6 +436,9 @@ const Column = memo(function Column({ date, isToday, timed, events, reserved, ho
       ))}
       {events.map((e) => (
         <EventBlock key={e.id} event={e} pos={layout.get(e.id)} hourHeight={hourHeight} />
+      ))}
+      {google.map((e) => (
+        <GoogleTimedBlock key={e.key} ev={e} pos={layout.get(e.key)} hourHeight={hourHeight} />
       ))}
       {timed.map((a) => (
         <AllocBlock key={a.id} alloc={a} pos={layout.get(a.id)} hourHeight={hourHeight} lookups={lookups} />

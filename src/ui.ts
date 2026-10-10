@@ -30,6 +30,8 @@ interface UiState {
   openItemId: string | null;
   /** Existing event whose floating editor is open. */
   openEventId: string | null;
+  /** Google event (piece key) whose read-only card is open. */
+  openGoogleKey: string | null;
   draft: Draft | null;
   /** Calendar layers switched off in the sidebar: 'events' or an area id. Per device. */
   hidden: string[];
@@ -38,6 +40,7 @@ interface UiState {
   setDialog(d: UiState['dialog']): void;
   openItem(id: string | null): void;
   openEvent(id: string | null): void;
+  openGoogle(key: string | null): void;
   setDraft(d: Draft | null): void;
   patchDraft(p: Partial<Draft>): void;
   toggleHidden(key: string): void;
@@ -46,13 +49,15 @@ interface UiState {
 export const useUi = create<UiState>()((set, get) => ({
   openItemId: null,
   openEventId: null,
+  openGoogleKey: null,
   draft: null,
   hidden: loadHidden(),
   dialog: null,
   setDialog: (dialog) => set({ dialog }),
-  openItem: (id) => set({ openItemId: id, openEventId: null, draft: null }),
-  openEvent: (id) => set({ openEventId: id, openItemId: null, draft: null }),
-  setDraft: (draft) => set({ draft, openEventId: null, openItemId: null }),
+  openItem: (id) => set({ openItemId: id, openEventId: null, openGoogleKey: null, draft: null }),
+  openEvent: (id) => set({ openEventId: id, openItemId: null, openGoogleKey: null, draft: null }),
+  openGoogle: (key) => set({ openGoogleKey: key, openEventId: null, openItemId: null, draft: null }),
+  setDraft: (draft) => set({ draft, openEventId: null, openItemId: null, openGoogleKey: null }),
   patchDraft: (p) => {
     const d = get().draft;
     if (d) set({ draft: { ...d, ...p } });
