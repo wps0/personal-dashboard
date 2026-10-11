@@ -6,7 +6,8 @@ vi.stubGlobal('localStorage', storage);
 vi.stubGlobal('sessionStorage', storage);
 vi.stubGlobal('window', { addEventListener: () => {}, setTimeout: () => 0 });
 
-const { listCalendars, listEvents } = await import('./api');
+const { listCalendars, listEvents, retryPolicy } = await import('./api');
+retryPolicy.baseMs = 1;
 const { SCOPES, useGoogle } = await import('./auth');
 
 const ok = (body: unknown) => new Response(JSON.stringify(body), { status: 200 });
@@ -54,6 +55,32 @@ describe('Calendar API client', () => {
     useGoogle.setState({ token: { value: 'old', expiresAt: Date.now() - 1 } });
     await expect(listCalendars()).rejects.toThrow(/expired/);
     expect(fetchMock).not.toHaveBeenCalled();
+  });
+
+  it('retries rate limits and server errors with backoff, then succeeds', async () => {
+    fetchMock
+      .mockResolvedValueOnce(new Response(JSON.stringify({ error: { errors: [{ reason: 'rateLimitExceeded' }] } }), { status: 403 }))
+      .mockResolvedValueOnce(new Response('', { status: 503 }))
+      .mockResolvedValueOnce(ok({ items: [{ id: 'cal' }] }));
+    expect((await listCalendars()).map((c) => c.id)).toEqual(['cal']);
+    expect(fetchMock).toHaveBeenCalledTimes(3);
+  });
+
+  it('gives up after the last attempt', async () => {
+    fetchMock.mockResolvedValue(new Response('', { status: 429 }));
+    await expect(listCalendars()).rejects.toMatchObject({ kind: 'rate-limit' });
+    expect(fetchMock).toHaveBeenCalledTimes(retryPolicy.attempts);
+  });
+
+  it('does not retry errors that will not fix themselves', async () => {
+    fetchMock.mockResolvedValueOnce(new Response(JSON.stringify({ error: { errors: [{ reason: 'accessNotConfigured' }] } }), { status: 403 }));
+    await expect(listCalendars()).rejects.toMatchObject({ kind: 'api-disabled' });
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+  });
+
+  it('reports network failures as offline', async () => {
+    fetchMock.mockRejectedValueOnce(new TypeError('Failed to fetch'));
+    await expect(listCalendars()).rejects.toMatchObject({ kind: 'offline' });
   });
 
   it('defaults to the primary calendar on first connection', () => {

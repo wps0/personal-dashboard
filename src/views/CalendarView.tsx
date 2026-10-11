@@ -11,6 +11,7 @@ import { href, navigate, type CalView } from '../router';
 import { useGoogle } from '../google/auth';
 import { useGoogleCalendars } from '../google/calendars';
 import { clearGoogleCache } from '../google/useGoogleEvents';
+import { GoogleErrorNotice } from '../components/GoogleErrorNotice';
 import { useStore } from '../store';
 import { nextHourDraft, useUi } from '../ui';
 import { useNavTarget } from '../keyboard';
@@ -199,14 +200,17 @@ function GoogleLayers() {
     .filter((c) => g.selected.includes(c.id))
     .map((c) => ({ key: `g:${c.id}`, name: c.summaryOverride ?? c.summary, color: c.backgroundColor ?? '#8ab4f8' }));
   return (
-    <LayerList
-      title="Google (read-only)"
-      rows={rows}
-      extra={
-        <button className="icon-btn h-6 w-6" title="Refresh from Google" aria-label="Refresh from Google" onClick={clearGoogleCache}>
-          <RefreshCw size={13} />
-        </button>
-      }
-    />
+    <div className="space-y-2">
+      <GoogleErrorNotice compact />
+      <LayerList
+        title="Google (read-only)"
+        rows={rows}
+        extra={
+          <button className="icon-btn h-6 w-6" title="Refresh from Google" aria-label="Refresh from Google" onClick={clearGoogleCache}>
+            <RefreshCw size={13} />
+          </button>
+        }
+      />
+    </div>
   );
 }
