@@ -38,7 +38,6 @@ export default function App() {
   const route = useRoute();
   const hasAreas = useStore(s => s.data.areas.length > 0);
   const [theme, setTheme] = useTheme();
-  useEscapeClosesProject(route);
   useGlobalShortcuts(route);
 
   return (
@@ -84,6 +83,7 @@ export default function App() {
       <ItemOverlay />
       <ShortcutDialogs />
       <Toaster />
+      <EscapeClosesProject route={route} />
     </div>
   );
 }
@@ -103,8 +103,12 @@ function Page({route}: {route: Route}) {
   }
 }
 
-/** Esc closes the project side panel (overlays handle Esc themselves first). */
-function useEscapeClosesProject(route: Route) {
+/**
+ * Esc closes the project side panel (overlays handle Esc themselves first).
+ * A component of its own so that its overlay subscription re-renders only
+ * itself: in App, opening any popover re-rendered the whole page.
+ */
+function EscapeClosesProject({route}: {route: Route}) {
   const overlayOpen = useUi(
     s =>
       s.openItemId !== null ||
@@ -129,6 +133,7 @@ function useEscapeClosesProject(route: Route) {
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
   }, [panelOpen, overlayOpen]);
+  return null;
 }
 
 function Welcome() {
