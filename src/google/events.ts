@@ -12,6 +12,8 @@ export interface ApiEvent {
   transparency?: 'opaque' | 'transparent';
   /** Per-event color ("1"–"11"), overriding the calendar's color. */
   colorId?: string;
+  /** Guests; the entry with `self: true` is you (present when you're invited). */
+  attendees?: { self?: boolean; responseStatus?: 'needsAction' | 'declined' | 'tentative' | 'accepted' }[];
   eventType?: string;
   start: { date?: string; dateTime?: string };
   end: { date?: string; dateTime?: string };
@@ -40,8 +42,10 @@ export interface GEvent {
   startMin: number;
   endMin: number;
   color: string;
-  /** Blocks time for capacity (not marked "free", not an all-day or working-location entry). */
+  /** Blocks time for capacity (not marked "free" or declined, not an all-day or working-location entry). */
   busy: boolean;
+  /** You declined this invitation: shown differently, never busy. */
+  declined: boolean;
   /** The whole event's time, e.g. "Tue 14 Oct, 10:00 – 11:30" or "14 – 16 Oct". */
   when: string;
   htmlLink?: string;
@@ -75,7 +79,9 @@ const dayOnly = (s: ISODate) => dayFmt.format(new Date(`${s}T00:00`));
 /** Splits an API event into per-day pieces in local time. Cancelled events disappear. */
 export function expandEvent(ev: ApiEvent, cal: ApiCalendar): GEvent[] {
   if (ev.status === 'cancelled') return [];
+  const declined = ev.attendees?.some((a) => a.self && a.responseStatus === 'declined') ?? false;
   const base = {
+    declined,
     id: ev.id,
     calendarId: cal.id,
     calendarName: cal.summaryOverride ?? cal.summary,
@@ -104,7 +110,7 @@ export function expandEvent(ev: ApiEvent, cal: ApiCalendar): GEvent[] {
   if (!(e > s)) return [];
   const first = toISODate(s);
   const last = toISODate(new Date(e.getTime() - 1)); // ends at midnight → previous day is the last
-  const busy = ev.transparency !== 'transparent' && ev.eventType !== 'workingLocation';
+  const busy = !declined && ev.transparency !== 'transparent' && ev.eventType !== 'workingLocation';
   const when =
     first === last ? `${dayOnly(first)}, ${hhmm(s)} – ${hhmm(e)}` : `${dayOnly(first)} ${hhmm(s)} – ${dayOnly(toISODate(e))} ${hhmm(e)}`;
   const out: GEvent[] = [];
