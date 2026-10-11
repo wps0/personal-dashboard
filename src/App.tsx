@@ -84,7 +84,7 @@ function Page({ route }: { route: Route }) {
 
 /** Esc closes the project side panel (overlays handle Esc themselves first). */
 function useEscapeClosesProject(route: Route) {
-  const overlayOpen = useUi((s) => s.openItemId !== null || s.openEventId !== null || s.draft !== null || s.dialog !== null);
+  const overlayOpen = useUi((s) => s.openItemId !== null || s.openEventId !== null || s.openGoogleKey !== null || s.draft !== null || s.dialog !== null);
   const panelOpen = route.name === 'projects' && route.id !== undefined;
   useEffect(() => {
     if (!panelOpen || overlayOpen) return;
