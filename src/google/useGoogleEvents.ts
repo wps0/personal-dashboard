@@ -2,7 +2,8 @@ import { useEffect, useMemo } from 'react';
 import { create } from 'zustand';
 import type { ISODate } from '../model/types';
 import { useUi } from '../ui';
-import { listEvents } from './api';
+import { listCalendars, listEvents } from './api';
+import { clearGoogleError, reportGoogleError } from './status';
 import { useGoogleCalendars } from './calendars';
 import { useGoogle } from './auth';
 import { expandEvent, rangeBounds, type GEvent } from './events';
@@ -12,7 +13,6 @@ const FRESH_MS = 5 * 60_000;
 interface Entry {
   at: number;
   events: GEvent[];
-  error?: string;
 }
 
 /** Fetched events per visible range ("from|to"), shared by every view. */
@@ -47,14 +47,28 @@ async function fetchRange(from: ISODate, to: ISODate) {
     const { calendars, selected } = useGoogle.getState();
     const { timeMin, timeMax } = rangeBounds(from, to);
     const chosen = calendars.filter((c) => selected.includes(c.id));
-    const lists = await Promise.all(chosen.map(async (cal) => (await listEvents(cal.id, timeMin, timeMax)).flatMap((e) => expandEvent(e, cal))));
-    const events = lists.flat().filter((e) => e.date >= from && e.date <= to);
-    useCache.setState((s) => ({ ranges: { ...s.ranges, [key]: { at: Date.now(), events } } }));
-  } catch (e) {
-    const error = String((e as Error).message ?? e);
-    useCache.setState((s) => ({ ranges: { ...s.ranges, [key]: { at: Date.now(), events: s.ranges[key]?.events ?? [], error } } }));
+    // One failing calendar (e.g. unshared) must not hide the others.
+    const results = await Promise.allSettled(chosen.map(async (cal) => (await listEvents(cal.id, timeMin, timeMax)).flatMap((e) => expandEvent(e, cal))));
+    const events = results.flatMap((r) => (r.status === 'fulfilled' ? r.value : [])).filter((e) => e.date >= from && e.date <= to);
+    const failed = results.findIndex((r) => r.status === 'rejected');
+    if (failed >= 0) reportGoogleError((results[failed] as PromiseRejectedResult).reason, chosen.length > 1 ? (chosen[failed].summaryOverride ?? chosen[failed].summary) : undefined);
+    else clearGoogleError();
+    // After a failure, try again in about a minute instead of waiting the full 5.
+    const at = failed >= 0 ? Date.now() - FRESH_MS + 60_000 : Date.now();
+    useCache.setState((s) => ({ ranges: { ...s.ranges, [key]: { at, events } } }));
   } finally {
     inFlight.delete(key);
+  }
+}
+
+/** Retry button: clears the error, reloads the calendar list if it never loaded, and refetches events. */
+export function retryGoogle() {
+  clearGoogleError();
+  clearGoogleCache();
+  if (!useGoogle.getState().calendars.length) {
+    listCalendars()
+      .then((list) => useGoogle.getState().setCalendars(list))
+      .catch((e) => reportGoogleError(e));
   }
 }
 

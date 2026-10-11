@@ -1,6 +1,7 @@
 import { useEffect } from 'react';
 import { listCalendars } from './api';
 import { useGoogle } from './auth';
+import { clearGoogleError, reportGoogleError } from './status';
 
 /** Loads the calendar list once signed in (names, colors, and which one is primary). */
 export function useGoogleCalendars() {
@@ -9,9 +10,10 @@ export function useGoogleCalendars() {
   useEffect(() => {
     if (status !== 'signed-in' || loaded) return;
     listCalendars()
-      .then((list) => useGoogle.getState().setCalendars(list))
-      .catch(() => {
-        // Expiry is reported through the auth status; other errors surface in Settings on retry.
-      });
+      .then((list) => {
+        clearGoogleError();
+        useGoogle.getState().setCalendars(list);
+      })
+      .catch((e) => reportGoogleError(e));
   }, [status, loaded]);
 }

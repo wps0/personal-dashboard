@@ -3,6 +3,7 @@ import { useGoogle, SCOPES } from '../google/auth';
 import { useGoogleCalendars } from '../google/calendars';
 import { clearGoogleCache } from '../google/useGoogleEvents';
 import { BufferedInput } from './Buffered';
+import { GoogleErrorNotice } from './GoogleErrorNotice';
 
 const ORIGIN = typeof window !== 'undefined' ? window.location.origin : '';
 
@@ -79,6 +80,8 @@ export function GoogleSettings() {
         {g.status === 'expired' && <span className="text-[12px] text-warn">Session expired (tokens last an hour).</span>}
         {g.error && <span className="text-[12px] text-danger">{g.error}</span>}
       </div>
+
+      <GoogleErrorNotice />
 
       {connected && g.calendars.length > 0 && (
         <div>
