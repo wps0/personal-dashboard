@@ -1,4 +1,4 @@
-import {useMemo} from 'react';
+import {memo, useMemo} from 'react';
 import {fromMinutes, toMinutes} from '../model/time';
 import {Select} from './ui/Select';
 
@@ -20,7 +20,7 @@ function duration(min: number): string {
 }
 
 /** Google-Calendar-style time dropdown in 15-minute steps. */
-export function TimeSelect({
+function TimeSelectImpl({
   value,
   onChange,
   after,
@@ -54,3 +54,6 @@ export function TimeSelect({
     />
   );
 }
+
+/** Memoized: re-renders only when its props change. */
+export const TimeSelect = memo(TimeSelectImpl);

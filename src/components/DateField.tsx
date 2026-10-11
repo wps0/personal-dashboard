@@ -1,5 +1,5 @@
 import {CalendarDays, X} from 'lucide-react';
-import {useState} from 'react';
+import {memo, useState} from 'react';
 import {formatMedium} from '../model/dates';
 import type {ISODate} from '../model/types';
 import {MiniMonth} from './MiniMonth';
@@ -18,7 +18,7 @@ interface Props {
 }
 
 /** Date picker: a button that opens the mini month. Replaces <input type="date">. */
-export function DateField({
+function DateFieldImpl({
   value,
   onChange,
   placeholder = 'Set date',
@@ -65,3 +65,6 @@ export function DateField({
     </Popover>
   );
 }
+
+/** Memoized: re-renders only when its props change. */
+export const DateField = memo(DateFieldImpl);

@@ -1,5 +1,5 @@
 import {Minus, Plus, RotateCcw} from 'lucide-react';
-import {useState} from 'react';
+import {memo, useState} from 'react';
 import {fmtH} from '../format';
 import type {CapacityInfo} from '../model/capacity';
 import {formatLong} from '../model/dates';
@@ -13,7 +13,7 @@ const signed = (n: number) =>
   n > 0 ? `+${fmtH(n)}` : n < 0 ? `−${fmtH(-n)}` : '±0h';
 
 /** "planned/capacity" for a day; click for the breakdown and per-day adjustments. */
-export function CapacityBadge({
+function CapacityBadgeImpl({
   date,
   planned,
   info,
@@ -132,3 +132,6 @@ export function CapacityBadge({
     </Popover>
   );
 }
+
+/** Memoized: re-renders only when its props change. */
+export const CapacityBadge = memo(CapacityBadgeImpl);

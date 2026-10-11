@@ -1,4 +1,4 @@
-import {useState} from 'react';
+import {memo, useState} from 'react';
 
 interface Props {
   value: number | undefined;
@@ -11,7 +11,7 @@ interface Props {
 }
 
 /** Numeric hours field that commits on blur/Enter, in 0.25h steps. */
-export function HoursInput({
+function HoursInputImpl({
   value,
   onChange,
   placeholder = '–',
@@ -55,3 +55,6 @@ export function HoursInput({
     />
   );
 }
+
+/** Memoized: re-renders only when its props change. */
+export const HoursInput = memo(HoursInputImpl);

@@ -1,5 +1,6 @@
 import {Check, ChevronDown} from 'lucide-react';
 import {
+  memo,
   useEffect,
   useLayoutEffect,
   useRef,
@@ -33,7 +34,7 @@ interface Props<T extends string> {
  * (Radix Select renders every option even when closed, which made time pickers
  * with 96 options slow). Keyboard: arrows, Home/End, Enter/Space, Esc, type to jump.
  */
-export function Select<T extends string>({
+function SelectImpl<T extends string>({
   value,
   onChange,
   options,
@@ -97,6 +98,9 @@ export function Select<T extends string>({
     </Popover>
   );
 }
+
+/** Memoized: re-renders only when its props change. */
+export const Select = memo(SelectImpl) as typeof SelectImpl;
 
 function Listbox<T extends string>({
   options,
