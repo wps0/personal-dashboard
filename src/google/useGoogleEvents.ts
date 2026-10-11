@@ -1,6 +1,7 @@
 import { useEffect, useMemo } from 'react';
 import { create } from 'zustand';
 import type { ISODate } from '../model/types';
+import { useUi } from '../ui';
 import { listEvents } from './api';
 import { useGoogleCalendars } from './calendars';
 import { useGoogle } from './auth';
@@ -59,7 +60,10 @@ async function fetchRange(from: ISODate, to: ISODate) {
 
 const EMPTY: GEvent[] = [];
 
-/** Google events for the given days, grouped by date. Fetches (or refreshes) the range as needed. Read-only. */
+/**
+ * Google events for the given days, grouped by date, without calendars hidden
+ * in the sidebar. Fetches (or refreshes) the range as needed. Read-only.
+ */
 export function useGoogleEvents(days: ISODate[]): Map<ISODate, GEvent[]> {
   useGoogleCalendars();
   const status = useGoogle((s) => s.status);
@@ -67,6 +71,7 @@ export function useGoogleEvents(days: ISODate[]): Map<ISODate, GEvent[]> {
   const from = days[0];
   const to = days[days.length - 1];
   const entry = useCache((s) => s.ranges[`${from}|${to}`]);
+  const hidden = useUi((s) => s.hidden);
 
   useEffect(() => {
     if (status === 'signed-in' && ready && (!entry || Date.now() - entry.at > FRESH_MS)) void fetchRange(from, to);
@@ -76,12 +81,13 @@ export function useGoogleEvents(days: ISODate[]): Map<ISODate, GEvent[]> {
     const m = new Map<ISODate, GEvent[]>();
     if (status === 'signed-out' || !entry) return m;
     for (const e of entry.events) {
+      if (hidden.includes(`g:${e.calendarId}`)) continue;
       const list = m.get(e.date);
       if (list) list.push(e);
       else m.set(e.date, [e]);
     }
     return m;
-  }, [entry, status]);
+  }, [entry, hidden, status]);
 }
 
 export const noGoogleEvents = EMPTY;

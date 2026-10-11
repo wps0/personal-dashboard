@@ -1,5 +1,5 @@
-import { ChevronLeft, ChevronRight, Plus } from 'lucide-react';
-import { useEffect, useMemo } from 'react';
+import { ChevronLeft, ChevronRight, Plus, RefreshCw } from 'lucide-react';
+import { useEffect, useMemo, type ReactNode } from 'react';
 import { MiniMonth } from '../components/MiniMonth';
 import { MonthGrid } from '../components/MonthGrid';
 import { TimeGrid } from '../components/TimeGrid';
@@ -7,7 +7,10 @@ import { TimeGrid } from '../components/TimeGrid';
 import { Select } from '../components/ui/Select';
 import { addDays, addMonths, firstOfMonth, formatMonthYear, monthGrid, startOfWeek, todayISO } from '../model/dates';
 import type { ISODate } from '../model/types';
-import { navigate, type CalView } from '../router';
+import { href, navigate, type CalView } from '../router';
+import { useGoogle } from '../google/auth';
+import { useGoogleCalendars } from '../google/calendars';
+import { clearGoogleCache } from '../google/useGoogleEvents';
 import { useStore } from '../store';
 import { nextHourDraft, useUi } from '../ui';
 import { useNavTarget } from '../keyboard';
@@ -129,18 +132,30 @@ export function CalendarView({ view: routeView, date: routeDate }: { view?: CalV
 /** Sidebar toggles: show or hide events and each area's planned sessions (per device). */
 function Layers() {
   const areas = useStore((s) => s.data.areas);
-  const hidden = useUi((s) => s.hidden);
-  const toggle = useUi((s) => s.toggleHidden);
   const rows = [{ key: 'events', name: 'Events', color: 'var(--color-event)' }, ...areas.map((a) => ({ key: a.id, name: a.name, color: a.color }))];
   return (
+    <div className="space-y-4">
+      <LayerList title="My calendars" rows={rows} />
+      <GoogleLayers />
+    </div>
+  );
+}
+
+function LayerList({ title, rows, extra }: { title: string; rows: { key: string; name: string; color: string }[]; extra?: ReactNode }) {
+  const hidden = useUi((s) => s.hidden);
+  const toggle = useUi((s) => s.toggleHidden);
+  return (
     <div>
-      <div className="mb-1 px-1 text-[13px] font-medium text-strong">My calendars</div>
+      <div className="mb-1 flex items-center gap-1 px-1 text-[13px] font-medium text-strong">
+        <span className="flex-1">{title}</span>
+        {extra}
+      </div>
       {rows.map((r) => {
         const on = !hidden.includes(r.key);
         return (
-          <label key={r.key} className="flex cursor-pointer items-center gap-3 rounded-md px-1 py-1 hover:bg-raised">
+          <label key={r.key} className="flex cursor-pointer items-center gap-3 rounded-md px-1 py-1 transition-colors hover:bg-raised">
             <span
-              className="flex h-4 w-4 items-center justify-center rounded-[3px] border-2"
+              className="flex h-4 w-4 shrink-0 items-center justify-center rounded-[3px] border-2 transition-colors"
               style={{ borderColor: r.color, background: on ? r.color : 'transparent' }}
             >
               {on && (
@@ -155,5 +170,43 @@ function Layers() {
         );
       })}
     </div>
+  );
+}
+
+/** Google calendars chosen in Settings (read-only), with status, refresh and reconnect. */
+function GoogleLayers() {
+  useGoogleCalendars();
+  const g = useGoogle();
+  if (g.status === 'signed-out' && !g.clientId) {
+    return (
+      <a href={href({ name: 'settings' })} className="block rounded-md px-1 py-1 text-[12px] text-accent hover:underline">
+        Connect Google Calendar…
+      </a>
+    );
+  }
+  if (g.status !== 'signed-in') {
+    return (
+      <div className="px-1">
+        <div className="mb-1 text-[13px] font-medium text-strong">Google Calendar</div>
+        <button className="btn" onClick={() => void g.signIn()} disabled={g.status === 'signing-in'}>
+          {g.status === 'expired' ? 'Reconnect' : g.status === 'signing-in' ? 'Waiting…' : 'Sign in'}
+        </button>
+        {g.error && <p className="mt-1 text-[11px] text-danger">{g.error}</p>}
+      </div>
+    );
+  }
+  const rows = g.calendars
+    .filter((c) => g.selected.includes(c.id))
+    .map((c) => ({ key: `g:${c.id}`, name: c.summaryOverride ?? c.summary, color: c.backgroundColor ?? '#8ab4f8' }));
+  return (
+    <LayerList
+      title="Google (read-only)"
+      rows={rows}
+      extra={
+        <button className="icon-btn h-6 w-6" title="Refresh from Google" aria-label="Refresh from Google" onClick={clearGoogleCache}>
+          <RefreshCw size={13} />
+        </button>
+      }
+    />
   );
 }
