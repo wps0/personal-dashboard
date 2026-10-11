@@ -15,6 +15,7 @@ import {blockKeys} from '../keyboard';
 import {fromMinutes} from '../model/time';
 import {readableOn} from '../format';
 import {useUi} from '../ui';
+import {BlockLabel, blockTextClass} from './BlockLabel';
 import {Popover, PopoverAnchor, PopoverContent, useBeside} from './ui/Popover';
 
 const CARD_WIDTH = 400;
@@ -150,7 +151,7 @@ export const GoogleTimedBlock = memo(function GoogleTimedBlock(props: {
         data-block
         onKeyDown={blockKeys({open: openCard(ev)})}
         onClick={openCard(ev)}
-        className="block-interactive absolute z-10 cursor-pointer overflow-hidden rounded-md px-1.5 py-0.5 text-[11px] leading-tight"
+        className={`block-interactive absolute z-10 cursor-pointer overflow-hidden rounded-md px-1.5 text-[11px] ${blockTextClass(height)}`}
         style={{
           top: (ev.startMin / 60) * hourHeight,
           height,
@@ -166,17 +167,13 @@ export const GoogleTimedBlock = memo(function GoogleTimedBlock(props: {
         }}
         title={tooltip(ev)}
       >
-        <div
-          className={`truncate font-medium ${ev.declined ? 'line-through' : ''}`}
-        >
-          {ev.title}
-        </div>
-        {height > 26 && (
-          <div className="truncate opacity-80">
-            {fromMinutes(ev.startMin)} –{' '}
-            {fromMinutes(Math.min(ev.endMin, 1439))}
-          </div>
-        )}
+        <BlockLabel
+          height={height}
+          title={ev.title}
+          titleClassName={ev.declined ? 'line-through' : ''}
+          start={fromMinutes(ev.startMin)}
+          details={`${fromMinutes(ev.startMin)} – ${fromMinutes(Math.min(ev.endMin, 1439))}`}
+        />
       </div>
     </WithCard>
   );

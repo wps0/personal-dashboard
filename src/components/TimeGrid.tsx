@@ -38,6 +38,7 @@ import {GoogleChip, GoogleTimedBlock} from './GoogleEvent';
 import {noGoogleEvents, useGoogleEvents} from '../google/useGoogleEvents';
 import type {GEvent} from '../google/events';
 import {DraftEditor, EventEditor} from './EventEditor';
+import {BlockLabel, blockTextClass} from './BlockLabel';
 import {Popover, PopoverAnchor, PopoverContent, useBeside} from './ui/Popover';
 import {
   deleteEvent,
@@ -679,25 +680,26 @@ function DraftBlock({hourHeight}: {hourHeight: number}) {
   const draft = useUi(s => s.draft)!;
   const start = toMinutes(draft.start);
   const end = Math.max(start + 15, toMinutes(draft.end));
+  const height = Math.max(((end - start) / 60) * hourHeight, 14);
   const [anchor, beside] = useBeside(true);
   return (
     <Popover open onOpenChange={o => !o && useUi.getState().setDraft(null)}>
       <PopoverAnchor asChild ref={anchor}>
         <div
-          className="absolute right-1 left-0.5 z-20 animate-pop-in overflow-hidden rounded-md px-1.5 py-0.5 text-[11px] leading-tight shadow-lg transition-[top,height] duration-150"
+          className={`absolute right-1 left-0.5 z-20 animate-pop-in overflow-hidden rounded-md px-1.5 text-[11px] shadow-lg transition-[top,height] duration-150 ${blockTextClass(height)}`}
           style={{
             top: (start / 60) * hourHeight,
-            height: ((end - start) / 60) * hourHeight,
+            height,
             background: 'var(--color-event)',
             color: 'var(--color-on-block)',
           }}
         >
-          <div className="truncate font-medium">
-            {draft.title || '(No title)'}
-          </div>
-          <div className="truncate opacity-80">
-            {draft.start} – {draft.end}
-          </div>
+          <BlockLabel
+            height={height}
+            title={draft.title || '(No title)'}
+            start={draft.start}
+            details={`${draft.start} – ${draft.end}`}
+          />
         </div>
       </PopoverAnchor>
       <PopoverContent {...beside}>
@@ -812,7 +814,7 @@ const EventBlock = memo(function EventBlock({
           onClick={() =>
             !clicksSuppressed() && useUi.getState().openEvent(event.id)
           }
-          className={`block-interactive absolute z-10 cursor-pointer touch-none overflow-hidden rounded-md px-1.5 py-0.5 text-[11px] leading-tight ${
+          className={`block-interactive absolute z-10 cursor-pointer touch-none overflow-hidden rounded-md px-1.5 text-[11px] ${blockTextClass(height)} ${
             isDragging ? 'opacity-30' : ''
           } ${open ? 'shadow-lg ring-2 ring-bg' : ''} ${previewEnd != null ? 'resizing' : ''}`}
           style={{
@@ -821,12 +823,12 @@ const EventBlock = memo(function EventBlock({
             color: 'var(--color-on-block)',
           }}
         >
-          <div className="truncate font-medium">{event.title}</div>
-          {height > 26 && (
-            <div className="truncate opacity-80">
-              {event.start} – {fromMinutes(end)}
-            </div>
-          )}
+          <BlockLabel
+            height={height}
+            title={event.title}
+            start={event.start}
+            details={`${event.start} – ${fromMinutes(end)}`}
+          />
           <div
             {...handleProps}
             className="absolute right-0 bottom-0 left-0 cursor-ns-resize"
@@ -881,7 +883,7 @@ const AllocBlock = memo(function AllocBlock(props: {
       onClick={() =>
         !clicksSuppressed() && useUi.getState().openItem(alloc.itemId)
       }
-      className={`block-interactive absolute z-10 cursor-pointer touch-none overflow-hidden rounded-md border-l-4 px-1.5 py-0.5 text-[11px] leading-tight ${
+      className={`block-interactive absolute z-10 cursor-pointer touch-none overflow-hidden rounded-md border-l-4 px-1.5 text-[11px] ${blockTextClass(height)} ${
         isDragging ? 'opacity-30' : done ? 'opacity-60' : ''
       } ${previewEnd != null ? 'resizing' : ''}`}
       style={{
@@ -891,17 +893,19 @@ const AllocBlock = memo(function AllocBlock(props: {
       }}
       title={`${item?.title ?? ''}\n${alloc.start} · ${fmtH((end - start) / 60)}`}
     >
-      <div className="truncate font-medium text-strong">
-        <span className={`strike ${done ? 'is-struck' : ''}`}>
-          {item?.title}
-        </span>
-      </div>
-      {height > 26 && (
-        <div className="truncate opacity-80">
-          {alloc.start} – {fromMinutes(end)} ·{' '}
-          {item ? lookups.project(item.projectId)?.name : ''}
-        </div>
-      )}
+      <BlockLabel
+        height={height}
+        title={
+          <span className={`strike ${done ? 'is-struck' : ''}`}>
+            {item?.title}
+          </span>
+        }
+        titleClassName="text-strong"
+        start={alloc.start!}
+        details={`${alloc.start} – ${fromMinutes(end)} · ${
+          item ? (lookups.project(item.projectId)?.name ?? '') : ''
+        }`}
+      />
       <div
         {...handleProps}
         className="absolute right-0 bottom-0 left-0 cursor-ns-resize"
