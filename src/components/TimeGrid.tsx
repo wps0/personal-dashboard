@@ -2,15 +2,12 @@ import {sameProps} from '../sameProps';
 import {
   DndContext,
   DragOverlay,
-  PointerSensor,
-  TouchSensor,
   useDraggable,
   useDroppable,
-  useSensor,
-  useSensors,
   type DragEndEvent,
   type DragStartEvent,
 } from '@dnd-kit/core';
+import {clicksSuppressed, suppressClicks, useDragSensors} from '../dnd';
 import {
   memo,
   useEffect,
@@ -69,9 +66,6 @@ const EMPTY: never[] = [];
 const DAY_MIN = 24 * 60;
 
 /** Browsers may fire a click on the common ancestor after a drag or resize; ignore it. */
-let suppressClickUntil = 0;
-const suppressClicks = () => (suppressClickUntil = performance.now() + 200);
-const clicksSuppressed = () => performance.now() < suppressClickUntil;
 
 function clientY(e: Event | null): number {
   if (!e) return 0;
@@ -96,10 +90,7 @@ export function TimeGrid({
   const pointerY = useRef(0);
   const [dragging, setDragging] = useState<Drag | null>(null);
 
-  const sensors = useSensors(
-    useSensor(PointerSensor, {activationConstraint: {distance: 5}}),
-    useSensor(TouchSensor, {activationConstraint: {delay: 200, tolerance: 6}}),
-  );
+  const sensors = useDragSensors();
 
   // Track the real pointer: dnd-kit's delta mixes in scroll compensation that
   // doesn't match the grid's own scroll container.

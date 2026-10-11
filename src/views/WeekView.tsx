@@ -2,15 +2,12 @@ import {sameProps} from '../sameProps';
 import {
   DndContext,
   DragOverlay,
-  PointerSensor,
-  TouchSensor,
   useDraggable,
   useDroppable,
-  useSensor,
-  useSensors,
   type DragEndEvent,
   type DragStartEvent,
 } from '@dnd-kit/core';
+import {useDragSensors} from '../dnd';
 import {memo, useMemo, useState, type ReactNode} from 'react';
 import {BufferedTextarea} from '../components/Buffered';
 import {HoursInput} from '../components/HoursInput';
@@ -81,10 +78,7 @@ export function WeekView({week}: {week?: ISODate}) {
     goTo: goWeek,
   });
 
-  const sensors = useSensors(
-    useSensor(PointerSensor, {activationConstraint: {distance: 5}}),
-    useSensor(TouchSensor, {activationConstraint: {delay: 200, tolerance: 6}}),
-  );
+  const sensors = useDragSensors();
 
   const onDragStart = (e: DragStartEvent) =>
     setDragging(e.active.data.current as DragData);
