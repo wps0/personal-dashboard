@@ -1,4 +1,4 @@
-import {useMemo, useRef} from 'react';
+import {useLayoutEffect, useMemo, useRef} from 'react';
 import {capacityFor, type CapacityInfo} from './model/capacity';
 import type {Area, CalendarEvent, ISODate, Item, Project} from './model/types';
 import {useStore} from './store';
@@ -14,6 +14,19 @@ export interface Lookups {
 }
 
 export const FALLBACK_COLOR = '#94a3b8';
+
+/**
+ * A ref that always holds the latest committed `value`, for callbacks that
+ * outlive a render (timers, global handlers). It is updated after commit, not
+ * during render.
+ */
+export function useLatest<T>(value: T) {
+  const ref = useRef(value);
+  useLayoutEffect(() => {
+    ref.current = value;
+  });
+  return ref;
+}
 
 /** Id lookups that only change when items, projects or areas change (not on notes or plans). */
 export function useLookups(): Lookups {

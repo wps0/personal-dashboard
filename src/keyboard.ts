@@ -1,8 +1,9 @@
 import {
   useEffect,
-  useRef,
+  useEffectEvent,
   type KeyboardEvent as ReactKeyboardEvent,
 } from 'react';
+import {useLatest} from './hooks';
 import type {CalView, ISODate} from './model/types';
 import {navigate, type Route} from './router';
 import {actionFor} from './shortcuts';
@@ -23,8 +24,7 @@ let current: NavTarget | null = null;
 
 /** Registers the page's navigation handlers for keyboard shortcuts while it is mounted. */
 export function useNavTarget(target: NavTarget) {
-  const ref = useRef(target);
-  ref.current = target;
+  const ref = useLatest(target);
   useEffect(() => {
     const proxy: NavTarget = {
       next: () => ref.current.next(),
@@ -38,7 +38,7 @@ export function useNavTarget(target: NavTarget) {
     return () => {
       if (current === proxy) current = null;
     };
-  }, []);
+  }, [ref]);
 }
 
 export function navTarget(): NavTarget | null {
@@ -173,65 +173,63 @@ function overlayOpen(): boolean {
 
 /** Global single-key shortcuts (see SHORTCUT_HELP). */
 export function useGlobalShortcuts(route: Route) {
-  const routeRef = useRef(route);
-  routeRef.current = route;
-  useEffect(() => {
-    const onKey = (e: KeyboardEvent) => {
-      if (e.defaultPrevented || (e.repeat && e.key.length === 1)) return;
-      const action = actionFor(e);
-      if (!action) return;
-      const typing = isTyping(document.activeElement);
-      if (action.type === 'undo') {
-        // Inside a text field, Ctrl+Z belongs to the field.
-        if (typing) return;
-        e.preventDefault();
-        undoLast();
-        return;
-      }
-      if (typing || overlayOpen()) return;
-      const target = navTarget();
-      const ui = useUi.getState();
-      switch (action.type) {
-        case 'next':
-          target?.next();
-          break;
-        case 'prev':
-          target?.prev();
-          break;
-        case 'today':
-          target?.today();
-          break;
-        case 'goto':
-          if (target) ui.setDialog('goto');
-          break;
-        case 'help':
-          ui.setDialog('help');
-          break;
-        case 'page':
-          navigate({name: action.page} as Route);
-          break;
-        case 'view':
-          if (target?.view && routeRef.current.name === 'calendar')
-            target.view(action.view);
-          else navigate({name: 'calendar', view: action.view});
-          break;
-        case 'create':
-          if (target?.create) target.create();
-          else if (routeRef.current.name === 'projects')
-            document.querySelector<HTMLElement>('[data-new-item]')?.focus();
-          else {
-            // No calendar here: start the draft, then open the calendar, which shows it.
-            ui.setDraft(nextHourDraft());
-            navigate({name: 'calendar'});
-          }
-          break;
-        case 'move':
-          if (!moveFocus(action.dir)) return; // nothing to select: let the arrow scroll
-          break;
-      }
+  const onKey = useEffectEvent((e: KeyboardEvent) => {
+    if (e.defaultPrevented || (e.repeat && e.key.length === 1)) return;
+    const action = actionFor(e);
+    if (!action) return;
+    const typing = isTyping(document.activeElement);
+    if (action.type === 'undo') {
+      // Inside a text field, Ctrl+Z belongs to the field.
+      if (typing) return;
       e.preventDefault();
-    };
-    window.addEventListener('keydown', onKey);
-    return () => window.removeEventListener('keydown', onKey);
+      undoLast();
+      return;
+    }
+    if (typing || overlayOpen()) return;
+    const target = navTarget();
+    const ui = useUi.getState();
+    switch (action.type) {
+      case 'next':
+        target?.next();
+        break;
+      case 'prev':
+        target?.prev();
+        break;
+      case 'today':
+        target?.today();
+        break;
+      case 'goto':
+        if (target) ui.setDialog('goto');
+        break;
+      case 'help':
+        ui.setDialog('help');
+        break;
+      case 'page':
+        navigate({name: action.page} as Route);
+        break;
+      case 'view':
+        if (target?.view && route.name === 'calendar') target.view(action.view);
+        else navigate({name: 'calendar', view: action.view});
+        break;
+      case 'create':
+        if (target?.create) target.create();
+        else if (route.name === 'projects')
+          document.querySelector<HTMLElement>('[data-new-item]')?.focus();
+        else {
+          // No calendar here: start the draft, then open the calendar, which shows it.
+          ui.setDraft(nextHourDraft());
+          navigate({name: 'calendar'});
+        }
+        break;
+      case 'move':
+        if (!moveFocus(action.dir)) return; // nothing to select: let the arrow scroll
+        break;
+    }
+    e.preventDefault();
+  });
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => onKey(e);
+    window.addEventListener('keydown', handler);
+    return () => window.removeEventListener('keydown', handler);
   }, []);
 }
