@@ -688,10 +688,10 @@ function DraftBlock({hourHeight}: {hourHeight: number}) {
   const draft = useUi(s => s.draft)!;
   const start = toMinutes(draft.start);
   const end = Math.max(start + 15, toMinutes(draft.end));
-  const beside = useBeside(true);
+  const [anchor, beside] = useBeside(true);
   return (
     <Popover open onOpenChange={o => !o && useUi.getState().setDraft(null)}>
-      <PopoverAnchor asChild ref={beside.ref}>
+      <PopoverAnchor asChild ref={anchor}>
         <div
           className="absolute right-1 left-0.5 z-20 animate-pop-in overflow-hidden rounded-md px-1.5 py-0.5 text-[11px] leading-tight shadow-lg transition-[top,height] duration-150"
           style={{
@@ -709,7 +709,7 @@ function DraftBlock({hourHeight}: {hourHeight: number}) {
           </div>
         </div>
       </PopoverAnchor>
-      <PopoverContent {...beside.content}>
+      <PopoverContent {...beside}>
         <DraftEditor />
       </PopoverContent>
     </Popover>
@@ -801,14 +801,14 @@ const EventBlock = memo(function EventBlock({
   );
   const end = previewEnd ?? toMinutes(event.end);
   const height = ((end - start) / 60) * hourHeight;
-  const beside = useBeside(open);
+  const [anchor, beside] = useBeside(open);
 
   return (
     <Popover
       open={open}
       onOpenChange={o => !o && useUi.getState().openEvent(null)}
     >
-      <PopoverAnchor asChild ref={beside.ref}>
+      <PopoverAnchor asChild ref={anchor}>
         <div
           ref={setNodeRef}
           {...attributes}
@@ -844,7 +844,7 @@ const EventBlock = memo(function EventBlock({
         </div>
       </PopoverAnchor>
       {open && (
-        <PopoverContent {...beside.content}>
+        <PopoverContent {...beside}>
           <EventEditor eventId={event.id} />
         </PopoverContent>
       )}

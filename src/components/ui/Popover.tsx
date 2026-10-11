@@ -13,19 +13,19 @@ const CARD_WIDTH = 448;
 const GAP = 10;
 
 /**
- * Props for a card shown beside its anchor (an event block). Radix flips the
- * card between right and left by itself, but when the anchor is so wide that
- * the card fits on neither side (a block in Day view) it would hang off the
- * window; the card then overlaps the anchor's right edge instead.
+ * PopoverContent props for a card shown beside its anchor (an event block).
+ * Radix flips the card between right and left by itself, but when the anchor
+ * is so wide that the card fits on neither side (a block in Day view) it would
+ * hang off the window; the card then overlaps the anchor's right edge instead.
  *
- * Pass `ref` to the PopoverAnchor and spread `content` on the PopoverContent.
+ * `anchor` is the ref passed to the PopoverAnchor.
  */
 export function useBeside(open: boolean, cardWidth = CARD_WIDTH) {
-  const ref = useRef<HTMLDivElement>(null);
+  const anchor = useRef<HTMLDivElement>(null);
   const [sideOffset, setSideOffset] = useState(GAP);
   useLayoutEffect(() => {
-    if (!open || !ref.current) return;
-    const r = ref.current.getBoundingClientRect();
+    if (!open || !anchor.current) return;
+    const r = anchor.current.getBoundingClientRect();
     const need = cardWidth + GAP + EDGE;
     const fits = window.innerWidth - r.right >= need || r.left >= need;
     // Overlapping: the card's left edge lands inside the anchor, but never off the window.
@@ -33,7 +33,8 @@ export function useBeside(open: boolean, cardWidth = CARD_WIDTH) {
       fits ? GAP : Math.max(-(cardWidth + 2 * GAP), EDGE - r.right),
     );
   }, [open, cardWidth]);
-  return {ref, content: {side: 'right', align: 'start', sideOffset} as const};
+  const placement = {side: 'right', align: 'start', sideOffset} as const;
+  return [anchor, placement] as const;
 }
 
 /**

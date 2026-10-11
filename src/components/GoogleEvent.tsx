@@ -95,17 +95,17 @@ function Row({icon, children}: {icon: ReactNode; children: ReactNode}) {
 /** Wraps a block in its read-only popover; Enter/e opens it from the keyboard. */
 function WithCard({ev, children}: {ev: GEvent; children: ReactElement}) {
   const open = useUi(s => s.openGoogleKey === ev.key);
-  const beside = useBeside(open, CARD_WIDTH);
+  const [anchor, beside] = useBeside(open, CARD_WIDTH);
   return (
     <Popover
       open={open}
       onOpenChange={o => !o && useUi.getState().openGoogle(null)}
     >
-      <PopoverAnchor asChild ref={beside.ref}>
+      <PopoverAnchor asChild ref={anchor}>
         {children}
       </PopoverAnchor>
       {open && (
-        <PopoverContent {...beside.content}>
+        <PopoverContent {...beside}>
           <GoogleEventCard ev={ev} />
         </PopoverContent>
       )}
