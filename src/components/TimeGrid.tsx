@@ -1,3 +1,4 @@
+import {sameProps} from '../sameProps';
 import {
   DndContext,
   DragOverlay,
@@ -192,10 +193,6 @@ type DayData = {
   allDay: CalendarEvent[];
 };
 
-function sameItems<T>(a: T[] | undefined, b: T[]): a is T[] {
-  return !!a && a.length === b.length && a.every((x, i) => x === b[i]);
-}
-
 type BodyProps = Required<Omit<Props, 'onDayClick'>> &
   Pick<Props, 'onDayClick'>;
 
@@ -209,7 +206,6 @@ function GridBody({days, hourHeight, scrollToHour, onDayClick}: BodyProps) {
   const capacities = useCapacities(days);
   const today = todayISO();
   const scrollRef = useRef<HTMLDivElement>(null);
-  const prev = useRef(new Map<ISODate, DayData>());
 
   useLayoutEffect(() => {
     scrollRef.current?.scrollTo({top: scrollToHour * hourHeight});
@@ -252,16 +248,6 @@ function GridBody({days, hourHeight, scrollToHour, onDayClick}: BodyProps) {
       for (const e of events)
         if (want.has(e.date))
           (e.allDay ? m.get(e.date)!.allDay : m.get(e.date)!.events).push(e);
-    // Unchanged days keep their previous arrays so memoized columns skip re-rendering.
-    for (const [d, day] of m) {
-      const p = prev.current.get(d);
-      if (!p) continue;
-      if (sameItems(p.timed, day.timed)) day.timed = p.timed;
-      if (sameItems(p.untimed, day.untimed)) day.untimed = p.untimed;
-      if (sameItems(p.events, day.events)) day.events = p.events;
-      if (sameItems(p.allDay, day.allDay)) day.allDay = p.allDay;
-    }
-    prev.current = m;
     return m;
   }, [allocations, events, days, hidden, lookups]);
 
@@ -416,7 +402,7 @@ const Strip = memo(function Strip(props: {
       {hasDraft && <DraftChip />}
     </div>
   );
-});
+}, sameProps);
 
 const AllDayChip = memo(function AllDayChip({event}: {event: CalendarEvent}) {
   const open = useUi(s => s.openEventId === event.id);
@@ -537,6 +523,8 @@ interface ColumnProps {
   lookups: Lookups;
 }
 
+// Days whose lists didn't change get equal props (sameProps), so they skip
+// re-rendering.
 const Column = memo(function Column({
   date,
   isToday,
@@ -668,7 +656,7 @@ const Column = memo(function Column({
       {isToday && <NowLine hourHeight={hourHeight} />}
     </div>
   );
-});
+}, sameProps);
 
 function SelectionGhost({
   from,
