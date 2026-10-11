@@ -1,14 +1,20 @@
 name: Deploy to GitHub Pages
 
+# Only main is ever published. The site's origin holds the app's data and is
+# trusted by the Google OAuth client, so unreviewed code must never reach it.
+# Pull requests and other branches don't trigger this workflow at all; a manual
+# run from another branch builds and tests it but skips the deploy.
+#
+# This file can't protect itself: a branch can carry its own edited copy. The
+# real guard is the `github-pages` environment, which must be limited to `main`
+# (Settings → Environments → github-pages → Deployment branches and tags).
 on:
   push:
     branches: [main]
   workflow_dispatch:
 
-permissions:
-  contents: read
-  pages: write
-  id-token: write
+# Nothing by default; each job asks for what it needs.
+permissions: {}
 
 concurrency:
   group: pages
@@ -17,8 +23,13 @@ concurrency:
 jobs:
   build:
     runs-on: ubuntu-latest
+    # Runs npm install scripts and the build, so it gets no Pages or OIDC rights.
+    permissions:
+      contents: read
     steps:
       - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
       - uses: actions/setup-node@v4
         with:
           node-version: 22
@@ -32,7 +43,11 @@ jobs:
 
   deploy:
     needs: build
+    if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
     runs-on: ubuntu-latest
+    permissions:
+      pages: write
+      id-token: write
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
