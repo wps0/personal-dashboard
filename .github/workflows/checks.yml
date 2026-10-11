@@ -1,0 +1,37 @@
+name: Checks
+
+# Lint, format, typecheck, tests and a build for every pull request. It never
+# deploys: there is no Pages permission, no environment and no artifact.
+#
+# `pull_request` (not `pull_request_target`) runs the PR's code with a
+# read-only token and no secrets, also for PRs from forks; caches written here
+# are scoped to the PR and can't affect main's.
+on:
+  pull_request:
+
+permissions: {}
+
+concurrency:
+  group: checks-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  checks:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npm run lint
+      - run: npm run format:check
+      - run: npm run typecheck
+      - run: npm test
+      - run: npm run build
