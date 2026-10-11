@@ -8,6 +8,7 @@ import {useUi, type Draft} from '../ui';
 import {BufferedInput, BufferedTextarea} from './Buffered';
 import {DateField} from './DateField';
 import {TimeSelect} from './TimeSelect';
+import {MoveBar} from './ui/MoveBar';
 
 type When = Pick<CalendarEvent, 'date' | 'start' | 'end' | 'allDay'>;
 
@@ -90,15 +91,7 @@ export function DraftEditor() {
   };
   return (
     <div className="w-[448px] max-w-[calc(100vw-24px)] p-3">
-      <div className="mb-1 flex justify-end">
-        <button
-          className="icon-btn"
-          aria-label="Close"
-          onClick={() => setDraft(null)}
-        >
-          <X size={16} />
-        </button>
-      </div>
+      <MoveBar onClose={() => setDraft(null)} />
       <input
         data-autofocus
         value={draft.title}
