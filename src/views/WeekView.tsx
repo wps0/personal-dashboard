@@ -7,7 +7,7 @@ import {
   type DragEndEvent,
   type DragStartEvent,
 } from '@dnd-kit/core';
-import {useDragSensors} from '../dnd';
+import {ghostUnderPointer, useDragSensors} from '../dnd';
 import {memo, useMemo, useState, type ReactNode} from 'react';
 import {BufferedTextarea} from '../components/Buffered';
 import {HoursInput} from '../components/HoursInput';
@@ -121,7 +121,7 @@ export function WeekView({week}: {week?: ISODate}) {
         </div>
         <WeekGrid monday={monday} today={today} />
       </div>
-      <DragOverlay dropAnimation={null}>
+      <DragOverlay dropAnimation={null} modifiers={[ghostUnderPointer]}>
         {dragging && <DragPreview drag={dragging} />}
       </DragOverlay>
     </DndContext>

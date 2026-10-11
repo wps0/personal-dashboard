@@ -6,7 +6,12 @@ import {
   type DragEndEvent,
   type DragStartEvent,
 } from '@dnd-kit/core';
-import {clicksSuppressed, suppressClicks, useDragSensors} from '../dnd';
+import {
+  clicksSuppressed,
+  ghostUnderPointer,
+  suppressClicks,
+  useDragSensors,
+} from '../dnd';
 import {memo, useMemo, useState} from 'react';
 import {useLookups, useSlide, type Lookups} from '../hooks';
 import {monthGrid, todayISO} from '../model/dates';
@@ -75,7 +80,7 @@ export function MonthGrid({
       }}
     >
       <MonthBody date={date} onDayClick={onDayClick} />
-      <DragOverlay dropAnimation={null}>
+      <DragOverlay dropAnimation={null} modifiers={[ghostUnderPointer]}>
         {dragging && <Ghost entry={dragging} />}
       </DragOverlay>
     </DndContext>
