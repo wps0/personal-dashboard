@@ -6,7 +6,9 @@ import { blockKeys } from '../keyboard';
 import { fromMinutes } from '../model/time';
 import { readableOn } from '../format';
 import { useUi } from '../ui';
-import { Popover, PopoverAnchor, PopoverContent } from './ui/Popover';
+import { Popover, PopoverAnchor, PopoverContent, useBeside } from './ui/Popover';
+
+const CARD_WIDTH = 400;
 
 /** Read-only details for a Google event, with a link to edit it in Google Calendar. */
 function GoogleEventCard({ ev }: { ev: GEvent }) {
@@ -14,7 +16,7 @@ function GoogleEventCard({ ev }: { ev: GEvent }) {
   const description = useMemo(() => (ev.description ? DOMPurify.sanitize(ev.description, { ADD_ATTR: ['target'] }) : ''), [ev.description]);
   const close = () => useUi.getState().openGoogle(null);
   return (
-    <div className="w-[400px] max-w-[calc(100vw-24px)] p-3">
+    <div className="max-w-[calc(100vw-24px)] p-3" style={{ width: CARD_WIDTH }}>
       <div className="mb-1 flex justify-end gap-0.5">
         {ev.htmlLink && (
           <a className="icon-btn" href={ev.htmlLink} target="_blank" rel="noreferrer" title="Open in Google Calendar" aria-label="Open in Google Calendar">
@@ -58,11 +60,14 @@ function Row({ icon, children }: { icon: ReactNode; children: ReactNode }) {
 /** Wraps a block in its read-only popover; Enter/e opens it from the keyboard. */
 function WithCard({ ev, children }: { ev: GEvent; children: ReactElement }) {
   const open = useUi((s) => s.openGoogleKey === ev.key);
+  const beside = useBeside(open, CARD_WIDTH);
   return (
     <Popover open={open} onOpenChange={(o) => !o && useUi.getState().openGoogle(null)}>
-      <PopoverAnchor asChild>{children}</PopoverAnchor>
+      <PopoverAnchor asChild ref={beside.ref}>
+        {children}
+      </PopoverAnchor>
       {open && (
-        <PopoverContent side="right" align="start" sideOffset={10}>
+        <PopoverContent {...beside.content}>
           <GoogleEventCard ev={ev} />
         </PopoverContent>
       )}
