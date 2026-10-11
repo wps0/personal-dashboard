@@ -9,7 +9,8 @@ type Action =
   | {type: 'create'}
   | {type: 'help'}
   | {type: 'undo'}
-  | {type: 'page'; page: 'home' | 'week' | 'calendar' | 'projects' | 'settings'}
+  | {type: 'page'; page: Page}
+  | {type: 'tab'; dir: 1 | -1}
   | {type: 'view'; view: CalView}
   | {type: 'move'; dir: 'up' | 'down' | 'left' | 'right'};
 
@@ -22,6 +23,13 @@ interface KeyLike {
 }
 
 const PAGES = ['home', 'week', 'calendar', 'projects', 'settings'] as const;
+type Page = (typeof PAGES)[number];
+
+/** The tab before or after `current` in the nav bar, wrapping around (vim's gT / gt). */
+export function adjacentPage(current: Page, dir: 1 | -1): Page {
+  const i = PAGES.indexOf(current);
+  return PAGES[(i + dir + PAGES.length) % PAGES.length];
+}
 
 /**
  * Maps a key press to an action, following Google Calendar where it has an
@@ -39,6 +47,10 @@ export function actionFor(e: KeyLike): Action | null {
     case 'k':
     case 'p':
       return {type: 'prev'};
+    case 'h':
+      return {type: 'tab', dir: -1};
+    case 'l':
+      return {type: 'tab', dir: 1};
     case 't':
       return {type: 'today'};
     case 'g':
@@ -78,6 +90,7 @@ export const SHORTCUT_HELP: {group: string; keys: [string, string][]}[] = [
       ['k / p', 'Previous period'],
       ['t', 'Today'],
       ['g', 'Go to date'],
+      ['h / l', 'Previous / next tab'],
       ['1 – 5', 'Home · Week · Calendar · Projects · Settings'],
     ],
   },
