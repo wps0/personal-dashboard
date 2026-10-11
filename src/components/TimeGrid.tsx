@@ -5,9 +5,18 @@ import {
   useDraggable,
   useDroppable,
   type DragEndEvent,
+  type DragMoveEvent,
+  type DragOverEvent,
   type DragStartEvent,
+  pointerWithin,
 } from '@dnd-kit/core';
-import {clicksSuppressed, suppressClicks, useDragSensors} from '../dnd';
+import {
+  clicksSuppressed,
+  ghostUnderPointer,
+  suppressClicks,
+  useDragSensors,
+} from '../dnd';
+import {create} from 'zustand';
 import {
   memo,
   useEffect,
@@ -64,9 +73,18 @@ type Drag =
 type Span = {start: number; end: number; label?: string};
 
 const EMPTY: never[] = [];
-const DAY_MIN = 24 * 60;
 
-/** Browsers may fire a click on the common ancestor after a drag or resize; ignore it. */
+/**
+ * Where a block being dragged over a day column would land. Kept outside React
+ * state so pointer moves re-render only the preview, not the grid.
+ */
+const useDropPreview = create<{
+  drag: Drag | null;
+  date: ISODate | null;
+  start: number;
+}>(() => ({drag: null, date: null, start: 0}));
+const NO_PREVIEW = {drag: null, date: null, start: 0};
+const DAY_MIN = 24 * 60;
 
 function clientY(e: Event | null): number {
   if (!e) return 0;
@@ -89,25 +107,56 @@ export function TimeGrid({
   // re-renders all draggables. GridBody holds the subscriptions.
   const grab = useRef(0);
   const pointerY = useRef(0);
+  const over = useRef<string | null>(null);
   const [dragging, setDragging] = useState<Drag | null>(null);
 
   const sensors = useDragSensors();
 
+  /** Start minute for a drop on `date`'s column at the current pointer, or null. */
+  const dropStart = (date: string): number | null => {
+    const col = document.querySelector(`[data-col="${date}"]`);
+    if (!col) return null;
+    const top =
+      pointerY.current - grab.current - col.getBoundingClientRect().top;
+    return Math.max(0, Math.min(DAY_MIN - 15, snap((top / hourHeight) * 60)));
+  };
+  const updatePreview = () => {
+    const [zone, date] = over.current?.split('|') ?? [];
+    const start = zone === 'col' ? dropStart(date) : null;
+    useDropPreview.setState(
+      start === null ? {date: null, start: 0} : {date, start},
+    );
+  };
+
+  const trackOver = (e: DragOverEvent | DragMoveEvent) => {
+    over.current = typeof e.over?.id === 'string' ? e.over.id : null;
+    updatePreview();
+  };
+
   // Track the real pointer: dnd-kit's delta mixes in scroll compensation that
   // doesn't match the grid's own scroll container.
-  const trackPointer = (ev: PointerEvent | TouchEvent) =>
-    (pointerY.current = clientY(ev));
+  const trackPointer = (ev: PointerEvent | TouchEvent) => {
+    pointerY.current = clientY(ev);
+    updatePreview();
+  };
   const stopTracking = () => {
     window.removeEventListener('pointermove', trackPointer);
     window.removeEventListener('touchmove', trackPointer);
+    window.removeEventListener('scroll', updatePreview, true);
+    over.current = null;
+    useDropPreview.setState(NO_PREVIEW);
   };
 
   const onDragStart = (e: DragStartEvent) => {
-    setDragging(e.active.data.current as Drag);
+    const drag = e.active.data.current as Drag;
+    setDragging(drag);
+    useDropPreview.setState({drag});
     useUi.getState().openEvent(null);
     pointerY.current = clientY(e.activatorEvent);
     window.addEventListener('pointermove', trackPointer);
     window.addEventListener('touchmove', trackPointer);
+    // The grid auto-scrolls near its edges; keep the preview under the pointer.
+    window.addEventListener('scroll', updatePreview, true);
     const node = (e.activatorEvent?.target as Element | null)?.closest(
       '[aria-roledescription="draggable"]',
     );
@@ -130,14 +179,9 @@ export function TimeGrid({
       else updateEvent(drag.event.id, {date, allDay: true});
       return;
     }
-    const col = document.querySelector(`[data-col="${date}"]`);
-    if (!col) return;
-    const top =
-      pointerY.current - grab.current - col.getBoundingClientRect().top;
-    const start = Math.max(
-      0,
-      Math.min(DAY_MIN - 15, snap((top / hourHeight) * 60)),
-    );
+    // Lands where the preview showed it: same pointer position, same math.
+    const start = dropStart(date);
+    if (start === null) return;
     if (drag.kind === 'alloc') {
       updateSession(drag.alloc.id, {date, start: fromMinutes(start)});
     } else {
@@ -161,7 +205,12 @@ export function TimeGrid({
         },
       }}
       sensors={sensors}
+      // The target is the column under the pointer (the floating copy is
+      // hidden over columns, so it can't be used to detect the target).
+      collisionDetection={pointerWithin}
       onDragStart={onDragStart}
+      onDragOver={trackOver}
+      onDragMove={trackOver}
       onDragEnd={onDragEnd}
       onDragCancel={() => (setDragging(null), suppressClicks(), stopTracking())}
     >
@@ -171,7 +220,7 @@ export function TimeGrid({
         scrollToHour={scrollToHour}
         onDayClick={onDayClick}
       />
-      <DragOverlay dropAnimation={null}>
+      <DragOverlay dropAnimation={null} modifiers={[ghostUnderPointer]}>
         {dragging && <DragGhost drag={dragging} />}
       </DragOverlay>
     </DndContext>
@@ -645,6 +694,7 @@ const Column = memo(function Column({
         <SelectionGhost from={sel.a} to={sel.b} hourHeight={hourHeight} />
       )}
       {hasDraft && <DraftBlock hourHeight={hourHeight} />}
+      <DropPreview date={date} hourHeight={hourHeight} lookups={lookups} />
       {isToday && <NowLine hourHeight={hourHeight} />}
     </div>
   );
@@ -915,8 +965,67 @@ const AllocBlock = memo(function AllocBlock(props: {
   );
 });
 
+/**
+ * While a block is dragged over this column: where it would land, with its new
+ * time, like Google Calendar. Only this component re-renders on pointer moves.
+ */
+function DropPreview({
+  date,
+  hourHeight,
+  lookups,
+}: {
+  date: ISODate;
+  hourHeight: number;
+  lookups: Lookups;
+}) {
+  const start = useDropPreview(s => (s.date === date ? s.start : null));
+  const drag = useDropPreview(s => s.drag);
+  if (start === null || !drag) return null;
+  const len =
+    drag.kind === 'alloc'
+      ? Math.round(drag.alloc.plannedHours * 60)
+      : drag.event.allDay
+        ? 60
+        : toMinutes(drag.event.end) - toMinutes(drag.event.start);
+  const end = Math.min(start + len, DAY_MIN - 1);
+  const height = Math.max(((end - start) / 60) * hourHeight - 1, 14);
+  const item = drag.kind === 'alloc' ? lookups.item(drag.alloc.itemId) : null;
+  const title = drag.kind === 'alloc' ? (item?.title ?? '') : drag.event.title;
+  return (
+    <div
+      data-drop-preview
+      className={`pointer-events-none absolute right-1 left-0.5 z-30 overflow-hidden rounded-md px-1.5 text-[11px] shadow-lg ring-2 ring-bg ${blockTextClass(height)} ${
+        drag.kind === 'alloc' ? 'border-l-4 text-strong' : ''
+      }`}
+      style={{
+        top: (start / 60) * hourHeight,
+        height,
+        ...(drag.kind === 'alloc'
+          ? {
+              background: `color-mix(in srgb, ${lookups.color(item ?? undefined)} 55%, var(--color-panel))`,
+              borderLeftColor: lookups.color(item ?? undefined),
+            }
+          : {
+              background: 'var(--color-event)',
+              color: 'var(--color-on-block)',
+            }),
+      }}
+    >
+      <BlockLabel
+        height={height}
+        title={title}
+        start={fromMinutes(start)}
+        details={`${fromMinutes(start)} – ${fromMinutes(end)}`}
+      />
+    </div>
+  );
+}
+
+/** The floating copy under the pointer, shown when not over a day column (there the preview shows it). */
 function DragGhost({drag}: {drag: Drag}) {
+  const overColumn = useDropPreview(s => s.date !== null);
   const lookups = useLookups();
+  if (overColumn) return null;
   const title =
     drag.kind === 'event'
       ? drag.event.title
