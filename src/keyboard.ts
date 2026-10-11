@@ -6,7 +6,7 @@ import {
 import {useLatest} from './hooks';
 import type {CalView, ISODate} from './model/types';
 import {navigate, type Route} from './router';
-import {actionFor} from './shortcuts';
+import {actionFor, adjacentPage} from './shortcuts';
 import {undoLast} from './toast';
 import {nextHourDraft, useUi} from './ui';
 
@@ -206,6 +206,9 @@ export function useGlobalShortcuts(route: Route) {
         break;
       case 'page':
         navigate({name: action.page} as Route);
+        break;
+      case 'tab':
+        navigate({name: adjacentPage(route.name, action.dir)} as Route);
         break;
       case 'view':
         if (target?.view && route.name === 'calendar') target.view(action.view);

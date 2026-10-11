@@ -1,5 +1,5 @@
 import {describe, expect, it} from 'vitest';
-import {actionFor} from './shortcuts';
+import {actionFor, adjacentPage} from './shortcuts';
 
 describe('actionFor', () => {
   it('maps Google Calendar keys', () => {
@@ -21,6 +21,12 @@ describe('actionFor', () => {
     expect(actionFor({key: 'ArrowLeft'})).toEqual({type: 'move', dir: 'left'});
   });
 
+  it('maps h / l to the previous / next tab', () => {
+    expect(actionFor({key: 'h'})).toEqual({type: 'tab', dir: -1});
+    expect(actionFor({key: 'l'})).toEqual({type: 'tab', dir: 1});
+    expect(actionFor({key: 'l', ctrlKey: true})).toBeNull();
+  });
+
   it('leaves browser combinations alone, except undo', () => {
     expect(actionFor({key: 'j', ctrlKey: true})).toBeNull();
     expect(actionFor({key: 't', metaKey: true})).toBeNull();
@@ -28,5 +34,18 @@ describe('actionFor', () => {
     expect(actionFor({key: 'Z', metaKey: true})).toEqual({type: 'undo'});
     expect(actionFor({key: 'z', ctrlKey: true, shiftKey: true})).toBeNull(); // redo: not handled
     expect(actionFor({key: 'q'})).toBeNull();
+  });
+});
+
+describe('adjacentPage', () => {
+  it('steps through the tabs in nav-bar order', () => {
+    expect(adjacentPage('home', 1)).toBe('week');
+    expect(adjacentPage('calendar', -1)).toBe('week');
+    expect(adjacentPage('projects', 1)).toBe('settings');
+  });
+
+  it('wraps around at both ends', () => {
+    expect(adjacentPage('settings', 1)).toBe('home');
+    expect(adjacentPage('home', -1)).toBe('settings');
   });
 });
