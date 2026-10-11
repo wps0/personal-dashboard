@@ -1,9 +1,9 @@
-import { CalendarDays, X } from 'lucide-react';
-import { useState } from 'react';
-import { formatMedium } from '../model/dates';
-import type { ISODate } from '../model/types';
-import { MiniMonth } from './MiniMonth';
-import { Popover, PopoverContent, PopoverTrigger } from './ui/Popover';
+import {CalendarDays, X} from 'lucide-react';
+import {useState} from 'react';
+import {formatMedium} from '../model/dates';
+import type {ISODate} from '../model/types';
+import {MiniMonth} from './MiniMonth';
+import {Popover, PopoverContent, PopoverTrigger} from './ui/Popover';
 
 interface Props {
   value?: ISODate;
@@ -18,21 +18,37 @@ interface Props {
 }
 
 /** Date picker: a button that opens the mini month. Replaces <input type="date">. */
-export function DateField({ value, onChange, placeholder = 'Set date', optional, variant = 'field', className = '', format = formatMedium }: Props) {
+export function DateField({
+  value,
+  onChange,
+  placeholder = 'Set date',
+  optional,
+  variant = 'field',
+  className = '',
+  format = formatMedium,
+}: Props) {
   const [open, setOpen] = useState(false);
   return (
     <Popover open={open} onOpenChange={setOpen}>
       <span className={`inline-flex items-center ${className}`}>
         <PopoverTrigger
           className={`inline-flex h-7 min-w-0 flex-1 items-center gap-1.5 rounded-md px-2 text-left tabular-nums outline-none focus-visible:ring-1 focus-visible:ring-accent ${
-            variant === 'field' ? 'border border-line bg-raised hover:border-dim/50' : 'hover:bg-raised'
+            variant === 'field'
+              ? 'border border-line bg-raised hover:border-dim/50'
+              : 'hover:bg-raised'
           } ${value ? '' : 'text-dim'}`}
         >
           <CalendarDays size={14} className="shrink-0 text-dim" />
-          <span className="truncate">{value ? format(value) : placeholder}</span>
+          <span className="truncate">
+            {value ? format(value) : placeholder}
+          </span>
         </PopoverTrigger>
         {optional && value && (
-          <button className="icon-btn ml-0.5" aria-label="Clear date" onClick={() => onChange(undefined)}>
+          <button
+            className="icon-btn ml-0.5"
+            aria-label="Clear date"
+            onClick={() => onChange(undefined)}
+          >
             <X size={14} />
           </button>
         )}
@@ -40,7 +56,7 @@ export function DateField({ value, onChange, placeholder = 'Set date', optional,
       <PopoverContent align="start" className="p-2">
         <MiniMonth
           selected={value}
-          onSelect={(d) => {
+          onSelect={d => {
             onChange(d);
             setOpen(false);
           }}

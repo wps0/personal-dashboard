@@ -1,8 +1,8 @@
-import { get, set } from 'idb-keyval';
-import type { AppData } from '../model/types';
-import { CAL_VIEWS, emptyData } from '../model/types';
-import { migrateStatus } from '../model/selectors';
-import { defaultRules, rulesFromLegacyHours } from '../model/capacity';
+import {get, set} from 'idb-keyval';
+import type {AppData} from '../model/types';
+import {CAL_VIEWS, emptyData} from '../model/types';
+import {migrateStatus} from '../model/selectors';
+import {defaultRules, rulesFromLegacyHours} from '../model/capacity';
 
 /**
  * Persistence boundary. v1 keeps data in IndexedDB; v2 adds a Google Drive
@@ -28,9 +28,11 @@ export class IndexedDbStorage implements Storage {
 
 /** Validates and normalizes data from storage or an imported file. Throws on garbage. */
 export function parseAppData(raw: unknown): AppData {
-  if (typeof raw !== 'object' || raw === null) throw new Error('Not a dashboard data object');
+  if (typeof raw !== 'object' || raw === null)
+    throw new Error('Not a dashboard data object');
   const r = raw as Partial<AppData>;
-  if (r.version !== 1) throw new Error(`Unsupported data version: ${String(r.version)}`);
+  if (r.version !== 1)
+    throw new Error(`Unsupported data version: ${String(r.version)}`);
   for (const key of ['areas', 'projects', 'items', 'allocations'] as const) {
     if (!Array.isArray(r[key])) throw new Error(`Missing or invalid "${key}"`);
   }
@@ -38,7 +40,7 @@ export function parseAppData(raw: unknown): AppData {
   return {
     ...base,
     ...r,
-    items: r.items!.map((i) => ({ ...i, status: migrateStatus(i.status) })),
+    items: r.items!.map(i => ({...i, status: migrateStatus(i.status)})),
     events: Array.isArray(r.events) ? r.events : [],
     dayNotes: r.dayNotes ?? {},
     monthNotes: r.monthNotes ?? {},
@@ -47,16 +49,29 @@ export function parseAppData(raw: unknown): AppData {
 }
 
 function parseSettings(raw: unknown): AppData['settings'] {
-  const s = (raw ?? {}) as Partial<AppData['settings']> & { capacity?: number[] };
-  const capacityRules = Array.isArray(s.capacityRules) && s.capacityRules.length
-    ? s.capacityRules
-    : Array.isArray(s.capacity) && s.capacity.length === 7
-      ? rulesFromLegacyHours(s.capacity) // before planning windows existed
-      : defaultRules();
+  const s = (raw ?? {}) as Partial<AppData['settings']> & {capacity?: number[]};
+  const capacityRules =
+    Array.isArray(s.capacityRules) && s.capacityRules.length
+      ? s.capacityRules
+      : Array.isArray(s.capacity) && s.capacity.length === 7
+        ? rulesFromLegacyHours(s.capacity) // before planning windows existed
+        : defaultRules();
   const minutes = Number(s.defaultEventMinutes);
-  const defaultEventMinutes = Number.isFinite(minutes) && minutes >= 15 && minutes <= 480 ? Math.round(minutes / 15) * 15 : 60;
-  const defaultCalendarView = (CAL_VIEWS as readonly string[]).includes(s.defaultCalendarView as string) ? s.defaultCalendarView! : 'week';
-  return { capacityRules, dayCapacity: s.dayCapacity ?? {}, defaultEventMinutes, defaultCalendarView };
+  const defaultEventMinutes =
+    Number.isFinite(minutes) && minutes >= 15 && minutes <= 480
+      ? Math.round(minutes / 15) * 15
+      : 60;
+  const defaultCalendarView = (CAL_VIEWS as readonly string[]).includes(
+    s.defaultCalendarView as string,
+  )
+    ? s.defaultCalendarView!
+    : 'week';
+  return {
+    capacityRules,
+    dayCapacity: s.dayCapacity ?? {},
+    defaultEventMinutes,
+    defaultCalendarView,
+  };
 }
 
 export function exportJson(data: AppData): string {

@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import {useEffect, useState} from 'react';
 
 interface Props {
   value: number | undefined;
@@ -11,7 +11,14 @@ interface Props {
 }
 
 /** Numeric hours field that commits on blur/Enter, in 0.25h steps. */
-export function HoursInput({ value, onChange, placeholder = '–', className = '', optional, title }: Props) {
+export function HoursInput({
+  value,
+  onChange,
+  placeholder = '–',
+  className = '',
+  optional,
+  title,
+}: Props) {
   const [text, setText] = useState(value?.toString() ?? '');
   useEffect(() => setText(value?.toString() ?? ''), [value]);
 
@@ -33,10 +40,12 @@ export function HoursInput({ value, onChange, placeholder = '–', className = '
       value={text}
       placeholder={placeholder}
       title={title}
-      onChange={(e) => setText(e.target.value)}
+      onChange={e => setText(e.target.value)}
       onBlur={commit}
-      onKeyDown={(e) => e.key === 'Enter' && (e.currentTarget as HTMLInputElement).blur()}
-      onPointerDown={(e) => e.stopPropagation()}
+      onKeyDown={e =>
+        e.key === 'Enter' && (e.currentTarget as HTMLInputElement).blur()
+      }
+      onPointerDown={e => e.stopPropagation()}
       className={`w-10 rounded px-1 text-right tabular-nums hover:bg-raised focus:bg-raised ${className}`}
     />
   );

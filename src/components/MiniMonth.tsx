@@ -1,8 +1,15 @@
-import { ChevronLeft, ChevronRight } from 'lucide-react';
-import { useEffect, useState } from 'react';
-import { useSlide } from '../hooks';
-import { addMonths, firstOfMonth, formatMonthYear, monthGrid, startOfWeek, todayISO } from '../model/dates';
-import type { ISODate } from '../model/types';
+import {ChevronLeft, ChevronRight} from 'lucide-react';
+import {useEffect, useState} from 'react';
+import {useSlide} from '../hooks';
+import {
+  addMonths,
+  firstOfMonth,
+  formatMonthYear,
+  monthGrid,
+  startOfWeek,
+  todayISO,
+} from '../model/dates';
+import type {ISODate} from '../model/types';
 
 interface Props {
   /** Date to show as selected (and whose month to show initially). */
@@ -17,7 +24,7 @@ interface Props {
 const WEEKDAYS = ['M', 'T', 'W', 'T', 'F', 'S', 'S'];
 
 /** Google-Calendar-style month picker. Weeks start on Monday. */
-export function MiniMonth({ selected, range, onSelect, weekHover }: Props) {
+export function MiniMonth({selected, range, onSelect, weekHover}: Props) {
   const today = todayISO();
   const [month, setMonth] = useState(firstOfMonth(selected ?? today));
   const [hoverWeek, setHoverWeek] = useState<ISODate | null>(null);
@@ -27,16 +34,27 @@ export function MiniMonth({ selected, range, onSelect, weekHover }: Props) {
 
   const days = monthGrid(month);
   const slide = useSlide(month);
-  const inRange = (d: ISODate) => (range ? d >= range[0] && d <= range[1] : false);
+  const inRange = (d: ISODate) =>
+    range ? d >= range[0] && d <= range[1] : false;
 
   return (
     <div className="w-[224px] overflow-hidden select-none">
       <div className="mb-1 flex items-center pl-2">
-        <span className="flex-1 text-[13px] font-medium text-strong">{formatMonthYear(month)}</span>
-        <button className="icon-btn" aria-label="Previous month" onClick={() => setMonth(addMonths(month, -1))}>
+        <span className="flex-1 text-[13px] font-medium text-strong">
+          {formatMonthYear(month)}
+        </span>
+        <button
+          className="icon-btn"
+          aria-label="Previous month"
+          onClick={() => setMonth(addMonths(month, -1))}
+        >
           <ChevronLeft size={16} />
         </button>
-        <button className="icon-btn" aria-label="Next month" onClick={() => setMonth(addMonths(month, 1))}>
+        <button
+          className="icon-btn"
+          aria-label="Next month"
+          onClick={() => setMonth(addMonths(month, 1))}
+        >
           <ChevronRight size={16} />
         </button>
       </div>
@@ -47,14 +65,22 @@ export function MiniMonth({ selected, range, onSelect, weekHover }: Props) {
           </span>
         ))}
       </div>
-      <div key={month} className={`grid grid-cols-7 ${slide}`} onMouseLeave={() => setHoverWeek(null)}>
-        {days.map((d) => {
+      <div
+        key={month}
+        className={`grid grid-cols-7 ${slide}`}
+        onMouseLeave={() => setHoverWeek(null)}
+      >
+        {days.map(d => {
           const isToday = d === today;
           const isSelected = d === selected;
           const outside = d.slice(0, 7) !== month.slice(0, 7);
-          const tinted = inRange(d) || (weekHover && hoverWeek === startOfWeek(d));
+          const tinted =
+            inRange(d) || (weekHover && hoverWeek === startOfWeek(d));
           return (
-            <div key={d} className={`flex justify-center py-px transition-colors duration-150 ${tinted ? 'bg-accent/12' : ''}`}>
+            <div
+              key={d}
+              className={`flex justify-center py-px transition-colors duration-150 ${tinted ? 'bg-accent/12' : ''}`}
+            >
               <button
                 onClick={() => onSelect(d)}
                 onMouseEnter={() => weekHover && setHoverWeek(startOfWeek(d))}

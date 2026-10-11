@@ -1,5 +1,5 @@
-import { describe, expect, it } from 'vitest';
-import { readableOn } from './format';
+import {describe, expect, it} from 'vitest';
+import {readableOn} from './format';
 
 describe('readableOn', () => {
   it('uses white on dark colors and dark text on light ones', () => {

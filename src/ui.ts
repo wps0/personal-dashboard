@@ -1,8 +1,8 @@
-import { create } from 'zustand';
-import { todayISO } from './model/dates';
-import { fromMinutes } from './model/time';
-import type { ISODate } from './model/types';
-import { useStore } from './store';
+import {create} from 'zustand';
+import {todayISO} from './model/dates';
+import {fromMinutes} from './model/time';
+import type {ISODate} from './model/types';
+import {useStore} from './store';
 
 /** An event being created: shown as a ghost block with a floating editor. */
 export interface Draft {
@@ -53,18 +53,24 @@ export const useUi = create<UiState>()((set, get) => ({
   draft: null,
   hidden: loadHidden(),
   dialog: null,
-  setDialog: (dialog) => set({ dialog }),
-  openItem: (id) => set({ openItemId: id, openEventId: null, openGoogleKey: null, draft: null }),
-  openEvent: (id) => set({ openEventId: id, openItemId: null, openGoogleKey: null, draft: null }),
-  openGoogle: (key) => set({ openGoogleKey: key, openEventId: null, openItemId: null, draft: null }),
-  setDraft: (draft) => set({ draft, openEventId: null, openItemId: null, openGoogleKey: null }),
-  patchDraft: (p) => {
+  setDialog: dialog => set({dialog}),
+  openItem: id =>
+    set({openItemId: id, openEventId: null, openGoogleKey: null, draft: null}),
+  openEvent: id =>
+    set({openEventId: id, openItemId: null, openGoogleKey: null, draft: null}),
+  openGoogle: key =>
+    set({openGoogleKey: key, openEventId: null, openItemId: null, draft: null}),
+  setDraft: draft =>
+    set({draft, openEventId: null, openItemId: null, openGoogleKey: null}),
+  patchDraft: p => {
     const d = get().draft;
-    if (d) set({ draft: { ...d, ...p } });
+    if (d) set({draft: {...d, ...p}});
   },
-  toggleHidden: (key) => {
-    const hidden = get().hidden.includes(key) ? get().hidden.filter((k) => k !== key) : [...get().hidden, key];
-    set({ hidden });
+  toggleHidden: key => {
+    const hidden = get().hidden.includes(key)
+      ? get().hidden.filter(k => k !== key)
+      : [...get().hidden, key];
+    set({hidden});
     try {
       localStorage.setItem(HIDDEN_KEY, JSON.stringify(hidden));
     } catch {
@@ -74,12 +80,31 @@ export const useUi = create<UiState>()((set, get) => ({
 }));
 
 /** A draft for `date` from `start` minutes; the end defaults to start + 1 h. */
-export function draftAt(date: ISODate, start: number, end?: number, allDay = false): Draft {
-  return { date, start: fromMinutes(start), end: fromMinutes(end ?? start + 60), allDay, title: '', notes: '' };
+export function draftAt(
+  date: ISODate,
+  start: number,
+  end?: number,
+  allDay = false,
+): Draft {
+  return {
+    date,
+    start: fromMinutes(start),
+    end: fromMinutes(end ?? start + 60),
+    allDay,
+    title: '',
+    notes: '',
+  };
 }
 
 /** A draft starting at the next full hour (today by default), with the default event length. */
 export function nextHourDraft(date: ISODate = todayISO()): Draft {
   const start = Math.min(new Date().getHours() + 1, 22) * 60;
-  return draftAt(date, start, Math.min(start + useStore.getState().data.settings.defaultEventMinutes, 24 * 60 - 1));
+  return draftAt(
+    date,
+    start,
+    Math.min(
+      start + useStore.getState().data.settings.defaultEventMinutes,
+      24 * 60 - 1,
+    ),
+  );
 }

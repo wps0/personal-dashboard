@@ -1,34 +1,42 @@
-import { CircleGauge, Keyboard, Monitor, Moon, Sun } from 'lucide-react';
-import { Toaster } from './components/Toaster';
-import { ShortcutDialogs } from './components/ShortcutDialogs';
-import { useGlobalShortcuts } from './keyboard';
-import { useEffect, type ReactNode } from 'react';
-import { ItemOverlay } from './components/ItemOverlay';
-import { sampleData } from './model/sample';
-import { href, navigate, useRoute, type Route } from './router';
-import { useStore } from './store';
-import { useTheme, type ThemeChoice } from './theme';
-import { useUi } from './ui';
-import { CalendarView } from './views/CalendarView';
-import { HomeView } from './views/HomeView';
-import { ProjectsView } from './views/ProjectsView';
-import { SettingsView } from './views/SettingsView';
-import { WeekView } from './views/WeekView';
+import {CircleGauge, Keyboard, Monitor, Moon, Sun} from 'lucide-react';
+import {Toaster} from './components/Toaster';
+import {ShortcutDialogs} from './components/ShortcutDialogs';
+import {useGlobalShortcuts} from './keyboard';
+import {useEffect, type ReactNode} from 'react';
+import {ItemOverlay} from './components/ItemOverlay';
+import {sampleData} from './model/sample';
+import {href, navigate, useRoute, type Route} from './router';
+import {useStore} from './store';
+import {useTheme, type ThemeChoice} from './theme';
+import {useUi} from './ui';
+import {CalendarView} from './views/CalendarView';
+import {HomeView} from './views/HomeView';
+import {ProjectsView} from './views/ProjectsView';
+import {SettingsView} from './views/SettingsView';
+import {WeekView} from './views/WeekView';
 
-const NAV: { route: Route; label: string }[] = [
-  { route: { name: 'home' }, label: 'Home' },
-  { route: { name: 'week' }, label: 'Week' },
-  { route: { name: 'calendar' }, label: 'Calendar' },
-  { route: { name: 'projects' }, label: 'Projects' },
-  { route: { name: 'settings' }, label: 'Settings' },
+const NAV: {route: Route; label: string}[] = [
+  {route: {name: 'home'}, label: 'Home'},
+  {route: {name: 'week'}, label: 'Week'},
+  {route: {name: 'calendar'}, label: 'Calendar'},
+  {route: {name: 'projects'}, label: 'Projects'},
+  {route: {name: 'settings'}, label: 'Settings'},
 ];
 
-const THEME_NEXT: Record<ThemeChoice, ThemeChoice> = { system: 'light', light: 'dark', dark: 'system' };
-const THEME_ICON: Record<ThemeChoice, ReactNode> = { system: <Monitor size={15} />, light: <Sun size={15} />, dark: <Moon size={15} /> };
+const THEME_NEXT: Record<ThemeChoice, ThemeChoice> = {
+  system: 'light',
+  light: 'dark',
+  dark: 'system',
+};
+const THEME_ICON: Record<ThemeChoice, ReactNode> = {
+  system: <Monitor size={15} />,
+  light: <Sun size={15} />,
+  dark: <Moon size={15} />,
+};
 
 export default function App() {
   const route = useRoute();
-  const hasAreas = useStore((s) => s.data.areas.length > 0);
+  const hasAreas = useStore(s => s.data.areas.length > 0);
   const [theme, setTheme] = useTheme();
   useEscapeClosesProject(route);
   useGlobalShortcuts(route);
@@ -39,7 +47,7 @@ export default function App() {
         <span className="mr-3 flex items-center gap-1.5 text-[14px] font-semibold tracking-tight text-strong">
           <CircleGauge size={18} className="text-accent" /> Dashboard
         </span>
-        {NAV.map((n) => (
+        {NAV.map(n => (
           <a
             key={n.label}
             href={href(n.route)}
@@ -49,16 +57,29 @@ export default function App() {
             {n.label}
           </a>
         ))}
-        <button className="icon-btn ml-auto" onClick={() => useUi.getState().setDialog('help')} title="Keyboard shortcuts (?)" aria-label="Keyboard shortcuts">
+        <button
+          className="icon-btn ml-auto"
+          onClick={() => useUi.getState().setDialog('help')}
+          title="Keyboard shortcuts (?)"
+          aria-label="Keyboard shortcuts"
+        >
           <Keyboard size={16} />
         </button>
-        <button className="icon-btn" onClick={() => setTheme(THEME_NEXT[theme])} title={`Theme: ${theme === 'system' ? 'auto (follows system)' : theme} — click to change`}>
+        <button
+          className="icon-btn"
+          onClick={() => setTheme(THEME_NEXT[theme])}
+          title={`Theme: ${theme === 'system' ? 'auto (follows system)' : theme} — click to change`}
+        >
           {THEME_ICON[theme]}
         </button>
       </header>
       {/* Keyed by page so switching tabs fades the new page in. */}
       <main key={route.name} className="min-h-0 flex-1 animate-fade-in">
-        {!hasAreas && route.name !== 'settings' ? <Welcome /> : <Page route={route} />}
+        {!hasAreas && route.name !== 'settings' ? (
+          <Welcome />
+        ) : (
+          <Page route={route} />
+        )}
       </main>
       <ItemOverlay />
       <ShortcutDialogs />
@@ -67,7 +88,7 @@ export default function App() {
   );
 }
 
-function Page({ route }: { route: Route }) {
+function Page({route}: {route: Route}) {
   switch (route.name) {
     case 'home':
       return <HomeView date={route.date} />;
@@ -84,14 +105,26 @@ function Page({ route }: { route: Route }) {
 
 /** Esc closes the project side panel (overlays handle Esc themselves first). */
 function useEscapeClosesProject(route: Route) {
-  const overlayOpen = useUi((s) => s.openItemId !== null || s.openEventId !== null || s.openGoogleKey !== null || s.draft !== null || s.dialog !== null);
+  const overlayOpen = useUi(
+    s =>
+      s.openItemId !== null ||
+      s.openEventId !== null ||
+      s.openGoogleKey !== null ||
+      s.draft !== null ||
+      s.dialog !== null,
+  );
   const panelOpen = route.name === 'projects' && route.id !== undefined;
   useEffect(() => {
     if (!panelOpen || overlayOpen) return;
     const onKey = (e: KeyboardEvent) => {
       const t = e.target as HTMLElement;
       // defaultPrevented: a dropdown or popover already handled this Esc.
-      if (e.key === 'Escape' && !e.defaultPrevented && !['INPUT', 'TEXTAREA', 'SELECT'].includes(t.tagName)) navigate({ name: 'projects' });
+      if (
+        e.key === 'Escape' &&
+        !e.defaultPrevented &&
+        !['INPUT', 'TEXTAREA', 'SELECT'].includes(t.tagName)
+      )
+        navigate({name: 'projects'});
     };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
@@ -99,23 +132,32 @@ function useEscapeClosesProject(route: Route) {
 }
 
 function Welcome() {
-  const { replaceAll, addArea } = useStore.getState();
+  const {replaceAll, addArea} = useStore.getState();
   return (
     <div className="mx-auto mt-24 max-w-md space-y-4 px-4">
       <h1 className="text-lg font-semibold text-strong">Nothing here yet</h1>
       <p className="text-dim">
-        Projects live in <b className="text-fg">areas</b> such as University, Work or Personal. Start with a few empty areas,
-        or load sample data to try things out.
+        Projects live in <b className="text-fg">areas</b> such as University,
+        Work or Personal. Start with a few empty areas, or load sample data to
+        try things out.
       </p>
       <div className="flex gap-2">
-        <button className="btn" onClick={() => ['University', 'Work', 'Personal'].forEach((n) => addArea(n))}>
+        <button
+          className="btn"
+          onClick={() =>
+            ['University', 'Work', 'Personal'].forEach(n => addArea(n))
+          }
+        >
           Create University / Work / Personal
         </button>
         <button className="btn" onClick={() => replaceAll(sampleData())}>
           Load sample data
         </button>
       </div>
-      <p className="text-[12px] text-dim">Data is stored in this browser only. Use Settings → Export to back it up.</p>
+      <p className="text-[12px] text-dim">
+        Data is stored in this browser only. Use Settings → Export to back it
+        up.
+      </p>
     </div>
   );
 }

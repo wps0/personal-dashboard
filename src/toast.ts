@@ -1,11 +1,11 @@
-import { create } from 'zustand';
-import type { AppData } from './model/types';
-import { useStore } from './store';
+import {create} from 'zustand';
+import type {AppData} from './model/types';
+import {useStore} from './store';
 
 export interface Toast {
   id: number;
   message: string;
-  action?: { label: string; run(): void };
+  action?: {label: string; run(): void};
 }
 
 interface ToastState {
@@ -18,16 +18,17 @@ let nextId = 1;
 
 export const useToasts = create<ToastState>()((set, get) => ({
   toasts: [],
-  push: (t) => {
+  push: t => {
     const id = nextId++;
     // Keep the stack short: newest three.
-    set({ toasts: [...get().toasts.slice(-2), { ...t, id }] });
+    set({toasts: [...get().toasts.slice(-2), {...t, id}]});
     window.setTimeout(() => get().dismiss(id), t.action ? 6000 : 3000);
   },
-  dismiss: (id) => set({ toasts: get().toasts.filter((t) => t.id !== id) }),
+  dismiss: id => set({toasts: get().toasts.filter(t => t.id !== id)}),
 }));
 
-export const toast = (message: string, action?: Toast['action']) => useToasts.getState().push({ message, action });
+export const toast = (message: string, action?: Toast['action']) =>
+  useToasts.getState().push({message, action});
 
 /** One undoable step: the data just before and just after it. */
 interface Step {
@@ -70,12 +71,16 @@ function restore(step: Step): boolean {
  * `quiet` records it without a toast, for frequent direct manipulation (drag,
  * resize, ticking off) where the result is already visible.
  */
-export function withUndo(message: string, change: () => void, { quiet = false } = {}) {
+export function withUndo(
+  message: string,
+  change: () => void,
+  {quiet = false} = {},
+) {
   const before = useStore.getState().data;
   change();
   const after = useStore.getState().data;
   if (before === after) return;
-  const step = { message, before, after };
+  const step = {message, before, after};
   history.push(step);
   if (history.length > MAX_STEPS) history.shift();
   if (quiet) return;

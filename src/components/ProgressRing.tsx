@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import {useEffect, useState} from 'react';
 
 interface Props {
   percent: number;
@@ -8,7 +8,7 @@ interface Props {
 }
 
 /** Circular progress indicator that fills clockwise from 12 o'clock. */
-export function ProgressRing({ percent, color, size = 56, stroke = 5 }: Props) {
+export function ProgressRing({percent, color, size = 56, stroke = 5}: Props) {
   const r = (size - stroke) / 2;
   const c = 2 * Math.PI * r;
   const p = Math.max(0, Math.min(100, percent));
@@ -19,8 +19,21 @@ export function ProgressRing({ percent, color, size = 56, stroke = 5 }: Props) {
     return () => cancelAnimationFrame(raf);
   }, [p]);
   return (
-    <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`} role="img" aria-label={`${p}% complete`}>
-      <circle cx={size / 2} cy={size / 2} r={r} fill="none" stroke="var(--color-line)" strokeWidth={stroke} />
+    <svg
+      width={size}
+      height={size}
+      viewBox={`0 0 ${size} ${size}`}
+      role="img"
+      aria-label={`${p}% complete`}
+    >
+      <circle
+        cx={size / 2}
+        cy={size / 2}
+        r={r}
+        fill="none"
+        stroke="var(--color-line)"
+        strokeWidth={stroke}
+      />
       <circle
         cx={size / 2}
         cy={size / 2}
@@ -31,7 +44,9 @@ export function ProgressRing({ percent, color, size = 56, stroke = 5 }: Props) {
         strokeLinecap={shown > 0 ? 'round' : 'butt'}
         strokeDasharray={`${(shown / 100) * c} ${c}`}
         transform={`rotate(-90 ${size / 2} ${size / 2})`}
-        style={{ transition: 'stroke-dasharray 700ms cubic-bezier(0.2, 0.8, 0.2, 1)' }}
+        style={{
+          transition: 'stroke-dasharray 700ms cubic-bezier(0.2, 0.8, 0.2, 1)',
+        }}
       />
       <text
         x="50%"

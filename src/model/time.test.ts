@@ -1,5 +1,5 @@
-import { describe, expect, it } from 'vitest';
-import { fromMinutes, layoutSpans, slotRange, snap, toMinutes } from './time';
+import {describe, expect, it} from 'vitest';
+import {fromMinutes, layoutSpans, slotRange, snap, toMinutes} from './time';
 
 describe('time', () => {
   it('converts HH:MM and minutes', () => {
@@ -13,24 +13,24 @@ describe('time', () => {
 
   it('lays out overlapping spans side by side, per cluster', () => {
     const l = layoutSpans([
-      { id: 'a', start: 600, end: 720 }, // 10–12
-      { id: 'b', start: 630, end: 660 }, // 10:30–11, overlaps a
-      { id: 'c', start: 690, end: 750 }, // 11:30–12:30, overlaps a, reuses b's lane
-      { id: 'd', start: 800, end: 860 }, // separate
+      {id: 'a', start: 600, end: 720}, // 10–12
+      {id: 'b', start: 630, end: 660}, // 10:30–11, overlaps a
+      {id: 'c', start: 690, end: 750}, // 11:30–12:30, overlaps a, reuses b's lane
+      {id: 'd', start: 800, end: 860}, // separate
     ]);
-    expect(l.get('a')).toEqual({ lane: 0, lanes: 2 });
-    expect(l.get('b')).toEqual({ lane: 1, lanes: 2 });
-    expect(l.get('c')).toEqual({ lane: 1, lanes: 2 });
-    expect(l.get('d')).toEqual({ lane: 0, lanes: 1 });
+    expect(l.get('a')).toEqual({lane: 0, lanes: 2});
+    expect(l.get('b')).toEqual({lane: 1, lanes: 2});
+    expect(l.get('c')).toEqual({lane: 1, lanes: 2});
+    expect(l.get('d')).toEqual({lane: 0, lanes: 1});
   });
 
   it('treats touching spans as non-overlapping', () => {
     const l = layoutSpans([
-      { id: 'a', start: 600, end: 660 },
-      { id: 'b', start: 660, end: 720 },
+      {id: 'a', start: 600, end: 660},
+      {id: 'b', start: 660, end: 720},
     ]);
-    expect(l.get('a')).toEqual({ lane: 0, lanes: 1 });
-    expect(l.get('b')).toEqual({ lane: 0, lanes: 1 });
+    expect(l.get('a')).toEqual({lane: 0, lanes: 1});
+    expect(l.get('b')).toEqual({lane: 0, lanes: 1});
   });
 });
 

@@ -1,9 +1,9 @@
-import { StrictMode } from 'react';
-import { createRoot } from 'react-dom/client';
+import {StrictMode} from 'react';
+import {createRoot} from 'react-dom/client';
 import App from './App';
 import './index.css';
-import { IndexedDbStorage } from './storage/storage';
-import { useStore } from './store';
+import {IndexedDbStorage} from './storage/storage';
+import {useStore} from './store';
 
 const storage = new IndexedDbStorage();
 
@@ -14,7 +14,11 @@ async function boot() {
     if (data) useStore.getState().replaceAll(data);
   } catch (e) {
     // Don't overwrite data we couldn't read: surface it and stop.
-    root.render(<pre className="p-4 text-danger">Failed to load saved data: {String(e)}</pre>);
+    root.render(
+      <pre className="p-4 text-danger">
+        Failed to load saved data: {String(e)}
+      </pre>,
+    );
     return;
   }
 

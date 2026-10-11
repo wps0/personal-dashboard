@@ -1,48 +1,68 @@
-import { memo, useMemo, useState, type PointerEvent as ReactPointerEvent } from 'react';
-import { ProgressRing } from '../components/ProgressRing';
-import { URGENCY_CLASS } from '../format';
-import { countdown, todayISO } from '../model/dates';
-import { allocationsByItem, projectStats, urgency, type ProjectStats } from '../model/selectors';
-import type { Area, Project } from '../model/types';
-import { href, navigate } from '../router';
-import { useStore } from '../store';
-import { ProjectPanel } from './ProjectPanel';
+import {
+  memo,
+  useMemo,
+  useState,
+  type PointerEvent as ReactPointerEvent,
+} from 'react';
+import {ProgressRing} from '../components/ProgressRing';
+import {URGENCY_CLASS} from '../format';
+import {countdown, todayISO} from '../model/dates';
+import {
+  allocationsByItem,
+  projectStats,
+  urgency,
+  type ProjectStats,
+} from '../model/selectors';
+import type {Area, Project} from '../model/types';
+import {href, navigate} from '../router';
+import {useStore} from '../store';
+import {ProjectPanel} from './ProjectPanel';
 
 /** Project cards grouped by area; the selected project opens in a panel on the right. */
-export function ProjectsView({ selectedId }: { selectedId?: string }) {
-  const areas = useStore((s) => s.data.areas);
-  const projects = useStore((s) => s.data.projects);
-  const items = useStore((s) => s.data.items);
-  const allocations = useStore((s) => s.data.allocations);
+export function ProjectsView({selectedId}: {selectedId?: string}) {
+  const areas = useStore(s => s.data.areas);
+  const projects = useStore(s => s.data.projects);
+  const items = useStore(s => s.data.items);
+  const allocations = useStore(s => s.data.allocations);
   const [showArchived, setShowArchived] = useState(false);
   const today = todayISO();
 
   const stats = useMemo(() => {
-    const allocs = allocationsByItem({ allocations });
-    return new Map(projects.map((p) => [p.id, projectStats(p, items, allocs)]));
+    const allocs = allocationsByItem({allocations});
+    return new Map(projects.map(p => [p.id, projectStats(p, items, allocs)]));
   }, [projects, items, allocations]);
 
-  const selected = selectedId ? projects.find((p) => p.id === selectedId) : undefined;
+  const selected = selectedId
+    ? projects.find(p => p.id === selectedId)
+    : undefined;
   const [listWidth, startResize] = useSplitWidth();
 
   return (
     <div className="flex h-full">
       <div
         className={`scroll-thin h-full overflow-y-auto p-3 ${selected ? 'hidden shrink-0 md:block' : 'flex-1'}`}
-        style={selected ? { width: listWidth } : undefined}
+        style={selected ? {width: listWidth} : undefined}
       >
         <div className="mb-2 flex items-center justify-end gap-2 text-dim">
           <label className="flex items-center gap-1.5">
-            <input type="checkbox" checked={showArchived} onChange={(e) => setShowArchived(e.target.checked)} />
+            <input
+              type="checkbox"
+              checked={showArchived}
+              onChange={e => setShowArchived(e.target.checked)}
+            />
             show archived
           </label>
         </div>
         <div className="space-y-5">
-          {areas.map((area) => (
+          {areas.map(area => (
             <AreaSection
               key={area.id}
               area={area}
-              projects={projects.filter((p) => p.areaId === area.id && (showArchived || !p.archived || p.id === selectedId))}
+              projects={projects.filter(
+                p =>
+                  p.areaId === area.id &&
+                  (showArchived || !p.archived || p.id === selectedId),
+              )}
               stats={stats}
               selectedId={selectedId}
               today={today}
@@ -62,11 +82,20 @@ export function ProjectsView({ selectedId }: { selectedId?: string }) {
         </div>
       )}
       {selected ? (
-        <div key={selected.id} className="min-w-0 flex-1 animate-slide-in-right">
-          <ProjectPanel key={selected.id} project={selected} percent={stats.get(selected.id)?.percent ?? 0} />
+        <div
+          key={selected.id}
+          className="min-w-0 flex-1 animate-slide-in-right"
+        >
+          <ProjectPanel
+            key={selected.id}
+            project={selected}
+            percent={stats.get(selected.id)?.percent ?? 0}
+          />
         </div>
       ) : (
-        selectedId && <div className="flex-1 p-4 text-dim">Project not found.</div>
+        selectedId && (
+          <div className="flex-1 p-4 text-dim">Project not found.</div>
+        )
       )}
     </div>
   );
@@ -75,7 +104,10 @@ export function ProjectsView({ selectedId }: { selectedId?: string }) {
 const WIDTH_KEY = 'personal-dashboard/project-list-width';
 
 /** Width of the project list beside the panel; drag the divider to change it (remembered per device). */
-function useSplitWidth(): [number, (e: ReactPointerEvent<HTMLElement>) => void] {
+function useSplitWidth(): [
+  number,
+  (e: ReactPointerEvent<HTMLElement>) => void,
+] {
   const [width, setWidth] = useState(() => {
     try {
       return Number(localStorage.getItem(WIDTH_KEY)) || 520;
@@ -88,7 +120,8 @@ function useSplitWidth(): [number, (e: ReactPointerEvent<HTMLElement>) => void] 
     const container = handle.parentElement!.getBoundingClientRect();
     handle.setPointerCapture(e.pointerId);
     document.body.style.cursor = 'col-resize';
-    const clamp = (x: number) => Math.max(260, Math.min(container.width - 380, x - container.left));
+    const clamp = (x: number) =>
+      Math.max(260, Math.min(container.width - 380, x - container.left));
     let last = width;
     const move = (ev: PointerEvent) => setWidth((last = clamp(ev.clientX)));
     const up = () => {
@@ -107,13 +140,23 @@ function useSplitWidth(): [number, (e: ReactPointerEvent<HTMLElement>) => void] 
   return [width, start];
 }
 
-function AreaSection(props: { area: Area; projects: Project[]; stats: Map<string, ProjectStats>; selectedId?: string; today: string }) {
-  const { area, projects, stats, selectedId, today } = props;
+function AreaSection(props: {
+  area: Area;
+  projects: Project[];
+  stats: Map<string, ProjectStats>;
+  selectedId?: string;
+  today: string;
+}) {
+  const {area, projects, stats, selectedId, today} = props;
   const [adding, setAdding] = useState(false);
   const [name, setName] = useState('');
 
   const submit = () => {
-    if (name.trim()) navigate({ name: 'projects', id: useStore.getState().addProject(area.id, name.trim()) });
+    if (name.trim())
+      navigate({
+        name: 'projects',
+        id: useStore.getState().addProject(area.id, name.trim()),
+      });
     setAdding(false);
     setName('');
   };
@@ -121,13 +164,25 @@ function AreaSection(props: { area: Area; projects: Project[]; stats: Map<string
   return (
     <section>
       <h2 className="mb-2 flex items-center gap-2">
-        <span className="h-2 w-2 rounded-full" style={{ background: area.color }} />
+        <span
+          className="h-2 w-2 rounded-full"
+          style={{background: area.color}}
+        />
         <span className="label">{area.name}</span>
-        <span className="tabular-nums text-[11px] text-dim/60">{projects.length}</span>
+        <span className="tabular-nums text-[11px] text-dim/60">
+          {projects.length}
+        </span>
       </h2>
       <div className="grid grid-cols-[repeat(auto-fill,minmax(240px,1fr))] gap-2">
-        {projects.map((p) => (
-          <ProjectCard key={p.id} project={p} color={area.color} stats={stats.get(p.id)!} today={today} selected={p.id === selectedId} />
+        {projects.map(p => (
+          <ProjectCard
+            key={p.id}
+            project={p}
+            color={area.color}
+            stats={stats.get(p.id)!}
+            today={today}
+            selected={p.id === selectedId}
+          />
         ))}
         {adding ? (
           <div className="flex items-center rounded border border-dashed border-line p-3">
@@ -136,8 +191,8 @@ function AreaSection(props: { area: Area; projects: Project[]; stats: Map<string
               className="field w-full"
               placeholder="Project name"
               value={name}
-              onChange={(e) => setName(e.target.value)}
-              onKeyDown={(e) => {
+              onChange={e => setName(e.target.value)}
+              onKeyDown={e => {
                 if (e.key === 'Enter') submit();
                 if (e.key === 'Escape') setAdding(false);
               }}
@@ -157,13 +212,21 @@ function AreaSection(props: { area: Area; projects: Project[]; stats: Map<string
   );
 }
 
-const ProjectCard = memo(function ProjectCard(props: { project: Project; color: string; stats: ProjectStats; today: string; selected: boolean }) {
-  const { project, color, stats, today, selected } = props;
+const ProjectCard = memo(function ProjectCard(props: {
+  project: Project;
+  color: string;
+  stats: ProjectStats;
+  today: string;
+  selected: boolean;
+}) {
+  const {project, color, stats, today, selected} = props;
   return (
     <a
-      href={href({ name: 'projects', id: selected ? undefined : project.id })}
+      href={href({name: 'projects', id: selected ? undefined : project.id})}
       className={`flex items-center gap-3 rounded-lg border p-3 transition-[background-color,border-color,box-shadow,transform] duration-150 hover:-translate-y-0.5 hover:bg-raised hover:shadow-lg hover:shadow-black/20 active:translate-y-0 active:scale-[0.99] ${
-        selected ? 'border-accent bg-raised' : 'border-line bg-panel hover:border-accent/50'
+        selected
+          ? 'border-accent bg-raised'
+          : 'border-line bg-panel hover:border-accent/50'
       } ${project.archived ? 'opacity-50' : ''}`}
     >
       <ProgressRing percent={stats.percent} color={color} />
@@ -171,11 +234,18 @@ const ProjectCard = memo(function ProjectCard(props: { project: Project; color: 
         <div className="truncate font-medium text-strong">{project.name}</div>
         <div className="tabular-nums text-[11px] text-dim">
           {stats.total > 0 ? `${stats.done}/${stats.total} done` : 'no items'}
-          {project.progressMode !== 'checklist' && <span className="text-dim/60"> · {project.progressMode}</span>}
+          {project.progressMode !== 'checklist' && (
+            <span className="text-dim/60"> · {project.progressMode}</span>
+          )}
         </div>
         {stats.next && (
-          <div className={`truncate text-[12px] ${URGENCY_CLASS[urgency(stats.next.date, today)]}`}>
-            <span className="tabular-nums">{countdown(stats.next.date, today)}</span> · {stats.next.title}
+          <div
+            className={`truncate text-[12px] ${URGENCY_CLASS[urgency(stats.next.date, today)]}`}
+          >
+            <span className="tabular-nums">
+              {countdown(stats.next.date, today)}
+            </span>{' '}
+            · {stats.next.title}
           </div>
         )}
       </div>

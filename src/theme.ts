@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import {useEffect, useState} from 'react';
 
 export type ThemeChoice = 'system' | 'light' | 'dark';
 

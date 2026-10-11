@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import {useEffect, useState} from 'react';
 
 interface Props {
   value: string;
@@ -8,16 +8,23 @@ interface Props {
 }
 
 /** Text that looks like a label and edits in place; commits on blur/Enter, Esc reverts. */
-export function InlineText({ value, onChange, className = '', placeholder }: Props) {
+export function InlineText({
+  value,
+  onChange,
+  className = '',
+  placeholder,
+}: Props) {
   const [text, setText] = useState(value);
   useEffect(() => setText(value), [value]);
   return (
     <input
       value={text}
       placeholder={placeholder}
-      onChange={(e) => setText(e.target.value)}
-      onBlur={() => (text.trim() ? text !== value && onChange(text.trim()) : setText(value))}
-      onKeyDown={(e) => {
+      onChange={e => setText(e.target.value)}
+      onBlur={() =>
+        text.trim() ? text !== value && onChange(text.trim()) : setText(value)
+      }
+      onKeyDown={e => {
         if (e.key === 'Enter') e.currentTarget.blur();
         if (e.key === 'Escape') {
           setText(value);

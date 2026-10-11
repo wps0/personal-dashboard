@@ -1,5 +1,12 @@
-import { daysBetween } from './dates';
-import type { Allocation, AppData, ISODate, Item, ItemStatus, Project } from './types';
+import {daysBetween} from './dates';
+import type {
+  Allocation,
+  AppData,
+  ISODate,
+  Item,
+  ItemStatus,
+  Project,
+} from './types';
 
 /** The slices planning selectors need; lets callers memoize on just these. */
 export type PlanData = Pick<AppData, 'items' | 'allocations' | 'projects'>;
@@ -13,10 +20,15 @@ export function plannedHours(allocs: Allocation[]): number {
 }
 
 export function actualHours(allocs: Allocation[]): number {
-  return allocs.reduce((s, a) => s + (a.done ? (a.actualHours ?? a.plannedHours) : 0), 0);
+  return allocs.reduce(
+    (s, a) => s + (a.done ? (a.actualHours ?? a.plannedHours) : 0),
+    0,
+  );
 }
 
-export function allocationsByItem(data: Pick<AppData, 'allocations'>): Map<string, Allocation[]> {
+export function allocationsByItem(
+  data: Pick<AppData, 'allocations'>,
+): Map<string, Allocation[]> {
   const m = new Map<string, Allocation[]>();
   for (const a of data.allocations) {
     const list = m.get(a.itemId);
@@ -31,7 +43,7 @@ export interface ProjectStats {
   percent: number;
   done: number;
   total: number;
-  next?: { title: string; date: ISODate };
+  next?: {title: string; date: ISODate};
 }
 
 export function projectStats(
@@ -39,7 +51,7 @@ export function projectStats(
   items: Item[],
   allocs: Map<string, Allocation[]>,
 ): ProjectStats {
-  const own = items.filter((i) => i.projectId === project.id);
+  const own = items.filter(i => i.projectId === project.id);
   const done = own.filter(isItemDone).length;
   const total = own.length;
 
@@ -50,7 +62,10 @@ export function projectStats(
       break;
     case 'hours': {
       const estimate = own.reduce((s, i) => s + (i.estimateHours ?? 0), 0);
-      const spent = own.reduce((s, i) => s + actualHours(allocs.get(i.id) ?? []), 0);
+      const spent = own.reduce(
+        (s, i) => s + actualHours(allocs.get(i.id) ?? []),
+        0,
+      );
       percent = estimate > 0 ? (spent / estimate) * 100 : 0;
       break;
     }
@@ -64,13 +79,17 @@ export function projectStats(
   let next: ProjectStats['next'];
   for (const i of own) {
     if (i.dueDate && !isItemDone(i) && (!next || i.dueDate < next.date)) {
-      next = { title: i.title, date: i.dueDate };
+      next = {title: i.title, date: i.dueDate};
     }
   }
-  if (project.dueDate && (!next || project.dueDate < next.date) && percent < 100) {
-    next = { title: project.name, date: project.dueDate };
+  if (
+    project.dueDate &&
+    (!next || project.dueDate < next.date) &&
+    percent < 100
+  ) {
+    next = {title: project.name, date: project.dueDate};
   }
-  return { percent, done, total, next };
+  return {percent, done, total, next};
 }
 
 export type Urgency = 'overdue' | 'soon' | 'near' | 'far';
@@ -89,20 +108,29 @@ export function urgency(due: ISODate, today: ISODate): Urgency {
  * - without an estimate: no open or upcoming allocation.
  * Sorted by {@link compareItems}.
  */
-export function backlogItems(data: PlanData, today: ISODate): { item: Item; remaining?: number }[] {
+export function backlogItems(
+  data: PlanData,
+  today: ISODate,
+): {item: Item; remaining?: number}[] {
   const allocs = allocationsByItem(data);
-  const activeProjects = new Set(data.projects.filter((p) => !p.archived).map((p) => p.id));
-  const out: { item: Item; remaining?: number }[] = [];
+  const activeProjects = new Set(
+    data.projects.filter(p => !p.archived).map(p => p.id),
+  );
+  const out: {item: Item; remaining?: number}[] = [];
   for (const item of data.items) {
     if (isItemDone(item) || !activeProjects.has(item.projectId)) continue;
     const list = allocs.get(item.id) ?? [];
     if (item.estimateHours != null && item.estimateHours > 0) {
       // Missed slices still count as planned: they wait in the overdue tray, not here.
-      const committed = list.reduce((s, a) => s + (a.done ? (a.actualHours ?? a.plannedHours) : a.plannedHours), 0);
+      const committed = list.reduce(
+        (s, a) =>
+          s + (a.done ? (a.actualHours ?? a.plannedHours) : a.plannedHours),
+        0,
+      );
       const remaining = item.estimateHours - committed;
-      if (remaining > 0) out.push({ item, remaining });
-    } else if (!list.some((a) => a.date >= today || !a.done)) {
-      out.push({ item });
+      if (remaining > 0) out.push({item, remaining});
+    } else if (!list.some(a => a.date >= today || !a.done)) {
+      out.push({item});
     }
   }
   out.sort((a, b) => compareItems(a.item, b.item));
@@ -110,10 +138,13 @@ export function backlogItems(data: PlanData, today: ISODate): { item: Item; rema
 }
 
 /** Allocations on past days that weren't checked off, for items still open. */
-export function missedAllocations(data: PlanData, today: ISODate): Allocation[] {
-  const items = new Map(data.items.map((i) => [i.id, i]));
+export function missedAllocations(
+  data: PlanData,
+  today: ISODate,
+): Allocation[] {
+  const items = new Map(data.items.map(i => [i.id, i]));
   return data.allocations
-    .filter((a) => {
+    .filter(a => {
       const item = items.get(a.itemId);
       return a.date < today && !a.done && item && !isItemDone(item);
     })
@@ -134,7 +165,7 @@ export function compareItems(a: Item, b: Item): number {
   const ha = a.heldOn ?? '9999';
   const hb = b.heldOn ?? '9999';
   if (ha !== hb) return ha < hb ? -1 : 1;
-  return a.title.localeCompare(b.title, undefined, { numeric: true });
+  return a.title.localeCompare(b.title, undefined, {numeric: true});
 }
 
 /** Maps statuses from older data (lecture stages) onto todo / in progress / done. */
