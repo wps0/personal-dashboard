@@ -135,6 +135,13 @@
   .icon-btn {
     @apply inline-flex h-7 w-7 items-center justify-center rounded-full text-dim hover:bg-raised hover:text-fg;
   }
+  /* Scrolls (e.g. the nav bar on phones) without showing a scrollbar. */
+  .no-scrollbar {
+    scrollbar-width: none;
+  }
+  .no-scrollbar::-webkit-scrollbar {
+    display: none;
+  }
   .scroll-thin {
     scrollbar-width: thin;
     scrollbar-color: var(--color-line) transparent;
