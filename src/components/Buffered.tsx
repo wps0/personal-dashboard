@@ -1,10 +1,12 @@
 import {
+  useCallback,
   useEffect,
   useRef,
   useState,
   type InputHTMLAttributes,
   type TextareaHTMLAttributes,
 } from 'react';
+import {useLatest} from '../hooks';
 
 /**
  * Keeps keystrokes local and writes to the store after a short pause (and on
@@ -18,23 +20,22 @@ function useBuffered(
   const [text, setText] = useState(value);
   const pending = useRef<string | null>(null);
   const timer = useRef<number | undefined>(undefined);
-  const commitRef = useRef(onCommit);
-  commitRef.current = onCommit;
+  const commitRef = useLatest(onCommit);
 
-  const flush = () => {
+  const flush = useCallback(() => {
     window.clearTimeout(timer.current);
     if (pending.current !== null) {
       const v = pending.current;
       pending.current = null;
       commitRef.current(v);
     }
-  };
+  }, [commitRef]);
 
   // Accept outside changes (import, other views) when we have nothing pending.
   useEffect(() => {
     if (pending.current === null) setText(value);
   }, [value]);
-  useEffect(() => flush, []);
+  useEffect(() => flush, [flush]);
 
   const change = (v: string) => {
     setText(v);

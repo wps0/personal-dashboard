@@ -1,5 +1,5 @@
 import {ChevronLeft, ChevronRight, Plus, RefreshCw} from 'lucide-react';
-import {useEffect, useMemo, type ReactNode} from 'react';
+import {useEffect, useEffectEvent, useMemo, type ReactNode} from 'react';
 import {MiniMonth} from '../components/MiniMonth';
 import {MonthGrid} from '../components/MonthGrid';
 import {TimeGrid} from '../components/TimeGrid';
@@ -90,8 +90,11 @@ export function CalendarView({
 
   // If the draft's date is changed to one outside the view, follow it.
   const draftDate = useUi(s => s.draft?.date);
+  const followDraft = useEffectEvent((d: ISODate) => {
+    if (!days.includes(d)) go(view, d);
+  });
   useEffect(() => {
-    if (draftDate && !days.includes(draftDate)) go(view, draftDate);
+    if (draftDate) followDraft(draftDate);
   }, [draftDate]);
 
   useNavTarget({
