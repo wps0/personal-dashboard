@@ -12,9 +12,14 @@ const { SCOPES, useGoogle } = await import('./auth');
 const ok = (body: unknown) => new Response(JSON.stringify(body), { status: 200 });
 
 describe('Google access is read-only', () => {
-  it('requests only the read-only calendar scope', () => {
-    expect(SCOPES).toEqual(['https://www.googleapis.com/auth/calendar.readonly']);
+  it('requests only the two narrowest read-only scopes it needs', () => {
+    expect([...SCOPES].sort()).toEqual([
+      'https://www.googleapis.com/auth/calendar.calendarlist.readonly',
+      'https://www.googleapis.com/auth/calendar.events.readonly',
+    ]);
     for (const s of SCOPES) expect(s).toMatch(/\.readonly$/);
+    // Not the broader calendar.readonly (settings, sharing), and nothing writable.
+    expect(SCOPES).not.toContain('https://www.googleapis.com/auth/calendar.readonly');
   });
 });
 

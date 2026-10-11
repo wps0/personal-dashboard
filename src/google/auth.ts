@@ -2,10 +2,16 @@ import { create } from 'zustand';
 import type { ApiCalendar } from './events';
 
 /**
- * Read-only by design: the only scope requested. The app cannot create, change
- * or delete anything in Google Calendar.
+ * Read-only by design, and the narrowest scopes that do the job (least privilege).
+ * Not even calendar.readonly, which would also expose calendar settings and
+ * sharing. The app cannot create, change or delete anything in Google Calendar.
  */
-export const SCOPES = ['https://www.googleapis.com/auth/calendar.readonly'] as const;
+export const SCOPES = [
+  // Read events on your calendars.
+  'https://www.googleapis.com/auth/calendar.events.readonly',
+  // Read which calendars you have (names, colors, which one is primary).
+  'https://www.googleapis.com/auth/calendar.calendarlist.readonly',
+] as const;
 
 const PREFS_KEY = 'personal-dashboard/google';
 const TOKEN_KEY = 'personal-dashboard/google-token';
@@ -150,8 +156,9 @@ export const useGoogle = create<GoogleState>()((set, get) => {
               set({ status: 'error', error: r.error_description ?? r.error ?? 'Sign-in failed' });
               return;
             }
+            // Google's consent screen lets people untick individual permissions.
             if (!gis.accounts.oauth2.hasGrantedAllScopes(r, ...SCOPES)) {
-              set({ status: 'error', error: 'Calendar read access was not granted.' });
+              set({ status: 'error', error: 'Both read permissions are needed (events and the calendar list). Sign in again and keep both ticked.' });
               return;
             }
             const token = { value: r.access_token, expiresAt: Date.now() + (r.expires_in ?? 3600) * 1000 };
