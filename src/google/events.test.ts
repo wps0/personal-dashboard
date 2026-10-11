@@ -62,3 +62,18 @@ describe('event colors', () => {
     expect(expandEvent({ id: 'd', colorId: '99', ...slot }, cal)[0].color).toBe('#7986cb'); // unknown id
   });
 });
+
+describe('declined invitations', () => {
+  const slot = { start: { dateTime: '2026-10-12T09:00:00+02:00' }, end: { dateTime: '2026-10-12T10:00:00+02:00' } };
+  it('marks events you declined, and never counts them as busy', () => {
+    const [e] = expandEvent({ id: 'a', attendees: [{ responseStatus: 'accepted' }, { self: true, responseStatus: 'declined' }], ...slot }, cal);
+    expect([e.declined, e.busy]).toEqual([true, false]);
+  });
+  it("ignores other guests' answers and your other answers", () => {
+    const others = expandEvent({ id: 'b', attendees: [{ responseStatus: 'declined' }, { self: true, responseStatus: 'accepted' }], ...slot }, cal)[0];
+    expect([others.declined, others.busy]).toEqual([false, true]);
+    const tentative = expandEvent({ id: 'c', attendees: [{ self: true, responseStatus: 'tentative' }], ...slot }, cal)[0];
+    expect([tentative.declined, tentative.busy]).toEqual([false, true]);
+    expect(expandEvent({ id: 'd', ...slot }, cal)[0].declined).toBe(false); // not an invitation
+  });
+});

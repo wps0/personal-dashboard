@@ -1,5 +1,5 @@
 import DOMPurify from 'dompurify';
-import { Clock, ExternalLink, Lock, MapPin, AlignLeft, CalendarDays, X } from 'lucide-react';
+import { Clock, ExternalLink, Lock, MapPin, AlignLeft, CalendarDays, X, XCircle } from 'lucide-react';
 import { memo, useMemo, type ReactElement, type ReactNode } from 'react';
 import type { GEvent } from '../google/events';
 import { blockKeys } from '../keyboard';
@@ -27,7 +27,7 @@ function GoogleEventCard({ ev }: { ev: GEvent }) {
       </div>
       <div className="mb-3 flex items-start gap-3">
         <span className="mt-1.5 h-3 w-3 shrink-0 rounded" style={{ background: ev.color }} />
-        <h3 className="min-w-0 flex-1 text-lg leading-snug text-strong">{ev.title}</h3>
+        <h3 className={`min-w-0 flex-1 text-lg leading-snug text-strong ${ev.declined ? 'line-through decoration-dim' : ''}`}>{ev.title}</h3>
       </div>
       <div className="space-y-2.5 text-[13px]">
         <Row icon={<Clock size={16} />}>{ev.when}</Row>
@@ -38,6 +38,7 @@ function GoogleEventCard({ ev }: { ev: GEvent }) {
           </Row>
         )}
         <Row icon={<CalendarDays size={16} />}>{ev.calendarName}</Row>
+        {ev.declined && <Row icon={<XCircle size={16} />}>You declined this invitation</Row>}
       </div>
       <p className="mt-3 flex items-center gap-1.5 pl-7 text-[11px] text-dim">
         <Lock size={11} /> From Google Calendar · read-only here
@@ -70,6 +71,16 @@ function WithCard({ ev, children }: { ev: GEvent; children: ReactElement }) {
   );
 }
 
+/**
+ * Declined invitations: outlined in the event's color on a plain background,
+ * faded, with the title struck through (like Google Calendar's "show declined events").
+ */
+function declinedStyle(color: string) {
+  return { background: 'var(--color-panel)', boxShadow: `inset 0 0 0 1px ${color}`, color: 'var(--color-dim)', opacity: 0.85 };
+}
+
+const tooltip = (ev: GEvent) => `${ev.title}${ev.declined ? ' (declined)' : ''}\n${ev.when}\n${ev.calendarName} (Google, read-only)`;
+
 const openCard = (ev: GEvent) => () => useUi.getState().openGoogle(ev.key);
 
 /** A timed Google event in a day column: same look as local events, in the calendar's color, not draggable. */
@@ -90,13 +101,11 @@ export const GoogleTimedBlock = memo(function GoogleTimedBlock(props: { ev: GEve
           height,
           left: `calc(${(pos.lane / pos.lanes) * 100}% + 2px)`,
           width: `calc(${100 / pos.lanes}% - 6px)`,
-          background: ev.color,
-          color: readableOn(ev.color),
-          opacity: ev.busy ? 1 : 0.75,
+          ...(ev.declined ? declinedStyle(ev.color) : { background: ev.color, color: readableOn(ev.color), opacity: ev.busy ? 1 : 0.75 }),
         }}
-        title={`${ev.title}\n${ev.when}\n${ev.calendarName} (Google, read-only)`}
+        title={tooltip(ev)}
       >
-        <div className="truncate font-medium">{ev.title}</div>
+        <div className={`truncate font-medium ${ev.declined ? 'line-through' : ''}`}>{ev.title}</div>
         {height > 26 && (
           <div className="truncate opacity-80">
             {fromMinutes(ev.startMin)} – {fromMinutes(Math.min(ev.endMin, 1439))}
@@ -121,8 +130,8 @@ export const GoogleChip = memo(function GoogleChip({ ev, variant }: { ev: GEvent
         className={`block-interactive flex shrink-0 cursor-pointer items-center gap-1 truncate rounded px-1.5 py-px text-[11px] ${
           timedInMonth ? 'hover:bg-raised' : 'font-medium'
         }`}
-        style={timedInMonth ? undefined : { background: ev.color, color: readableOn(ev.color) }}
-        title={`${ev.title}\n${ev.when}\n${ev.calendarName} (Google, read-only)`}
+        style={timedInMonth ? (ev.declined ? { opacity: 0.6 } : undefined) : ev.declined ? declinedStyle(ev.color) : { background: ev.color, color: readableOn(ev.color) }}
+        title={tooltip(ev)}
       >
         {timedInMonth && (
           <>
@@ -130,7 +139,7 @@ export const GoogleChip = memo(function GoogleChip({ ev, variant }: { ev: GEvent
             <span className="text-dim tabular-nums">{fromMinutes(ev.startMin)}</span>
           </>
         )}
-        <span className="truncate">{ev.title}</span>
+        <span className={`truncate ${ev.declined ? 'line-through' : ''}`}>{ev.title}</span>
       </div>
     </WithCard>
   );
