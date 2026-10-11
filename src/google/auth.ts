@@ -48,8 +48,7 @@ declare global {
   }
 }
 
-export type Status =
-  'signed-out' | 'signing-in' | 'signed-in' | 'expired' | 'error';
+type Status = 'signed-out' | 'signing-in' | 'signed-in' | 'expired' | 'error';
 
 interface Prefs {
   clientId: string;

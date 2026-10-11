@@ -10,7 +10,7 @@ export type Route =
   | {name: 'projects'; id?: string}
   | {name: 'settings'};
 
-export function parseHash(hash: string): Route {
+function parseHash(hash: string): Route {
   const parts = hash.replace(/^#\/?/, '').split('/').filter(Boolean);
   switch (parts[0]) {
     case 'week':

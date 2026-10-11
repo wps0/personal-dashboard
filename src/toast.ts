@@ -2,7 +2,7 @@ import {create} from 'zustand';
 import type {AppData} from './model/types';
 import {useStore} from './store';
 
-export interface Toast {
+interface Toast {
   id: number;
   message: string;
   action?: {label: string; run(): void};

@@ -11,7 +11,7 @@ import {undoLast} from './toast';
 import {nextHourDraft, useUi} from './ui';
 
 /** What "next / previous / today / go to date / create / view" mean on the current page. */
-export interface NavTarget {
+interface NavTarget {
   next(): void;
   prev(): void;
   today(): void;
@@ -65,7 +65,7 @@ function visibleBlocks(): HTMLElement[] {
  * The nearest block in a direction, by on-screen position, so the same logic
  * works in the week journal, the calendar grids, the backlog and lists.
  */
-export function neighbour(from: HTMLElement, dir: Dir): HTMLElement | null {
+function neighbour(from: HTMLElement, dir: Dir): HTMLElement | null {
   const a = from.getBoundingClientRect();
   const ax = a.left + a.width / 2;
   const ay = a.top + a.height / 2;
@@ -100,7 +100,7 @@ function focusBlock(el: HTMLElement) {
 }
 
 /** Moves the selection; with nothing selected, starts at the top-left block. */
-export function moveFocus(dir: Dir): boolean {
+function moveFocus(dir: Dir): boolean {
   const active = document.activeElement as HTMLElement | null;
   if (active?.hasAttribute('data-block')) {
     const next = neighbour(active, dir);

@@ -4,7 +4,6 @@ import {useLayoutEffect, useRef, useState, type ComponentProps} from 'react';
 export const Popover = RP.Root;
 export const PopoverTrigger = RP.Trigger;
 export const PopoverAnchor = RP.Anchor;
-export const PopoverClose = RP.Close;
 
 /** Space kept between a floating card and the window edge. */
 const EDGE = 8;

@@ -7,7 +7,7 @@ export function toISODate(d: Date): ISODate {
 }
 
 /** Parses `YYYY-MM-DD` as local midnight (not UTC, unlike `new Date(s)`). */
-export function parseISODate(s: ISODate): Date {
+function parseISODate(s: ISODate): Date {
   const [y, m, d] = s.split('-').map(Number);
   return new Date(y, m - 1, d);
 }

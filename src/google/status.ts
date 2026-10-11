@@ -2,7 +2,7 @@ import {create} from 'zustand';
 import {toast} from '../toast';
 import {GoogleApiError} from './errors';
 
-export interface GoogleErrorInfo {
+interface GoogleErrorInfo {
   message: string;
   help?: string;
 }

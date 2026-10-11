@@ -20,7 +20,7 @@ import {todayISO} from './model/dates';
 const uid = () => crypto.randomUUID();
 const now = () => new Date().toISOString();
 
-export interface Actions {
+interface Actions {
   replaceAll(data: AppData): void;
 
   addArea(name: string): string;
@@ -65,7 +65,7 @@ export interface Actions {
   setDayCapacity(date: ISODate, patch: DayCapacity | null): void;
 }
 
-export type State = {data: AppData} & Actions;
+type State = {data: AppData} & Actions;
 
 export const useStore = create<State>()((set, get) => {
   const update = (fn: (d: AppData) => Partial<AppData>) =>

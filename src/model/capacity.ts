@@ -47,7 +47,7 @@ export interface CapacityInfo {
   total: number;
 }
 
-export const DEFAULT_WINDOWS: PlanningWindow[] = [
+const DEFAULT_WINDOWS: PlanningWindow[] = [
   ...Array.from({length: 5}, () => ({start: '18:00', end: '21:00'})),
   {start: '10:00', end: '16:00'},
   {start: '10:00', end: '16:00'},
