@@ -15,6 +15,8 @@ npm install
 npm run dev        # http://localhost:5173
 npm test           # unit tests (model logic, storage)
 npm run build      # typecheck + production build into dist/
+npm run lint       # ESLint: Google TypeScript style (gts rules) + React hooks rules
+npm run format     # Prettier with gts settings (format:check only reports)
 ```
 
 ### Without installing Node (Podman)
