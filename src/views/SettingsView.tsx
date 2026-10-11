@@ -52,7 +52,7 @@ export function SettingsView() {
 
   return (
     <div className="scroll-thin h-full overflow-y-auto">
-      <div className="mx-auto max-w-4xl space-y-6 p-4">
+      <div className="mx-auto max-w-4xl space-y-5 p-4">
         <Section
           title="Calendar"
           hint="How events created by clicking the calendar start out."
@@ -224,10 +224,18 @@ function Section({
   hint: string;
   children: ReactNode;
 }) {
+  const id = `settings-${title.toLowerCase().replace(/[^a-z]+/g, '-')}`;
   return (
-    <section>
-      <h2 className="label mb-0.5">{title}</h2>
-      <p className="mb-2 text-[12px] text-dim">{hint}</p>
+    <section
+      aria-labelledby={id}
+      className="rounded-xl border border-line bg-panel p-4 shadow-sm"
+    >
+      <header className="mb-4 border-b border-line pb-3">
+        <h2 id={id} className="text-[15px] font-semibold text-strong">
+          {title}
+        </h2>
+        <p className="mt-0.5 text-[12px] text-dim">{hint}</p>
+      </header>
       {children}
     </section>
   );
