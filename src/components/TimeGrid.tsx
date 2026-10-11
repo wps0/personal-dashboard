@@ -25,7 +25,7 @@ import { GoogleChip, GoogleTimedBlock } from './GoogleEvent';
 import { noGoogleEvents, useGoogleEvents } from '../google/useGoogleEvents';
 import type { GEvent } from '../google/events';
 import { DraftEditor, EventEditor } from './EventEditor';
-import { Popover, PopoverAnchor, PopoverContent } from './ui/Popover';
+import { Popover, PopoverAnchor, PopoverContent, useBeside } from './ui/Popover';
 import { deleteEvent, removeSession, toggleSession, updateEvent, updateSession } from '../actions';
 import { blockKeys } from '../keyboard';
 
@@ -467,9 +467,10 @@ function DraftBlock({ hourHeight }: { hourHeight: number }) {
   const draft = useUi((s) => s.draft)!;
   const start = toMinutes(draft.start);
   const end = Math.max(start + 15, toMinutes(draft.end));
+  const beside = useBeside(true);
   return (
     <Popover open onOpenChange={(o) => !o && useUi.getState().setDraft(null)}>
-      <PopoverAnchor asChild>
+      <PopoverAnchor asChild ref={beside.ref}>
         <div
           className="absolute right-1 left-0.5 z-20 animate-pop-in overflow-hidden rounded-md px-1.5 py-0.5 text-[11px] leading-tight shadow-lg transition-[top,height] duration-150"
           style={{ top: (start / 60) * hourHeight, height: ((end - start) / 60) * hourHeight, background: 'var(--color-event)', color: 'var(--color-on-block)' }}
@@ -480,7 +481,7 @@ function DraftBlock({ hourHeight }: { hourHeight: number }) {
           </div>
         </div>
       </PopoverAnchor>
-      <PopoverContent side="right" align="start" sideOffset={10}>
+      <PopoverContent {...beside.content}>
         <DraftEditor />
       </PopoverContent>
     </Popover>
@@ -548,10 +549,11 @@ const EventBlock = memo(function EventBlock({ event, pos = { lane: 0, lanes: 1 }
   const { previewEnd, handleProps } = useResize(start, hourHeight, (end) => updateEvent(event.id, { end: fromMinutes(end) }, 'Event resized'));
   const end = previewEnd ?? toMinutes(event.end);
   const height = ((end - start) / 60) * hourHeight;
+  const beside = useBeside(open);
 
   return (
     <Popover open={open} onOpenChange={(o) => !o && useUi.getState().openEvent(null)}>
-      <PopoverAnchor asChild>
+      <PopoverAnchor asChild ref={beside.ref}>
         <div
           ref={setNodeRef}
           {...attributes}
@@ -574,7 +576,7 @@ const EventBlock = memo(function EventBlock({ event, pos = { lane: 0, lanes: 1 }
         </div>
       </PopoverAnchor>
       {open && (
-        <PopoverContent side="right" align="start" sideOffset={10}>
+        <PopoverContent {...beside.content}>
           <EventEditor eventId={event.id} />
         </PopoverContent>
       )}
