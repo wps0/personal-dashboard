@@ -1,10 +1,38 @@
 import * as RP from '@radix-ui/react-popover';
-import type { ComponentProps } from 'react';
+import { useLayoutEffect, useRef, useState, type ComponentProps } from 'react';
 
 export const Popover = RP.Root;
 export const PopoverTrigger = RP.Trigger;
 export const PopoverAnchor = RP.Anchor;
 export const PopoverClose = RP.Close;
+
+/** Space kept between a floating card and the window edge. */
+const EDGE = 8;
+/** Width of the event cards (w-[448px] in EventEditor and DraftEditor). */
+const CARD_WIDTH = 448;
+const GAP = 10;
+
+/**
+ * Props for a card shown beside its anchor (an event block). Radix flips the
+ * card between right and left by itself, but when the anchor is so wide that
+ * the card fits on neither side (a block in Day view) it would hang off the
+ * window; the card then overlaps the anchor's right edge instead.
+ *
+ * Pass `ref` to the PopoverAnchor and spread `content` on the PopoverContent.
+ */
+export function useBeside(open: boolean, cardWidth = CARD_WIDTH) {
+  const ref = useRef<HTMLDivElement>(null);
+  const [sideOffset, setSideOffset] = useState(GAP);
+  useLayoutEffect(() => {
+    if (!open || !ref.current) return;
+    const r = ref.current.getBoundingClientRect();
+    const need = cardWidth + GAP + EDGE;
+    const fits = window.innerWidth - r.right >= need || r.left >= need;
+    // Overlapping: the card's left edge lands inside the anchor, but never off the window.
+    setSideOffset(fits ? GAP : Math.max(-(cardWidth + 2 * GAP), EDGE - r.right));
+  }, [open, cardWidth]);
+  return { ref, content: { side: 'right', align: 'start', sideOffset } as const };
+}
 
 /**
  * Floating card: portalled, flips and shifts to stay on screen, animates in/out.
@@ -18,7 +46,7 @@ export function PopoverContent({ className = '', onOpenAutoFocus, ...props }: Co
     <RP.Portal>
       <RP.Content
         sideOffset={6}
-        collisionPadding={8}
+        collisionPadding={EDGE}
         {...props}
         onOpenAutoFocus={(e) => {
           onOpenAutoFocus?.(e);
