@@ -16,7 +16,14 @@ export function GoogleSettings() {
       <p className="flex items-start gap-2 rounded-md border border-line bg-panel px-3 py-2 text-[12px] text-dim">
         <Lock size={14} className="mt-px shrink-0" />
         <span>
-          Read-only. The app asks only for <code className="text-fg">{SCOPES[0].split('/').pop()}</code>, so it can show your events but never
+          Read-only. The app asks only for{' '}
+          {SCOPES.map((s, i) => (
+            <span key={s}>
+              {i > 0 && ' and '}
+              <code className="text-fg">{s.split('/').pop()}</code>
+            </span>
+          ))}
+          , so it can show your events but never
           create, change or delete anything. The access token stays in this browser tab and expires after an hour.
         </span>
       </p>
@@ -39,7 +46,7 @@ export function GoogleSettings() {
               In the Google Cloud console, create a project and enable the <b>Google Calendar API</b>.
             </li>
             <li>
-              OAuth consent screen: <b>External</b>, testing mode; add yourself as a test user; add the scope <code>calendar.readonly</code>.
+              OAuth consent screen: <b>External</b>, testing mode; add yourself as a test user; add the scopes <code>calendar.events.readonly</code> and <code>calendar.calendarlist.readonly</code>.
             </li>
             <li>
               Credentials → Create credentials → <b>OAuth client ID</b> → Web application. Authorized JavaScript origins: <code>{ORIGIN}</code> (and

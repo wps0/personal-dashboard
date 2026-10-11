@@ -87,9 +87,11 @@ On first launch, choose **Load sample data** to explore, or create empty areas.
 
 ## Google Calendar (read-only)
 
-The app can show your Google calendars next to your plan. It requests only the
-`calendar.readonly` scope, so it can read events but never create, change or
-delete them. There's no backend: the browser talks to Google directly, and the
+The app can show your Google calendars next to your plan. It requests only two
+read-only scopes, `calendar.events.readonly` and
+`calendar.calendarlist.readonly`, so it can read events and your calendar list
+but never create, change or delete anything (it can't read calendar settings or
+sharing either). There's no backend: the browser talks to Google directly, and the
 access token lives in the current tab for up to an hour.
 
 One-time setup (free, about 5 minutes):
@@ -99,7 +101,8 @@ One-time setup (free, about 5 minutes):
 2. **OAuth consent screen:**
    - User type: **External**, publishing status: **Testing**.
    - Add yourself as a test user.
-   - Add the scope `.../auth/calendar.readonly`.
+   - Add the scopes `.../auth/calendar.events.readonly` and
+     `.../auth/calendar.calendarlist.readonly`.
 3. **Credentials → Create credentials → OAuth client ID:**
    - Application type: **Web application**.
    - Authorized JavaScript origins: every address you open the app from, e.g.
