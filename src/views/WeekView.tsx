@@ -1,3 +1,4 @@
+import {sameProps} from '../sameProps';
 import {
   DndContext,
   DragOverlay,
@@ -10,7 +11,7 @@ import {
   type DragEndEvent,
   type DragStartEvent,
 } from '@dnd-kit/core';
-import {memo, useMemo, useRef, useState, type ReactNode} from 'react';
+import {memo, useMemo, useState, type ReactNode} from 'react';
 import {BufferedTextarea} from '../components/Buffered';
 import {HoursInput} from '../components/HoursInput';
 import {WeekNav} from '../components/WeekNav';
@@ -170,8 +171,6 @@ function WeekGrid({monday, today}: {monday: ISODate; today: ISODate}) {
   const capacities = useCapacities(days);
   const slide = useSlide(monday);
 
-  // Days whose sessions didn't change keep the same array, so their memoized boxes skip re-rendering.
-  const prevByDate = useRef(new Map<ISODate, Allocation[]>());
   const byDate = useMemo(() => {
     const m = new Map<ISODate, Allocation[]>();
     for (const a of allocations) {
@@ -179,17 +178,8 @@ function WeekGrid({monday, today}: {monday: ISODate; today: ISODate}) {
       if (list) list.push(a);
       else m.set(a.date, [a]);
     }
-    for (const [date, list] of m) {
+    for (const list of m.values())
       list.sort((a, b) => (a.start ?? '99').localeCompare(b.start ?? '99'));
-      const prev = prevByDate.current.get(date);
-      if (
-        prev &&
-        prev.length === list.length &&
-        prev.every((a, i) => a === list[i])
-      )
-        m.set(date, prev);
-    }
-    prevByDate.current = m;
     return m;
   }, [allocations]);
 
@@ -238,7 +228,11 @@ interface DayBoxProps {
   lookups: Lookups;
 }
 
-/** Droppable shell; re-renders on every drag transition, so the content below is memoized. */
+/**
+ * Droppable shell; re-renders on every drag transition, so the content below is
+ * memoized. Days whose sessions didn't change get equal props (sameProps), so
+ * they skip re-rendering.
+ */
 const DayBox = memo(function DayBox(props: DayBoxProps) {
   const {setNodeRef, isOver} = useDroppable({id: `day:${props.date}`});
   return (
@@ -255,7 +249,7 @@ const DayBox = memo(function DayBox(props: DayBoxProps) {
       <DayContent {...props} />
     </section>
   );
-});
+}, sameProps);
 
 const DayContent = memo(function DayContent({
   date,
@@ -298,7 +292,7 @@ const DayContent = memo(function DayContent({
       <DayNote date={date} />
     </>
   );
-});
+}, sameProps);
 
 function DayNote({date}: {date: ISODate}) {
   const note = useStore(s => s.data.dayNotes[date] ?? '');
