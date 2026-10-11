@@ -1,4 +1,4 @@
-import {useLayoutEffect, useMemo, useRef} from 'react';
+import {useLayoutEffect, useMemo, useRef, useState} from 'react';
 import {capacityFor, type CapacityInfo} from './model/capacity';
 import type {Area, CalendarEvent, ISODate, Item, Project} from './model/types';
 import {useStore} from './store';
@@ -92,12 +92,13 @@ export function useCapacities(days: ISODate[]): Map<ISODate, CapacityInfo> {
 
 /** Animation class for a change of the first visible day (or period): content slides in from the side we moved toward. */
 export function useSlide(first: string): string {
-  const prev = useRef(first);
-  const dir = useRef('');
-  if (prev.current !== first) {
-    dir.current =
-      first > prev.current ? 'animate-from-right' : 'animate-from-left';
-    prev.current = first;
+  // Remembers the previous value in state (React's pattern for reacting to a
+  // changed prop during render) rather than in a ref.
+  const [seen, setSeen] = useState({first, dir: ''});
+  if (seen.first !== first) {
+    const dir = first > seen.first ? 'animate-from-right' : 'animate-from-left';
+    setSeen({first, dir});
+    return dir;
   }
-  return dir.current;
+  return seen.dir;
 }

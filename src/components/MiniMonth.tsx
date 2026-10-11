@@ -1,5 +1,5 @@
 import {ChevronLeft, ChevronRight} from 'lucide-react';
-import {useEffect, useState} from 'react';
+import {useState} from 'react';
 import {useSlide} from '../hooks';
 import {
   addMonths,
@@ -28,9 +28,12 @@ export function MiniMonth({selected, range, onSelect, weekHover}: Props) {
   const today = todayISO();
   const [month, setMonth] = useState(firstOfMonth(selected ?? today));
   const [hoverWeek, setHoverWeek] = useState<ISODate | null>(null);
-  useEffect(() => {
+  // Jump to a newly selected date's month (set during render, not in an effect).
+  const [shownSelected, setShownSelected] = useState(selected);
+  if (selected !== shownSelected) {
+    setShownSelected(selected);
     if (selected) setMonth(firstOfMonth(selected));
-  }, [selected]);
+  }
 
   const days = monthGrid(month);
   const slide = useSlide(month);
