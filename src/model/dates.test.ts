@@ -1,5 +1,12 @@
-import { describe, expect, it } from 'vitest';
-import { addDays, countdown, daysBetween, isoWeek, startOfWeek, weekdayIndex } from './dates';
+import {describe, expect, it} from 'vitest';
+import {
+  addDays,
+  countdown,
+  daysBetween,
+  isoWeek,
+  startOfWeek,
+  weekdayIndex,
+} from './dates';
 
 describe('dates', () => {
   it('treats Monday as the first weekday', () => {

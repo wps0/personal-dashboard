@@ -1,17 +1,17 @@
-import type { CalView } from './model/types';
+import type {CalView} from './model/types';
 
 /** What a key press means, independent of which page is showing. */
 export type Action =
-  | { type: 'next' }
-  | { type: 'prev' }
-  | { type: 'today' }
-  | { type: 'goto' }
-  | { type: 'create' }
-  | { type: 'help' }
-  | { type: 'undo' }
-  | { type: 'page'; page: 'home' | 'week' | 'calendar' | 'projects' | 'settings' }
-  | { type: 'view'; view: CalView }
-  | { type: 'move'; dir: 'up' | 'down' | 'left' | 'right' };
+  | {type: 'next'}
+  | {type: 'prev'}
+  | {type: 'today'}
+  | {type: 'goto'}
+  | {type: 'create'}
+  | {type: 'help'}
+  | {type: 'undo'}
+  | {type: 'page'; page: 'home' | 'week' | 'calendar' | 'projects' | 'settings'}
+  | {type: 'view'; view: CalView}
+  | {type: 'move'; dir: 'up' | 'down' | 'left' | 'right'};
 
 export interface KeyLike {
   key: string;
@@ -29,46 +29,48 @@ const PAGES = ['home', 'week', 'calendar', 'projects', 'settings'] as const;
  */
 export function actionFor(e: KeyLike): Action | null {
   const mod = e.ctrlKey || e.metaKey;
-  if (mod && !e.altKey && !e.shiftKey && e.key.toLowerCase() === 'z') return { type: 'undo' };
+  if (mod && !e.altKey && !e.shiftKey && e.key.toLowerCase() === 'z')
+    return {type: 'undo'};
   if (mod || e.altKey) return null;
   switch (e.key) {
     case 'j':
     case 'n':
-      return { type: 'next' };
+      return {type: 'next'};
     case 'k':
     case 'p':
-      return { type: 'prev' };
+      return {type: 'prev'};
     case 't':
-      return { type: 'today' };
+      return {type: 'today'};
     case 'g':
-      return { type: 'goto' };
+      return {type: 'goto'};
     case 'c':
-      return { type: 'create' };
+      return {type: 'create'};
     case '?':
-      return { type: 'help' };
+      return {type: 'help'};
     case 'd':
-      return { type: 'view', view: 'day' };
+      return {type: 'view', view: 'day'};
     case 'x':
-      return { type: 'view', view: '3day' };
+      return {type: 'view', view: '3day'};
     case 'w':
-      return { type: 'view', view: 'week' };
+      return {type: 'view', view: 'week'};
     case 'm':
-      return { type: 'view', view: 'month' };
+      return {type: 'view', view: 'month'};
     case 'ArrowUp':
-      return { type: 'move', dir: 'up' };
+      return {type: 'move', dir: 'up'};
     case 'ArrowDown':
-      return { type: 'move', dir: 'down' };
+      return {type: 'move', dir: 'down'};
     case 'ArrowLeft':
-      return { type: 'move', dir: 'left' };
+      return {type: 'move', dir: 'left'};
     case 'ArrowRight':
-      return { type: 'move', dir: 'right' };
+      return {type: 'move', dir: 'right'};
   }
-  if (/^[1-5]$/.test(e.key)) return { type: 'page', page: PAGES[Number(e.key) - 1] };
+  if (/^[1-5]$/.test(e.key))
+    return {type: 'page', page: PAGES[Number(e.key) - 1]};
   return null;
 }
 
 /** The help dialog's content, grouped. Kept next to the mapping so they can't drift apart. */
-export const SHORTCUT_HELP: { group: string; keys: [string, string][] }[] = [
+export const SHORTCUT_HELP: {group: string; keys: [string, string][]}[] = [
   {
     group: 'Navigation',
     keys: [

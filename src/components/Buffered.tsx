@@ -1,10 +1,20 @@
-import { useEffect, useRef, useState, type InputHTMLAttributes, type TextareaHTMLAttributes } from 'react';
+import {
+  useEffect,
+  useRef,
+  useState,
+  type InputHTMLAttributes,
+  type TextareaHTMLAttributes,
+} from 'react';
 
 /**
  * Keeps keystrokes local and writes to the store after a short pause (and on
  * blur/unmount), so typing re-renders only this field instead of the whole view.
  */
-function useBuffered(value: string, onCommit: (v: string) => void, delay: number) {
+function useBuffered(
+  value: string,
+  onCommit: (v: string) => void,
+  delay: number,
+) {
   const [text, setText] = useState(value);
   const pending = useRef<string | null>(null);
   const timer = useRef<number | undefined>(undefined);
@@ -32,23 +42,32 @@ function useBuffered(value: string, onCommit: (v: string) => void, delay: number
     window.clearTimeout(timer.current);
     timer.current = window.setTimeout(flush, delay);
   };
-  return { text, change, flush };
+  return {text, change, flush};
 }
 
-type TextareaProps = Omit<TextareaHTMLAttributes<HTMLTextAreaElement>, 'value' | 'onChange'> & {
+type TextareaProps = Omit<
+  TextareaHTMLAttributes<HTMLTextAreaElement>,
+  'value' | 'onChange'
+> & {
   value: string;
   onCommit(v: string): void;
   delay?: number;
 };
 
-export function BufferedTextarea({ value, onCommit, delay = 400, onBlur, ...rest }: TextareaProps) {
-  const { text, change, flush } = useBuffered(value, onCommit, delay);
+export function BufferedTextarea({
+  value,
+  onCommit,
+  delay = 400,
+  onBlur,
+  ...rest
+}: TextareaProps) {
+  const {text, change, flush} = useBuffered(value, onCommit, delay);
   return (
     <textarea
       {...rest}
       value={text}
-      onChange={(e) => change(e.target.value)}
-      onBlur={(e) => {
+      onChange={e => change(e.target.value)}
+      onBlur={e => {
         flush();
         onBlur?.(e);
       }}
@@ -56,24 +75,34 @@ export function BufferedTextarea({ value, onCommit, delay = 400, onBlur, ...rest
   );
 }
 
-type InputProps = Omit<InputHTMLAttributes<HTMLInputElement>, 'value' | 'onChange'> & {
+type InputProps = Omit<
+  InputHTMLAttributes<HTMLInputElement>,
+  'value' | 'onChange'
+> & {
   value: string;
   onCommit(v: string): void;
   delay?: number;
 };
 
-export function BufferedInput({ value, onCommit, delay = 400, onBlur, onKeyDown, ...rest }: InputProps) {
-  const { text, change, flush } = useBuffered(value, onCommit, delay);
+export function BufferedInput({
+  value,
+  onCommit,
+  delay = 400,
+  onBlur,
+  onKeyDown,
+  ...rest
+}: InputProps) {
+  const {text, change, flush} = useBuffered(value, onCommit, delay);
   return (
     <input
       {...rest}
       value={text}
-      onChange={(e) => change(e.target.value)}
-      onBlur={(e) => {
+      onChange={e => change(e.target.value)}
+      onBlur={e => {
         flush();
         onBlur?.(e);
       }}
-      onKeyDown={(e) => {
+      onKeyDown={e => {
         if (e.key === 'Enter') e.currentTarget.blur();
         onKeyDown?.(e);
       }}

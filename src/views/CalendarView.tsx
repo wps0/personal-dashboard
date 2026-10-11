@@ -1,26 +1,34 @@
-import { ChevronLeft, ChevronRight, Plus, RefreshCw } from 'lucide-react';
-import { useEffect, useMemo, type ReactNode } from 'react';
-import { MiniMonth } from '../components/MiniMonth';
-import { MonthGrid } from '../components/MonthGrid';
-import { TimeGrid } from '../components/TimeGrid';
+import {ChevronLeft, ChevronRight, Plus, RefreshCw} from 'lucide-react';
+import {useEffect, useMemo, type ReactNode} from 'react';
+import {MiniMonth} from '../components/MiniMonth';
+import {MonthGrid} from '../components/MonthGrid';
+import {TimeGrid} from '../components/TimeGrid';
 
-import { Select } from '../components/ui/Select';
-import { addDays, addMonths, firstOfMonth, formatMonthYear, monthGrid, startOfWeek, todayISO } from '../model/dates';
-import type { ISODate } from '../model/types';
-import { href, navigate, type CalView } from '../router';
-import { useGoogle } from '../google/auth';
-import { useGoogleCalendars } from '../google/calendars';
-import { clearGoogleCache } from '../google/useGoogleEvents';
-import { GoogleErrorNotice } from '../components/GoogleErrorNotice';
-import { useStore } from '../store';
-import { nextHourDraft, useUi } from '../ui';
-import { useNavTarget } from '../keyboard';
+import {Select} from '../components/ui/Select';
+import {
+  addDays,
+  addMonths,
+  firstOfMonth,
+  formatMonthYear,
+  monthGrid,
+  startOfWeek,
+  todayISO,
+} from '../model/dates';
+import type {ISODate} from '../model/types';
+import {href, navigate, type CalView} from '../router';
+import {useGoogle} from '../google/auth';
+import {useGoogleCalendars} from '../google/calendars';
+import {clearGoogleCache} from '../google/useGoogleEvents';
+import {GoogleErrorNotice} from '../components/GoogleErrorNotice';
+import {useStore} from '../store';
+import {nextHourDraft, useUi} from '../ui';
+import {useNavTarget} from '../keyboard';
 
 const VIEW_OPTIONS = [
-  { value: 'day', label: 'Day' },
-  { value: '3day', label: '3 days' },
-  { value: 'week', label: 'Week' },
-  { value: 'month', label: 'Month' },
+  {value: 'day', label: 'Day'},
+  {value: '3day', label: '3 days'},
+  {value: 'week', label: 'Week'},
+  {value: 'month', label: 'Month'},
 ] as const;
 
 /** The days a view shows for an anchor date. */
@@ -32,7 +40,7 @@ function visibleDays(view: CalView, date: ISODate): ISODate[] {
       return [date, addDays(date, 1), addDays(date, 2)];
     case 'week': {
       const monday = startOfWeek(date);
-      return Array.from({ length: 7 }, (_, i) => addDays(monday, i));
+      return Array.from({length: 7}, (_, i) => addDays(monday, i));
     }
     case 'month':
       return monthGrid(date);
@@ -50,21 +58,38 @@ function title(view: CalView, days: ISODate[], date: ISODate): string {
   const a = days[0];
   const b = days[days.length - 1];
   if (a.slice(0, 7) === b.slice(0, 7)) return formatMonthYear(a);
-  const fmt = (d: ISODate, year: boolean) => new Intl.DateTimeFormat('en-GB', { month: 'short', ...(year && { year: 'numeric' }) }).format(new Date(d + 'T00:00'));
-  return a.slice(0, 4) === b.slice(0, 4) ? `${fmt(a, false)} – ${fmt(b, true)}` : `${fmt(a, true)} – ${fmt(b, true)}`;
+  const fmt = (d: ISODate, year: boolean) =>
+    new Intl.DateTimeFormat('en-GB', {
+      month: 'short',
+      ...(year && {year: 'numeric'}),
+    }).format(new Date(d + 'T00:00'));
+  return a.slice(0, 4) === b.slice(0, 4)
+    ? `${fmt(a, false)} – ${fmt(b, true)}`
+    : `${fmt(a, true)} – ${fmt(b, true)}`;
 }
 
-export function CalendarView({ view: routeView, date: routeDate }: { view?: CalView; date?: ISODate }) {
+export function CalendarView({
+  view: routeView,
+  date: routeDate,
+}: {
+  view?: CalView;
+  date?: ISODate;
+}) {
   // Coming from another page (no view in the URL) always opens the default view.
-  const defaultView = useStore((s) => s.data.settings.defaultCalendarView);
+  const defaultView = useStore(s => s.data.settings.defaultCalendarView);
   const view = routeView ?? defaultView;
   const today = todayISO();
-  const date = routeDate && /^\d{4}-\d{2}-\d{2}$/.test(routeDate) ? routeDate : today;
-  const days = useMemo(() => visibleDays(view, view === 'month' ? firstOfMonth(date) : date), [view, date]);
-  const go = (v: CalView, d: ISODate) => navigate({ name: 'calendar', view: v, date: d === today ? undefined : d });
+  const date =
+    routeDate && /^\d{4}-\d{2}-\d{2}$/.test(routeDate) ? routeDate : today;
+  const days = useMemo(
+    () => visibleDays(view, view === 'month' ? firstOfMonth(date) : date),
+    [view, date],
+  );
+  const go = (v: CalView, d: ISODate) =>
+    navigate({name: 'calendar', view: v, date: d === today ? undefined : d});
 
   // If the draft's date is changed to one outside the view, follow it.
-  const draftDate = useUi((s) => s.draft?.date);
+  const draftDate = useUi(s => s.draft?.date);
   useEffect(() => {
     if (draftDate && !days.includes(draftDate)) go(view, draftDate);
   }, [draftDate]);
@@ -73,15 +98,18 @@ export function CalendarView({ view: routeView, date: routeDate }: { view?: CalV
     next: () => go(view, step(view, date, 1)),
     prev: () => go(view, step(view, date, -1)),
     today: () => go(view, today),
-    goTo: (d) => go(view, d),
-    view: (v) => go(v, date),
+    goTo: d => go(view, d),
+    view: v => go(v, date),
     create: () => {
       if (!days.includes(today)) go(view, today);
       useUi.getState().setDraft(nextHourDraft());
     },
   });
 
-  const range: [ISODate, ISODate] = view === 'month' ? [firstOfMonth(date), addDays(addMonths(date, 1), -1)] : [days[0], days[days.length - 1]];
+  const range: [ISODate, ISODate] =
+    view === 'month'
+      ? [firstOfMonth(date), addDays(addMonths(date, 1), -1)]
+      : [days[0], days[days.length - 1]];
 
   return (
     <div className="flex h-full">
@@ -95,24 +123,40 @@ export function CalendarView({ view: routeView, date: routeDate }: { view?: CalV
         >
           <Plus size={20} className="text-accent" /> Create
         </button>
-        <MiniMonth selected={date} range={range} onSelect={(d) => go(view, d)} />
+        <MiniMonth selected={date} range={range} onSelect={d => go(view, d)} />
         <Layers />
       </aside>
       <div className="flex min-w-0 flex-1 flex-col">
         <div className="flex shrink-0 items-center gap-2 px-3 py-2">
-          <button className="btn h-8 rounded-full px-4" onClick={() => go(view, today)} title="Today (t)">
+          <button
+            className="btn h-8 rounded-full px-4"
+            onClick={() => go(view, today)}
+            title="Today (t)"
+          >
             Today
           </button>
-          <button className="icon-btn" aria-label="Previous" title="Previous (k)" onClick={() => go(view, step(view, date, -1))}>
+          <button
+            className="icon-btn"
+            aria-label="Previous"
+            title="Previous (k)"
+            onClick={() => go(view, step(view, date, -1))}
+          >
             <ChevronLeft size={18} />
           </button>
-          <button className="icon-btn" aria-label="Next" title="Next (j)" onClick={() => go(view, step(view, date, 1))}>
+          <button
+            className="icon-btn"
+            aria-label="Next"
+            title="Next (j)"
+            onClick={() => go(view, step(view, date, 1))}
+          >
             <ChevronRight size={18} />
           </button>
-          <h1 className="ml-1 text-lg font-normal text-strong">{title(view, days, date)}</h1>
+          <h1 className="ml-1 text-lg font-normal text-strong">
+            {title(view, days, date)}
+          </h1>
           <Select
             value={view}
-            onChange={(v) => go(v, date)}
+            onChange={v => go(v, date)}
             options={VIEW_OPTIONS}
             className="ml-auto h-8 w-28 rounded-full px-3"
             ariaLabel="Calendar view"
@@ -120,9 +164,12 @@ export function CalendarView({ view: routeView, date: routeDate }: { view?: CalV
         </div>
         <div className="min-h-0 flex-1 pr-2 pb-2">
           {view === 'month' ? (
-            <MonthGrid date={firstOfMonth(date)} onDayClick={(d) => go('day', d)} />
+            <MonthGrid
+              date={firstOfMonth(date)}
+              onDayClick={d => go('day', d)}
+            />
           ) : (
-            <TimeGrid key={view} days={days} onDayClick={(d) => go('day', d)} />
+            <TimeGrid key={view} days={days} onDayClick={d => go('day', d)} />
           )}
         </div>
       </div>
@@ -132,8 +179,11 @@ export function CalendarView({ view: routeView, date: routeDate }: { view?: CalV
 
 /** Sidebar toggles: show or hide events and each area's planned sessions (per device). */
 function Layers() {
-  const areas = useStore((s) => s.data.areas);
-  const rows = [{ key: 'events', name: 'Events', color: 'var(--color-event)' }, ...areas.map((a) => ({ key: a.id, name: a.name, color: a.color }))];
+  const areas = useStore(s => s.data.areas);
+  const rows = [
+    {key: 'events', name: 'Events', color: 'var(--color-event)'},
+    ...areas.map(a => ({key: a.id, name: a.name, color: a.color})),
+  ];
   return (
     <div className="space-y-4">
       <LayerList title="My calendars" rows={rows} />
@@ -142,30 +192,55 @@ function Layers() {
   );
 }
 
-function LayerList({ title, rows, extra }: { title: string; rows: { key: string; name: string; color: string }[]; extra?: ReactNode }) {
-  const hidden = useUi((s) => s.hidden);
-  const toggle = useUi((s) => s.toggleHidden);
+function LayerList({
+  title,
+  rows,
+  extra,
+}: {
+  title: string;
+  rows: {key: string; name: string; color: string}[];
+  extra?: ReactNode;
+}) {
+  const hidden = useUi(s => s.hidden);
+  const toggle = useUi(s => s.toggleHidden);
   return (
     <div>
       <div className="mb-1 flex items-center gap-1 px-1 text-[13px] font-medium text-strong">
         <span className="flex-1">{title}</span>
         {extra}
       </div>
-      {rows.map((r) => {
+      {rows.map(r => {
         const on = !hidden.includes(r.key);
         return (
-          <label key={r.key} className="flex cursor-pointer items-center gap-3 rounded-md px-1 py-1 transition-colors hover:bg-raised">
+          <label
+            key={r.key}
+            className="flex cursor-pointer items-center gap-3 rounded-md px-1 py-1 transition-colors hover:bg-raised"
+          >
             <span
               className="flex h-4 w-4 shrink-0 items-center justify-center rounded-[3px] border-2 transition-colors"
-              style={{ borderColor: r.color, background: on ? r.color : 'transparent' }}
+              style={{
+                borderColor: r.color,
+                background: on ? r.color : 'transparent',
+              }}
             >
               {on && (
-                <svg viewBox="0 0 12 12" className="h-3 w-3" fill="none" stroke="var(--color-on-block)" strokeWidth="2">
+                <svg
+                  viewBox="0 0 12 12"
+                  className="h-3 w-3"
+                  fill="none"
+                  stroke="var(--color-on-block)"
+                  strokeWidth="2"
+                >
                   <path d="M2.5 6.5 5 9l4.5-5.5" />
                 </svg>
               )}
             </span>
-            <input type="checkbox" className="sr-only" checked={on} onChange={() => toggle(r.key)} />
+            <input
+              type="checkbox"
+              className="sr-only"
+              checked={on}
+              onChange={() => toggle(r.key)}
+            />
             <span className="truncate">{r.name}</span>
           </label>
         );
@@ -180,7 +255,10 @@ function GoogleLayers() {
   const g = useGoogle();
   if (g.status === 'signed-out' && !g.clientId) {
     return (
-      <a href={href({ name: 'settings' })} className="block rounded-md px-1 py-1 text-[12px] text-accent hover:underline">
+      <a
+        href={href({name: 'settings'})}
+        className="block rounded-md px-1 py-1 text-[12px] text-accent hover:underline"
+      >
         Connect Google Calendar…
       </a>
     );
@@ -188,17 +266,31 @@ function GoogleLayers() {
   if (g.status !== 'signed-in') {
     return (
       <div className="px-1">
-        <div className="mb-1 text-[13px] font-medium text-strong">Google Calendar</div>
-        <button className="btn" onClick={() => void g.signIn()} disabled={g.status === 'signing-in'}>
-          {g.status === 'expired' ? 'Reconnect' : g.status === 'signing-in' ? 'Waiting…' : 'Sign in'}
+        <div className="mb-1 text-[13px] font-medium text-strong">
+          Google Calendar
+        </div>
+        <button
+          className="btn"
+          onClick={() => void g.signIn()}
+          disabled={g.status === 'signing-in'}
+        >
+          {g.status === 'expired'
+            ? 'Reconnect'
+            : g.status === 'signing-in'
+              ? 'Waiting…'
+              : 'Sign in'}
         </button>
         {g.error && <p className="mt-1 text-[11px] text-danger">{g.error}</p>}
       </div>
     );
   }
   const rows = g.calendars
-    .filter((c) => g.selected.includes(c.id))
-    .map((c) => ({ key: `g:${c.id}`, name: c.summaryOverride ?? c.summary, color: c.backgroundColor ?? '#8ab4f8' }));
+    .filter(c => g.selected.includes(c.id))
+    .map(c => ({
+      key: `g:${c.id}`,
+      name: c.summaryOverride ?? c.summary,
+      color: c.backgroundColor ?? '#8ab4f8',
+    }));
   return (
     <div className="space-y-2">
       <GoogleErrorNotice compact />
@@ -206,7 +298,12 @@ function GoogleLayers() {
         title="Google (read-only)"
         rows={rows}
         extra={
-          <button className="icon-btn h-6 w-6" title="Refresh from Google" aria-label="Refresh from Google" onClick={clearGoogleCache}>
+          <button
+            className="icon-btn h-6 w-6"
+            title="Refresh from Google"
+            aria-label="Refresh from Google"
+            onClick={clearGoogleCache}
+          >
             <RefreshCw size={13} />
           </button>
         }

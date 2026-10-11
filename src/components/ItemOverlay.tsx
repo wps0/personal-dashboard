@@ -1,29 +1,44 @@
-import { useMemo, useState, type ReactNode } from 'react';
-import { BufferedInput, BufferedTextarea } from './Buffered';
-import { DateField } from './DateField';
-import { StatusSelect } from './StatusSelect';
-import { TimeSelect } from './TimeSelect';
-import { Select, type Option } from './ui/Select';
-import { Trash2, X } from 'lucide-react';
-import { HoursInput } from './HoursInput';
-import { Markdown } from './Markdown';
-import { Modal } from './Modal';
-import { countdown, todayISO } from '../model/dates';
-import { actualHours, isItemDone, plannedHours, urgency } from '../model/selectors';
-import type { Allocation, Item, ItemKind } from '../model/types';
-import { fmtH, KINDS, URGENCY_CLASS } from '../format';
+import {useMemo, useState, type ReactNode} from 'react';
+import {BufferedInput, BufferedTextarea} from './Buffered';
+import {DateField} from './DateField';
+import {StatusSelect} from './StatusSelect';
+import {TimeSelect} from './TimeSelect';
+import {Select, type Option} from './ui/Select';
+import {Trash2, X} from 'lucide-react';
+import {HoursInput} from './HoursInput';
+import {Markdown} from './Markdown';
+import {Modal} from './Modal';
+import {countdown, todayISO} from '../model/dates';
+import {
+  actualHours,
+  isItemDone,
+  plannedHours,
+  urgency,
+} from '../model/selectors';
+import type {Allocation, Item, ItemKind} from '../model/types';
+import {fmtH, KINDS, URGENCY_CLASS} from '../format';
 
-const KIND_OPTIONS = KINDS.map((k): Option<ItemKind> => ({ value: k, label: k[0].toUpperCase() + k.slice(1) }));
-import { navigate } from '../router';
-import { useStore } from '../store';
-import { useUi } from '../ui';
-import { completeItem, deleteItem as deleteItemAction, removeSession, toggleSession } from '../actions';
+const KIND_OPTIONS = KINDS.map((k): Option<ItemKind> => ({
+  value: k,
+  label: k[0].toUpperCase() + k.slice(1),
+}));
+import {navigate} from '../router';
+import {useStore} from '../store';
+import {useUi} from '../ui';
+import {
+  completeItem,
+  deleteItem as deleteItemAction,
+  removeSession,
+  toggleSession,
+} from '../actions';
 
 /** Task details: fields, planned sessions, notes. Opened by clicking any task. */
 export function ItemOverlay() {
-  const id = useUi((s) => s.openItemId);
-  const close = useUi((s) => s.openItem);
-  const item = useStore((s) => (id ? s.data.items.find((i) => i.id === id) : undefined));
+  const id = useUi(s => s.openItemId);
+  const close = useUi(s => s.openItem);
+  const item = useStore(s =>
+    id ? s.data.items.find(i => i.id === id) : undefined,
+  );
   if (!id || !item) return null;
   return (
     <Modal onClose={() => close(null)} width="max-w-2xl">
@@ -32,44 +47,68 @@ export function ItemOverlay() {
   );
 }
 
-function ItemDetails({ item, onClose }: { item: Item; onClose(): void }) {
-  const { updateItem, addAllocation } = useStore.getState();
-  const projects = useStore((s) => s.data.projects);
-  const areas = useStore((s) => s.data.areas);
-  const allAllocs = useStore((s) => s.data.allocations);
+function ItemDetails({item, onClose}: {item: Item; onClose(): void}) {
+  const {updateItem, addAllocation} = useStore.getState();
+  const projects = useStore(s => s.data.projects);
+  const areas = useStore(s => s.data.areas);
+  const allAllocs = useStore(s => s.data.allocations);
   const allocs = useMemo(
-    () => allAllocs.filter((a) => a.itemId === item.id).sort((a, b) => (a.date + (a.start ?? '')).localeCompare(b.date + (b.start ?? ''))),
+    () =>
+      allAllocs
+        .filter(a => a.itemId === item.id)
+        .sort((a, b) =>
+          (a.date + (a.start ?? '')).localeCompare(b.date + (b.start ?? '')),
+        ),
     [allAllocs, item.id],
   );
   const [editingNotes, setEditingNotes] = useState(!item.notes);
   const today = todayISO();
   const set = (patch: Partial<Item>) => updateItem(item.id, patch);
-  const project = projects.find((p) => p.id === item.projectId);
-  const color = areas.find((a) => a.id === project?.areaId)?.color;
+  const project = projects.find(p => p.id === item.projectId);
+  const color = areas.find(a => a.id === project?.areaId)?.color;
 
   const planned = plannedHours(allocs);
   const spent = actualHours(allocs);
-  const remaining = item.estimateHours != null ? item.estimateHours - spent : undefined;
+  const remaining =
+    item.estimateHours != null ? item.estimateHours - spent : undefined;
 
   return (
     <div className="flex flex-col">
-      <header className="flex items-start gap-2 border-b border-line p-3" style={{ borderTop: `3px solid ${color ?? 'transparent'}` }}>
+      <header
+        className="flex items-start gap-2 border-b border-line p-3"
+        style={{borderTop: `3px solid ${color ?? 'transparent'}`}}
+      >
         <div className="min-w-0 flex-1">
           <BufferedInput
             value={item.title}
-            onCommit={(title) => title.trim() && set({ title: title.trim() })}
+            onCommit={title => title.trim() && set({title: title.trim()})}
             className={`w-full rounded px-1 text-base font-semibold text-strong hover:bg-raised focus:bg-raised ${isItemDone(item) ? 'line-through decoration-dim' : ''}`}
           />
           <div className="mt-1.5 flex flex-wrap items-center gap-2 px-1">
             <Select
               value={item.projectId}
-              onChange={(projectId) => set({ projectId })}
-              options={projects.map((p) => ({ value: p.id, label: p.name, color: areas.find((a) => a.id === p.areaId)?.color }))}
+              onChange={projectId => set({projectId})}
+              options={projects.map(p => ({
+                value: p.id,
+                label: p.name,
+                color: areas.find(a => a.id === p.areaId)?.color,
+              }))}
               className="w-48"
               ariaLabel="Project"
             />
-            <Select value={item.kind} onChange={(kind) => set({ kind })} options={KIND_OPTIONS} className="w-32" ariaLabel="Kind" />
-            <StatusSelect value={item.status} onChange={(status) => set({ status })} variant="field" className="w-36" />
+            <Select
+              value={item.kind}
+              onChange={kind => set({kind})}
+              options={KIND_OPTIONS}
+              className="w-32"
+              ariaLabel="Kind"
+            />
+            <StatusSelect
+              value={item.status}
+              onChange={status => set({status})}
+              variant="field"
+              className="w-36"
+            />
           </div>
         </div>
         <button className="icon-btn" onClick={onClose} aria-label="Close">
@@ -79,26 +118,52 @@ function ItemDetails({ item, onClose }: { item: Item; onClose(): void }) {
 
       <div className="grid grid-cols-2 gap-x-4 gap-y-2 border-b border-line p-3 sm:grid-cols-[1.3fr_1.3fr_0.8fr_1fr]">
         <Field label="due">
-          <DateField optional value={item.dueDate} onChange={(dueDate) => set({ dueDate })} placeholder="No due date" className="w-full" />
+          <DateField
+            optional
+            value={item.dueDate}
+            onChange={dueDate => set({dueDate})}
+            placeholder="No due date"
+            className="w-full"
+          />
           {item.dueDate && !isItemDone(item) && (
-            <span className={`tabular-nums text-[11px] ${URGENCY_CLASS[urgency(item.dueDate, today)]}`}>{countdown(item.dueDate, today)}</span>
+            <span
+              className={`tabular-nums text-[11px] ${URGENCY_CLASS[urgency(item.dueDate, today)]}`}
+            >
+              {countdown(item.dueDate, today)}
+            </span>
           )}
         </Field>
         {item.kind === 'lecture' && (
           <Field label="held on">
-            <DateField optional value={item.heldOn} onChange={(heldOn) => set({ heldOn })} placeholder="Not set" className="w-full" />
+            <DateField
+              optional
+              value={item.heldOn}
+              onChange={heldOn => set({heldOn})}
+              placeholder="Not set"
+              className="w-full"
+            />
           </Field>
         )}
         <Field label="estimate">
           <span className="flex items-center gap-1">
-            <HoursInput optional value={item.estimateHours} onChange={(estimateHours) => set({ estimateHours })} className="field w-16" />
+            <HoursInput
+              optional
+              value={item.estimateHours}
+              onChange={estimateHours => set({estimateHours})}
+              className="field w-16"
+            />
             <span className="text-dim">h</span>
           </span>
         </Field>
         <Field label="spent / planned">
           <span className="tabular-nums">
             {fmtH(spent)} / {fmtH(planned)}
-            {remaining != null && <span className={remaining < 0 ? 'text-warn' : 'text-dim'}> · {fmtH(Math.max(0, remaining))} left</span>}
+            {remaining != null && (
+              <span className={remaining < 0 ? 'text-warn' : 'text-dim'}>
+                {' '}
+                · {fmtH(Math.max(0, remaining))} left
+              </span>
+            )}
           </span>
         </Field>
       </div>
@@ -106,12 +171,18 @@ function ItemDetails({ item, onClose }: { item: Item; onClose(): void }) {
       <section className="border-b border-line p-3">
         <div className="mb-1 flex items-center">
           <span className="label">sessions</span>
-          <button className="btn-ghost ml-auto text-[11px]" onClick={() => addAllocation(item.id, today, 1)}>
+          <button
+            className="btn-ghost ml-auto text-[11px]"
+            onClick={() => addAllocation(item.id, today, 1)}
+          >
             + add session today
           </button>
         </div>
         {allocs.length === 0 ? (
-          <p className="text-[12px] text-dim">Not planned yet. Drag it onto a day in the week view, or add a session here.</p>
+          <p className="text-[12px] text-dim">
+            Not planned yet. Drag it onto a day in the week view, or add a
+            session here.
+          </p>
         ) : (
           <table className="w-full">
             <thead>
@@ -125,7 +196,7 @@ function ItemDetails({ item, onClose }: { item: Item; onClose(): void }) {
               </tr>
             </thead>
             <tbody>
-              {allocs.map((a) => (
+              {allocs.map(a => (
                 <SessionRow key={a.id} alloc={a} today={today} />
               ))}
             </tbody>
@@ -137,7 +208,10 @@ function ItemDetails({ item, onClose }: { item: Item; onClose(): void }) {
         <div className="mb-1 flex items-center">
           <span className="label">notes</span>
           {item.notes && (
-            <button className="btn-ghost ml-auto text-[11px]" onClick={() => setEditingNotes((e) => !e)}>
+            <button
+              className="btn-ghost ml-auto text-[11px]"
+              onClick={() => setEditingNotes(e => !e)}
+            >
               {editingNotes ? 'preview' : 'edit'}
             </button>
           )}
@@ -147,10 +221,13 @@ function ItemDetails({ item, onClose }: { item: Item; onClose(): void }) {
             className="field scroll-thin h-36 w-full resize-y tabular-nums text-[12px]"
             placeholder="Markdown: details, links, where you stopped…"
             value={item.notes ?? ''}
-            onCommit={(notes) => set({ notes })}
+            onCommit={notes => set({notes})}
           />
         ) : (
-          <div className="cursor-text rounded p-1 hover:bg-raised" onClick={() => setEditingNotes(true)}>
+          <div
+            className="cursor-text rounded p-1 hover:bg-raised"
+            onClick={() => setEditingNotes(true)}
+          >
             <Markdown source={item.notes ?? ''} />
           </div>
         )}
@@ -167,7 +244,7 @@ function ItemDetails({ item, onClose }: { item: Item; onClose(): void }) {
             className="btn-ghost"
             onClick={() => {
               onClose();
-              navigate({ name: 'projects', id: project.id });
+              navigate({name: 'projects', id: project.id});
             }}
           >
             open project ↗
@@ -189,18 +266,23 @@ function ItemDetails({ item, onClose }: { item: Item; onClose(): void }) {
   );
 }
 
-function SessionRow({ alloc, today }: { alloc: Allocation; today: string }) {
-  const { updateAllocation } = useStore.getState();
+function SessionRow({alloc, today}: {alloc: Allocation; today: string}) {
+  const {updateAllocation} = useStore.getState();
   const missed = !alloc.done && alloc.date < today;
   return (
     <tr className="group">
       <td className="px-1">
-        <input type="checkbox" checked={alloc.done} onChange={() => toggleSession(alloc.id)} className="accent-ok" />
+        <input
+          type="checkbox"
+          checked={alloc.done}
+          onChange={() => toggleSession(alloc.id)}
+          className="accent-ok"
+        />
       </td>
       <td className="px-1">
         <DateField
           value={alloc.date}
-          onChange={(date) => date && updateAllocation(alloc.id, { date })}
+          onChange={date => date && updateAllocation(alloc.id, {date})}
           variant="ghost"
           className={missed ? 'text-danger' : ''}
         />
@@ -209,30 +291,48 @@ function SessionRow({ alloc, today }: { alloc: Allocation; today: string }) {
         <span className="flex items-center">
           <TimeSelect
             value={alloc.start ?? '--:--'}
-            onChange={(start) => start !== '--:--' && updateAllocation(alloc.id, { start })}
+            onChange={start =>
+              start !== '--:--' && updateAllocation(alloc.id, {start})
+            }
             variant="ghost"
             className="w-20"
             ariaLabel="Start time"
           />
           {alloc.start && (
-            <button className="icon-btn h-6 w-6" aria-label="Clear start time" onClick={() => updateAllocation(alloc.id, { start: undefined })}>
+            <button
+              className="icon-btn h-6 w-6"
+              aria-label="Clear start time"
+              onClick={() => updateAllocation(alloc.id, {start: undefined})}
+            >
               <X size={12} />
             </button>
           )}
         </span>
       </td>
       <td className="px-1 text-right">
-        <HoursInput value={alloc.plannedHours} onChange={(h) => h && updateAllocation(alloc.id, { plannedHours: h })} className="text-[12px]" />
+        <HoursInput
+          value={alloc.plannedHours}
+          onChange={h => h && updateAllocation(alloc.id, {plannedHours: h})}
+          className="text-[12px]"
+        />
       </td>
       <td className="px-1 text-right">
         {alloc.done ? (
-          <HoursInput value={alloc.actualHours ?? alloc.plannedHours} onChange={(h) => updateAllocation(alloc.id, { actualHours: h })} className="text-[12px] text-ok" />
+          <HoursInput
+            value={alloc.actualHours ?? alloc.plannedHours}
+            onChange={h => updateAllocation(alloc.id, {actualHours: h})}
+            className="text-[12px] text-ok"
+          />
         ) : (
           <span className="text-dim">–</span>
         )}
       </td>
       <td className="px-1 text-right">
-        <button className="icon-btn invisible h-6 w-6 group-hover:visible hover:!text-danger" onClick={() => removeSession(alloc.id, 'Session removed')} title="Remove session">
+        <button
+          className="icon-btn invisible h-6 w-6 group-hover:visible hover:!text-danger"
+          onClick={() => removeSession(alloc.id, 'Session removed')}
+          title="Remove session"
+        >
           <Trash2 size={13} />
         </button>
       </td>
@@ -240,7 +340,7 @@ function SessionRow({ alloc, today }: { alloc: Allocation; today: string }) {
   );
 }
 
-function Field({ label, children }: { label: string; children: ReactNode }) {
+function Field({label, children}: {label: string; children: ReactNode}) {
   return (
     <label className="flex flex-col gap-0.5">
       <span className="label">{label}</span>

@@ -1,6 +1,6 @@
-import { weekdayIndex } from './dates';
-import { toMinutes } from './time';
-import type { CalendarEvent, ISODate } from './types';
+import {weekdayIndex} from './dates';
+import {toMinutes} from './time';
+import type {CalendarEvent, ISODate} from './types';
 
 /** Time of day you can plan work into, per weekday. */
 export interface PlanningWindow {
@@ -48,34 +48,49 @@ export interface CapacityInfo {
 }
 
 export const DEFAULT_WINDOWS: PlanningWindow[] = [
-  ...Array.from({ length: 5 }, () => ({ start: '18:00', end: '21:00' })),
-  { start: '10:00', end: '16:00' },
-  { start: '10:00', end: '16:00' },
+  ...Array.from({length: 5}, () => ({start: '18:00', end: '21:00'})),
+  {start: '10:00', end: '16:00'},
+  {start: '10:00', end: '16:00'},
 ];
 
-const SLEEP: Reserved = { start: '23:00', end: '07:00', label: 'Sleep' };
+const SLEEP: Reserved = {start: '23:00', end: '07:00', label: 'Sleep'};
 export const DEFAULT_RESERVED: Reserved[][] = [
-  ...Array.from({ length: 5 }, () => [SLEEP, { start: '09:00', end: '17:00', label: 'Work' }]),
+  ...Array.from({length: 5}, () => [
+    SLEEP,
+    {start: '09:00', end: '17:00', label: 'Work'},
+  ]),
   [SLEEP],
   [SLEEP],
 ];
 
 export function defaultRules(): CapacityRule[] {
-  return [{ from: '0000-01-01', windows: DEFAULT_WINDOWS, adjustment: 0, reserved: DEFAULT_RESERVED }];
+  return [
+    {
+      from: '0000-01-01',
+      windows: DEFAULT_WINDOWS,
+      adjustment: 0,
+      reserved: DEFAULT_RESERVED,
+    },
+  ];
 }
 
 /** Reserved spans for a date in minutes; ranges past midnight are drawn at both ends of the day. */
-export function reservedFor(rules: CapacityRule[], date: ISODate): { start: number; end: number; label?: string }[] {
-  const ranges = (ruleFor(rules, date).reserved ?? DEFAULT_RESERVED)[weekdayIndex(date)] ?? [];
-  return ranges.flatMap((r) => {
+export function reservedFor(
+  rules: CapacityRule[],
+  date: ISODate,
+): {start: number; end: number; label?: string}[] {
+  const ranges =
+    (ruleFor(rules, date).reserved ?? DEFAULT_RESERVED)[weekdayIndex(date)] ??
+    [];
+  return ranges.flatMap(r => {
     const s = toMinutes(r.start);
     const e = toMinutes(r.end);
-    if (e > s) return [{ start: s, end: e, label: r.label }];
+    if (e > s) return [{start: s, end: e, label: r.label}];
     if (e === s) return [];
     return [
-      { start: 0, end: e, label: r.label },
-      { start: s, end: 24 * 60, label: r.label },
-    ].filter((x) => x.end > x.start);
+      {start: 0, end: e, label: r.label},
+      {start: s, end: 24 * 60, label: r.label},
+    ].filter(x => x.end > x.start);
   });
 }
 
@@ -84,10 +99,13 @@ export function rulesFromLegacyHours(hours: number[]): CapacityRule[] {
   const windows = hours.map((h, i) => {
     const start = i < 5 ? 18 * 60 : 10 * 60;
     const end = Math.min(start + Math.round(h * 60), 24 * 60 - 1);
-    const t = (m: number) => `${String(Math.floor(m / 60)).padStart(2, '0')}:${String(m % 60).padStart(2, '0')}`;
-    return { start: t(start), end: t(end) };
+    const t = (m: number) =>
+      `${String(Math.floor(m / 60)).padStart(2, '0')}:${String(m % 60).padStart(2, '0')}`;
+    return {start: t(start), end: t(end)};
   });
-  return [{ from: '0000-01-01', windows, adjustment: 0, reserved: DEFAULT_RESERVED }];
+  return [
+    {from: '0000-01-01', windows, adjustment: 0, reserved: DEFAULT_RESERVED},
+  ];
 }
 
 export function ruleFor(rules: CapacityRule[], date: ISODate): CapacityRule {
@@ -97,12 +115,21 @@ export function ruleFor(rules: CapacityRule[], date: ISODate): CapacityRule {
 }
 
 /** Minutes of `window` covered by timed events, with overlapping events merged. */
-export function busyMinutes(window: PlanningWindow, events: CalendarEvent[]): number {
+export function busyMinutes(
+  window: PlanningWindow,
+  events: CalendarEvent[],
+): number {
   const ws = toMinutes(window.start);
   const we = toMinutes(window.end);
   const spans = events
-    .filter((e) => !e.allDay)
-    .map((e) => [Math.max(ws, toMinutes(e.start)), Math.min(we, toMinutes(e.end))] as const)
+    .filter(e => !e.allDay)
+    .map(
+      e =>
+        [
+          Math.max(ws, toMinutes(e.start)),
+          Math.min(we, toMinutes(e.end)),
+        ] as const,
+    )
     .filter(([s, e]) => e > s)
     .sort((a, b) => a[0] - b[0]);
   let total = 0;
@@ -125,19 +152,32 @@ export function capacityFor(
 ): CapacityInfo {
   const rule = ruleFor(rules, date);
   const window = rule.windows[weekdayIndex(date)];
-  const windowHours = Math.max(0, toMinutes(window.end) - toMinutes(window.start)) / 60;
+  const windowHours =
+    Math.max(0, toMinutes(window.end) - toMinutes(window.start)) / 60;
   const busyHours = busyMinutes(window, eventsOfDay) / 60;
   const day = days[date] ?? {};
   const delta = day.delta ?? 0;
   const computed = windowHours - busyHours + rule.adjustment + delta;
   const total = Math.max(0, Math.round((day.override ?? computed) * 4) / 4);
-  return { window, windowHours, busyHours, adjustment: rule.adjustment, delta, override: day.override, total };
+  return {
+    window,
+    windowHours,
+    busyHours,
+    adjustment: rule.adjustment,
+    delta,
+    override: day.override,
+    total,
+  };
 }
 
 /** Applies a settings change from `today` on: edits today's rule or appends one. */
-export function withRuleChange(rules: CapacityRule[], today: ISODate, patch: Partial<Omit<CapacityRule, 'from'>>): CapacityRule[] {
+export function withRuleChange(
+  rules: CapacityRule[],
+  today: ISODate,
+  patch: Partial<Omit<CapacityRule, 'from'>>,
+): CapacityRule[] {
   const current = ruleFor(rules, today);
-  const next = { ...current, ...patch, from: today };
-  const kept = rules.filter((r) => r.from < today);
+  const next = {...current, ...patch, from: today};
+  const kept = rules.filter(r => r.from < today);
   return [...kept, next];
 }

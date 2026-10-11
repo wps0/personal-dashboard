@@ -1,10 +1,19 @@
-import { useEffect, type ReactNode } from 'react';
+import {useEffect, type ReactNode} from 'react';
 
 /** Centered overlay; closes on Esc or backdrop click. */
-export function Modal({ onClose, children, width = 'max-w-xl' }: { onClose(): void; children: ReactNode; width?: string }) {
+export function Modal({
+  onClose,
+  children,
+  width = 'max-w-xl',
+}: {
+  onClose(): void;
+  children: ReactNode;
+  width?: string;
+}) {
   useEffect(() => {
     // defaultPrevented: a dropdown or popover inside the modal already handled this Esc.
-    const onKey = (e: KeyboardEvent) => e.key === 'Escape' && !e.defaultPrevented && onClose();
+    const onKey = (e: KeyboardEvent) =>
+      e.key === 'Escape' && !e.defaultPrevented && onClose();
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
   }, [onClose]);
@@ -12,7 +21,7 @@ export function Modal({ onClose, children, width = 'max-w-xl' }: { onClose(): vo
   return (
     <div
       className="fixed inset-0 z-50 flex animate-fade-in items-start justify-center bg-black/60 p-4 pt-[8vh] backdrop-blur-[2px]"
-      onMouseDown={(e) => e.target === e.currentTarget && onClose()}
+      onMouseDown={e => e.target === e.currentTarget && onClose()}
     >
       <div
         role="dialog"

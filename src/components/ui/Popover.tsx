@@ -1,5 +1,5 @@
 import * as RP from '@radix-ui/react-popover';
-import { useLayoutEffect, useRef, useState, type ComponentProps } from 'react';
+import {useLayoutEffect, useRef, useState, type ComponentProps} from 'react';
 
 export const Popover = RP.Root;
 export const PopoverTrigger = RP.Trigger;
@@ -29,9 +29,11 @@ export function useBeside(open: boolean, cardWidth = CARD_WIDTH) {
     const need = cardWidth + GAP + EDGE;
     const fits = window.innerWidth - r.right >= need || r.left >= need;
     // Overlapping: the card's left edge lands inside the anchor, but never off the window.
-    setSideOffset(fits ? GAP : Math.max(-(cardWidth + 2 * GAP), EDGE - r.right));
+    setSideOffset(
+      fits ? GAP : Math.max(-(cardWidth + 2 * GAP), EDGE - r.right),
+    );
   }, [open, cardWidth]);
-  return { ref, content: { side: 'right', align: 'start', sideOffset } as const };
+  return {ref, content: {side: 'right', align: 'start', sideOffset} as const};
 }
 
 /**
@@ -41,19 +43,25 @@ export function useBeside(open: boolean, cardWidth = CARD_WIDTH) {
  * with `preventScroll`: Radix's default focus runs before the card is positioned,
  * which made the browser scroll the calendar back to midnight.
  */
-export function PopoverContent({ className = '', onOpenAutoFocus, ...props }: ComponentProps<typeof RP.Content>) {
+export function PopoverContent({
+  className = '',
+  onOpenAutoFocus,
+  ...props
+}: ComponentProps<typeof RP.Content>) {
   return (
     <RP.Portal>
       <RP.Content
         sideOffset={6}
         collisionPadding={EDGE}
         {...props}
-        onOpenAutoFocus={(e) => {
+        onOpenAutoFocus={e => {
           onOpenAutoFocus?.(e);
           if (e.defaultPrevented) return;
           e.preventDefault();
           const card = e.currentTarget as HTMLElement;
-          (card.querySelector<HTMLElement>('[data-autofocus]') ?? card).focus({ preventScroll: true });
+          (card.querySelector<HTMLElement>('[data-autofocus]') ?? card).focus({
+            preventScroll: true,
+          });
         }}
         className={`popover-motion z-[60] rounded-xl border border-line bg-panel shadow-2xl shadow-black/40 outline-none ${className}`}
       />

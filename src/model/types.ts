@@ -1,4 +1,4 @@
-import { defaultRules, type CapacityRule, type DayCapacity } from './capacity';
+import {defaultRules, type CapacityRule, type DayCapacity} from './capacity';
 
 /** ISO calendar date in local time, `YYYY-MM-DD`. */
 export type ISODate = string;
@@ -131,6 +131,11 @@ export function emptyData(): AppData {
     events: [],
     dayNotes: {},
     monthNotes: {},
-    settings: { capacityRules: defaultRules(), dayCapacity: {}, defaultEventMinutes: 60, defaultCalendarView: 'week' },
+    settings: {
+      capacityRules: defaultRules(),
+      dayCapacity: {},
+      defaultEventMinutes: 60,
+      defaultCalendarView: 'week',
+    },
   };
 }
