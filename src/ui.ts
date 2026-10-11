@@ -15,12 +15,21 @@ export interface Draft {
 }
 
 const HIDDEN_KEY = 'personal-dashboard/hidden-calendars';
+const ALL_DAY_KEY = 'personal-dashboard/all-day-collapsed';
 
 function loadHidden(): string[] {
   try {
     return JSON.parse(localStorage.getItem(HIDDEN_KEY) ?? '[]');
   } catch {
     return [];
+  }
+}
+
+function save(key: string, value: unknown) {
+  try {
+    localStorage.setItem(key, JSON.stringify(value));
+  } catch {
+    // Not persisted; fine.
   }
 }
 
@@ -35,6 +44,8 @@ interface UiState {
   draft: Draft | null;
   /** Calendar layers switched off in the sidebar: 'events' or an area id. Per device. */
   hidden: string[];
+  /** The calendar's all-day row shows only a couple of items per day. Per device. */
+  allDayCollapsed: boolean;
   /** Keyboard dialogs: shortcut help, or go-to-date. */
   dialog: 'help' | 'goto' | null;
   setDialog(d: UiState['dialog']): void;
@@ -44,6 +55,7 @@ interface UiState {
   setDraft(d: Draft | null): void;
   patchDraft(p: Partial<Draft>): void;
   toggleHidden(key: string): void;
+  setAllDayCollapsed(collapsed: boolean): void;
 }
 
 export const useUi = create<UiState>()((set, get) => ({
@@ -52,6 +64,13 @@ export const useUi = create<UiState>()((set, get) => ({
   openGoogleKey: null,
   draft: null,
   hidden: loadHidden(),
+  allDayCollapsed: (() => {
+    try {
+      return localStorage.getItem(ALL_DAY_KEY) === 'true';
+    } catch {
+      return false;
+    }
+  })(),
   dialog: null,
   setDialog: dialog => set({dialog}),
   openItem: id =>
@@ -71,11 +90,11 @@ export const useUi = create<UiState>()((set, get) => ({
       ? get().hidden.filter(k => k !== key)
       : [...get().hidden, key];
     set({hidden});
-    try {
-      localStorage.setItem(HIDDEN_KEY, JSON.stringify(hidden));
-    } catch {
-      // Not persisted; fine.
-    }
+    save(HIDDEN_KEY, hidden);
+  },
+  setAllDayCollapsed: allDayCollapsed => {
+    set({allDayCollapsed});
+    save(ALL_DAY_KEY, allDayCollapsed);
   },
 }));
 
