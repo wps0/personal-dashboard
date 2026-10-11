@@ -1,15 +1,12 @@
 import {
   DndContext,
   DragOverlay,
-  PointerSensor,
-  TouchSensor,
   useDraggable,
   useDroppable,
-  useSensor,
-  useSensors,
   type DragEndEvent,
   type DragStartEvent,
 } from '@dnd-kit/core';
+import {clicksSuppressed, suppressClicks, useDragSensors} from '../dnd';
 import {memo, useMemo, useState} from 'react';
 import {useLookups, useSlide, type Lookups} from '../hooks';
 import {monthGrid, todayISO} from '../model/dates';
@@ -39,9 +36,6 @@ type Entry =
 const WEEKDAYS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
 const MAX_ENTRIES = 3;
 
-let suppressClickUntil = 0;
-const clicksSuppressed = () => performance.now() < suppressClickUntil;
-
 /** Month view: 6×7 cells with events and planned sessions; drag entries between days. */
 export function MonthGrid({
   date,
@@ -51,17 +45,14 @@ export function MonthGrid({
   onDayClick(d: ISODate): void;
 }) {
   const [dragging, setDragging] = useState<Entry | null>(null);
-  const sensors = useSensors(
-    useSensor(PointerSensor, {activationConstraint: {distance: 5}}),
-    useSensor(TouchSensor, {activationConstraint: {delay: 200, tolerance: 6}}),
-  );
+  const sensors = useDragSensors();
   const onDragStart = (e: DragStartEvent) => {
     setDragging(e.active.data.current as Entry);
     useUi.getState().openEvent(null);
   };
   const onDragEnd = (e: DragEndEvent) => {
     setDragging(null);
-    suppressClickUntil = performance.now() + 200;
+    suppressClicks();
     const entry = e.active.data.current as Entry | undefined;
     const target = e.over?.id;
     if (!entry || typeof target !== 'string') return;
