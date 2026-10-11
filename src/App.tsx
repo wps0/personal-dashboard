@@ -2,8 +2,9 @@ import {CircleGauge, Keyboard, Monitor, Moon, Sun} from 'lucide-react';
 import {Toaster} from './components/Toaster';
 import {ShortcutDialogs} from './components/ShortcutDialogs';
 import {useGlobalShortcuts} from './keyboard';
-import {useEffect, type ReactNode} from 'react';
+import {lazy, Suspense, useEffect, type ReactNode} from 'react';
 import {ItemOverlay} from './components/ItemOverlay';
+import {preloadMarkdown} from './components/Markdown';
 import {sampleData} from './model/sample';
 import {href, navigate, useRoute, type Route} from './router';
 import {useStore} from './store';
@@ -11,9 +12,24 @@ import {useTheme, type ThemeChoice} from './theme';
 import {useUi} from './ui';
 import {CalendarView} from './views/CalendarView';
 import {HomeView} from './views/HomeView';
-import {ProjectsView} from './views/ProjectsView';
-import {SettingsView} from './views/SettingsView';
 import {WeekView} from './views/WeekView';
+
+// Not needed for the first screen: loaded separately to keep the first load
+// small, then fetched in the background once the app is idle, so opening them
+// later never waits.
+const loadProjects = () => import('./views/ProjectsView');
+const loadSettings = () => import('./views/SettingsView');
+const ProjectsView = lazy(() =>
+  loadProjects().then(m => ({default: m.ProjectsView})),
+);
+const SettingsView = lazy(() =>
+  loadSettings().then(m => ({default: m.SettingsView})),
+);
+const preload = () => {
+  void loadProjects();
+  void loadSettings();
+  void preloadMarkdown();
+};
 
 const NAV: {route: Route; label: string}[] = [
   {route: {name: 'home'}, label: 'Home'},
@@ -39,6 +55,11 @@ export default function App() {
   const hasAreas = useStore(s => s.data.areas.length > 0);
   const [theme, setTheme] = useTheme();
   useGlobalShortcuts(route);
+  // After the first screen is up, fetch the rest when the browser is idle.
+  useEffect(() => {
+    if ('requestIdleCallback' in window) requestIdleCallback(preload);
+    else setTimeout(preload, 2000);
+  }, []);
 
   return (
     <div className="flex h-full flex-col">
@@ -77,7 +98,9 @@ export default function App() {
         {!hasAreas && route.name !== 'settings' ? (
           <Welcome />
         ) : (
-          <Page route={route} />
+          <Suspense fallback={null}>
+            <Page route={route} />
+          </Suspense>
         )}
       </main>
       <ItemOverlay />
