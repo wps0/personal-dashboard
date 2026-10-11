@@ -323,7 +323,7 @@ function GridBody({days, hourHeight, scrollToHour, onDayClick}: BodyProps) {
                 onClick={() => onDayClick?.(d)}
                 className={`flex h-10 w-10 items-center justify-center rounded-full text-[22px] tabular-nums transition-colors duration-150 active:scale-95 ${
                   isToday
-                    ? 'bg-accent text-white'
+                    ? 'bg-accent text-on-accent'
                     : 'text-strong hover:bg-raised'
                 }`}
               >

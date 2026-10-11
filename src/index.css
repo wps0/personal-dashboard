@@ -10,6 +10,8 @@
   --color-strong: #ffffff;
   --color-dim: #7d8590;
   --color-accent: #60a5fa;
+  /* Text on accent backgrounds: dark on the light dark-theme blue, like Google Calendar. */
+  --color-on-accent: #062e6f;
   --color-danger: #f87171;
   --color-warn: #fbbf24;
   --color-ok: #34d399;
@@ -34,6 +36,7 @@
     --color-strong: #0b0d10;
     --color-dim: #626a73;
     --color-accent: #2563eb;
+    --color-on-accent: #ffffff;
     --color-danger: #d42a2a;
     --color-warn: #b45309;
     --color-ok: #047857;
@@ -48,6 +51,7 @@
       --color-strong: #0b0d10;
       --color-dim: #626a73;
       --color-accent: #2563eb;
+      --color-on-accent: #ffffff;
       --color-danger: #d42a2a;
       --color-warn: #b45309;
       --color-ok: #047857;
@@ -120,7 +124,7 @@
     @apply inline-flex h-7 items-center gap-1 rounded-md border border-line bg-raised px-2.5 text-fg hover:border-dim/50 hover:text-strong disabled:opacity-40;
   }
   .btn-primary {
-    @apply inline-flex h-8 items-center gap-1.5 rounded-full bg-accent px-4 font-medium text-white hover:brightness-110 disabled:opacity-40;
+    @apply inline-flex h-8 items-center gap-1.5 rounded-full bg-accent px-4 font-medium text-on-accent hover:brightness-110 disabled:opacity-40;
   }
   .btn-ghost {
     @apply rounded px-1.5 py-0.5 text-dim hover:bg-raised hover:text-fg;

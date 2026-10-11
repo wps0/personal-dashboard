@@ -206,7 +206,7 @@ const Cell = memo(function Cell({
         onClick={() => onDayClick(date)}
         className={`mx-auto my-0.5 flex h-6 min-w-6 items-center justify-center rounded-full px-1 text-[12px] tabular-nums transition-colors duration-150 ${
           isToday
-            ? 'bg-accent font-medium text-white'
+            ? 'bg-accent font-medium text-on-accent'
             : outside
               ? 'text-dim hover:bg-raised'
               : 'text-strong hover:bg-raised'

@@ -89,7 +89,7 @@ export function MiniMonth({selected, range, onSelect, weekHover}: Props) {
                 onMouseEnter={() => weekHover && setHoverWeek(startOfWeek(d))}
                 className={`flex h-7 w-7 items-center justify-center rounded-full text-[11px] tabular-nums transition-[background-color,transform] duration-150 active:scale-90 ${
                   isToday
-                    ? 'bg-accent font-semibold text-white'
+                    ? 'bg-accent font-semibold text-on-accent'
                     : isSelected
                       ? 'bg-accent/25 font-semibold text-strong'
                       : outside

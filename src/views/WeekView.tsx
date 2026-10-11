@@ -263,7 +263,7 @@ const DayContent = memo(function DayContent({
           {dayName(date)}
         </span>
         <span
-          className={`flex h-6 min-w-6 items-center justify-center rounded-full px-1 text-[12px] tabular-nums ${isToday ? 'bg-accent font-medium text-white' : 'text-dim'}`}
+          className={`flex h-6 min-w-6 items-center justify-center rounded-full px-1 text-[12px] tabular-nums ${isToday ? 'bg-accent font-medium text-on-accent' : 'text-dim'}`}
         >
           {Number(date.slice(8))}
         </span>

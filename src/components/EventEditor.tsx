@@ -46,7 +46,7 @@ function WhenFieldsImpl({
                 value={value.start}
                 onChange={s => onChange(moveStart(value, s))}
                 variant="ghost"
-                className="w-[4.5rem]"
+                className="w-fit"
                 ariaLabel="Start time"
               />
               <span className="text-dim">–</span>
@@ -55,7 +55,7 @@ function WhenFieldsImpl({
                 after={value.start}
                 onChange={e => onChange({end: e})}
                 variant="ghost"
-                className="w-[4.5rem]"
+                className="w-fit"
                 ariaLabel="End time"
               />
             </>
