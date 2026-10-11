@@ -1,4 +1,4 @@
-import {useEffect, useState} from 'react';
+import {useState} from 'react';
 
 interface Props {
   value: string;
@@ -15,7 +15,12 @@ export function InlineText({
   placeholder,
 }: Props) {
   const [text, setText] = useState(value);
-  useEffect(() => setText(value), [value]);
+  // Show outside changes to the value (set during render, not in an effect).
+  const [shown, setShown] = useState(value);
+  if (value !== shown) {
+    setShown(value);
+    setText(value);
+  }
   return (
     <input
       value={text}

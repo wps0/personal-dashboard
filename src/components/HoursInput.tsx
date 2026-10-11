@@ -1,4 +1,4 @@
-import {useEffect, useState} from 'react';
+import {useState} from 'react';
 
 interface Props {
   value: number | undefined;
@@ -20,7 +20,12 @@ export function HoursInput({
   title,
 }: Props) {
   const [text, setText] = useState(value?.toString() ?? '');
-  useEffect(() => setText(value?.toString() ?? ''), [value]);
+  // Show outside changes to the value (set during render, not in an effect).
+  const [shown, setShown] = useState(value);
+  if (value !== shown) {
+    setShown(value);
+    setText(value?.toString() ?? '');
+  }
 
   const commit = () => {
     const t = text.trim().replace(',', '.');
