@@ -1,3 +1,4 @@
+import {ChevronDown, ChevronUp} from 'lucide-react';
 import {sameProps} from '../sameProps';
 import {
   DndContext,
@@ -343,9 +344,7 @@ function GridBody({days, hourHeight, scrollToHour, onDayClick}: BodyProps) {
         className={`grid shrink-0 border-b border-line ${slide}`}
         style={{gridTemplateColumns: cols}}
       >
-        <div className="self-end pr-2 pb-1 text-right text-[10px] text-dim">
-          all-day
-        </div>
+        <AllDayGutter />
         {days.map(d => (
           <Strip
             key={d}
@@ -421,6 +420,14 @@ const Strip = memo(function Strip(props: {
   const {date, allocs, events, google, lookups} = props;
   const {setNodeRef, isOver} = useDroppable({id: `strip|${date}`});
   const hasDraft = useUi(s => !!s.draft?.allDay && s.draft.date === date);
+  const collapsed = useUi(s => s.allDayCollapsed);
+  const chips = [
+    ...events.map(e => <AllDayChip key={e.id} event={e} />),
+    ...google.map(e => <GoogleChip key={e.key} ev={e} variant="strip" />),
+    ...allocs.map(a => <StripChip key={a.id} alloc={a} lookups={lookups} />),
+  ];
+  const shown = collapsed ? chips.slice(0, COLLAPSED_ITEMS) : chips;
+  const more = chips.length - shown.length;
   return (
     <div
       ref={setNodeRef}
@@ -431,19 +438,44 @@ const Strip = memo(function Strip(props: {
       className={`drop-target scroll-thin max-h-24 min-h-7 cursor-pointer space-y-px overflow-y-auto border-l border-line p-0.5 hover:bg-raised/50 ${isOver ? 'is-over bg-accent/10' : ''}`}
       title="Click to add an all-day event"
     >
-      {events.map(e => (
-        <AllDayChip key={e.id} event={e} />
-      ))}
-      {google.map(e => (
-        <GoogleChip key={e.key} ev={e} variant="strip" />
-      ))}
-      {allocs.map(a => (
-        <StripChip key={a.id} alloc={a} lookups={lookups} />
-      ))}
+      {shown}
+      {more > 0 && (
+        <button
+          className="block w-full rounded px-1.5 text-left text-[11px] font-medium text-dim hover:bg-raised hover:text-fg"
+          onClick={() => useUi.getState().setAllDayCollapsed(false)}
+        >
+          {more} more
+        </button>
+      )}
       {hasDraft && <DraftChip />}
     </div>
   );
 }, sameProps);
+
+/** Items per day in the all-day row while it's collapsed. */
+const COLLAPSED_ITEMS = 2;
+
+/** "all-day" label with the collapse / expand toggle, like Google Calendar's chevron. */
+function AllDayGutter() {
+  const collapsed = useUi(s => s.allDayCollapsed);
+  const Icon = collapsed ? ChevronDown : ChevronUp;
+  return (
+    <div className="flex flex-col items-end justify-end gap-0.5 pr-1 pb-1 text-[10px] text-dim">
+      all-day
+      <button
+        className="icon-btn h-5 w-5"
+        aria-expanded={!collapsed}
+        aria-label={
+          collapsed ? 'Show all all-day items' : 'Collapse the all-day row'
+        }
+        title={collapsed ? 'Show all' : 'Collapse'}
+        onClick={() => useUi.getState().setAllDayCollapsed(!collapsed)}
+      >
+        <Icon size={14} />
+      </button>
+    </div>
+  );
+}
 
 const AllDayChip = memo(function AllDayChip({event}: {event: CalendarEvent}) {
   const open = useUi(s => s.openEventId === event.id);
