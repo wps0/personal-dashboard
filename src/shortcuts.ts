@@ -1,7 +1,7 @@
 import type {CalView} from './model/types';
 
 /** What a key press means, independent of which page is showing. */
-export type Action =
+type Action =
   | {type: 'next'}
   | {type: 'prev'}
   | {type: 'today'}
@@ -13,7 +13,7 @@ export type Action =
   | {type: 'view'; view: CalView}
   | {type: 'move'; dir: 'up' | 'down' | 'left' | 'right'};
 
-export interface KeyLike {
+interface KeyLike {
   key: string;
   ctrlKey?: boolean;
   metaKey?: boolean;

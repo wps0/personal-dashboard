@@ -8,7 +8,7 @@ import {defaultRules, rulesFromLegacyHours} from '../model/capacity';
  * Persistence boundary. v1 keeps data in IndexedDB; v2 adds a Google Drive
  * implementation behind the same interface.
  */
-export interface Storage {
+interface Storage {
   load(): Promise<AppData | null>;
   save(data: AppData): Promise<void>;
 }

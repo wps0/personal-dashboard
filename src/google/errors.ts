@@ -1,5 +1,5 @@
 /** What went wrong talking to Google, in terms the UI can explain and act on. */
-export type ErrorKind =
+type ErrorKind =
   | 'api-disabled'
   | 'permission'
   | 'not-found'

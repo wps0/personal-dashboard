@@ -13,7 +13,7 @@ export interface Lookups {
   color(item: Item | undefined): string;
 }
 
-export const FALLBACK_COLOR = '#94a3b8';
+const FALLBACK_COLOR = '#94a3b8';
 
 /**
  * A ref that always holds the latest committed `value`, for callbacks that

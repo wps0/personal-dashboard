@@ -21,7 +21,7 @@ export function slotRange(a: number, b: number): [number, number] {
   return [first * 15, (last + 1) * 15];
 }
 
-export interface Span {
+interface Span {
   id: string;
   start: number;
   end: number;

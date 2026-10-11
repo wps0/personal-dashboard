@@ -60,7 +60,7 @@ export interface GEvent {
  * Event colors as Google Calendar shows them (Lavender … Tomato). The API's own
  * /colors palette is an older, paler set that doesn't match what you see in the app.
  */
-export const EVENT_COLORS: Record<string, string> = {
+const EVENT_COLORS: Record<string, string> = {
   '1': '#7986cb', // Lavender
   '2': '#33b679', // Sage
   '3': '#8e24aa', // Grape

@@ -9,7 +9,7 @@ import type {
 } from './types';
 
 /** The slices planning selectors need; lets callers memoize on just these. */
-export type PlanData = Pick<AppData, 'items' | 'allocations' | 'projects'>;
+type PlanData = Pick<AppData, 'items' | 'allocations' | 'projects'>;
 
 export function isItemDone(item: Item): boolean {
   return item.status === 'done';

@@ -2,7 +2,7 @@ import {STATUS_LABEL} from '../model/selectors';
 import {STATUSES, type ItemStatus} from '../model/types';
 import {Select} from './ui/Select';
 
-export const STATUS_COLOR: Record<ItemStatus, string> = {
+const STATUS_COLOR: Record<ItemStatus, string> = {
   todo: '#94a3b8',
   doing: '#60a5fa',
   done: '#34d399',
