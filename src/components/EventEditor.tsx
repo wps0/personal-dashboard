@@ -1,3 +1,4 @@
+import {memo, useCallback} from 'react';
 import {AlignLeft, Clock, Trash2, X} from 'lucide-react';
 import {withUndo} from '../toast';
 import {formatLong} from '../model/dates';
@@ -21,7 +22,7 @@ function moveStart(w: When, start: string): Partial<When> {
   };
 }
 
-function WhenFields({
+function WhenFieldsImpl({
   value,
   onChange,
 }: {
@@ -74,7 +75,21 @@ function WhenFields({
   );
 }
 
+/** Re-renders only when the date or times change (not on every keystroke in the title). */
+const WhenFields = memo(
+  WhenFieldsImpl,
+  (a, b) =>
+    a.onChange === b.onChange &&
+    a.value.date === b.value.date &&
+    a.value.start === b.value.start &&
+    a.value.end === b.value.end &&
+    a.value.allDay === b.value.allDay,
+);
+
 /** Quick-create card for the draft (ghost) event. */
+const patchWhen = (p: Partial<When>) =>
+  useUi.getState().patchDraft(p as Partial<Draft>);
+
 export function DraftEditor() {
   const draft = useUi(s => s.draft);
   const {patchDraft, setDraft} = useUi.getState();
@@ -102,10 +117,7 @@ export function DraftEditor() {
         className="mb-3 ml-7 w-[calc(100%-1.75rem)] border-b-2 border-x-0 border-t-0 border-line pb-1 text-lg text-strong placeholder:text-dim focus:border-accent"
       />
       <div className="space-y-3">
-        <WhenFields
-          value={draft}
-          onChange={p => patchDraft(p as Partial<Draft>)}
-        />
+        <WhenFields value={draft} onChange={patchWhen} />
         <div className="flex gap-3">
           <AlignLeft size={16} className="mt-1.5 shrink-0 text-dim" />
           <textarea
@@ -129,6 +141,10 @@ export function DraftEditor() {
 /** Floating editor for an existing event; changes apply immediately. */
 export function EventEditor({eventId}: {eventId: string}) {
   const event = useStore(s => s.data.events.find(e => e.id === eventId));
+  const onWhen = useCallback(
+    (p: Partial<When>) => useStore.getState().updateEvent(eventId, p),
+    [eventId],
+  );
   const close = () => useUi.getState().openEvent(null);
   if (!event) return null;
   const {updateEvent, deleteEvent} = useStore.getState();
@@ -165,7 +181,7 @@ export function EventEditor({eventId}: {eventId: string}) {
         />
       </div>
       <div className="space-y-3">
-        <WhenFields value={event} onChange={p => updateEvent(event.id, p)} />
+        <WhenFields value={event} onChange={onWhen} />
         <div className="flex gap-3">
           <AlignLeft size={16} className="mt-1.5 shrink-0 text-dim" />
           <BufferedTextarea
