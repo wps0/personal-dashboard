@@ -63,22 +63,31 @@ export default function App() {
 
   return (
     <div className="flex h-full flex-col">
-      <header className="flex shrink-0 items-center gap-1 border-b border-line bg-panel px-3 py-1.5">
-        <span className="mr-3 flex items-center gap-1.5 text-[14px] font-semibold tracking-tight text-strong">
-          <CircleGauge size={18} className="text-accent" /> Dashboard
+      <header className="flex shrink-0 items-center gap-1 border-b border-line bg-panel px-2 py-1.5 sm:px-3">
+        <span className="mr-1 flex shrink-0 items-center gap-1.5 text-[14px] font-semibold tracking-tight text-strong sm:mr-3">
+          <CircleGauge size={18} className="text-accent" />
+          {/* On phones only the icon, so every tab fits. */}
+          <span className="sr-only sm:not-sr-only">Dashboard</span>
         </span>
-        {NAV.map(n => (
-          <a
-            key={n.label}
-            href={href(n.route)}
-            title={`${n.label} (${NAV.indexOf(n) + 1})`}
-            className={`rounded-md px-2.5 py-1 transition-colors duration-150 ${n.route.name === route.name ? 'bg-raised text-strong' : 'text-dim hover:bg-raised/60 hover:text-fg'}`}
-          >
-            {n.label}
-          </a>
-        ))}
+        <nav
+          aria-label="Pages"
+          className="no-scrollbar flex min-w-0 flex-1 gap-0.5 overflow-x-auto"
+        >
+          {NAV.map(n => (
+            <a
+              key={n.label}
+              href={href(n.route)}
+              aria-current={n.route.name === route.name ? 'page' : undefined}
+              title={`${n.label} (${NAV.indexOf(n) + 1})`}
+              className={`shrink-0 rounded-md px-2 py-1 transition-colors duration-150 sm:px-2.5 ${n.route.name === route.name ? 'bg-raised text-strong' : 'text-dim hover:bg-raised/60 hover:text-fg'}`}
+            >
+              {n.label}
+            </a>
+          ))}
+        </nav>
+        {/* Keyboard shortcuts don't apply on phones. */}
         <button
-          className="icon-btn ml-auto"
+          className="icon-btn hidden shrink-0 sm:inline-flex"
           onClick={() => useUi.getState().setDialog('help')}
           title="Keyboard shortcuts (?)"
           aria-label="Keyboard shortcuts"
@@ -86,9 +95,10 @@ export default function App() {
           <Keyboard size={16} />
         </button>
         <button
-          className="icon-btn"
+          className="icon-btn shrink-0"
           onClick={() => setTheme(THEME_NEXT[theme])}
           title={`Theme: ${theme === 'system' ? 'auto (follows system)' : theme} — click to change`}
+          aria-label="Change theme"
         >
           {THEME_ICON[theme]}
         </button>
