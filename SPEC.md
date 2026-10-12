@@ -5,19 +5,21 @@ deadlines, a weekly bullet-journal plan with hours per day, and (later) a
 two-way Google Calendar integration. Primary user: a working SWE-SRE who also
 studies CS and accumulates a backlog of lectures and projects.
 
-Status: **decisions from the initial grilling session (2026-10-10).** v1 (the local
-UI) is implemented; see README.md.
+Status (2026-10-12): v1–v1.5 are implemented: the local app, keyboard
+shortcuts, a **read-only** Google Calendar integration, and a quality and
+polish pass. Next: USOS import (4.2), then the rest of v2. See README.md for
+running and deploying it.
 
 ## 1. Architecture
 
 | Decision | Choice |
 |---|---|
-| Hosting | Static site on GitHub Pages, no backend. |
+| Hosting | Static site on GitHub Pages, no backend. Deployed by GitHub Actions from `main` only (see 6). |
 | Storage (v1) | Browser storage (IndexedDB) behind a `Storage` interface, with JSON export/import. |
 | Storage (v2) | Same interface, backed by a JSON file in the user's Google Drive (`drive.file` scope — the app sees only files it creates). |
-| Auth (v2) | Google sign-in with an OAuth Client ID from a GCP project the user owns, in "testing" mode. One login covers Drive and Calendar. |
-| Devices | Desktop-first, phone usable. The week grid targets laptop/desktop; on narrow screens it collapses to a single-day/list view for quick check-offs. Installable as a PWA. |
-| Stack | React + TypeScript + Vite, Tailwind CSS, dnd-kit (drag and drop), Zustand (state). Open to revisiting. |
+| Auth | Google sign-in (Google Identity Services token model, browser only, no refresh tokens) with an OAuth Client ID from a GCP project the user owns, in "testing" mode. Today it asks only for read-only Calendar access (4.1); Drive (v2) will join the same login. The access token lives in `sessionStorage` and expires after an hour (Reconnect). |
+| Devices | Desktop-first, phone usable. Below 640px: an icon-only header with scrollable tabs, the calendar opens in 3-day view when the default is Week, Settings rows stack, and the week journal's days stack into a list. Installable as a PWA (not yet). |
+| Stack | React + TypeScript 6.0 + Vite, Tailwind CSS, dnd-kit (drag and drop), Zustand (state), Radix Popover. TypeScript stays on 6.0 (the last release with a JavaScript API) until ESLint's TypeScript support handles 7. |
 | Visual style | Dense, dark-first dev-tool look (Linear/Grafana-like): compact, monospace accents. |
 
 ## 2. Data model
@@ -139,6 +141,20 @@ The project's items, overview doc and progress log, as tabs in the side panel.
   - Drag blocks to move them, and drag a block's bottom edge to resize it.
   - Click an event for its floating editor; click a session for the task
     overlay.
+- **Dragging** shows where the block will land, snapped to 15 minutes, with
+  its new time ("20:00 – 21:30"), and the drop lands exactly there. The
+  target is the column under the pointer. Over the all-day row, month cells
+  and the week journal, a small copy hangs just below the pointer.
+- **Short blocks** (under 45 minutes) show one line, "Title, 16:30", like
+  Google Calendar; taller ones show the title and a time line.
+- **Floating cards** open beside the block. When the block is too wide for
+  that (Day view), the card overlaps the block's right edge so it stays on
+  screen. The quick-create card has a top bar with a grip: drag it (or use
+  the arrow keys on it) to move the card.
+- **All-day row:** a chevron collapses it to 2 items per day plus "N more"
+  (remembered per device).
+- **Google calendars** (read-only, 4.1) appear in all views in their own
+  colours, with a sidebar section to show or hide each one and refresh.
 - **Month view:** click an empty cell for an all-day event. Drag entries
   between days. "N more" and day numbers open the day view.
 
@@ -170,25 +186,61 @@ opens an overlay with:
 
 ### 3.7 Theme
 Auto (follows the system) / light / dark. The toggle is in the header, and the
-choice is stored per device.
+choice is stored per device. Text on the accent colour (primary buttons,
+today's date) is dark navy in the dark theme and white in the light theme.
+
+### 3.8 Settings
+Sections (Calendar, Google Calendar, Capacity & reserved time, Areas, Data)
+are cards with a heading and a one-line hint.
 
 ## 4. Integrations (v2)
 
 ### 4.1 Google Calendar (personal account only)
-- Two-way: view, create and edit events.
+
+**Today: read-only (v1.4).** Deliberately, so we see how it works before
+asking for write access.
+- **Scopes:** only `calendar.events.readonly` and
+  `calendar.calendarlist.readonly` (least privilege). Sign-in fails with an
+  explanation if either is unticked on the consent screen. Sign-out revokes
+  the token.
+- **Calls:** GET only. Events per visible range (`singleEvents=true`, all
+  pages), cached for 5 minutes and refreshed when the window regains focus.
+- **Display:** Google's colours are preserved (event colour, else the
+  calendar's), with readable text on each. Clicking opens a read-only card
+  (sanitized description, location, link to edit in Google Calendar).
+- **Declined invitations** are shown outlined and struck through, and never
+  count as busy. Events the organiser cancelled never arrive.
+- **Capacity:** busy Google events inside the planning window reduce the
+  day's capacity like local events. "Free", all-day and working-location
+  entries don't count.
+- **Errors** are explained in plain language (API not enabled, no access,
+  not found, rate limited, offline…) with a link to fix them where Google
+  gives one, and a Retry button. Rate limits and server errors are retried
+  3 times with backoff. One failing calendar doesn't hide the others.
+
+**Later (v2): two-way.**
+- Create and edit events (the local events become Google events).
 - **Time blocks.** Optionally mirror allocations as events in a dedicated
   "Study/Projects" calendar.
 - Work (corp) calendar is out of scope because the corp account blocks
   third-party OAuth apps.
 
-### 4.2 USOSWeb timetable
-- The user subscribes to the USOS iCal URL in Google Calendar (Add calendar →
-  From URL). The app reads that calendar through the Calendar API, so no CORS
-  proxy is needed. Google refreshes subscribed feeds every ~8–24h.
-- **Per-course rules** on import, by course and class type
-  (lecture/exercises/lab). For example, "OS lectures → create a Learn item with
-  a 1.5h estimate; OS labs → ignore". New matching events become items under
-  the course's project. Deduplication uses the event UID.
+### 4.2 USOSWeb timetable (next; design to confirm)
+- **Source** (Settings): one of the user's Google calendars (a USOS iCal feed
+  subscribed in Google Calendar, which Google refreshes every ~8–24h), or a
+  direct iCal link. A direct link needs USOS to allow cross-site requests
+  (CORS); if it doesn't, only the Google-calendar route works without a proxy.
+- **Event titles** look like `<TYPE> - <course title>`, e.g.
+  `WYK - Implementacja systemów operacyjnych`, `LAB - Programowanie
+  mikrokontrolerów`, `CW - Złożoność obliczeniowa`,
+  `SEM-MGR - Dane, strumienie, rozpraszanie`. The type (WYK lecture, CW
+  tutorial, LAB lab, SEM… seminar, …) is split off first.
+- **Per project** (a university course): a regular expression matched
+  against the **course title only**, never the type prefix, plus which class
+  types to import and the estimate for each.
+- Matching events become items under that project (lecture → `lecture`,
+  others → `task`), with `heldOn` set to the class date. Deduplication uses
+  the event UID (`source: {kind: 'usos', eventId}`).
 
 ## 5. Roadmap
 
@@ -205,13 +257,24 @@ choice is stored per device.
   - Inter font, and styled dropdowns, date and time pickers throughout.
   - Resizable projects split; editable log entries; three task statuses.
   - Inferred, versioned capacity; reserved time.
-- **v1.3 — keyboard shortcuts.** ✅ See 5.1.
-- **v2 — Google.** Sign-in, Drive sync, Calendar two-way (the local events
-  become Google events, and time blocks go to a "Study/Projects" calendar),
-  USOS rules.
+- **v1.3 — keyboard shortcuts.** ✅ See 5.1. Includes undo (5.1).
+- **v1.4 — Google Calendar, read-only.** ✅ See 4.1.
+- **v1.5 — quality and polish.** ✅
+  - Lint (Google's TypeScript style), formatting, CI checks on every pull
+    request, deploys from `main` only (see 6).
+  - Drag preview, compact short events, movable create card, collapsible
+    all-day row, cards that stay on screen, `h` / `l` tab switching.
+  - Performance: fewer re-renders (opening a card no longer re-renders the
+    calendar; memoized form widgets), and Projects, Settings and the
+    Markdown renderer load separately.
+  - Phone layout fixes (see Devices in 1).
+- **v2 — Google.** USOS rules (4.2, next), Drive sync, Calendar two-way (the
+  local events become Google events, and time blocks go to a
+  "Study/Projects" calendar), Google events in the week journal's day boxes
+  (3.2).
 - **Later.** Suggested scheduling (a backward-from-deadline spread), timers,
-  more card metrics (at-risk indicator, hours this week, backlog count), undo,
-  search.
+  more card metrics (at-risk indicator, hours this week, backlog count),
+  search, PWA install, multi-day all-day events drawn as one spanning bar.
 - **Long-term.**
   - Moodle integration: assignments and deadlines from the course pages,
     probably through Moodle's web-service API or its calendar export.
@@ -234,6 +297,7 @@ open. Ctrl/Cmd combinations are left to the browser, except Ctrl/Cmd+Z. Press
 | `t` | Today |
 | `g` | Go to date (mini-month dialog) |
 | `1`–`5` | Home / Week (journal) / Calendar / Projects / Settings |
+| `h` / `l` | Previous / next tab, wrapping around (like vim's `gT` / `gt`) |
 | `d` / `x` / `w` / `m` | Calendar Day / 3 days / Week / Month (opens the calendar from other pages) |
 | `c` | Create an event at the next full hour. With a project open, focus its "new item" field instead. From the journal or settings, open the calendar with the draft. |
 | `↑ ↓ ← →` | Move the selection to the nearest block in that direction (spatial: works in grids, the journal, the backlog and lists) |
@@ -348,3 +412,22 @@ compares Gemini's output against the `*.expected.json` files.
 - **Linking to the USOS timetable.** Should imported lectures be matched to
   USOS timetable events in order, so each gets its `heldOn` date
   automatically?
+
+## 6. Engineering
+
+- **Code style:** ESLint with the rules of Google's `gts` (Google TypeScript
+  style), copied into `eslint.config.js` rather than installed (the package's
+  setup tool pulls in a dependency with an unfixed advisory), plus React's
+  hooks rules. Two deviations, both documented there: `== null` is allowed
+  (as the style guide itself allows), and named function expressions are
+  allowed for `memo(function Name…)`. Prettier with gts's settings.
+- **Checks:** `npm run lint`, `format:check`, `typecheck`, `test`, `build`.
+  The **Checks** workflow runs them on every pull request with a read-only
+  token and no secrets; it can never deploy.
+- **Deploy:** the **Deploy** workflow builds and publishes to GitHub Pages
+  only from `main`. The build job can only read; only the deploy job (which
+  runs no repository code) can publish. The `github-pages` environment must
+  be limited to `main` in the repository settings, since the site's origin
+  holds the app's data and is trusted by the Google OAuth client.
+- **Changes** go in small, focused pull requests, stacked when they build on
+  each other.
