@@ -115,7 +115,7 @@ export function WeekView({week}: {week?: ISODate}) {
       }}
     >
       <div className="flex h-full flex-col">
-        <div className="flex shrink-0 items-center gap-2 border-b border-line px-3 py-1">
+        <div className="flex shrink-0 flex-wrap items-center gap-x-2 border-b border-line px-2 py-1 sm:px-3">
           <WeekNav monday={monday} />
           <WeekTotal monday={monday} />
         </div>
@@ -148,9 +148,15 @@ function WeekTotal({monday}: {monday: ISODate}) {
   );
   return (
     <span
-      className={`ml-auto text-[12px] tabular-nums ${planned > capacity ? 'text-danger' : 'text-dim'}`}
+      className={`ml-auto text-[12px] whitespace-nowrap tabular-nums ${planned > capacity ? 'text-danger' : 'text-dim'}`}
+      title="Planned this week / capacity"
     >
-      Week: {fmtH(planned)} planned of {fmtH(capacity)}
+      {/* On phones as short as the day badges: "11.5h/27h". */}
+      <span className="hidden sm:inline">Week: </span>
+      {fmtH(planned)}
+      <span className="hidden sm:inline"> planned of </span>
+      <span className="sm:hidden">/</span>
+      {fmtH(capacity)}
     </span>
   );
 }
