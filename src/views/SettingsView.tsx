@@ -6,6 +6,7 @@ import {exportJson, parseAppData} from '../storage/storage';
 import {useData, useStore} from '../store';
 import {CapacitySettings} from './CapacitySettings';
 import {GoogleSettings} from '../components/GoogleSettings';
+import {UsosSettings} from '../components/UsosSettings';
 import {Select} from '../components/ui/Select';
 
 const CAL_VIEW_OPTIONS = [
@@ -93,6 +94,13 @@ export function SettingsView() {
           hint="Show your Google calendars next to your plan (read-only for now)."
         >
           <GoogleSettings />
+        </Section>
+
+        <Section
+          title="USOS timetable"
+          hint="Classes from your USOSweb timetable become tasks in their course’s project (set a course pattern in the project). You review new classes before they’re added."
+        >
+          <UsosSettings />
         </Section>
 
         <Section
