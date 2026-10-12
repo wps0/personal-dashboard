@@ -23,6 +23,7 @@ import {GoogleErrorNotice} from '../components/GoogleErrorNotice';
 import {useStore} from '../store';
 import {nextHourDraft, useUi} from '../ui';
 import {useNavTarget} from '../keyboard';
+import {useMediaQuery} from '../hooks';
 
 const VIEW_OPTIONS = [
   {value: 'day', label: 'Day'},
@@ -77,7 +78,11 @@ export function CalendarView({
 }) {
   // Coming from another page (no view in the URL) always opens the default view.
   const defaultView = useStore(s => s.data.settings.defaultCalendarView);
-  const view = routeView ?? defaultView;
+  // A 7-day week is unreadable on a phone: there, the week default opens as
+  // 3 days. A view chosen explicitly (in the URL) is kept.
+  const phone = useMediaQuery('(max-width: 639px)');
+  const view =
+    routeView ?? (phone && defaultView === 'week' ? '3day' : defaultView);
   const today = todayISO();
   const date =
     routeDate && /^\d{4}-\d{2}-\d{2}$/.test(routeDate) ? routeDate : today;

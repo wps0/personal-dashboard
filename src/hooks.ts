@@ -1,4 +1,10 @@
-import {useLayoutEffect, useMemo, useRef, useState} from 'react';
+import {
+  useLayoutEffect,
+  useMemo,
+  useRef,
+  useState,
+  useSyncExternalStore,
+} from 'react';
 import {capacityFor, type CapacityInfo} from './model/capacity';
 import type {Area, CalendarEvent, ISODate, Item, Project} from './model/types';
 import {useStore} from './store';
@@ -101,4 +107,16 @@ export function useSlide(first: string): string {
     return dir;
   }
   return seen.dir;
+}
+
+/** Whether a CSS media query matches, updating when it changes (e.g. on rotation). */
+export function useMediaQuery(query: string): boolean {
+  return useSyncExternalStore(
+    onChange => {
+      const mq = window.matchMedia(query);
+      mq.addEventListener('change', onChange);
+      return () => mq.removeEventListener('change', onChange);
+    },
+    () => window.matchMedia(query).matches,
+  );
 }
