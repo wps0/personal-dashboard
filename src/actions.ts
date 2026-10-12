@@ -1,6 +1,7 @@
 import type {Allocation, CalendarEvent, Item} from './model/types';
 import {useStore} from './store';
 import {withUndo} from './toast';
+import {taskFromMeeting, type Proposal} from './usos/usos';
 
 /**
  * User-level operations, all undoable with Ctrl+Z. Direct manipulation (drag,
@@ -42,3 +43,25 @@ export const completeItem = (item: Item) =>
 
 export const deleteItem = (item: Item) =>
   withUndo(`Deleted “${item.title}”`, () => s().deleteItem(item.id));
+
+/**
+ * Imports the chosen USOS classes as tasks; every class that was shown is
+ * remembered (imported or skipped) so it isn't offered again. One undo step.
+ */
+export function importClasses(chosen: Proposal[], shown: Proposal[]) {
+  const n = chosen.length;
+  const message = n
+    ? `Imported ${n} ${n === 1 ? 'class' : 'classes'} from USOS`
+    : `Skipped ${shown.length} ${shown.length === 1 ? 'class' : 'classes'}`;
+  withUndo(message, () => {
+    const byProject = new Map<string, Proposal[]>();
+    for (const p of chosen)
+      byProject.set(p.projectId, [...(byProject.get(p.projectId) ?? []), p]);
+    for (const [projectId, list] of byProject)
+      s().addItems(
+        projectId,
+        list.map(p => taskFromMeeting(p.meeting)),
+      );
+    s().markUsosHandled(shown.map(p => p.meeting.key));
+  });
+}

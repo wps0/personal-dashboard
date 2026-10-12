@@ -5,9 +5,9 @@ deadlines, a weekly bullet-journal plan with hours per day, and (later) a
 two-way Google Calendar integration. Primary user: a working SWE-SRE who also
 studies CS and accumulates a backlog of lectures and projects.
 
-Status (2026-10-12): v1–v1.5 are implemented: the local app, keyboard
+Status (2026-10-12): v1–v1.6 are implemented: the local app, keyboard
 shortcuts, a **read-only** Google Calendar integration, and a quality and
-polish pass. Next: USOS import (4.2), then the rest of v2. See README.md for
+polish pass, and the USOS timetable import (4.2). Next: the rest of v2. See README.md for
 running and deploying it.
 
 ## 1. Architecture
@@ -225,22 +225,29 @@ asking for write access.
 - Work (corp) calendar is out of scope because the corp account blocks
   third-party OAuth apps.
 
-### 4.2 USOSWeb timetable (next; design to confirm)
-- **Source** (Settings): one of the user's Google calendars (a USOS iCal feed
-  subscribed in Google Calendar, which Google refreshes every ~8–24h), or a
-  direct iCal link. A direct link needs USOS to allow cross-site requests
-  (CORS); if it doesn't, only the Google-calendar route works without a proxy.
+### 4.2 USOSWeb timetable ✅
+- **Source** (Settings → USOS timetable): one of the user's Google calendars
+  (a USOS iCal feed subscribed in Google Calendar, which Google refreshes
+  every ~8–24h), or a direct iCal link (`https` only, fetched without cookies
+  or referrer; it needs USOS to allow cross-site requests). "Check" lists the
+  courses found, with their class types.
 - **Event titles** look like `<TYPE> - <course title>`, e.g.
   `WYK - Implementacja systemów operacyjnych`, `LAB - Programowanie
   mikrokontrolerów`, `CW - Złożoność obliczeniowa`,
-  `SEM-MGR - Dane, strumienie, rozpraszanie`. The type (WYK lecture, CW
-  tutorial, LAB lab, SEM… seminar, …) is split off first.
-- **Per project** (a university course): a regular expression matched
-  against the **course title only**, never the type prefix, plus which class
-  types to import and the estimate for each.
-- Matching events become items under that project (lecture → `lecture`,
-  others → `task`), with `heldOn` set to the class date. Deduplication uses
-  the event UID (`source: {kind: 'usos', eventId}`).
+  `SEM-MGR - Dane, strumienie, rozpraszanie`. The type is split off first;
+  other events in the calendar are ignored.
+- **Per project** (a university course): a course pattern, a case-insensitive
+  regular expression matched against the **course title only**, never the
+  type. The panel shows which timetable courses it matches.
+- **One regular task per class meeting** (lectures too), titled
+  "WYK · Wed 14 Oct, 10:15", with `heldOn` = the class date and the time and
+  room in its notes. Classes from about a semester back to half a year ahead
+  are considered.
+- **Reviewed, never silent:** "N new classes from USOS · Review" on Home and
+  in the course's project panel opens a list, all ticked. Ticked classes
+  become tasks; unticked ones are skipped. Both are remembered (by iCal UID +
+  start, the same from either source) and never offered again, even if the
+  task is later deleted. "Not now" leaves them for later. One undo step.
 
 ## 5. Roadmap
 
@@ -268,7 +275,8 @@ asking for write access.
     calendar; memoized form widgets), and Projects, Settings and the
     Markdown renderer load separately.
   - Phone layout fixes (see Devices in 1).
-- **v2 — Google.** USOS rules (4.2, next), Drive sync, Calendar two-way (the
+- **v1.6 — USOS timetable import.** ✅ See 4.2.
+- **v2 — Google.** Drive sync, Calendar two-way (the
   local events become Google events, and time blocks go to a
   "Study/Projects" calendar), Google events in the week journal's day boxes
   (3.2).

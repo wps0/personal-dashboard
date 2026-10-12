@@ -5,7 +5,7 @@
  * course projects by a pattern on the course title.
  */
 import type {ApiEvent} from '../google/events';
-import {toISODate} from '../model/dates';
+import {dayName, shortDate, toISODate} from '../model/dates';
 import type {ISODate, Item} from '../model/types';
 
 /** One class meeting from the timetable. */
@@ -306,12 +306,8 @@ export function proposeImports(
 
 /** Title for the task made from a class meeting, e.g. "WYK · Wed 14 Oct, 10:15". */
 export function meetingTitle(m: ClassMeeting): string {
-  const day = new Intl.DateTimeFormat('en-GB', {
-    weekday: 'short',
-    day: 'numeric',
-    month: 'short',
-  }).format(new Date(`${m.date}T00:00`));
-  return `${m.type} · ${day}, ${m.start}`;
+  // The app's own formatting, so titles don't depend on the browser's locale data.
+  return `${m.type} · ${dayName(m.date)} ${shortDate(m.date)}, ${m.start}`;
 }
 
 /**
