@@ -31,8 +31,8 @@ export function GoogleSettings() {
         </span>
       </p>
 
-      <label className="flex items-center gap-3">
-        <span className="w-48 shrink-0">OAuth Client ID</span>
+      <label className="flex flex-wrap items-center gap-x-3 gap-y-1">
+        <span className="w-full shrink-0 sm:w-48">OAuth Client ID</span>
         <BufferedInput
           value={g.clientId}
           placeholder="1234567890-abc….apps.googleusercontent.com"

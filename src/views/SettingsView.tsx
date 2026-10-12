@@ -57,8 +57,8 @@ export function SettingsView() {
           title="Calendar"
           hint="How events created by clicking the calendar start out."
         >
-          <label className="flex items-center gap-3">
-            <span className="w-48">Default event length</span>
+          <label className="flex flex-wrap items-center gap-x-3 gap-y-1">
+            <span className="w-full sm:w-48">Default event length</span>
             <Select
               value={String(data.settings.defaultEventMinutes)}
               onChange={v =>
@@ -72,8 +72,8 @@ export function SettingsView() {
               Dragging on the calendar still selects any length.
             </span>
           </label>
-          <label className="mt-2 flex items-center gap-3">
-            <span className="w-48">Default view</span>
+          <label className="mt-3 flex flex-wrap items-center gap-x-3 gap-y-1 sm:mt-2">
+            <span className="w-full sm:w-48">Default view</span>
             <Select
               value={data.settings.defaultCalendarView}
               onChange={v => useStore.getState().setDefaultCalendarView(v)}
