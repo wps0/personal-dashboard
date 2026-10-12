@@ -26,7 +26,7 @@ export function WeekNav({monday}: {monday: ISODate}) {
   return (
     <div className="flex items-center gap-1">
       <a
-        className="btn h-8 rounded-full px-4"
+        className="btn h-8 rounded-full px-3 sm:px-4"
         href={href({name: 'week'})}
         title="This week (t)"
       >
@@ -50,15 +50,19 @@ export function WeekNav({monday}: {monday: ISODate}) {
       </a>
       <Popover open={open} onOpenChange={setOpen}>
         <PopoverTrigger
-          className="ml-1 flex items-center gap-1.5 rounded-md px-2 py-1 hover:bg-raised"
+          className="flex items-center gap-1.5 rounded-md px-1.5 py-1 hover:bg-raised sm:ml-1 sm:px-2"
           title="Pick a week (g)"
         >
-          <span className="text-lg text-strong">
+          <span className="text-base whitespace-nowrap text-strong sm:text-lg">
             {formatMonthYear(addDays(monday, 3))}
           </span>
-          <span className="text-dim tabular-nums">
-            W{isoWeek(monday)} · {shortDate(monday)} –{' '}
-            {shortDate(addDays(monday, 6))}
+          <span className="whitespace-nowrap text-dim tabular-nums">
+            W{isoWeek(monday)}
+            {/* The dates don't fit next to the month on a phone. */}
+            <span className="hidden sm:inline">
+              {' '}
+              · {shortDate(monday)} – {shortDate(addDays(monday, 6))}
+            </span>
           </span>
           <ChevronDown size={16} className="text-dim" />
         </PopoverTrigger>
