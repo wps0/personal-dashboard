@@ -1,5 +1,5 @@
 import {get, set} from 'idb-keyval';
-import type {AppData} from '../model/types';
+import type {AppData, UsosSettings, UsosSource} from '../model/types';
 import {CAL_VIEWS, emptyData} from '../model/types';
 import {migrateStatus} from '../model/selectors';
 import {defaultRules, rulesFromLegacyHours} from '../model/capacity';
@@ -71,7 +71,23 @@ function parseSettings(raw: unknown): AppData['settings'] {
     dayCapacity: s.dayCapacity ?? {},
     defaultEventMinutes,
     defaultCalendarView,
+    usos: parseUsos(s.usos),
   };
+}
+
+function parseUsos(raw: unknown): UsosSettings {
+  const u = (raw ?? {}) as Partial<UsosSettings>;
+  const src = u.source as Partial<UsosSource> | undefined;
+  const source: UsosSource | undefined =
+    src?.kind === 'google' && typeof src.calendarId === 'string'
+      ? {kind: 'google', calendarId: src.calendarId}
+      : src?.kind === 'ical' && typeof src.url === 'string'
+        ? {kind: 'ical', url: src.url}
+        : undefined;
+  const handled = Array.isArray(u.handled)
+    ? u.handled.filter((k): k is string => typeof k === 'string')
+    : [];
+  return {source, handled};
 }
 
 export function exportJson(data: AppData): string {
