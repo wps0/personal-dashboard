@@ -30,7 +30,7 @@ Area            e.g. University, Work, Personal, Side projects
      ├─ overviewDoc   markdown: goals, links, decisions (one living doc)
      ├─ log[]         timestamped progress entries ("2026-10-10: finished part 2")
      ├─ progressMode  'checklist' | 'hours' | 'manual'
-     └─ Item          lecture | assignment | exam | task
+     └─ Item          class | assignment | exam | task   (class: a lecture, lab, tutorial or seminar)
          ├─ title, dueDate?, heldOn? (class date), estimateHours?, status, notes (markdown)
          ├─ source?   { kind: 'usos', eventId }  (for auto-created items)
          └─ Allocation[]   { date, start?, plannedHours, done, actualHours }
@@ -241,7 +241,7 @@ asking for write access.
 - **Per project** (a university course): a course pattern, a case-insensitive
   regular expression matched against the **course title only**, never the
   type. The panel shows which timetable courses it matches.
-- **One regular task per class meeting** (lectures too), titled
+- **One class item per class meeting** (lectures, labs, tutorials…), titled
   "WYK · Wed 14 Oct, 10:15", with `heldOn` = the class date and the time and
   room in its notes. Classes from about a semester back to half a year ahead
   are considered.
@@ -352,7 +352,7 @@ Sample inputs and the output we expect from them live in
    - **one item per topic** (e.g. "Wykłady 5–8: Pisanie prac naukowych"), or
    - **one item per lecture number** (Lecture 5…8, all with that topic's
      title and description).
-5. The import creates `kind: 'lecture'` items with title = topic title, notes
+5. The import creates `kind: 'class'` items with title = topic title, notes
    = description, and an estimate from a default. `courseNotes` goes into the
    project's overview doc.
 

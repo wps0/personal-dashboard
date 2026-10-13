@@ -121,6 +121,7 @@ describe('storage', () => {
       settings: {capacity: [2, 2, 2, 2, 2, 5, 5]},
     });
     expect(d.items[0].status).toBe('done');
+    expect(d.items[0].kind).toBe('class'); // was 'lecture'
     expect(d.settings.capacityRules[0].windows[5]).toEqual({
       start: '10:00',
       end: '15:00',

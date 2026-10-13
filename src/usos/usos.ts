@@ -311,14 +311,14 @@ export function meetingTitle(m: ClassMeeting): string {
 }
 
 /**
- * The task made from a class meeting: a regular task (lectures too), dated by
- * the class, remembering which meeting it came from.
+ * The task made from a class meeting: a class item, dated by the class,
+ * remembering which meeting it came from.
  */
 export function taskFromMeeting(
   m: ClassMeeting,
 ): Partial<Omit<Item, 'id' | 'projectId'>> {
   return {
-    kind: 'task',
+    kind: 'class',
     title: meetingTitle(m),
     heldOn: m.date,
     notes: [`${m.type} ${m.start}–${m.end}`, m.location]

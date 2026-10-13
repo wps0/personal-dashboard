@@ -396,7 +396,7 @@ function AddItem({projectId}: {projectId: string}) {
 }
 
 function BulkAdd({projectId, onDone}: {projectId: string; onDone(): void}) {
-  const [kind, setKind] = useState<ItemKind>('lecture');
+  const [kind, setKind] = useState<ItemKind>('class');
   const [prefix, setPrefix] = useState('Lecture');
   const [from, setFrom] = useState(1);
   const [to, setTo] = useState(13);

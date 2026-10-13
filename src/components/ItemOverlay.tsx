@@ -133,7 +133,7 @@ function ItemDetails({item, onClose}: {item: Item; onClose(): void}) {
             </span>
           )}
         </Field>
-        {item.kind === 'lecture' && (
+        {(item.kind === 'class' || item.heldOn) && (
           <Field label="held on">
             <DateField
               optional
