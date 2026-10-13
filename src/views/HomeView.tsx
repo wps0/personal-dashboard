@@ -1,3 +1,4 @@
+import {UsosBanner} from '../components/UsosReview';
 import {ChevronDown, ChevronLeft, ChevronRight} from 'lucide-react';
 import {memo, useMemo, useState} from 'react';
 import {MiniMonth} from '../components/MiniMonth';
@@ -58,6 +59,7 @@ export function HomeView({date}: {date?: ISODate}) {
         </div>
       </div>
       <div className="flex min-h-0 flex-col gap-2">
+        <UsosBanner />
         <Planned days={days} />
         <Projects />
       </div>

@@ -8,6 +8,7 @@ import {Pencil, Trash2, X} from 'lucide-react';
 import {HoursInput} from '../components/HoursInput';
 import {InlineText} from '../components/InlineText';
 import {CoursePattern} from '../components/CoursePattern';
+import {UsosBanner} from '../components/UsosReview';
 import {Markdown} from '../components/Markdown';
 import {ProgressRing} from '../components/ProgressRing';
 import {fmtNum, KIND_BADGE, KINDS, URGENCY_CLASS} from '../format';
@@ -163,6 +164,7 @@ function Header({
         </div>
       </div>
       <CoursePattern project={project} />
+      <UsosBanner projectId={project.id} />
     </div>
   );
 }

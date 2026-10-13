@@ -46,9 +46,12 @@ interface UiState {
   hidden: string[];
   /** The calendar's all-day row shows only a couple of items per day. Per device. */
   allDayCollapsed: boolean;
-  /** Keyboard dialogs: shortcut help, or go-to-date. */
-  dialog: 'help' | 'goto' | null;
+  /** Dialogs: shortcut help, go-to-date, or reviewing new USOS classes. */
+  dialog: 'help' | 'goto' | 'usos' | null;
   setDialog(d: UiState['dialog']): void;
+  /** The project whose USOS classes are under review; all projects if null. */
+  usosProjectId: string | null;
+  reviewUsos(projectId?: string): void;
   openItem(id: string | null): void;
   openEvent(id: string | null): void;
   openGoogle(key: string | null): void;
@@ -73,6 +76,9 @@ export const useUi = create<UiState>()((set, get) => ({
   })(),
   dialog: null,
   setDialog: dialog => set({dialog}),
+  usosProjectId: null,
+  reviewUsos: projectId =>
+    set({dialog: 'usos', usosProjectId: projectId ?? null}),
   openItem: id =>
     set({openItemId: id, openEventId: null, openGoogleKey: null, draft: null}),
   openEvent: id =>
