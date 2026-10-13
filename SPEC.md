@@ -5,10 +5,10 @@ deadlines, a weekly bullet-journal plan with hours per day, and (later) a
 two-way Google Calendar integration. Primary user: a working SWE-SRE who also
 studies CS and accumulates a backlog of lectures and projects.
 
-Status (2026-10-12): v1–v1.6 are implemented: the local app, keyboard
-shortcuts, a **read-only** Google Calendar integration, and a quality and
-polish pass, and the USOS timetable import (4.2). Next: the rest of v2. See README.md for
-running and deploying it.
+Status (2026-10-13): v1–v1.6 are implemented: the local app, keyboard
+shortcuts, a **read-only** Google Calendar integration, a quality and polish
+pass, and the USOS timetable import (4.2); from v2, Google Drive sync (4.3).
+See README.md for running and deploying it.
 
 ## 1. Architecture
 
@@ -16,8 +16,8 @@ running and deploying it.
 |---|---|
 | Hosting | Static site on GitHub Pages, no backend. Deployed by GitHub Actions from `main` only (see 6). |
 | Storage (v1) | Browser storage (IndexedDB) behind a `Storage` interface, with JSON export/import. |
-| Storage (v2) | Same interface, backed by a JSON file in the user's Google Drive (`drive.file` scope — the app sees only files it creates). |
-| Auth | Google sign-in (Google Identity Services token model, browser only, no refresh tokens) with an OAuth Client ID from a GCP project the user owns, in "testing" mode. Today it asks only for read-only Calendar access (4.1); Drive (v2) will join the same login. The access token lives in `sessionStorage` and expires after an hour (Reconnect). |
+| Storage (v2) | ✅ IndexedDB stays the local copy on every device; Drive sync (4.3) keeps a JSON file in the user's Google Drive in step with it (`drive.file` scope — the app sees only files it creates). |
+| Auth | Google sign-in (Google Identity Services token model, browser only, no refresh tokens) with an OAuth Client ID from a GCP project the user owns, in "testing" mode. It asks for read-only Calendar access (4.1), plus `drive.file` only while Drive sync is on (4.3). The access token lives in `sessionStorage` and expires after an hour (Reconnect). |
 | Devices | Desktop-first, phone usable. Below 640px: an icon-only header with scrollable tabs, the calendar opens in 3-day view when the default is Week, Settings rows stack, and the week journal's days stack into a list. Installable as an app (PWA; Settings → App), and usable offline after the first visit (a service worker caches the app's own files only, never API calls). |
 | Stack | React + TypeScript 6.0 + Vite, Tailwind CSS, dnd-kit (drag and drop), Zustand (state), Radix Popover. TypeScript stays on 6.0 (the last release with a JavaScript API) until ESLint's TypeScript support handles 7. |
 | Visual style | Dense, dark-first dev-tool look (Linear/Grafana-like): compact, monospace accents. |
@@ -251,6 +251,39 @@ asking for write access.
   start, the same from either source) and never offered again, even if the
   task is later deleted. "Not now" leaves them for later. One undo step.
 
+### 4.3 Google Drive sync ✅
+
+Use the dashboard on several devices. Turned on per device in Settings →
+Google Drive sync.
+
+- **Storage.** One file, `personal-dashboard.json`, created by the app and
+  found again by an app property (so renaming it is fine). Every device keeps
+  its own copy in IndexedDB, so the app works offline; the sync base (the
+  file's id and version, and the data at the last sync) is stored with it,
+  in the same transaction as the data.
+- **Permission.** `drive.file` only, requested when sync is turned on (the
+  calendar sign-in alone never asks for it). If it's refused, the calendar
+  keeps working and sync stays off.
+- **When.** A few seconds after an edit, when coming back to the tab or back
+  online, every two minutes while the tab is visible, and with **Sync now**.
+  Without a valid token (sessions last an hour) sync waits; Settings offers
+  **Connect**.
+- **How.** Only this device changed → upload. Only Drive changed → take
+  Drive's data. Both → a three-way merge against the base: record by record
+  and field by field, so edits to different fields of the same task on two
+  devices both survive. If both changed the same field, this device's value
+  wins (a toast says so) and Drive's revision history keeps the other; an edit
+  wins over a deletion; records whose parent was deleted are dropped. Edits
+  made during a sync are merged in too.
+- **First sync on a device.** A blank device takes Drive's data. A device with
+  different data asks: **Use Drive's data** or **Merge both** (with an export
+  offered first).
+- **Safety.** Data from Drive that this version can't read is never
+  overwritten. Replacing all data (import, sample data, reset) warns that it
+  reaches the other devices. Drive v3 has no conditional writes, so a write
+  from another device in the moment between our version check and our upload
+  would be overwritten (Drive's revision history keeps it).
+
 ## 5. Roadmap
 
 - **v1 — local UI.** ✅ Areas, projects and items; pane view with rings; week
@@ -278,7 +311,7 @@ asking for write access.
     Markdown renderer load separately.
   - Phone layout fixes (see Devices in 1).
 - **v1.6 — USOS timetable import.** ✅ See 4.2.
-- **v2 — Google.** Drive sync, Calendar two-way (the
+- **v2 — Google.** ✅ Drive sync (4.3). Still to come: Calendar two-way (the
   local events become Google events, and time blocks go to a
   "Study/Projects" calendar), Google events in the week journal's day boxes
   (3.2).

@@ -25,9 +25,9 @@ export function GoogleSettings() {
               <code className="text-fg">{s.split('/').pop()}</code>
             </span>
           ))}
-          , so it can show your events but never create, change or delete
-          anything. The access token stays in this browser tab and expires after
-          an hour.
+          , so it can show your events but never create, change or delete any of
+          them. The access token stays in this browser tab and expires after an
+          hour.
         </span>
       </p>
 
@@ -105,7 +105,9 @@ export function GoogleSettings() {
             {g.status === 'signing-in'
               ? 'Waiting for Google…'
               : g.status === 'expired'
-                ? 'Reconnect Google Calendar'
+                ? g.driveSync
+                  ? 'Reconnect Google'
+                  : 'Reconnect Google Calendar'
                 : 'Sign in with Google'}
           </button>
         )}

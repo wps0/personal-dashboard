@@ -5,6 +5,7 @@ import './index.css';
 import {setUpPwa} from './pwa';
 import {IndexedDbStorage} from './storage/storage';
 import {useStore} from './store';
+import {setUpSync} from './sync/setup';
 
 const storage = new IndexedDbStorage();
 setUpPwa();
@@ -40,6 +41,7 @@ async function boot() {
     if (document.visibilityState === 'hidden' && timer !== undefined) flush();
   });
   window.addEventListener('pagehide', () => timer !== undefined && flush());
+  setUpSync(storage);
 
   root.render(
     <StrictMode>
