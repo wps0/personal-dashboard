@@ -216,6 +216,13 @@ function ItemsTab({project}: {project: Project}) {
           />
           hide done
         </label>
+        <button
+          className="btn-ghost"
+          onClick={() => useUi.getState().importCurriculum(project.id)}
+          title="Turn a course description into class items, with Gemini"
+        >
+          import curriculum…
+        </button>
         <button className="btn-ghost" onClick={() => setBulk(b => !b)}>
           {bulk ? 'cancel bulk' : '+ bulk'}
         </button>
