@@ -18,7 +18,7 @@ running and deploying it.
 | Storage (v1) | Browser storage (IndexedDB) behind a `Storage` interface, with JSON export/import. |
 | Storage (v2) | Same interface, backed by a JSON file in the user's Google Drive (`drive.file` scope — the app sees only files it creates). |
 | Auth | Google sign-in (Google Identity Services token model, browser only, no refresh tokens) with an OAuth Client ID from a GCP project the user owns, in "testing" mode. Today it asks only for read-only Calendar access (4.1); Drive (v2) will join the same login. The access token lives in `sessionStorage` and expires after an hour (Reconnect). |
-| Devices | Desktop-first, phone usable. Below 640px: an icon-only header with scrollable tabs, the calendar opens in 3-day view when the default is Week, Settings rows stack, and the week journal's days stack into a list. Installable as a PWA (not yet). |
+| Devices | Desktop-first, phone usable. Below 640px: an icon-only header with scrollable tabs, the calendar opens in 3-day view when the default is Week, Settings rows stack, and the week journal's days stack into a list. Installable as an app (PWA; Settings → App), and usable offline after the first visit (a service worker caches the app's own files only, never API calls). |
 | Stack | React + TypeScript 6.0 + Vite, Tailwind CSS, dnd-kit (drag and drop), Zustand (state), Radix Popover. TypeScript stays on 6.0 (the last release with a JavaScript API) until ESLint's TypeScript support handles 7. |
 | Visual style | Dense, dark-first dev-tool look (Linear/Grafana-like): compact, monospace accents. |
 
@@ -282,7 +282,7 @@ asking for write access.
   (3.2).
 - **Later.** Suggested scheduling (a backward-from-deadline spread), timers,
   more card metrics (at-risk indicator, hours this week, backlog count),
-  search, PWA install, multi-day all-day events drawn as one spanning bar.
+  search, multi-day all-day events drawn as one spanning bar.
 - **Long-term.**
   - Moodle integration: assignments and deadlines from the course pages,
     probably through Moodle's web-service API or its calendar export.

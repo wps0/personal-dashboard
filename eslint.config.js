@@ -82,4 +82,8 @@ export default defineConfig([
     files: ['*.js', 'vite.config.ts'],
     languageOptions: {globals: globals.node},
   },
+  {
+    files: ['public/sw.js'],
+    languageOptions: {globals: globals.serviceworker},
+  },
 ]);

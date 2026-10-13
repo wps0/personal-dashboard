@@ -2,10 +2,12 @@ import {StrictMode} from 'react';
 import {createRoot} from 'react-dom/client';
 import App from './App';
 import './index.css';
+import {setUpPwa} from './pwa';
 import {IndexedDbStorage} from './storage/storage';
 import {useStore} from './store';
 
 const storage = new IndexedDbStorage();
+setUpPwa();
 
 async function boot() {
   const root = createRoot(document.getElementById('root')!);
