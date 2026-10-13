@@ -4,6 +4,8 @@ import type {ISODate} from '../model/types';
 /** The parts of a Calendar API event we use (https://developers.google.com/calendar/api/v3/reference/events). */
 export interface ApiEvent {
   id: string;
+  /** The event's iCalendar UID, shared by all instances of a recurring event. */
+  iCalUID?: string;
   status?: 'confirmed' | 'tentative' | 'cancelled';
   summary?: string;
   description?: string;
