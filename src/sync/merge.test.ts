@@ -31,12 +31,12 @@ describe('merge3', () => {
   it('keeps edits to different fields of the same record from both sides', () => {
     const b = base();
     const id = b.items[0].id;
-    const local = edit(b, d => (d.items[0].status = 'done'));
+    const local = edit(b, d => (d.items[0].estimateHours = 42));
     const remote = edit(b, d => (d.items[0].notes = 'from the phone'));
     const {data, conflicts} = mergeData(b, local, remote);
     expect(conflicts).toEqual([]);
     expect(data.items.find(i => i.id === id)).toMatchObject({
-      status: 'done',
+      estimateHours: 42,
       notes: 'from the phone',
     });
   });
