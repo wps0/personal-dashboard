@@ -35,6 +35,12 @@ export interface Project {
   log: LogEntry[];
   archived: boolean;
   createdAt: string;
+  /**
+   * For a university course: a regular expression (case-insensitive) on the
+   * course title of USOS classes, e.g. "systemów operacyjnych". Matching
+   * classes are offered as tasks of this project (SPEC 4.2).
+   */
+  coursePattern?: string;
 }
 
 export type ItemKind = 'lecture' | 'assignment' | 'exam' | 'task';
@@ -55,6 +61,8 @@ export interface Item {
   /** Markdown notes: details, links, where you stopped. */
   notes?: string;
   createdAt: string;
+  /** The USOS class meeting this task was imported from. */
+  source?: {kind: 'usos'; key: string};
 }
 
 /** A slice of an item planned on a given day. One item may have many. */
@@ -85,6 +93,16 @@ export interface CalendarEvent {
   notes?: string;
 }
 
+/** Where the USOS timetable comes from. */
+export type UsosSource =
+  {kind: 'google'; calendarId: string} | {kind: 'ical'; url: string};
+
+export interface UsosSettings {
+  source?: UsosSource;
+  /** Class meetings already imported or skipped (keys); never offered again. */
+  handled: string[];
+}
+
 export interface Settings {
   /** Planning windows and global adjustment, versioned by effective date. */
   capacityRules: CapacityRule[];
@@ -94,6 +112,7 @@ export interface Settings {
   defaultEventMinutes: number;
   /** View the calendar opens in when you navigate to it. */
   defaultCalendarView: CalView;
+  usos: UsosSettings;
 }
 
 export interface AppData {
@@ -136,6 +155,7 @@ export function emptyData(): AppData {
       dayCapacity: {},
       defaultEventMinutes: 60,
       defaultCalendarView: 'week',
+      usos: {handled: []},
     },
   };
 }

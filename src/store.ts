@@ -8,6 +8,7 @@ import type {
   ISODate,
   Item,
   Project,
+  UsosSource,
 } from './model/types';
 import {AREA_COLORS, emptyData} from './model/types';
 import {
@@ -61,6 +62,9 @@ interface Actions {
   changeCapacityRule(patch: Partial<Omit<CapacityRule, 'from'>>): void;
   setDefaultEventMinutes(minutes: number): void;
   setDefaultCalendarView(view: CalView): void;
+  setUsosSource(source: UsosSource | undefined): void;
+  /** Remembers class meetings as imported or skipped, so they aren't offered again. */
+  markUsosHandled(keys: string[]): void;
   /** Per-day tweak; ignored for past days. `null` resets the day. */
   setDayCapacity(date: ISODate, patch: DayCapacity | null): void;
 }
@@ -229,6 +233,21 @@ export const useStore = create<State>()((set, get) => {
       update(d => ({settings: {...d.settings, defaultCalendarView: view}})),
     setDefaultEventMinutes: minutes =>
       update(d => ({settings: {...d.settings, defaultEventMinutes: minutes}})),
+    setUsosSource: source =>
+      update(d => ({
+        settings: {...d.settings, usos: {...d.settings.usos, source}},
+      })),
+    markUsosHandled: keys =>
+      update(d => {
+        const handled = new Set(d.settings.usos.handled);
+        for (const k of keys) handled.add(k);
+        return {
+          settings: {
+            ...d.settings,
+            usos: {...d.settings.usos, handled: [...handled]},
+          },
+        };
+      }),
     setDayCapacity: (date, patch) => {
       if (date < todayISO()) return;
       update(d => {

@@ -7,6 +7,7 @@ import {
   meetingsFromICal,
   parseClassTitle,
   proposeImports,
+  taskFromMeeting,
   type ClassMeeting,
 } from './usos';
 
@@ -276,5 +277,27 @@ describe('meetingTitle', () => {
         end: '09:45',
       }),
     ).toBe('LAB · Mon 19 Oct, 08:15');
+  });
+});
+
+describe('taskFromMeeting', () => {
+  it('makes a regular task dated by the class, remembering the meeting', () => {
+    expect(
+      taskFromMeeting({
+        key: 'usos-1@2026-10-14T10:15',
+        type: 'WYK',
+        course: 'Implementacja systemów operacyjnych',
+        date: '2026-10-14',
+        start: '10:15',
+        end: '12:00',
+        location: 'Banacha 2, sala 3180',
+      }),
+    ).toEqual({
+      kind: 'task',
+      title: 'WYK · Wed 14 Oct, 10:15',
+      heldOn: '2026-10-14',
+      notes: 'WYK 10:15–12:00 · Banacha 2, sala 3180',
+      source: {kind: 'usos', key: 'usos-1@2026-10-14T10:15'},
+    });
   });
 });

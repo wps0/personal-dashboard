@@ -6,7 +6,7 @@
  */
 import type {ApiEvent} from '../google/events';
 import {toISODate} from '../model/dates';
-import type {ISODate} from '../model/types';
+import type {ISODate, Item} from '../model/types';
 
 /** One class meeting from the timetable. */
 export interface ClassMeeting {
@@ -312,4 +312,22 @@ export function meetingTitle(m: ClassMeeting): string {
     month: 'short',
   }).format(new Date(`${m.date}T00:00`));
   return `${m.type} · ${day}, ${m.start}`;
+}
+
+/**
+ * The task made from a class meeting: a regular task (lectures too), dated by
+ * the class, remembering which meeting it came from.
+ */
+export function taskFromMeeting(
+  m: ClassMeeting,
+): Partial<Omit<Item, 'id' | 'projectId'>> {
+  return {
+    kind: 'task',
+    title: meetingTitle(m),
+    heldOn: m.date,
+    notes: [`${m.type} ${m.start}–${m.end}`, m.location]
+      .filter(Boolean)
+      .join(' · '),
+    source: {kind: 'usos', key: m.key},
+  };
 }

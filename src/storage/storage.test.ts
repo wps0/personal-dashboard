@@ -72,6 +72,36 @@ describe('storage', () => {
     expect(parseAppData(base).settings.defaultCalendarView).toBe('week');
   });
 
+  it('reads the USOS settings, dropping anything malformed', () => {
+    const base = {
+      version: 1,
+      areas: [],
+      projects: [],
+      items: [],
+      allocations: [],
+    };
+    expect(parseAppData(base).settings.usos).toEqual({
+      source: undefined,
+      handled: [],
+    });
+    const ok = {
+      source: {kind: 'ical', url: 'https://usosweb.example/plan.ics'},
+      handled: ['a@2026-10-14T10:15', 7],
+    };
+    expect(parseAppData({...base, settings: {usos: ok}}).settings.usos).toEqual(
+      {
+        source: {kind: 'ical', url: 'https://usosweb.example/plan.ics'},
+        handled: ['a@2026-10-14T10:15'],
+      },
+    );
+    expect(
+      parseAppData({
+        ...base,
+        settings: {usos: {source: {kind: 'google'}, handled: 'x'}},
+      }).settings.usos,
+    ).toEqual({source: undefined, handled: []});
+  });
+
   it('migrates old data: fixed capacity hours and lecture statuses', () => {
     const d = parseAppData({
       version: 1,
