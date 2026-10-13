@@ -46,6 +46,7 @@ import {draftAt, useUi} from '../ui';
 import {CapacityBadge} from './CapacityBadge';
 import {GoogleChip, GoogleTimedBlock} from './GoogleEvent';
 import {noGoogleEvents, useGoogleEvents} from '../google/useGoogleEvents';
+import {layoutAllDay} from '../google/spans';
 import type {GEvent} from '../google/events';
 import {DraftEditor, EventEditor} from './EventEditor';
 import {BlockLabel, blockTextClass} from './BlockLabel';
@@ -271,6 +272,20 @@ function GridBody({days, hourHeight, scrollToHour, onDayClick}: BodyProps) {
     return m;
   }, [google, days]);
 
+  // Multi-day all-day events become one bar across their days.
+  const allDay = useMemo(
+    () =>
+      layoutAllDay(
+        days,
+        new Map(days.map(d => [d, googleByDay.get(d)!.allDay])),
+      ),
+    [days, googleByDay],
+  );
+  const collapsed = useUi(s => s.allDayCollapsed);
+  const spanRows = collapsed
+    ? Math.min(allDay.lanes, COLLAPSED_ITEMS)
+    : allDay.lanes;
+
   const byDay = useMemo(() => {
     const want = new Set(days);
     const showEvents = !hidden.includes('events');
@@ -344,14 +359,50 @@ function GridBody({days, hourHeight, scrollToHour, onDayClick}: BodyProps) {
         className={`grid shrink-0 border-b border-line ${slide}`}
         style={{gridTemplateColumns: cols}}
       >
-        <AllDayGutter />
-        {days.map(d => (
+        <AllDayGutter rows={spanRows + 1} />
+        {/* Day dividers behind the spanning bars. */}
+        {spanRows > 0 &&
+          days.map((d, i) => (
+            <div
+              key={`line${d}`}
+              aria-hidden
+              className="border-l border-line"
+              style={{gridColumn: i + 2, gridRow: `1 / span ${spanRows}`}}
+            />
+          ))}
+        {allDay.spans
+          .filter(s => s.lane < spanRows)
+          .map(s => (
+            <div
+              key={s.ev.key}
+              className="z-[1] min-w-0 px-0.5 pt-0.5"
+              style={{
+                gridColumn: `${s.start + 2} / ${s.end + 3}`,
+                gridRow: s.lane + 1,
+              }}
+            >
+              <GoogleChip
+                ev={s.ev}
+                variant="span"
+                before={s.before}
+                after={s.after}
+              />
+            </div>
+          ))}
+        {days.map((d, i) => (
           <Strip
             key={d}
             date={d}
+            row={spanRows + 1}
+            spanRows={spanRows}
+            hiddenSpans={
+              allDay.spans.filter(
+                s => s.lane >= spanRows && s.start <= i && i <= s.end,
+              ).length
+            }
             allocs={byDay.get(d)!.untimed}
             events={byDay.get(d)!.allDay}
-            google={googleByDay.get(d)!.allDay}
+            google={allDay.singles.get(d)!}
             lookups={lookups}
           />
         ))}
@@ -412,12 +463,19 @@ function OffscreenDraft() {
 
 const Strip = memo(function Strip(props: {
   date: ISODate;
+  /** Grid row: below the spanning bars. */
+  row: number;
+  /** Rows of spanning bars shown above (they count towards the collapsed limit). */
+  spanRows: number;
+  /** Spanning bars over this day hidden by collapsing. */
+  hiddenSpans: number;
   allocs: Allocation[];
   events: CalendarEvent[];
   google: GEvent[];
   lookups: Lookups;
 }) {
-  const {date, allocs, events, google, lookups} = props;
+  const {date, row, spanRows, hiddenSpans, allocs, events, google, lookups} =
+    props;
   const {setNodeRef, isOver} = useDroppable({id: `strip|${date}`});
   const hasDraft = useUi(s => !!s.draft?.allDay && s.draft.date === date);
   const collapsed = useUi(s => s.allDayCollapsed);
@@ -426,8 +484,10 @@ const Strip = memo(function Strip(props: {
     ...google.map(e => <GoogleChip key={e.key} ev={e} variant="strip" />),
     ...allocs.map(a => <StripChip key={a.id} alloc={a} lookups={lookups} />),
   ];
-  const shown = collapsed ? chips.slice(0, COLLAPSED_ITEMS) : chips;
-  const more = chips.length - shown.length;
+  const shown = collapsed
+    ? chips.slice(0, Math.max(0, COLLAPSED_ITEMS - spanRows))
+    : chips;
+  const more = chips.length - shown.length + hiddenSpans;
   return (
     <div
       ref={setNodeRef}
@@ -437,6 +497,7 @@ const Strip = memo(function Strip(props: {
       }}
       className={`drop-target scroll-thin max-h-24 min-h-7 cursor-pointer space-y-px overflow-y-auto border-l border-line p-0.5 hover:bg-raised/50 ${isOver ? 'is-over bg-accent/10' : ''}`}
       title="Click to add an all-day event"
+      style={{gridRow: row}}
     >
       {shown}
       {more > 0 && (
@@ -456,11 +517,14 @@ const Strip = memo(function Strip(props: {
 const COLLAPSED_ITEMS = 2;
 
 /** "all-day" label with the collapse / expand toggle, like Google Calendar's chevron. */
-function AllDayGutter() {
+function AllDayGutter({rows}: {rows: number}) {
   const collapsed = useUi(s => s.allDayCollapsed);
   const Icon = collapsed ? ChevronDown : ChevronUp;
   return (
-    <div className="flex flex-col items-end justify-end gap-0.5 pr-1 pb-1 text-[10px] text-dim">
+    <div
+      style={{gridColumn: 1, gridRow: `1 / span ${rows}`}}
+      className="flex flex-col items-end justify-end gap-0.5 pr-1 pb-1 text-[10px] text-dim"
+    >
       all-day
       <button
         className="icon-btn h-5 w-5"

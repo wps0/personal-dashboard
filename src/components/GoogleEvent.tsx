@@ -180,12 +180,27 @@ export const GoogleTimedBlock = memo(function GoogleTimedBlock(props: {
 });
 
 /** An all-day Google event (all-day row), or any Google event in the month view. */
+/** Pointed ends where a spanning bar continues past the visible days, like Google Calendar. */
+function spanClip(before?: boolean, after?: boolean): string | undefined {
+  if (!before && !after) return undefined;
+  const left = before ? ['6px 100%', '0 50%', '6px 0'] : ['0 100%', '0 0'];
+  const right = after
+    ? ['calc(100% - 6px) 0', '100% 50%', 'calc(100% - 6px) 100%']
+    : ['100% 0', '100% 100%'];
+  return `polygon(${[...left, ...right].join(', ')})`;
+}
+
 export const GoogleChip = memo(function GoogleChip({
   ev,
   variant,
+  before,
+  after,
 }: {
   ev: GEvent;
-  variant: 'strip' | 'month';
+  /** 'span': one bar across a multi-day event's days. */
+  variant: 'strip' | 'month' | 'span';
+  before?: boolean;
+  after?: boolean;
 }) {
   const timedInMonth = variant === 'month' && !ev.allDay;
   return (
@@ -196,18 +211,19 @@ export const GoogleChip = memo(function GoogleChip({
         data-block
         onKeyDown={blockKeys({open: openCard(ev)})}
         onClick={openCard(ev)}
-        className={`block-interactive flex shrink-0 cursor-pointer items-center gap-1 truncate rounded px-1.5 py-px text-[11px] ${
+        className={`block-interactive flex shrink-0 cursor-pointer items-center gap-1 truncate rounded py-px text-[11px] ${
           timedInMonth ? 'hover:bg-raised' : 'font-medium'
-        }`}
-        style={
-          timedInMonth
+        } ${before ? 'pl-3' : 'pl-1.5'} ${after ? 'pr-3' : 'pr-1.5'}`}
+        style={{
+          ...(timedInMonth
             ? ev.declined
               ? {opacity: 0.6}
               : undefined
             : ev.declined
               ? declinedStyle(ev.color)
-              : {background: ev.color, color: readableOn(ev.color)}
-        }
+              : {background: ev.color, color: readableOn(ev.color)}),
+          clipPath: variant === 'span' ? spanClip(before, after) : undefined,
+        }}
         title={tooltip(ev)}
       >
         {timedInMonth && (

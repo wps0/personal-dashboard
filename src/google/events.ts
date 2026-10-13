@@ -42,6 +42,9 @@ export interface GEvent {
   calendarName: string;
   title: string;
   date: ISODate;
+  /** The whole event's first and last day (pieces of one event share them). */
+  first: ISODate;
+  last: ISODate;
   allDay: boolean;
   /** Minutes since midnight on `date`; 0–1440. */
   startMin: number;
@@ -118,6 +121,8 @@ export function expandEvent(ev: ApiEvent, cal: ApiCalendar): GEvent[] {
         ...base,
         key: `${cal.id}|${ev.id}|${d}`,
         date: d,
+        first,
+        last,
         allDay: true,
         startMin: 0,
         endMin: 1440,
@@ -150,6 +155,8 @@ export function expandEvent(ev: ApiEvent, cal: ApiCalendar): GEvent[] {
       ...base,
       key: `${cal.id}|${ev.id}|${d}`,
       date: d,
+      first,
+      last,
       allDay: false,
       startMin,
       endMin,
