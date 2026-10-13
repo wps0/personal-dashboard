@@ -43,7 +43,8 @@ export interface Project {
   coursePattern?: string;
 }
 
-export type ItemKind = 'lecture' | 'assignment' | 'exam' | 'task';
+/** 'class': a class meeting to attend or catch up on (lecture, lab, tutorial, seminar). */
+export type ItemKind = 'class' | 'assignment' | 'exam' | 'task';
 
 export const STATUSES = ['todo', 'doing', 'done'] as const;
 export type ItemStatus = (typeof STATUSES)[number];

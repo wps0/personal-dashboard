@@ -56,8 +56,8 @@ const alloc = (
 describe('projectStats', () => {
   it('computes checklist progress from done items', () => {
     const items = [
-      item('l1', {kind: 'lecture', status: 'done'}),
-      item('l2', {kind: 'lecture', status: 'doing'}),
+      item('l1', {kind: 'class', status: 'done'}),
+      item('l2', {kind: 'class', status: 'doing'}),
       item('t1', {status: 'done'}),
       item('t2'),
     ];

@@ -281,7 +281,7 @@ describe('meetingTitle', () => {
 });
 
 describe('taskFromMeeting', () => {
-  it('makes a regular task dated by the class, remembering the meeting', () => {
+  it('makes a class item dated by the class, remembering the meeting', () => {
     expect(
       taskFromMeeting({
         key: 'usos-1@2026-10-14T10:15',
@@ -293,7 +293,7 @@ describe('taskFromMeeting', () => {
         location: 'Banacha 2, sala 3180',
       }),
     ).toEqual({
-      kind: 'task',
+      kind: 'class',
       title: 'WYK · Wed 14 Oct, 10:15',
       heldOn: '2026-10-14',
       notes: 'WYK 10:15–12:00 · Banacha 2, sala 3180',

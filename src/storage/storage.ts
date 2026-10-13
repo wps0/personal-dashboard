@@ -40,7 +40,12 @@ export function parseAppData(raw: unknown): AppData {
   return {
     ...base,
     ...r,
-    items: r.items!.map(i => ({...i, status: migrateStatus(i.status)})),
+    items: r.items!.map(i => ({
+      ...i,
+      // 'lecture' became 'class' (lectures, labs, tutorials, seminars).
+      kind: (i.kind as string) === 'lecture' ? 'class' : i.kind,
+      status: migrateStatus(i.status),
+    })),
     events: Array.isArray(r.events) ? r.events : [],
     dayNotes: r.dayNotes ?? {},
     monthNotes: r.monthNotes ?? {},

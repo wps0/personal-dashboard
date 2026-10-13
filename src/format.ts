@@ -13,9 +13,9 @@ export const URGENCY_CLASS: Record<Urgency, string> = {
   far: 'text-dim',
 };
 
-export const KINDS: ItemKind[] = ['lecture', 'assignment', 'exam', 'task'];
+export const KINDS: ItemKind[] = ['class', 'assignment', 'exam', 'task'];
 export const KIND_BADGE: Record<ItemKind, string> = {
-  lecture: 'LEC',
+  class: 'CLS',
   assignment: 'ASG',
   exam: 'EXM',
   task: 'TSK',

@@ -91,7 +91,7 @@ export function sampleData(today = todayISO()): AppData {
   ) {
     lectures.push(
       item(os, `Lecture ${k + 1}`, {
-        kind: 'lecture',
+        kind: 'class',
         estimateHours: 1.5,
         heldOn: date,
         status: k < 3 ? 'done' : k === 3 ? 'doing' : 'todo',
@@ -117,7 +117,7 @@ export function sampleData(today = todayISO()): AppData {
   const net = project('uni', 'Computer Networks', {progressMode: 'hours'});
   for (let k = 0; k < 6; k++) {
     item(net, `Lecture ${k + 1}`, {
-      kind: 'lecture',
+      kind: 'class',
       estimateHours: 1.5,
       status: k < 2 ? 'done' : 'todo',
     });

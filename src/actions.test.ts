@@ -37,7 +37,7 @@ describe('importClasses', () => {
     expect(items).toMatchObject([
       {
         projectId,
-        kind: 'task',
+        kind: 'class',
         title: 'WYK · Wed 21 Oct, 10:15',
         heldOn: '2026-10-21',
         source: {kind: 'usos', key: 'b'},
