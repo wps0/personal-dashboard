@@ -151,7 +151,9 @@ The project's items, overview doc and progress log, as tabs in the side panel.
   that (Day view), the card overlaps the block's right edge so it stays on
   screen. The quick-create card has a top bar with a grip: drag it (or use
   the arrow keys on it) to move the card.
-- **All-day row:** a chevron collapses it to 2 items per day plus "N more"
+- **All-day row:** a multi-day event is one bar across its days, with
+  pointed ends where it continues past the visible days; overlapping bars
+  stack in lanes. A chevron collapses the row to 2 rows plus "N more"
   (remembered per device).
 - **Google calendars** (read-only, 4.1) appear in all views in their own
   colours, with a sidebar section to show or hide each one and refresh.
