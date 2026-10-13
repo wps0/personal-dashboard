@@ -7,6 +7,7 @@ import {useData, useStore} from '../store';
 import {CapacitySettings} from './CapacitySettings';
 import {GoogleSettings} from '../components/GoogleSettings';
 import {UsosSettings} from '../components/UsosSettings';
+import {install, useInstall} from '../pwa';
 import {Select} from '../components/ui/Select';
 
 const CAL_VIEW_OPTIONS = [
@@ -176,6 +177,13 @@ export function SettingsView() {
         </Section>
 
         <Section
+          title="App"
+          hint="Install the dashboard to open it like an app, in its own window. It also works offline after your first visit."
+        >
+          <InstallApp />
+        </Section>
+
+        <Section
           title="Data"
           hint="Everything is stored in this browser (IndexedDB). Export regularly until Drive sync lands."
         >
@@ -246,5 +254,23 @@ function Section({
       </header>
       {children}
     </section>
+  );
+}
+
+function InstallApp() {
+  const {canInstall, installed} = useInstall();
+  if (installed)
+    return <p className="text-[12px] text-dim">Running as an installed app.</p>;
+  if (canInstall)
+    return (
+      <button className="btn" onClick={() => void install()}>
+        Install app
+      </button>
+    );
+  return (
+    <p className="text-[12px] text-dim">
+      Use your browser’s menu: “Install app” (Chrome, Edge) or Share → “Add to
+      Home Screen” (Safari on iPhone and iPad).
+    </p>
   );
 }
