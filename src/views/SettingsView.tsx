@@ -2,9 +2,11 @@ import {useRef, useState, type ReactNode} from 'react';
 import {InlineText} from '../components/InlineText';
 import {sampleData} from '../model/sample';
 import {AREA_COLORS, emptyData} from '../model/types';
-import {exportJson, parseAppData} from '../storage/storage';
+import {downloadJson, parseAppData} from '../storage/storage';
 import {useData, useStore} from '../store';
+import {useGoogle} from '../google/auth';
 import {CapacitySettings} from './CapacitySettings';
+import {DriveSyncSettings} from '../components/DriveSyncSettings';
 import {GoogleSettings} from '../components/GoogleSettings';
 import {UsosSettings} from '../components/UsosSettings';
 import {install, useInstall} from '../pwa';
@@ -22,6 +24,12 @@ const EVENT_LENGTHS = [15, 30, 45, 60, 90, 120].map(m => ({
   label: m < 60 ? `${m} minutes` : m === 60 ? '1 hour' : `${m / 60} hours`,
 }));
 
+/** Whole-data replacements reach every synced device; say so before they happen. */
+const everywhere = () =>
+  useGoogle.getState().driveSync
+    ? ' Drive sync is on, so this applies to your other devices too.'
+    : '';
+
 export function SettingsView() {
   const data = useData();
   const {addArea, updateArea, deleteArea, replaceAll} = useStore.getState();
@@ -29,19 +37,12 @@ export function SettingsView() {
   const [newArea, setNewArea] = useState('');
   const [message, setMessage] = useState<string | null>(null);
 
-  const download = () => {
-    const blob = new Blob([exportJson(data)], {type: 'application/json'});
-    const a = document.createElement('a');
-    a.href = URL.createObjectURL(blob);
-    a.download = `dashboard-${new Date().toISOString().slice(0, 10)}.json`;
-    a.click();
-    URL.revokeObjectURL(a.href);
-  };
-
   const importFile = async (file: File) => {
     try {
       const parsed = parseAppData(JSON.parse(await file.text()));
-      if (confirm(`Replace all current data with "${file.name}"?`)) {
+      if (
+        confirm(`Replace all current data with "${file.name}"?${everywhere()}`)
+      ) {
         replaceAll(parsed);
         setMessage(
           `Imported ${parsed.projects.length} projects, ${parsed.items.length} items.`,
@@ -95,6 +96,13 @@ export function SettingsView() {
           hint="Show your Google calendars next to your plan (read-only for now)."
         >
           <GoogleSettings />
+        </Section>
+
+        <Section
+          title="Google Drive sync"
+          hint="Use the dashboard on several devices, with your data in your own Google Drive."
+        >
+          <DriveSyncSettings />
         </Section>
 
         <Section
@@ -185,10 +193,10 @@ export function SettingsView() {
 
         <Section
           title="Data"
-          hint="Everything is stored in this browser (IndexedDB). Export regularly until Drive sync lands."
+          hint="Everything is stored in this browser (IndexedDB), and in Google Drive if sync is on. Export now and then as a backup."
         >
           <div className="flex flex-wrap gap-2">
-            <button className="btn" onClick={download}>
+            <button className="btn" onClick={() => downloadJson(data)}>
               Export JSON
             </button>
             <button className="btn" onClick={() => fileRef.current?.click()}>
@@ -208,7 +216,7 @@ export function SettingsView() {
             <button
               className="btn"
               onClick={() =>
-                confirm('Replace all data with sample data?') &&
+                confirm(`Replace all data with sample data?${everywhere()}`) &&
                 replaceAll(sampleData())
               }
             >
@@ -217,8 +225,9 @@ export function SettingsView() {
             <button
               className="btn hover:!border-danger hover:!text-danger"
               onClick={() =>
-                confirm('Delete ALL data? Export first if unsure.') &&
-                replaceAll(emptyData())
+                confirm(
+                  `Delete ALL data? Export first if unsure.${everywhere()}`,
+                ) && replaceAll(emptyData())
               }
             >
               Reset everything

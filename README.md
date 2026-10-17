@@ -117,6 +117,24 @@ One-time setup (free, about 5 minutes):
 Google shows an "unverified app" warning for apps in testing mode. That's
 expected for a personal client.
 
+## Google Drive sync
+
+To use the dashboard on several devices, turn on **Settings → Google Drive
+sync** on each of them. The data goes into one file in your Drive,
+`personal-dashboard.json`, and every device keeps its own copy in the browser,
+so the app still works offline. The app asks for `drive.file` only when you
+turn sync on: access to the files it creates, nothing else in your Drive.
+
+It uses the same OAuth client as the calendar. In the same Cloud project,
+enable the **Google Drive API** and add the scope `.../auth/drive.file` to the
+consent screen.
+
+Sync runs a few seconds after an edit, when you come back to the tab, and every
+two minutes. Changes made on two devices are merged record by record. If both
+changed the same field, this device's value is kept, and Drive's version
+history has the other one. Sessions last an hour, so after that sync waits
+until you click **Connect**.
+
 ## Deploy
 
 `.github/workflows/deploy.yml` builds and publishes `main` to GitHub Pages.
@@ -130,6 +148,7 @@ Enable it once under repo Settings → Pages → Source: **GitHub Actions**.
 | `src/store.ts` | Zustand store: all mutations, cascading deletes |
 | `src/ui.ts`, `src/theme.ts` | Transient UI state (open overlays), theme preference |
 | `src/storage/` | `Storage` interface, IndexedDB implementation, import validation |
+| `src/sync/` | Drive sync: three-way merge, sync engine, runner and triggers |
 | `src/views/` | Home, Week, Calendar, Projects (+ side panel), Settings |
 | `src/components/` | TimeGrid, MonthGrid, event editor, task overlay, mini month, date/time pickers, capacity badge |
 | `src/components/ui/` | Select (lightweight listbox) and Popover (Radix) wrappers |
