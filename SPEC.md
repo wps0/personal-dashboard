@@ -288,8 +288,8 @@ asking for write access.
 - **Long-term.**
   - Moodle integration: assignments and deadlines from the course pages,
     probably through Moodle's web-service API or its calendar export.
-  - Curriculum import: turn a course description pasted from USOS into lecture
-    items, with Google Gemini doing the extraction (see 5.2).
+  - ✅ Curriculum import: turn a course description pasted from USOS into
+    class items, with Google Gemini doing the extraction (see 5.2).
   - RSS feed client: a reader pane for course, blog and release feeds.
     Fetching feeds needs a CORS proxy or a small backend, which this
     serverless app avoids today, so it needs a design decision first.
@@ -331,7 +331,7 @@ open. Ctrl/Cmd combinations are left to the browser, except Ctrl/Cmd+Z. Press
 - **Later:** redo (Ctrl+Shift+Z), `/` search, and keyboard dragging (dnd-kit's
   keyboard sensor).
 
-### 5.2 Curriculum import (long-term)
+### 5.2 Curriculum import ✅
 
 Paste a course description, for example the "Pełny opis" section from USOS,
 and get one item per lecture or topic, with the original wording kept.
@@ -339,8 +339,9 @@ Sample inputs and the output we expect from them live in
 `docs/curriculum-import/` and double as evaluation fixtures.
 
 **Flow**
-1. In the project panel: **Import curriculum…** → paste the text (any
-   language; the examples are Polish).
+1. In the project panel: **import curriculum…** → paste the text (any
+   language; the examples are Polish). Without an API key the dialog links
+   to Settings → Gemini.
 2. The app calls the Gemini API with the prompt and response schema below.
 3. **Review screen** before anything is created:
    - an editable table of topics;
@@ -349,12 +350,15 @@ Sample inputs and the output we expect from them live in
    - a "not verbatim" flag on any title or description that isn't found in
      the pasted text (whitespace-insensitive). This catches paraphrasing.
 4. Choose the granularity:
-   - **one item per topic** (e.g. "Wykłady 5–8: Pisanie prac naukowych"), or
-   - **one item per lecture number** (Lecture 5…8, all with that topic's
-     title and description).
-5. The import creates `kind: 'class'` items with title = topic title, notes
-   = description, and an estimate from a default. `courseNotes` goes into the
-   project's overview doc.
+   - **one item per topic** (e.g. "Pisanie prac naukowych"), or
+   - **one item per lecture number** ("5. Pisanie prac naukowych", …). A
+     lecture listed under several topics becomes one item titled with both
+     ("8. Pisanie prac naukowych / Etyka"). This is the default when every
+     topic has lecture numbers.
+5. The import creates `kind: 'class'` items with the title above, notes =
+   description, and an estimate (1.5 h by default, editable).
+   It can be undone in one step. `courseNotes`, if ticked, is appended to the
+   project's overview doc under "Course notes".
 
 **Gemini call**
 - Endpoint: `models/<model>:generateContent`, with a current Gemini Flash
@@ -362,9 +366,10 @@ Sample inputs and the output we expect from them live in
 - Use structured output: `responseMimeType: 'application/json'` plus a
   `responseSchema`.
 - Temperature 0.
-- API key: entered by the user in Settings and stored only on that device.
-  This is acceptable for a single-user personal app. Verify that the API
-  accepts browser (CORS) requests; if it doesn't, use a tiny proxy.
+- API key: entered by the user in Settings → Gemini and stored only in that
+  browser's localStorage, never in the app data, so it isn't exported or
+  synced. It is sent in the `x-goog-api-key` header, not the URL. The API
+  accepts browser (CORS) requests, so no proxy is needed.
 - The pasted text is sent to Google. Say so in the import dialog.
 
 Response schema:
@@ -417,8 +422,6 @@ and the "not verbatim" check. An opt-in live evaluation (run with an API key)
 compares Gemini's output against the `*.expected.json` files.
 
 **Open questions**
-- **Default granularity for overlapping ranges.** Per topic, or per lecture
-  with overlaps merged into one item titled "Etyka / Pisanie prac…"?
 - **Linking to the USOS timetable.** Should imported lectures be matched to
   USOS timetable events in order, so each gets its `heldOn` date
   automatically?
