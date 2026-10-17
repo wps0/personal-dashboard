@@ -91,7 +91,6 @@ export function meetingsFromGoogle(events: ApiEvent[]): ClassMeeting[] {
   return out;
 }
 
-// ---------------------------------------------------------------------------
 // iCalendar (RFC 5545), the subset a timetable export uses.
 
 interface Prop {
@@ -256,9 +255,6 @@ export function meetingsFromICal(text: string): {
     warnings.push('This doesn’t look like an iCalendar (.ics) file.');
   return {meetings, warnings};
 }
-
-// ---------------------------------------------------------------------------
-// Matching
 
 export interface CourseRule {
   projectId: string;
