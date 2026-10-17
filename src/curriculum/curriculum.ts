@@ -176,9 +176,6 @@ export async function extractCurriculum(
   return parseResponse(body);
 }
 
-// ---------------------------------------------------------------------------
-// Verbatim check
-
 /** Unicode-normalised, whitespace collapsed, for comparing wording. */
 const norm = (s: string) => s.normalize('NFC').replace(/\s+/g, ' ').trim();
 
@@ -212,9 +209,6 @@ export function notVerbatim(result: CurriculumResult, source: string) {
     courseNotes: !ok(result.courseNotes),
   };
 }
-
-// ---------------------------------------------------------------------------
-// Items
 
 export type Granularity = 'topic' | 'lecture';
 
