@@ -163,7 +163,7 @@ describe('extractCurriculum', () => {
     );
     vi.stubGlobal('fetch', fetchMock);
     const out = await extractCurriculum(ex2.text, {
-      apiKey: 'k',
+      apiKey: 'AIza-test',
       model: 'gemini-flash-latest',
     });
     expect(out.topics).toHaveLength(17);
@@ -171,7 +171,8 @@ describe('extractCurriculum', () => {
     expect(url).toBe(
       'https://generativelanguage.googleapis.com/v1beta/models/gemini-flash-latest:generateContent',
     );
-    expect(init.headers).toMatchObject({'x-goog-api-key': 'k'});
+    expect(new Headers(init.headers).get('x-goog-api-key')).toBe('AIza-test');
+    expect(String(url)).not.toContain('AIza');
     const body = JSON.parse(init.body as string);
     expect(body.generationConfig).toEqual({
       temperature: 0,

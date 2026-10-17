@@ -3,6 +3,7 @@
  * Gemini extracts the lecture plan, keeping the original wording → class
  * items. Pure functions plus the API call; the UI is in components/.
  */
+import type {Schema} from '@google/genai';
 import type {Item} from '../model/types';
 
 export interface Topic {
@@ -60,20 +61,7 @@ export const RESPONSE_SCHEMA = {
   },
   required: ['topics', 'courseNotes', 'warnings', 'corrections'],
   propertyOrdering: ['topics', 'courseNotes', 'warnings', 'corrections'],
-} as const;
-
-/** The generateContent request body for a pasted course description. */
-export function buildRequest(text: string) {
-  return {
-    systemInstruction: {parts: [{text: SYSTEM_INSTRUCTION}]},
-    contents: [{role: 'user', parts: [{text}]}],
-    generationConfig: {
-      temperature: 0,
-      responseMimeType: 'application/json',
-      responseSchema: RESPONSE_SCHEMA,
-    },
-  };
-}
+};
 
 const isStr = (v: unknown): v is string => typeof v === 'string';
 const isNum = (v: unknown): v is number | null =>
@@ -112,13 +100,13 @@ export function validateResult(raw: unknown): CurriculumResult {
   };
 }
 
+/** The parts of a generateContent response that matter here. */
 interface GenerateResponse {
   candidates?: {
     content?: {parts?: {text?: string}[]};
     finishReason?: string;
   }[];
   promptFeedback?: {blockReason?: string};
-  error?: {message?: string; status?: string};
 }
 
 /** The result from a generateContent response, or a readable error. */
@@ -142,38 +130,55 @@ export function parseResponse(res: GenerateResponse): CurriculumResult {
 }
 
 /**
- * Sends the description to Gemini. The text goes to Google; the API key is
- * the user's own (Settings).
+ * Sends the description to Gemini with Google's Gen AI SDK, loaded only when
+ * needed. The text goes to Google; the API key is the user's own (Settings).
  */
 export async function extractCurriculum(
   text: string,
   {apiKey, model}: {apiKey: string; model: string},
 ): Promise<CurriculumResult> {
-  let res: Response;
+  const {GoogleGenAI, ApiError} = await import('@google/genai');
+  const ai = new GoogleGenAI({apiKey});
+  let res: GenerateResponse;
   try {
-    res = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(model)}:generateContent`,
-      {
-        method: 'POST',
-        headers: {'Content-Type': 'application/json', 'x-goog-api-key': apiKey},
-        body: JSON.stringify(buildRequest(text)),
+    res = await ai.models.generateContent({
+      model,
+      contents: text,
+      config: {
+        systemInstruction: SYSTEM_INSTRUCTION,
+        temperature: 0,
+        responseMimeType: 'application/json',
+        responseSchema: RESPONSE_SCHEMA as Schema,
       },
-    );
-  } catch {
-    throw new Error('Couldn’t reach Gemini. Are you offline?');
-  }
-  const body = (await res.json().catch(() => ({}))) as GenerateResponse;
-  if (!res.ok) {
-    const why = body.error?.message ?? `HTTP ${res.status}`;
-    if (res.status === 400 && /API key/i.test(why))
+    });
+  } catch (e) {
+    if (!(e instanceof ApiError))
+      throw new Error(
+        e instanceof TypeError
+          ? 'Couldn’t reach Gemini. Are you offline?'
+          : `Gemini: ${(e as Error).message}`,
+      );
+    const why = apiErrorMessage(e.message);
+    if (e.status === 400 && /API key/i.test(why))
       throw new Error('Gemini rejected the API key. Check it in Settings.');
-    if (res.status === 404)
+    if (e.status === 404)
       throw new Error(`Gemini doesn’t know the model “${model}”.`);
-    if (res.status === 429)
+    if (e.status === 429)
       throw new Error('Gemini’s quota or rate limit is reached; try later.');
     throw new Error(`Gemini: ${why}`);
   }
-  return parseResponse(body);
+  return parseResponse(res);
+}
+
+/** The SDK's error message is the API's JSON error body; this picks out its text. */
+function apiErrorMessage(raw: string): string {
+  try {
+    return (
+      (JSON.parse(raw) as {error?: {message?: string}}).error?.message ?? raw
+    );
+  } catch {
+    return raw;
+  }
 }
 
 /** Unicode-normalised, whitespace collapsed, for comparing wording. */
