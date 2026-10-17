@@ -10,7 +10,8 @@ vi.stubGlobal('localStorage', storage);
 vi.stubGlobal('sessionStorage', storage);
 vi.stubGlobal('window', {addEventListener: () => {}, setTimeout: () => 0});
 
-const {listCalendars, listEvents, retryPolicy} = await import('./api');
+const {listCalendars, listEvents} = await import('./api');
+const {retryPolicy} = await import('./request');
 retryPolicy.baseMs = 1;
 const {SCOPES, useGoogle} = await import('./auth');
 
