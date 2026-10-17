@@ -8,6 +8,7 @@ import {CapacitySettings} from './CapacitySettings';
 import {GoogleSettings} from '../components/GoogleSettings';
 import {UsosSettings} from '../components/UsosSettings';
 import {install, useInstall} from '../pwa';
+import {GeminiSettings} from '../components/GeminiSettings';
 import {Select} from '../components/ui/Select';
 
 const CAL_VIEW_OPTIONS = [
@@ -102,6 +103,13 @@ export function SettingsView() {
           hint="Classes from your USOSweb timetable become tasks in their course’s project (set a course pattern in the project). You review new classes before they’re added."
         >
           <UsosSettings />
+        </Section>
+
+        <Section
+          title="Gemini"
+          hint="Used to turn a course description into class items (Import curriculum, in a project)."
+        >
+          <GeminiSettings />
         </Section>
 
         <Section
