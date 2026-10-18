@@ -92,6 +92,11 @@ export const AREA_COLORS = [
   '#94a3b8', // slate
 ];
 
+/** "#rrggbb": the only colors from data that go into styles (not a url()). */
+export function isHexColor(color: unknown): color is string {
+  return typeof color === 'string' && /^#[0-9a-f]{6}$/i.test(color);
+}
+
 /** Default settings. */
 export function defaultSettings(): Settings {
   return create(pb.SettingsSchema, {
@@ -108,13 +113,19 @@ export function emptyData(): AppData {
 
 /**
  * `data` with whatever an older or newer version may have left out filled
- * in: settings and their USOS part, capacity rules, the event length.
+ * in: settings and their USOS part, capacity rules, the event length. Area
+ * colors other than "#rrggbb" (from an edited file) become palette colors.
  */
 export function withDefaults(data: pb.AppData): AppData {
   const defaults = defaultSettings();
   const s = data.settings ?? defaults;
   return {
     ...data,
+    areas: data.areas.map((a, i) =>
+      isHexColor(a.color)
+        ? a
+        : {...a, color: AREA_COLORS[i % AREA_COLORS.length]},
+    ),
     settings: {
       ...s,
       capacityRules: s.capacityRules.length

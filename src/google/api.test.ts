@@ -62,6 +62,19 @@ describe('Calendar API client', () => {
     expect(fetchMock.mock.calls[1][0]).toContain('pageToken=p2');
   });
 
+  it('drops calendar colors that are not #rrggbb', async () => {
+    fetchMock.mockResolvedValueOnce(
+      ok({
+        items: [
+          {id: 'a', summary: 'A', backgroundColor: '#7986cb'},
+          {id: 'b', summary: 'B', backgroundColor: 'url(https://evil/t)'},
+        ],
+      }),
+    );
+    const list = await listCalendars();
+    expect(list.map(c => c.backgroundColor)).toEqual(['#7986cb', undefined]);
+  });
+
   it('marks the session expired on 401', async () => {
     fetchMock.mockResolvedValueOnce(new Response('', {status: 401}));
     await expect(listCalendars()).rejects.toThrow(/expired/);
