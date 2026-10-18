@@ -57,8 +57,9 @@ export function setUpSync(storage: IndexedDbStorage) {
 
   let editTimer: number | undefined;
   useStore.subscribe((s, prev) => {
+    if (s.data === prev.data) return;
     // The sync's own result isn't an edit.
-    if (!on() || s.data === prev.data || s.data === r.applied) return;
+    if (r.isOwnChange(s.data) || !on()) return;
     window.clearTimeout(editTimer);
     editTimer = window.setTimeout(sync, AFTER_EDIT_MS);
   });

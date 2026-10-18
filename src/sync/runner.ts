@@ -54,10 +54,21 @@ export class SyncRunner {
   private running: Promise<void> | null = null;
   private again = false;
   private base: SyncBase | null | undefined;
-  /** The data the last sync put into the store; that change isn't an edit to upload. */
-  applied?: AppData;
+  /** The data the last sync put into the store, until the store changes. */
+  private applied?: AppData;
 
   constructor(private readonly deps: SyncDeps) {}
+
+  /**
+   * Whether a change of the store's data is the sync's own result rather
+   * than an edit to upload. Asked for every change, so only the change the
+   * sync made counts: an undo back to the same data later is an edit.
+   */
+  isOwnChange(data: AppData): boolean {
+    const own = data === this.applied;
+    this.applied = undefined;
+    return own;
+  }
 
   sync(choice?: FirstSyncChoice): Promise<void> {
     if (this.running) {
