@@ -2,7 +2,7 @@ import {memo, useCallback} from 'react';
 import {AlignLeft, Clock, Trash2, X} from 'lucide-react';
 import {withUndo} from '../toast';
 import {formatLong} from '../model/dates';
-import {fromMinutes, toMinutes} from '../model/time';
+import {moveStart} from '../model/time';
 import type {CalendarEvent} from '../model/types';
 import {useStore} from '../store';
 import {useUi, type Draft} from '../ui';
@@ -12,15 +12,6 @@ import {TimeSelect} from './time_select';
 import {MoveBar} from './ui/move_bar';
 
 type When = Pick<CalendarEvent, 'date' | 'start' | 'end' | 'allDay'>;
-
-/** Moving the start keeps the duration, like Google Calendar. */
-function moveStart(w: When, start: string): Partial<When> {
-  const len = Math.max(15, toMinutes(w.end) - toMinutes(w.start));
-  return {
-    start,
-    end: fromMinutes(Math.min(toMinutes(start) + len, 24 * 60 - 1)),
-  };
-}
 
 function WhenFieldsImpl({
   value,

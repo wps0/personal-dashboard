@@ -10,6 +10,20 @@ export function fromMinutes(min: number): string {
   return `${String(Math.floor(m / 60)).padStart(2, '0')}:${String(m % 60).padStart(2, '0')}`;
 }
 
+/**
+ * A time range with its start moved to `start`, keeping its length (at least
+ * 15 min) as far as the day allows, like Google Calendar. An end of 23:59
+ * means midnight.
+ */
+export function moveStart(
+  range: {start: string; end: string},
+  start: string,
+): {start: string; end: string} {
+  const end = range.end === '23:59' ? 24 * 60 : toMinutes(range.end);
+  const len = Math.max(15, end - toMinutes(range.start));
+  return {start, end: fromMinutes(toMinutes(start) + len)};
+}
+
 export function snap(min: number, step = 15): number {
   return Math.round(min / step) * step;
 }

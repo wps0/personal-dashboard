@@ -1,5 +1,12 @@
 import {describe, expect, it} from 'vitest';
-import {fromMinutes, layoutSpans, slotRange, snap, toMinutes} from './time';
+import {
+  fromMinutes,
+  layoutSpans,
+  moveStart,
+  slotRange,
+  snap,
+  toMinutes,
+} from './time';
 
 describe('time', () => {
   it('converts HH:MM and minutes', () => {
@@ -40,5 +47,41 @@ describe('slotRange', () => {
     expect(slotRange(790, 782)).toEqual([780, 795]); // upwards
     expect(slotRange(780, 815)).toEqual([780, 825]); // 13:00 → 13:35 covers three slots
     expect(slotRange(1435, 1440)).toEqual([1425, 1440]); // clamped at midnight
+  });
+});
+
+describe('moveStart', () => {
+  it('keeps the length', () => {
+    expect(moveStart({start: '08:00', end: '20:00'}, '09:30')).toEqual({
+      start: '09:30',
+      end: '21:30',
+    });
+    // Past the old end: a planning window no longer collapses to 0h.
+    expect(moveStart({start: '08:00', end: '10:00'}, '21:00')).toEqual({
+      start: '21:00',
+      end: '23:00',
+    });
+  });
+
+  it('stays within the day, 23:59 meaning midnight', () => {
+    expect(moveStart({start: '08:00', end: '20:00'}, '21:00')).toEqual({
+      start: '21:00',
+      end: '23:59',
+    });
+    expect(moveStart({start: '21:00', end: '23:59'}, '18:00')).toEqual({
+      start: '18:00',
+      end: '21:00',
+    });
+  });
+
+  it('gives an empty or inverted range 15 min', () => {
+    expect(moveStart({start: '10:00', end: '10:00'}, '12:00')).toEqual({
+      start: '12:00',
+      end: '12:15',
+    });
+    expect(moveStart({start: '10:00', end: '09:00'}, '12:00')).toEqual({
+      start: '12:00',
+      end: '12:15',
+    });
   });
 });
