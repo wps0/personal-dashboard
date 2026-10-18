@@ -80,6 +80,28 @@ describe('SyncRunner', () => {
     expect(runner.applied).toBe(state.data);
   });
 
+  it('reports conflicts with edits made during a sync', async () => {
+    const {runner, state, drive, deps} = setUp(sample());
+    await runner.sync();
+    const other = structuredClone(state.data);
+    other.items[0].title = 'From the phone';
+    await drive.updateFile([...drive.files.keys()][0], encode(other));
+
+    // The user deletes that task while the download is in flight.
+    const id = state.data.items[0].id;
+    const download = drive.download.bind(drive);
+    drive.download = async fileId => {
+      state.data = {...state.data, items: state.data.items.slice(1)};
+      return download(fileId);
+    };
+    await runner.sync();
+    // The edit wins over the deletion, and the review shows it.
+    expect(state.data.items[0].title).toBe('From the phone');
+    expect(deps.onConflicts).toHaveBeenCalledWith([
+      {path: ['items', id], local: undefined, remote: other.items[0]},
+    ]);
+  });
+
   it('reports offline, expired sessions and other errors', async () => {
     const {runner, deps} = setUp(sample());
     const fail = (e: Error) => (deps.remote.findFile = () => Promise.reject(e));
