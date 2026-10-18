@@ -1,4 +1,5 @@
 import {CircleGauge, Keyboard, Monitor, Moon, Sun} from 'lucide-react';
+import {ConflictsBadge} from './components/ConflictsBadge';
 import {Toaster} from './components/Toaster';
 import {ShortcutDialogs} from './components/ShortcutDialogs';
 import {useGlobalShortcuts} from './keyboard';
@@ -85,6 +86,7 @@ export default function App() {
             </a>
           ))}
         </nav>
+        <ConflictsBadge />
         {/* Keyboard shortcuts don't apply on phones. */}
         <button
           className="icon-btn hidden shrink-0 sm:inline-flex"
