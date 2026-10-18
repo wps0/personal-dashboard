@@ -4,6 +4,7 @@ import * as pb from '../gen/dashboard/data_pb';
 import {
   busyMinutes,
   capacityFor,
+  copyDay,
   defaultRules,
   range,
   reservedFor,
@@ -100,5 +101,31 @@ describe('reservedFor', () => {
       'Sleep',
       'Sleep',
     ]); // Sunday: no work
+  });
+});
+
+describe('copyDay', () => {
+  it('copies a weekday’s window and reserved time to the picked days only', () => {
+    const rule = {
+      ...defaultRules()[0],
+      windows: defaultRules()[0].windows.map((w, i) =>
+        i === 2 ? range('08:00', '12:00') : w,
+      ),
+    };
+    const out = copyDay(rule, 2, [0, 6]);
+    expect(out.windows.map(w => `${w.start}-${w.end}`)).toEqual([
+      '08:00-12:00',
+      '18:00-21:00',
+      '08:00-12:00',
+      '18:00-21:00',
+      '18:00-21:00',
+      '10:00-16:00',
+      '08:00-12:00',
+    ]);
+    const labels = (i: number) => out.reserved[i].ranges.map(r => r.label);
+    expect(labels(6)).toEqual(['Sleep', 'Work']);
+    expect(labels(5)).toEqual(['Sleep']);
+    // The copies are separate records, not the source's.
+    expect(out.reserved[6]).not.toBe(out.reserved[2]);
   });
 });

@@ -106,7 +106,9 @@ Each day box is a hybrid of three parts:
     controls. A day turns red when it is over capacity.
 - **Reserved time** per weekday (e.g. sleep 23:00–07:00, work 09:00–17:00) is
   drawn with diagonal hatching on the calendar. It's informational only: events
-  can still go there. It's versioned with the capacity rules.
+  can still go there. It's versioned with the capacity rules. In Settings, each
+  weekday's copy button copies its planning window and reserved time to the
+  days you tick (with Weekdays / Weekend / All shortcuts).
 - **Overdue tray.** Unfinished allocations from past days move to a "missed"
   tray that is visible on today, so you reschedule them deliberately. They are
   never moved automatically.
