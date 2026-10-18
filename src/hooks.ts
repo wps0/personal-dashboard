@@ -10,7 +10,7 @@ import * as pb from './gen/dashboard/v2/data_pb';
 import {capacityFor, type CapacityInfo} from './model/capacity';
 import type {Area, CalendarEvent, ISODate, Item, Project} from './model/types';
 import {useStore} from './store';
-import {useGoogleEvents} from './google/useGoogleEvents';
+import {useGoogleEvents} from './google/use_google_events';
 import {fromMinutes} from './model/time';
 
 export interface Lookups {

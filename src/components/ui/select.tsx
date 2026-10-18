@@ -8,7 +8,7 @@ import {
   type KeyboardEvent,
   type ReactNode,
 } from 'react';
-import {Popover, PopoverContent, PopoverTrigger} from './Popover';
+import {Popover, PopoverContent, PopoverTrigger} from './popover';
 
 export interface Option<T extends string | number> {
   value: T;

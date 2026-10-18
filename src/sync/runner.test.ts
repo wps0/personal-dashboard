@@ -3,7 +3,7 @@ import {GoogleApiError} from '../google/errors';
 import {sampleData} from '../model/sample';
 import {encode} from '../storage/codec';
 import {emptyData, type AppData} from '../model/types';
-import {FakeDrive} from './fakeDrive';
+import {FakeDrive} from './fake_drive';
 import {same} from './merge';
 import {SyncRunner, useSync, type SyncDeps} from './runner';
 import type {SyncBase} from './sync';

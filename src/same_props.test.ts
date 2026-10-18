@@ -1,5 +1,5 @@
 import {describe, expect, it} from 'vitest';
-import {sameProps} from './sameProps';
+import {sameProps} from './same_props';
 
 describe('sameProps', () => {
   const a = {id: 'a'};

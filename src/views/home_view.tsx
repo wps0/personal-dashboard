@@ -1,14 +1,14 @@
-import {UsosBanner} from '../components/UsosReview';
+import {UsosBanner} from '../components/usos_review';
 import {ChevronDown, ChevronLeft, ChevronRight} from 'lucide-react';
 import {memo, useMemo, useState} from 'react';
-import {MiniMonth} from '../components/MiniMonth';
+import {MiniMonth} from '../components/mini_month';
 import {
   Popover,
   PopoverContent,
   PopoverTrigger,
-} from '../components/ui/Popover';
-import {ProgressRing} from '../components/ProgressRing';
-import {TimeGrid} from '../components/TimeGrid';
+} from '../components/ui/popover';
+import {ProgressRing} from '../components/progress_ring';
+import {TimeGrid} from '../components/time_grid';
 import {fmtH, URGENCY_CLASS} from '../format';
 import {useLookups, type Lookups} from '../hooks';
 import {addDays, countdown, dayName, shortDate, todayISO} from '../model/dates';

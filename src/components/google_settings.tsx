@@ -1,9 +1,9 @@
 import {Lock, LogOut, RefreshCw} from 'lucide-react';
 import {useGoogle, SCOPES} from '../google/auth';
 import {useGoogleCalendars} from '../google/calendars';
-import {clearGoogleCache} from '../google/useGoogleEvents';
-import {BufferedInput} from './Buffered';
-import {GoogleErrorNotice} from './GoogleErrorNotice';
+import {clearGoogleCache} from '../google/use_google_events';
+import {BufferedInput} from './buffered';
+import {GoogleErrorNotice} from './google_error_notice';
 
 const ORIGIN = typeof window !== 'undefined' ? window.location.origin : '';
 

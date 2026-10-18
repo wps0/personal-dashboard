@@ -3,11 +3,11 @@ import {navTarget} from '../keyboard';
 import {todayISO} from '../model/dates';
 import {SHORTCUT_HELP} from '../shortcuts';
 import {useUi} from '../ui';
-import {MiniMonth} from './MiniMonth';
-import {Modal} from './Modal';
-import {UsosReview} from './UsosReview';
-import {CurriculumImport} from './CurriculumImport';
-import {ConflictReview} from './ConflictReview';
+import {MiniMonth} from './mini_month';
+import {Modal} from './modal';
+import {UsosReview} from './usos_review';
+import {CurriculumImport} from './curriculum_import';
+import {ConflictReview} from './conflict_review';
 
 /** The `?` help sheet and the `g` go-to-date picker. */
 export function ShortcutDialogs() {

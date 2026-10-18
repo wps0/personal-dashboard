@@ -1,16 +1,16 @@
 import {memo, useMemo, useState} from 'react';
 import {withUndo} from '../toast';
-import {BufferedTextarea} from '../components/Buffered';
-import {DateField} from '../components/DateField';
-import {StatusSelect} from '../components/StatusSelect';
-import {Select} from '../components/ui/Select';
+import {BufferedTextarea} from '../components/buffered';
+import {DateField} from '../components/date_field';
+import {StatusSelect} from '../components/status_select';
+import {Select} from '../components/ui/select';
 import {Pencil, Trash2, X} from 'lucide-react';
-import {HoursInput} from '../components/HoursInput';
-import {InlineText} from '../components/InlineText';
-import {CoursePattern} from '../components/CoursePattern';
-import {UsosBanner} from '../components/UsosReview';
-import {Markdown} from '../components/Markdown';
-import {ProgressRing} from '../components/ProgressRing';
+import {HoursInput} from '../components/hours_input';
+import {InlineText} from '../components/inline_text';
+import {CoursePattern} from '../components/course_pattern';
+import {UsosBanner} from '../components/usos_review';
+import {Markdown} from '../components/markdown';
+import {ProgressRing} from '../components/progress_ring';
 import {fmtNum, kindBadge, KIND_OPTIONS, URGENCY_CLASS} from '../format';
 import {countdown, shortDate, todayISO} from '../model/dates';
 import {

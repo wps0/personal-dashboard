@@ -12,7 +12,7 @@ import type {Conflict} from '../sync/merge';
 import {resolveConflicts, usePendingConflicts} from '../sync/pending';
 import {toast, withUndo} from '../toast';
 import {useUi} from '../ui';
-import {Modal} from './Modal';
+import {Modal} from './modal';
 
 function plural(n: number, one: string, many: string) {
   return `${n} ${n === 1 ? one : many}`;

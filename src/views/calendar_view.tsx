@@ -1,10 +1,10 @@
 import {ChevronLeft, ChevronRight, Plus, RefreshCw} from 'lucide-react';
 import {useEffect, useEffectEvent, useMemo, type ReactNode} from 'react';
-import {MiniMonth} from '../components/MiniMonth';
-import {MonthGrid} from '../components/MonthGrid';
-import {TimeGrid} from '../components/TimeGrid';
+import {MiniMonth} from '../components/mini_month';
+import {MonthGrid} from '../components/month_grid';
+import {TimeGrid} from '../components/time_grid';
 
-import {Select} from '../components/ui/Select';
+import {Select} from '../components/ui/select';
 import {
   addDays,
   addMonths,
@@ -18,8 +18,8 @@ import {calViewOf, type ISODate} from '../model/types';
 import {href, navigate, type CalView} from '../router';
 import {useGoogle} from '../google/auth';
 import {useGoogleCalendars} from '../google/calendars';
-import {clearGoogleCache} from '../google/useGoogleEvents';
-import {GoogleErrorNotice} from '../components/GoogleErrorNotice';
+import {clearGoogleCache} from '../google/use_google_events';
+import {GoogleErrorNotice} from '../components/google_error_notice';
 import {useStore} from '../store';
 import {nextHourDraft, useUi} from '../ui';
 import {useNavTarget} from '../keyboard';

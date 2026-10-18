@@ -1,5 +1,5 @@
 import {ChevronDown, ChevronUp} from 'lucide-react';
-import {sameProps} from '../sameProps';
+import {sameProps} from '../same_props';
 import {
   DndContext,
   DragOverlay,
@@ -43,14 +43,14 @@ import {
 import type {Allocation, CalendarEvent, ISODate} from '../model/types';
 import {useStore} from '../store';
 import {draftAt, useUi} from '../ui';
-import {CapacityBadge} from './CapacityBadge';
-import {GoogleChip, GoogleTimedBlock} from './GoogleEvent';
-import {noGoogleEvents, useGoogleEvents} from '../google/useGoogleEvents';
+import {CapacityBadge} from './capacity_badge';
+import {GoogleChip, GoogleTimedBlock} from './google_event';
+import {noGoogleEvents, useGoogleEvents} from '../google/use_google_events';
 import {layoutAllDay} from '../google/spans';
 import type {GEvent} from '../google/events';
-import {DraftEditor, EventEditor} from './EventEditor';
-import {BlockLabel, blockTextClass} from './BlockLabel';
-import {Popover, PopoverAnchor, PopoverContent, useBeside} from './ui/Popover';
+import {DraftEditor, EventEditor} from './event_editor';
+import {BlockLabel, blockTextClass} from './block_label';
+import {Popover, PopoverAnchor, PopoverContent, useBeside} from './ui/popover';
 import {
   deleteEvent,
   removeSession,

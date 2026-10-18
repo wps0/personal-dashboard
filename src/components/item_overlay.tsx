@@ -1,13 +1,13 @@
 import {useMemo, useState, type ReactNode} from 'react';
-import {BufferedInput, BufferedTextarea} from './Buffered';
-import {DateField} from './DateField';
-import {StatusSelect} from './StatusSelect';
-import {TimeSelect} from './TimeSelect';
-import {Select} from './ui/Select';
+import {BufferedInput, BufferedTextarea} from './buffered';
+import {DateField} from './date_field';
+import {StatusSelect} from './status_select';
+import {TimeSelect} from './time_select';
+import {Select} from './ui/select';
 import {Trash2, X} from 'lucide-react';
-import {HoursInput} from './HoursInput';
-import {Markdown} from './Markdown';
-import {Modal} from './Modal';
+import {HoursInput} from './hours_input';
+import {Markdown} from './markdown';
+import {Modal} from './modal';
 import {countdown, todayISO} from '../model/dates';
 import {
   actualHours,

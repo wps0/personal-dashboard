@@ -1,17 +1,17 @@
 import {useRef, useState, type ReactNode} from 'react';
-import {InlineText} from '../components/InlineText';
+import {InlineText} from '../components/inline_text';
 import {sampleData} from '../model/sample';
 import {AREA_COLORS, CalendarView, emptyData} from '../model/types';
 import {downloadJson, importJson} from '../storage/storage';
 import {useData, useStore} from '../store';
 import {useGoogle} from '../google/auth';
-import {CapacitySettings} from './CapacitySettings';
-import {DriveSyncSettings} from '../components/DriveSyncSettings';
-import {GoogleSettings} from '../components/GoogleSettings';
-import {UsosSettings} from '../components/UsosSettings';
+import {CapacitySettings} from './capacity_settings';
+import {DriveSyncSettings} from '../components/drive_sync_settings';
+import {GoogleSettings} from '../components/google_settings';
+import {UsosSettings} from '../components/usos_settings';
 import {install, useInstall} from '../pwa';
-import {GeminiSettings} from '../components/GeminiSettings';
-import {Select} from '../components/ui/Select';
+import {GeminiSettings} from '../components/gemini_settings';
+import {Select} from '../components/ui/select';
 
 const CAL_VIEW_OPTIONS = [
   {value: CalendarView.DAY, label: 'Day'},

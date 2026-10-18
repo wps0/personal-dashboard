@@ -1,6 +1,6 @@
 import {ExternalLink, Lock} from 'lucide-react';
 import {DEFAULT_MODEL, useGemini} from '../curriculum/gemini';
-import {BufferedInput} from './Buffered';
+import {BufferedInput} from './buffered';
 
 /** Settings → Gemini: the API key and model used to import curricula. */
 export function GeminiSettings() {

@@ -1,6 +1,6 @@
 import {statusLabel} from '../model/selectors';
 import {ItemStatus, STATUSES} from '../model/types';
-import {Select} from './ui/Select';
+import {Select} from './ui/select';
 
 const STATUS_COLOR: Record<ItemStatus, string> = {
   [ItemStatus.UNSPECIFIED]: '#94a3b8',
