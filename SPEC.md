@@ -272,8 +272,11 @@ Google Drive sync.
   Drive's data. Both → a three-way merge against the base: record by record
   and field by field, so edits to different fields of the same task on two
   devices both survive. If both changed the same field, this device's value
-  wins (a toast says so) and Drive's revision history keeps the other; an edit
-  wins over a deletion; records whose parent was deleted are dropped. Edits
+  wins for now and the toast offers **Review**: a dialog lists each conflict
+  (record, field, both values) with this device's or the other device's
+  version to pick, and applying it never overwrites a value edited since (it
+  can be undone). Settings shows how many are waiting. An edit wins over a
+  deletion; records whose parent was deleted are dropped. Edits
   made during a sync are merged in too.
 - **First sync on a device.** A blank device takes Drive's data. A device with
   different data asks: **Use Drive's data** or **Merge both** (with an export

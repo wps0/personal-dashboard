@@ -131,8 +131,9 @@ consent screen.
 
 Sync runs a few seconds after an edit, when you come back to the tab, and every
 two minutes. Changes made on two devices are merged record by record. If both
-changed the same field, this device's value is kept, and Drive's version
-history has the other one. Sessions last an hour, so after that sync waits
+changed the same field, this device's value is kept until you review it:
+**Review** on the toast, or in Settings → Google Drive sync, lets you pick
+either device's version for each one. Sessions last an hour, so after that sync waits
 until you click **Connect**.
 
 ## Deploy

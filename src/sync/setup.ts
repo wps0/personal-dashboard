@@ -3,6 +3,8 @@ import * as drive from '../google/drive';
 import type {IndexedDbStorage} from '../storage/storage';
 import {useStore} from '../store';
 import {toast} from '../toast';
+import {useUi} from '../ui';
+import {addConflicts, clearConflicts} from './pending';
 import {SyncRunner, useSync} from './runner';
 import type {FirstSyncChoice} from './sync';
 
@@ -34,10 +36,14 @@ export function setUpSync(storage: IndexedDbStorage) {
     loadBase: () => storage.loadSyncBase(),
     saveSynced: (data, base) => storage.saveSynced(data, base),
     clearBase: () => storage.clearSyncBase(),
-    onConflicts: ({length: n}) =>
+    onConflicts: conflicts => {
+      addConflicts(conflicts);
+      const n = conflicts.length;
       toast(
         `Synced with Google Drive. ${n === 1 ? 'One value was' : `${n} values were`} changed on another device too; this device’s ${n === 1 ? 'was' : 'were'} kept.`,
-      ),
+        {label: 'Review', run: () => useUi.getState().setDialog('conflicts')},
+      );
+    },
   });
   runner = r;
   const on = () => useGoogle.getState().driveSync;
@@ -59,7 +65,10 @@ export function setUpSync(storage: IndexedDbStorage) {
   useGoogle.subscribe((s, prev) => {
     if (s.driveSync !== prev.driveSync) {
       if (s.driveSync) sync();
-      else void r.stop();
+      else {
+        clearConflicts();
+        void r.stop();
+      }
     } else if (s.token !== prev.token && hasDriveAccess(s.token)) sync();
   });
 
