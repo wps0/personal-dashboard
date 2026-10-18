@@ -32,6 +32,10 @@ function sample(): pb.AppData {
 }
 
 describe('binary', () => {
+  it('keeps the schema version in field 1, where every version finds it', () => {
+    expect(pb.AppDataSchema.field.schemaVersion.number).toBe(1);
+  });
+
   it('round-trips; the schema version is only in what’s stored', () => {
     const data = sample();
     const bytes = encode(data);
@@ -63,10 +67,11 @@ describe('binary', () => {
       title: 'Lab 3',
       kind: 9 as pb.ItemKind,
     });
+    const {field} = pb.AppDataSchema;
     const bytes = new BinaryWriter()
-      .tag(9, WireType.Varint)
+      .tag(field.schemaVersion.number, WireType.Varint)
       .int32(SCHEMA_VERSION)
-      .tag(3, WireType.LengthDelimited)
+      .tag(field.items.number, WireType.LengthDelimited)
       .bytes(
         new BinaryWriter()
           .raw(toBinary(pb.ItemSchema, item))
