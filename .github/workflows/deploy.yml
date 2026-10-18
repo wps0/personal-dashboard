@@ -39,6 +39,10 @@ jobs:
       - run: npm run format:check
       - run: npm test
       - run: npm run build
+        env:
+          # Not a secret: the OAuth client ID is public, and Google accepts it
+          # only from the JavaScript origins allowed in the Cloud console.
+          VITE_GOOGLE_CLIENT_ID: ${{ vars.GOOGLE_CLIENT_ID }}
       - uses: actions/upload-pages-artifact@v3
         with:
           path: dist
