@@ -154,16 +154,91 @@ function mergeSet<T>(b: T[], l: T[], r: T[]) {
 }
 
 /**
- * Merges two versions of the app data. A merge can bring back a record that
- * the other side deleted along with its parent (an item edited on one
- * device, its project deleted on the other); such orphans are dropped, as the
- * deletion would have done.
+ * Merges two versions of the app data. A record edited on one side wins over
+ * its deletion on the other also when its parent was deleted with it (an
+ * item edited on one device, its project deleted on the other): the parents
+ * come back too. Other records whose parent was deleted (e.g. added to it on
+ * the other side) are dropped, as the deletion would have done.
  */
 export function mergeData(base: AppData, local: AppData, remote: AppData) {
   const {value, conflicts} = merge3(base, local, remote);
+  const data = withParents(value as AppData, local, remote, conflicts);
   return {
-    data: withoutOrphans(value as AppData, [base, local, remote]),
+    data: withoutOrphans(data, [base, local, remote]),
     conflicts,
+  };
+}
+
+/**
+ * Brings back the deleted parents of records kept by an edit winning over a
+ * deletion: the item of a session, the project of an item, the area of a
+ * project. Each is added to `conflicts` too, so the review can delete it
+ * again.
+ */
+function withParents(
+  d: AppData,
+  local: AppData,
+  remote: AppData,
+  conflicts: Conflict[],
+): AppData {
+  /** Ids of the `key` records kept over a deletion (or brought back). */
+  const kept = (key: string) =>
+    new Set(
+      conflicts
+        .filter(
+          c =>
+            c.path.length === 2 &&
+            c.path[0] === key &&
+            (c.local === undefined || c.remote === undefined),
+        )
+        .map(c => c.path[1]),
+    );
+  /** The records `ids` of a list added back, from the side that has them. */
+  const restore = <T extends WithId>(
+    name: string,
+    of: (v: AppData) => T[],
+    ids: string[],
+  ) => {
+    const list = [...of(d)];
+    const back = new Set<string>();
+    for (const id of ids) {
+      if (list.some(x => x.id === id)) continue;
+      const [l, r] = [local, remote].map(v => of(v).find(x => x.id === id));
+      const record = l ?? r;
+      if (!record) continue;
+      // Where it was, as near as the merged list allows.
+      const i = of(l ? local : remote).indexOf(record);
+      list.splice(Math.min(i, list.length), 0, record);
+      back.add(id);
+      conflicts.push({path: [name, id], local: l, remote: r});
+    }
+    return {list, back};
+  };
+
+  const sessions = kept('allocations');
+  const items = restore(
+    'items',
+    v => v.items,
+    d.allocations.filter(a => sessions.has(a.id)).map(a => a.itemId),
+  );
+  const keptItems = kept('items');
+  const projects = restore(
+    'projects',
+    v => v.projects,
+    items.list.filter(i => keptItems.has(i.id)).map(i => i.projectId),
+  );
+  const keptProjects = kept('projects');
+  const areas = restore(
+    'areas',
+    v => v.areas,
+    projects.list.filter(p => keptProjects.has(p.id)).map(p => p.areaId),
+  );
+  if (!items.back.size && !projects.back.size && !areas.back.size) return d;
+  return {
+    ...d,
+    areas: areas.list,
+    projects: projects.list,
+    items: items.list,
   };
 }
 
