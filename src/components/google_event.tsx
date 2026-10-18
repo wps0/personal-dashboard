@@ -1,4 +1,3 @@
-import DOMPurify from 'dompurify';
 import {
   Clock,
   ExternalLink,
@@ -14,6 +13,7 @@ import type {GEvent} from '../google/events';
 import {blockKeys} from '../keyboard';
 import {fromMinutes} from '../model/time';
 import {readableOn} from '../format';
+import {sanitizeHtml} from '../sanitize';
 import {useUi} from '../ui';
 import {BlockLabel, blockTextClass} from './block_label';
 import {Popover, PopoverAnchor, PopoverContent, useBeside} from './ui/popover';
@@ -24,10 +24,7 @@ const CARD_WIDTH = 400;
 function GoogleEventCard({ev}: {ev: GEvent}) {
   // Descriptions can contain HTML (links, line breaks); sanitize before rendering.
   const description = useMemo(
-    () =>
-      ev.description
-        ? DOMPurify.sanitize(ev.description, {ADD_ATTR: ['target']})
-        : '',
+    () => (ev.description ? sanitizeHtml(ev.description) : ''),
     [ev.description],
   );
   const close = () => useUi.getState().openGoogle(null);
