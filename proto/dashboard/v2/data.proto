@@ -1,9 +1,11 @@
 // The dashboard's data: everything stored in the browser and synced to Drive.
 //
-// Compatibility rules (SPEC 6): add fields with new numbers; never renumber,
-// retype or reuse a field or enum value; mark removed ones `reserved`. Code
-// must cope with enum values it doesn't know, since a newer app may write
-// them.
+// Stored as protobuf binary (storage/codec.ts), with protobuf's JSON form
+// alongside as a read-only copy for people. Never renumber, retype or reuse a
+// field or enum value (mark removed ones `reserved`). Adding a field is safe:
+// older versions of the app keep fields they don't know when they save. Raise
+// schema_version for any change older versions can't handle; they refuse such
+// data and ask to be updated.
 //
 // Dates are `YYYY-MM-DD` and times of day `HH:MM`, in local time; timestamps
 // are ISO 8601 strings.
@@ -12,6 +14,9 @@ syntax = "proto3";
 package dashboard.v2;
 
 message AppData {
+  // Raised on every change older versions of the app can't read correctly;
+  // they refuse data with a higher version and ask to be updated.
+  int32 schema_version = 9;
   repeated Area areas = 1;
   repeated Project projects = 2;
   repeated Item items = 3;
