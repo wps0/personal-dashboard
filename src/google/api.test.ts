@@ -140,4 +140,27 @@ describe('Calendar API client', () => {
     expect(useGoogle.getState().selected).toEqual(['me@gmail.com']);
     expect(useGoogle.getState().email).toBe('me@gmail.com');
   });
+
+  it('selects the new account’s primary calendar after switching accounts', () => {
+    useGoogle.setState({selected: [], calendar: true, driveSync: false});
+    useGoogle
+      .getState()
+      .setCalendars([{id: 'a@gmail.com', summary: 'A', primary: true}]);
+    expect(useGoogle.getState().selected).toEqual(['a@gmail.com']);
+    useGoogle.getState().disconnectCalendar();
+    useGoogle.getState().setCalendars([
+      {id: 'b@gmail.com', summary: 'B', primary: true},
+      {id: 'holidays', summary: 'Holidays'},
+    ]);
+    expect(useGoogle.getState().selected).toEqual(['b@gmail.com']);
+  });
+
+  it('keeps the selected calendars that are still in the list', () => {
+    useGoogle.setState({selected: ['gone', 'holidays']});
+    useGoogle.getState().setCalendars([
+      {id: 'me@gmail.com', summary: 'Me', primary: true},
+      {id: 'holidays', summary: 'Holidays'},
+    ]);
+    expect(useGoogle.getState().selected).toEqual(['holidays']);
+  });
 });

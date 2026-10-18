@@ -362,9 +362,17 @@ export const useGoogle = create<GoogleState>()((set, get) => {
 
     setCalendars: calendars => {
       const primary = calendars.find(c => c.primary);
+      const {selected} = get();
+      // Only this account's calendars; with none of them (first connection,
+      // another account), show its primary calendar by default.
+      let kept = selected.filter(id => calendars.some(c => c.id === id));
+      if (!kept.length && primary) kept = [primary.id];
       set({calendars, email: primary?.id});
-      // First connection: show the primary calendar by default.
-      if (!get().selected.length && primary) prefs({selected: [primary.id]});
+      if (
+        kept.length !== selected.length ||
+        kept.some((id, i) => id !== selected[i])
+      )
+        prefs({selected: kept});
     },
   };
 });
