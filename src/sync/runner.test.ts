@@ -77,7 +77,7 @@ describe('SyncRunner', () => {
     expect(state.data.items[0].title).toBe('From the phone');
     expect(state.data.items[1].title).toBe('Typed meanwhile');
     expect(same(drive.content(), state.data)).toBe(true);
-    expect(runner.applied).toBe(state.data);
+    expect(runner.isOwnChange(state.data)).toBe(true);
   });
 
   it('reports conflicts with edits made during a sync', async () => {
@@ -100,6 +100,23 @@ describe('SyncRunner', () => {
     expect(deps.onConflicts).toHaveBeenCalledWith([
       {path: ['items', id], local: undefined, remote: other.items[0]},
     ]);
+  });
+
+  it('takes an undo back to the synced data for an edit', async () => {
+    const drive = new FakeDrive();
+    await setUp(sample(), drive).runner.sync();
+    const {runner, state} = setUp(emptyData(), drive);
+    await runner.sync(); // takes Drive's data
+    const pulled = state.data;
+    expect(runner.isOwnChange(pulled)).toBe(true);
+
+    // An edit, uploaded, then undone back to the very same data.
+    state.data = structuredClone(pulled);
+    state.data.items[0].title = 'Edited';
+    expect(runner.isOwnChange(state.data)).toBe(false);
+    await runner.sync();
+    state.data = pulled;
+    expect(runner.isOwnChange(pulled)).toBe(false);
   });
 
   it('reports offline, expired sessions and other errors', async () => {
