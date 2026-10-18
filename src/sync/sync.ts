@@ -1,7 +1,6 @@
 import type {DriveFile} from '../google/drive';
 import {emptyData, type AppData} from '../model/types';
-import {parseAppData} from '../storage/parse_v1';
-import {exportJson} from '../storage/storage';
+import {exportJson, readStored} from '../storage/storage';
 import {mergeData, same, type Conflict} from './merge';
 
 /** Where this device stands with Drive: the file, and its version and content at the last sync. */
@@ -106,7 +105,7 @@ async function firstSync(
 async function read(drive: Remote, id: string): Promise<AppData> {
   const text = await drive.download(id);
   try {
-    return parseAppData(JSON.parse(text));
+    return readStored(JSON.parse(text));
   } catch (e) {
     // Never overwrite what we can't read (e.g. saved by a newer version of the app).
     throw new Error(

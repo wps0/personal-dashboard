@@ -478,8 +478,11 @@ compares Gemini's output against the `*.expected.json` files.
   both ways, so older and newer versions of the app can share the same data:
   add fields with new numbers; never renumber, retype or reuse a field or enum
   value (mark removed ones `reserved`); and code must cope with enum values it
-  doesn't know. `buf lint` checks the schema's style. (The app doesn't use it
-  yet; the move is in progress.)
+  doesn't know. `buf lint` checks the schema's style. IndexedDB, the Drive
+  file and exports store `{"format": 2, "data": <base64 protobuf>, "view":
+  <readable JSON>}` (`storage/codec.ts`): the binary is the source of truth,
+  `view` is for people. Data in the old v1 JSON is still read. (The app's
+  in-memory model is moving to the generated types step by step.)
 - **Checks:** `npm run lint`, `format:check`, `proto:lint`, `typecheck`,
   `test`, `build`.
   The **Checks** workflow runs them on every pull request with a read-only

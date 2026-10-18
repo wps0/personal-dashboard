@@ -1,4 +1,5 @@
 import 'fake-indexeddb/auto';
+import {get, set} from 'idb-keyval';
 import {describe, expect, it} from 'vitest';
 import {sampleData} from '../model/sample';
 import {parseAppData} from './parse_v1';
@@ -23,6 +24,15 @@ describe('storage', () => {
     await s.clearSyncBase();
     expect(await s.loadSyncBase()).toBeNull();
     expect(await s.load()).toEqual(data);
+  });
+
+  it('stores the protobuf format, and still reads v1 data', async () => {
+    const data = sampleData('2026-10-10');
+    await new IndexedDbStorage().save(data);
+    expect(await get('personal-dashboard/data')).toMatchObject({format: 2});
+
+    await set('personal-dashboard/data', structuredClone(data));
+    expect(await new IndexedDbStorage().load()).toEqual(data);
   });
 
   it('rejects malformed or future-version imports', () => {

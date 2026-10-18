@@ -1,4 +1,5 @@
 import type {DriveFile} from '../google/drive';
+import {readStored} from '../storage/storage';
 import type {Remote} from './sync';
 
 /** An in-memory Drive for tests: versions grow on every write, like Drive's. */
@@ -43,6 +44,6 @@ export class FakeDrive implements Remote {
   }
   /** The data currently in the (only) file. */
   content() {
-    return JSON.parse([...this.files.values()].at(-1)!.content);
+    return readStored(JSON.parse([...this.files.values()].at(-1)!.content));
   }
 }

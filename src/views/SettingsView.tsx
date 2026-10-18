@@ -2,8 +2,7 @@ import {useRef, useState, type ReactNode} from 'react';
 import {InlineText} from '../components/InlineText';
 import {sampleData} from '../model/sample';
 import {AREA_COLORS, emptyData} from '../model/types';
-import {parseAppData} from '../storage/parse_v1';
-import {downloadJson} from '../storage/storage';
+import {downloadJson, readStored} from '../storage/storage';
 import {useData, useStore} from '../store';
 import {useGoogle} from '../google/auth';
 import {CapacitySettings} from './CapacitySettings';
@@ -41,7 +40,7 @@ export function SettingsView() {
 
   const importFile = async (file: File) => {
     try {
-      const parsed = parseAppData(JSON.parse(await file.text()));
+      const parsed = readStored(JSON.parse(await file.text()));
       if (
         confirm(`Replace all current data with "${file.name}"?${everywhere()}`)
       ) {
