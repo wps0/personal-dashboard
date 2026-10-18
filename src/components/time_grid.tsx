@@ -44,7 +44,11 @@ import type {Allocation, CalendarEvent, ISODate} from '../model/types';
 import {useStore} from '../store';
 import {draftAt, useUi} from '../ui';
 import {CapacityBadge} from './capacity_badge';
-import {GoogleChip, GoogleTimedBlock} from './google_event';
+import {
+  GoogleChip,
+  GoogleTimedBlock,
+  useCloseMissingCard,
+} from './google_event';
 import {noGoogleEvents, useGoogleEvents} from '../google/use_google_events';
 import {layoutAllDay} from '../google/spans';
 import type {GEvent} from '../google/events';
@@ -249,6 +253,11 @@ function GridBody({days, hourHeight, scrollToHour, onDayClick}: BodyProps) {
   const rules = useStore(s => s.data.settings.capacityRules);
   const hidden = useUi(s => s.hidden);
   const draftElsewhere = useUi(s => !!s.draft && !days.includes(s.draft.date));
+  const openEventId = useUi(s => s.openEventId);
+  const eventElsewhere = useStore(s => {
+    const e = s.data.events.find(x => x.id === openEventId);
+    return !!e && !days.includes(e.date);
+  });
   const lookups = useLookups();
   const capacities = useCapacities(days);
   const today = todayISO();
@@ -264,6 +273,7 @@ function GridBody({days, hourHeight, scrollToHour, onDayClick}: BodyProps) {
   );
 
   const google = useGoogleEvents(days);
+  useCloseMissingCard(google);
   const googleByDay = useMemo(() => {
     const m = new Map<ISODate, {timed: GEvent[]; allDay: GEvent[]}>();
     for (const d of days) {
@@ -318,6 +328,7 @@ function GridBody({days, hourHeight, scrollToHour, onDayClick}: BodyProps) {
   return (
     <div className="relative flex h-full min-h-0 flex-col overflow-hidden select-none">
       {draftElsewhere && <OffscreenDraft />}
+      {eventElsewhere && <OffscreenEvent eventId={openEventId!} />}
       <div
         key={`h${days[0]}`}
         className={`grid shrink-0 ${slide}`}
@@ -460,6 +471,18 @@ function OffscreenDraft() {
       <PopoverAnchor className="absolute top-2 right-1/2 h-0 w-0" />
       <PopoverContent side="bottom">
         <DraftEditor />
+      </PopoverContent>
+    </Popover>
+  );
+}
+
+/** The open event moved to a date this grid doesn't show: keep its editor open, as for the draft. */
+function OffscreenEvent({eventId}: {eventId: string}) {
+  return (
+    <Popover open onOpenChange={o => !o && useUi.getState().openEvent(null)}>
+      <PopoverAnchor className="absolute top-2 right-1/2 h-0 w-0" />
+      <PopoverContent side="bottom">
+        <EventEditor eventId={eventId} />
       </PopoverContent>
     </Popover>
   );

@@ -19,7 +19,7 @@ import type {Allocation, CalendarEvent, ISODate} from '../model/types';
 import {useStore} from '../store';
 import {draftAt, useUi} from '../ui';
 import {DraftEditor, EventEditor} from './event_editor';
-import {GoogleChip} from './google_event';
+import {GoogleChip, useCloseMissingCard} from './google_event';
 import {useGoogleEvents} from '../google/use_google_events';
 import type {GEvent} from '../google/events';
 import {fromMinutes} from '../model/time';
@@ -104,6 +104,7 @@ function MonthBody({
   const slide = useSlide(date);
 
   const google = useGoogleEvents(days);
+  useCloseMissingCard(google);
   const byDay = useMemo(() => {
     const want = new Set(days);
     const m = new Map<ISODate, Entry[]>(days.map(d => [d, []]));
