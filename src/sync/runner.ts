@@ -112,10 +112,10 @@ export class SyncRunner {
         });
         return false;
       }
-      // Edits made while the sync was running are merged in, and win.
+      // Edits made while the sync was running are merged in as this device's.
       const now = deps.getData();
-      const data =
-        now === local ? res.data : mergeData(local, now, res.data).data;
+      const late = now === local ? null : mergeData(local, now, res.data);
+      const data = late ? late.data : res.data;
       if (data !== now) {
         this.applied = data;
         deps.setData(data);
@@ -123,7 +123,8 @@ export class SyncRunner {
       await deps.saveSynced(data, res.base);
       this.base = res.base;
       if (data !== res.data) this.again = true; // upload those edits
-      if (res.conflicts.length) deps.onConflicts?.(res.conflicts);
+      const conflicts = [...res.conflicts, ...(late?.conflicts ?? [])];
+      if (conflicts.length) deps.onConflicts?.(conflicts);
       useSync.setState({status: {kind: 'idle'}, lastSynced: Date.now()});
       return true;
     } catch (e) {
