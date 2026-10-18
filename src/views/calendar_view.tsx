@@ -13,6 +13,7 @@ import {
   monthGrid,
   startOfWeek,
   todayISO,
+  type DayOfWeek,
 } from '../model/dates';
 import {calViewOf, type ISODate} from '../model/types';
 import {href, navigate, type CalView} from '../router';
@@ -23,7 +24,7 @@ import {GoogleErrorNotice} from '../components/google_error_notice';
 import {useStore} from '../store';
 import {nextHourDraft, useUi} from '../ui';
 import {useNavTarget} from '../keyboard';
-import {useMediaQuery} from '../hooks';
+import {useMediaQuery, useWeekStart} from '../hooks';
 import {unreachable} from '../unreachable';
 
 const VIEW_OPTIONS = [
@@ -33,19 +34,23 @@ const VIEW_OPTIONS = [
   {value: 'month', label: 'Month'},
 ] as const;
 
-/** The days a view shows for an anchor date. */
-function visibleDays(view: CalView, date: ISODate): ISODate[] {
+/** The days a view shows for an anchor date, weeks starting on `weekStart`. */
+function visibleDays(
+  view: CalView,
+  date: ISODate,
+  weekStart: DayOfWeek,
+): ISODate[] {
   switch (view) {
     case 'day':
       return [date];
     case '3day':
       return [date, addDays(date, 1), addDays(date, 2)];
     case 'week': {
-      const monday = startOfWeek(date);
-      return Array.from({length: 7}, (_, i) => addDays(monday, i));
+      const start = startOfWeek(date, weekStart);
+      return Array.from({length: 7}, (_, i) => addDays(start, i));
     }
     case 'month':
-      return monthGrid(date);
+      return monthGrid(date, weekStart);
     default:
       return unreachable(view);
   }
@@ -88,12 +93,18 @@ export function CalendarView({
   const phone = useMediaQuery('(max-width: 639px)');
   const view =
     routeView ?? (phone && defaultView === 'week' ? '3day' : defaultView);
+  const weekStart = useWeekStart();
   const today = todayISO();
   const date =
     routeDate && /^\d{4}-\d{2}-\d{2}$/.test(routeDate) ? routeDate : today;
   const days = useMemo(
-    () => visibleDays(view, view === 'month' ? firstOfMonth(date) : date),
-    [view, date],
+    () =>
+      visibleDays(
+        view,
+        view === 'month' ? firstOfMonth(date) : date,
+        weekStart,
+      ),
+    [view, date, weekStart],
   );
   const go = (v: CalView, d: ISODate) =>
     navigate({name: 'calendar', view: v, date: d === today ? undefined : d});
