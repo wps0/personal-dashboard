@@ -5,7 +5,7 @@ import {useStore} from '../store';
 import {coursesIn} from '../usos/fetch';
 import {useTimetableLoaded} from '../usos/timetable';
 import {coursePattern} from '../usos/usos';
-import {BufferedInput} from './Buffered';
+import {BufferedInput} from './buffered';
 
 /**
  * A project's USOS course pattern: a regex on the course title (never the

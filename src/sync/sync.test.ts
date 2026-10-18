@@ -4,7 +4,7 @@ import * as pb from '../gen/dashboard/v2/data_pb';
 import {SCHEMA_VERSION, toReadableJson} from '../storage/codec';
 import {sampleData} from '../model/sample';
 import {emptyData, type AppData} from '../model/types';
-import {FakeDrive} from './fakeDrive';
+import {FakeDrive} from './fake_drive';
 import {same} from './merge';
 import {syncOnce, type SyncBase} from './sync';
 

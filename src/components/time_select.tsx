@@ -1,6 +1,6 @@
 import {memo, useMemo} from 'react';
 import {fromMinutes, toMinutes} from '../model/time';
-import {Select} from './ui/Select';
+import {Select} from './ui/select';
 
 interface Props {
   value: string;

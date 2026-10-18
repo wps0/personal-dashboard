@@ -15,8 +15,8 @@ import {blockKeys} from '../keyboard';
 import {fromMinutes} from '../model/time';
 import {readableOn} from '../format';
 import {useUi} from '../ui';
-import {BlockLabel, blockTextClass} from './BlockLabel';
-import {Popover, PopoverAnchor, PopoverContent, useBeside} from './ui/Popover';
+import {BlockLabel, blockTextClass} from './block_label';
+import {Popover, PopoverAnchor, PopoverContent, useBeside} from './ui/popover';
 
 const CARD_WIDTH = 400;
 

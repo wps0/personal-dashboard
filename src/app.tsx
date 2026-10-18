@@ -1,29 +1,29 @@
 import {CircleGauge, Keyboard, Monitor, Moon, Sun} from 'lucide-react';
-import {ConflictsBadge} from './components/ConflictsBadge';
-import {Toaster} from './components/Toaster';
-import {ShortcutDialogs} from './components/ShortcutDialogs';
+import {ConflictsBadge} from './components/conflicts_badge';
+import {Toaster} from './components/toaster';
+import {ShortcutDialogs} from './components/shortcut_dialogs';
 import {useGlobalShortcuts} from './keyboard';
 import {lazy, Suspense, useEffect, type ReactNode} from 'react';
-import {ItemOverlay} from './components/ItemOverlay';
-import {preloadMarkdown} from './components/Markdown';
+import {ItemOverlay} from './components/item_overlay';
+import {preloadMarkdown} from './components/markdown';
 import {sampleData} from './model/sample';
 import {href, navigate, useRoute, type Route} from './router';
 import {useStore} from './store';
 import {useTheme, type ThemeChoice} from './theme';
 import {useUi} from './ui';
-import {CalendarView} from './views/CalendarView';
-import {HomeView} from './views/HomeView';
-import {WeekView} from './views/WeekView';
+import {CalendarView} from './views/calendar_view';
+import {HomeView} from './views/home_view';
+import {WeekView} from './views/week_view';
 import {unreachable} from './unreachable';
 
 // Not needed for the first screen: loaded separately to keep the first load
 // small, then fetched in the background once the app is idle, so opening them
 // later never waits.
 function loadProjects() {
-  return import('./views/ProjectsView');
+  return import('./views/projects_view');
 }
 function loadSettings() {
-  return import('./views/SettingsView');
+  return import('./views/settings_view');
 }
 const ProjectsView = lazy(() =>
   loadProjects().then(m => ({default: m.ProjectsView})),

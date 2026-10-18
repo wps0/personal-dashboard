@@ -4,7 +4,7 @@ import {
   useState,
   type PointerEvent as ReactPointerEvent,
 } from 'react';
-import {ProgressRing} from '../components/ProgressRing';
+import {ProgressRing} from '../components/progress_ring';
 import {URGENCY_CLASS} from '../format';
 import {countdown, todayISO} from '../model/dates';
 import {
@@ -22,7 +22,7 @@ const MODE_NAME: Partial<Record<ProgressMode, string>> = {
 };
 import {href, navigate} from '../router';
 import {useStore} from '../store';
-import {ProjectPanel} from './ProjectPanel';
+import {ProjectPanel} from './project_panel';
 
 /** Project cards grouped by area; the selected project opens in a panel on the right. */
 export function ProjectsView({selectedId}: {selectedId?: string}) {

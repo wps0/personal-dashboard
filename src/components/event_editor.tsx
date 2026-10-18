@@ -6,10 +6,10 @@ import {fromMinutes, toMinutes} from '../model/time';
 import type {CalendarEvent} from '../model/types';
 import {useStore} from '../store';
 import {useUi, type Draft} from '../ui';
-import {BufferedInput, BufferedTextarea} from './Buffered';
-import {DateField} from './DateField';
-import {TimeSelect} from './TimeSelect';
-import {MoveBar} from './ui/MoveBar';
+import {BufferedInput, BufferedTextarea} from './buffered';
+import {DateField} from './date_field';
+import {TimeSelect} from './time_select';
+import {MoveBar} from './ui/move_bar';
 
 type When = Pick<CalendarEvent, 'date' | 'start' | 'end' | 'allDay'>;
 

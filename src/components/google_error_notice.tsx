@@ -1,7 +1,7 @@
 import {AlertTriangle, ExternalLink, RotateCw} from 'lucide-react';
 import {useGoogle} from '../google/auth';
 import {useGoogleError} from '../google/status';
-import {retryGoogle} from '../google/useGoogleEvents';
+import {retryGoogle} from '../google/use_google_events';
 
 /** The latest Google problem, with a fix-it link when there is one and a Retry button. */
 export function GoogleErrorNotice({compact = false}: {compact?: boolean}) {

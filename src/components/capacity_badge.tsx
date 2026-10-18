@@ -6,8 +6,8 @@ import {formatLong} from '../model/dates';
 import type {ISODate} from '../model/types';
 import {href} from '../router';
 import {useStore} from '../store';
-import {HoursInput} from './HoursInput';
-import {Popover, PopoverContent, PopoverTrigger} from './ui/Popover';
+import {HoursInput} from './hours_input';
+import {Popover, PopoverContent, PopoverTrigger} from './ui/popover';
 
 function signed(n: number) {
   return n > 0 ? `+${fmtH(n)}` : n < 0 ? `−${fmtH(-n)}` : '±0h';

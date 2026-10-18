@@ -1,4 +1,4 @@
-import {sameProps} from '../sameProps';
+import {sameProps} from '../same_props';
 import {
   DndContext,
   DragOverlay,
@@ -9,12 +9,12 @@ import {
 } from '@dnd-kit/core';
 import {ghostUnderPointer, useDragSensors} from '../dnd';
 import {memo, useMemo, useState, type ReactNode} from 'react';
-import {BufferedTextarea} from '../components/Buffered';
-import {HoursInput} from '../components/HoursInput';
-import {WeekNav} from '../components/WeekNav';
+import {BufferedTextarea} from '../components/buffered';
+import {HoursInput} from '../components/hours_input';
+import {WeekNav} from '../components/week_nav';
 import {fmtH, URGENCY_CLASS} from '../format';
 import {useCapacities, useLookups, useSlide, type Lookups} from '../hooks';
-import {CapacityBadge} from '../components/CapacityBadge';
+import {CapacityBadge} from '../components/capacity_badge';
 import type {CapacityInfo} from '../model/capacity';
 import {
   addDays,

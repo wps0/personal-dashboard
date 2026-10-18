@@ -13,8 +13,8 @@ import {href} from '../router';
 import {useStore} from '../store';
 import {withUndo} from '../toast';
 import {useUi} from '../ui';
-import {HoursInput} from './HoursInput';
-import {Modal} from './Modal';
+import {HoursInput} from './hours_input';
+import {Modal} from './modal';
 
 type Step =
   | {kind: 'paste'; error?: string}

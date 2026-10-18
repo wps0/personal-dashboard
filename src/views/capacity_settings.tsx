@@ -1,6 +1,6 @@
 import {Copy, Minus, Plus, Trash2} from 'lucide-react';
-import {BufferedInput} from '../components/Buffered';
-import {TimeSelect} from '../components/TimeSelect';
+import {BufferedInput} from '../components/buffered';
+import {TimeSelect} from '../components/time_select';
 import {fmtH} from '../format';
 import {
   range,

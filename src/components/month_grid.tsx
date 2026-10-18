@@ -18,12 +18,12 @@ import {monthGrid, todayISO} from '../model/dates';
 import type {Allocation, CalendarEvent, ISODate} from '../model/types';
 import {useStore} from '../store';
 import {draftAt, useUi} from '../ui';
-import {DraftEditor, EventEditor} from './EventEditor';
-import {GoogleChip} from './GoogleEvent';
-import {useGoogleEvents} from '../google/useGoogleEvents';
+import {DraftEditor, EventEditor} from './event_editor';
+import {GoogleChip} from './google_event';
+import {useGoogleEvents} from '../google/use_google_events';
 import type {GEvent} from '../google/events';
 import {fromMinutes} from '../model/time';
-import {Popover, PopoverAnchor, PopoverContent} from './ui/Popover';
+import {Popover, PopoverAnchor, PopoverContent} from './ui/popover';
 import {
   deleteEvent,
   removeSession,

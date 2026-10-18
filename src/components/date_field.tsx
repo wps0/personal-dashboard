@@ -2,8 +2,8 @@ import {CalendarDays, X} from 'lucide-react';
 import {memo, useState} from 'react';
 import {formatMedium} from '../model/dates';
 import type {ISODate} from '../model/types';
-import {MiniMonth} from './MiniMonth';
-import {Popover, PopoverContent, PopoverTrigger} from './ui/Popover';
+import {MiniMonth} from './mini_month';
+import {Popover, PopoverContent, PopoverTrigger} from './ui/popover';
 
 interface Props {
   value?: ISODate;

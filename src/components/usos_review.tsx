@@ -5,7 +5,7 @@ import {useStore} from '../store';
 import {useUi} from '../ui';
 import {useUsosProposals} from '../usos/proposals';
 import {meetingTitle, type Proposal} from '../usos/usos';
-import {Modal} from './Modal';
+import {Modal} from './modal';
 
 function plural(n: number, one: string, many: string) {
   return `${n} ${n === 1 ? one : many}`;

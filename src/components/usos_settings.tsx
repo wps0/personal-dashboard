@@ -4,8 +4,8 @@ import {useGoogleCalendars} from '../google/calendars';
 import type {UsosSource} from '../model/types';
 import {useStore} from '../store';
 import {coursesIn, fetchMeetings, isValidICalUrl} from '../usos/fetch';
-import {BufferedInput} from './Buffered';
-import {Select} from './ui/Select';
+import {BufferedInput} from './buffered';
+import {Select} from './ui/select';
 
 type Kind = 'off' | NonNullable<UsosSource['case']>;
 

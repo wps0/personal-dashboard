@@ -10,8 +10,8 @@ import {
 } from '../model/dates';
 import type {ISODate} from '../model/types';
 import {href, navigate} from '../router';
-import {MiniMonth} from './MiniMonth';
-import {Popover, PopoverContent, PopoverTrigger} from './ui/Popover';
+import {MiniMonth} from './mini_month';
+import {Popover, PopoverContent, PopoverTrigger} from './ui/popover';
 
 /** Today / prev / next, plus a mini-month popover to jump to any week. */
 export function WeekNav({monday}: {monday: ISODate}) {
