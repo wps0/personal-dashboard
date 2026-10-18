@@ -1,6 +1,6 @@
 import type {DriveFile} from '../google/drive';
 import {emptyData, type AppData} from '../model/types';
-import {encode} from '../storage/codec';
+import {encode, toReadableJson} from '../storage/codec';
 import {readStored} from '../storage/storage';
 import {mergeData, same, type Conflict} from './merge';
 
@@ -18,6 +18,8 @@ export interface Remote {
   download(id: string): Promise<Uint8Array>;
   createFile(content: Uint8Array<ArrayBuffer>): Promise<DriveFile>;
   updateFile(id: string, content: Uint8Array<ArrayBuffer>): Promise<DriveFile>;
+  /** Writes the readable copy of the data (never read back). */
+  writeCopy(text: string): Promise<void>;
 }
 
 /**
@@ -117,6 +119,7 @@ async function read(drive: Remote, id: string): Promise<AppData> {
 
 async function create(local: AppData, drive: Remote): Promise<SyncResult> {
   const file = await drive.createFile(encode(local));
+  await writeCopy(local, drive);
   return done('created', local, at(file, local));
 }
 
@@ -128,7 +131,17 @@ async function push(
   conflicts: Conflict[] = [],
 ): Promise<SyncResult> {
   const file = await drive.updateFile(fileId, encode(data));
+  await writeCopy(data, drive);
   return done(kind, data, at(file, data), conflicts);
+}
+
+/** Updates the readable copy for the user; the sync doesn't depend on it. */
+async function writeCopy(data: AppData, drive: Remote): Promise<void> {
+  try {
+    await drive.writeCopy(toReadableJson(data));
+  } catch {
+    // The next upload writes it again.
+  }
 }
 
 const at = (file: DriveFile, data: AppData): SyncBase => ({

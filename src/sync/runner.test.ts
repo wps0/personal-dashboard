@@ -53,7 +53,7 @@ describe('SyncRunner', () => {
     const {runner, drive} = setUp(sample());
     await Promise.all([runner.sync(), runner.sync(), runner.sync()]);
     // The first creates the file; the queued one finds nothing new.
-    expect(drive.calls).toEqual(['find', 'create', 'info']);
+    expect(drive.calls).toEqual(['find', 'create', 'copy', 'info']);
   });
 
   it('keeps edits made during a sync, and uploads them', async () => {

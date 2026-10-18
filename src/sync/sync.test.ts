@@ -1,7 +1,7 @@
 import {create, toBinary} from '@bufbuild/protobuf';
 import {beforeEach, describe, expect, it} from 'vitest';
 import * as pb from '../gen/dashboard/v2/data_pb';
-import {SCHEMA_VERSION} from '../storage/codec';
+import {SCHEMA_VERSION, toReadableJson} from '../storage/codec';
 import {sampleData} from '../model/sample';
 import {emptyData, type AppData} from '../model/types';
 import {FakeDrive} from './fakeDrive';
@@ -116,6 +116,32 @@ describe('syncOnce', () => {
     laptop.data = edit(laptop.data, d => (d.items[0].title = 'x'));
     await expect(laptop.sync()).rejects.toThrow(/can’t be read.*newer version/);
     expect(drive.files.get(id)!.content).toBe(newer);
+  });
+
+  it('writes the readable copy after every upload, and only then', async () => {
+    const laptop = new Device(sample(), drive);
+    await laptop.sync();
+    expect(drive.copy).toBe(toReadableJson(laptop.data));
+
+    const phone = new Device(emptyData(), drive);
+    drive.calls = [];
+    await phone.sync();
+    expect(drive.calls).not.toContain('copy');
+
+    phone.data = edit(phone.data, d => (d.items[0].title = 'From the phone'));
+    drive.calls = [];
+    await phone.sync();
+    expect(drive.calls).toEqual(['info', 'update', 'copy']);
+    expect(drive.copy).toBe(toReadableJson(phone.data));
+  });
+
+  it('syncs even if the readable copy can’t be written', async () => {
+    drive.writeCopy = () => Promise.reject(new Error('quota'));
+    const laptop = new Device(sample(), drive);
+    expect((await laptop.sync()).kind).toBe('created');
+    laptop.data = edit(laptop.data, d => (d.items[0].title = 'x'));
+    expect((await laptop.sync()).kind).toBe('pushed');
+    expect(drive.content().items[0].title).toBe('x');
   });
 
   it('makes a new file if the old one was deleted', async () => {

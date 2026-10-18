@@ -125,6 +125,10 @@ sync** on each of them. The data goes into one file in your Drive,
 so the app still works offline. The app asks for `drive.file` only when you
 turn sync on: access to the files it creates, nothing else in your Drive.
 
+After every upload the app also writes `personal-dashboard.json`, the same
+data as readable JSON, so you can look at it if something breaks in the app.
+It's only a copy: the app never reads it, and edits made to it are lost.
+
 It uses the same OAuth client as the calendar. In the same Cloud project,
 enable the **Google Drive API** and add the scope `.../auth/drive.file` to the
 consent screen.
