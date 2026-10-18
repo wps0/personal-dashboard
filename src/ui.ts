@@ -46,8 +46,8 @@ interface UiState {
   hidden: string[];
   /** The calendar's all-day row shows only a couple of items per day. Per device. */
   allDayCollapsed: boolean;
-  /** Dialogs: shortcut help, go-to-date, or reviewing new USOS classes. */
-  dialog: 'help' | 'goto' | 'usos' | 'curriculum' | null;
+  /** Dialogs: shortcut help, go-to-date, reviewing new USOS classes, importing a curriculum, or reviewing sync conflicts. */
+  dialog: 'help' | 'goto' | 'usos' | 'curriculum' | 'conflicts' | null;
   setDialog(d: UiState['dialog']): void;
   /** The project whose USOS classes are under review; all projects if null. */
   usosProjectId: string | null;

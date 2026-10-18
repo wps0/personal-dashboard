@@ -1,10 +1,12 @@
-import {CloudOff, HardDrive, RefreshCw} from 'lucide-react';
+import {CloudOff, GitMerge, HardDrive, RefreshCw} from 'lucide-react';
 import type {ReactNode} from 'react';
 import {DRIVE_SCOPE, useGoogle} from '../google/auth';
 import {downloadJson} from '../storage/storage';
 import {useStore} from '../store';
 import {useSync, type SyncStatus} from '../sync/runner';
+import {usePendingConflicts} from '../sync/pending';
 import {syncNow} from '../sync/setup';
+import {useUi} from '../ui';
 
 const time = (ms: number) =>
   new Date(ms).toLocaleTimeString([], {hour: '2-digit', minute: '2-digit'});
@@ -15,6 +17,7 @@ export function DriveSyncSettings() {
   const on = useGoogle(s => s.driveSync);
   const setDriveSync = useGoogle(s => s.setDriveSync);
   const {status, lastSynced} = useSync();
+  const conflicts = usePendingConflicts(s => s.conflicts.length);
 
   return (
     <div className="space-y-3">
@@ -48,6 +51,20 @@ export function DriveSyncSettings() {
       </label>
 
       {on && <Status status={status} lastSynced={lastSynced} />}
+      {conflicts > 0 && (
+        <p className="flex flex-wrap items-center gap-x-1.5 gap-y-1 text-[13px] text-warn">
+          <GitMerge size={14} />
+          {conflicts === 1
+            ? '1 conflict to review.'
+            : `${conflicts} conflicts to review.`}
+          <button
+            className="btn ml-2"
+            onClick={() => useUi.getState().setDialog('conflicts')}
+          >
+            Review
+          </button>
+        </p>
+      )}
     </div>
   );
 }

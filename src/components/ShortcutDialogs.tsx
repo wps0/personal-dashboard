@@ -7,6 +7,7 @@ import {MiniMonth} from './MiniMonth';
 import {Modal} from './Modal';
 import {UsosReview} from './UsosReview';
 import {CurriculumImport} from './CurriculumImport';
+import {ConflictReview} from './ConflictReview';
 
 /** The `?` help sheet and the `g` go-to-date picker. */
 export function ShortcutDialogs() {
@@ -61,6 +62,7 @@ export function ShortcutDialogs() {
   }
   if (dialog === 'usos') return <UsosReview />;
   if (dialog === 'curriculum') return <CurriculumImport />;
+  if (dialog === 'conflicts') return <ConflictReview />;
   if (dialog === 'goto') {
     return (
       <Modal onClose={close} width="max-w-[260px]">
