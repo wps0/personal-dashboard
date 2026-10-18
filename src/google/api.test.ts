@@ -69,6 +69,26 @@ describe('Calendar API client', () => {
     expect(useGoogle.getState().token).toBeUndefined();
   });
 
+  it('does not mark a signed-out session expired', async () => {
+    fetchMock.mockImplementationOnce(async () => {
+      useGoogle.getState().signOut();
+      return ok({items: [{id: 'a'}], nextPageToken: 'p2'});
+    });
+    await expect(listCalendars()).rejects.toThrow(/expired/);
+    expect(useGoogle.getState().status).toBe('signed-out');
+  });
+
+  it('does not let a stale 401 expire a newer session', async () => {
+    const newer = {value: 'new', expiresAt: Date.now() + 3600_000};
+    fetchMock.mockImplementationOnce(async () => {
+      useGoogle.setState({token: newer});
+      return new Response('', {status: 401});
+    });
+    await expect(listCalendars()).rejects.toThrow(/expired/);
+    expect(useGoogle.getState().status).toBe('signed-in');
+    expect(useGoogle.getState().token).toBe(newer);
+  });
+
   it('does not call the API with an expired token', async () => {
     useGoogle.setState({token: {value: 'old', expiresAt: Date.now() - 1}});
     await expect(listCalendars()).rejects.toThrow(/expired/);
