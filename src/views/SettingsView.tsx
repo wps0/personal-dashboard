@@ -2,7 +2,7 @@ import {useRef, useState, type ReactNode} from 'react';
 import {InlineText} from '../components/InlineText';
 import {sampleData} from '../model/sample';
 import {AREA_COLORS, emptyData} from '../model/types';
-import {exportJson, parseAppData} from '../storage/storage';
+import {downloadJson, parseAppData} from '../storage/storage';
 import {useData, useStore} from '../store';
 import {CapacitySettings} from './CapacitySettings';
 import {GoogleSettings} from '../components/GoogleSettings';
@@ -29,15 +29,6 @@ export function SettingsView() {
   const fileRef = useRef<HTMLInputElement>(null);
   const [newArea, setNewArea] = useState('');
   const [message, setMessage] = useState<string | null>(null);
-
-  const download = () => {
-    const blob = new Blob([exportJson(data)], {type: 'application/json'});
-    const a = document.createElement('a');
-    a.href = URL.createObjectURL(blob);
-    a.download = `dashboard-${new Date().toISOString().slice(0, 10)}.json`;
-    a.click();
-    URL.revokeObjectURL(a.href);
-  };
 
   const importFile = async (file: File) => {
     try {
@@ -196,7 +187,7 @@ export function SettingsView() {
           hint="Everything is stored in this browser (IndexedDB). Export regularly until Drive sync lands."
         >
           <div className="flex flex-wrap gap-2">
-            <button className="btn" onClick={download}>
+            <button className="btn" onClick={() => downloadJson(data)}>
               Export JSON
             </button>
             <button className="btn" onClick={() => fileRef.current?.click()}>

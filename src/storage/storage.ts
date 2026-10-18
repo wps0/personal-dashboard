@@ -122,3 +122,13 @@ function parseUsos(raw: unknown): UsosSettings {
 export function exportJson(data: AppData): string {
   return JSON.stringify(data, null, 2);
 }
+
+/** Saves the data as a JSON file (the browser's download). */
+export function downloadJson(data: AppData) {
+  const blob = new Blob([exportJson(data)], {type: 'application/json'});
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = `dashboard-${new Date().toISOString().slice(0, 10)}.json`;
+  a.click();
+  URL.revokeObjectURL(a.href);
+}
