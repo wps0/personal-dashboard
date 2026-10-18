@@ -95,6 +95,20 @@ describe('syncOnce', () => {
     expect(same(drive.content(), other.data)).toBe(true);
   });
 
+  it('takes Drive’s data on a device whose notes were all cleared', async () => {
+    const laptop = new Device(sample(), drive);
+    await laptop.sync();
+    const phone = new Device(
+      edit(emptyData(), d => {
+        d.dayNotes['2026-10-13'] = '';
+        d.monthNotes['2026-10'] = '';
+      }),
+      drive,
+    );
+    expect((await phone.sync()).kind).toBe('pulled');
+    expect(same(phone.data, laptop.data)).toBe(true);
+  });
+
   it('can replace a device’s data with Drive’s on the first sync', async () => {
     const laptop = new Device(sample(), drive);
     await laptop.sync();
