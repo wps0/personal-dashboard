@@ -16,17 +16,17 @@ package dashboard;
 message AppData {
   // Raised on every change older versions of the app can't read correctly;
   // they refuse data with a higher version and ask to be updated.
-  int32 schema_version = 9;
-  repeated Area areas = 1;
-  repeated Project projects = 2;
-  repeated Item items = 3;
-  repeated Allocation allocations = 4;
-  repeated CalendarEvent events = 5;
+  int32 schema_version = 1;
+  repeated Area areas = 2;
+  repeated Project projects = 3;
+  repeated Item items = 4;
+  repeated Allocation allocations = 5;
+  repeated CalendarEvent events = 6;
   // Freeform text per day, keyed by date.
-  map<string, string> day_notes = 6;
+  map<string, string> day_notes = 7;
   // Freeform text per month, keyed `YYYY-MM`.
-  map<string, string> month_notes = 7;
-  Settings settings = 8;
+  map<string, string> month_notes = 8;
+  Settings settings = 9;
 }
 
 // A top-level group of projects, e.g. University or Work.
