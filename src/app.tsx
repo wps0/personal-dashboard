@@ -2,7 +2,7 @@ import {CircleGauge, Keyboard, Monitor, Moon, Sun} from 'lucide-react';
 import {ConflictsBadge} from './components/conflicts_badge';
 import {Toaster} from './components/toaster';
 import {ShortcutDialogs} from './components/shortcut_dialogs';
-import {useGlobalShortcuts} from './keyboard';
+import {isTyping, useGlobalShortcuts} from './keyboard';
 import {lazy, Suspense, useEffect, type ReactNode} from 'react';
 import {ItemOverlay} from './components/item_overlay';
 import {preloadMarkdown} from './components/markdown';
@@ -163,12 +163,11 @@ function EscapeClosesProject({route}: {route: Route}) {
   useEffect(() => {
     if (!panelOpen || overlayOpen) return;
     const onKey = (e: KeyboardEvent) => {
-      const t = e.target as HTMLElement;
       // defaultPrevented: a dropdown or popover already handled this Esc.
       if (
         e.key === 'Escape' &&
         !e.defaultPrevented &&
-        !['INPUT', 'TEXTAREA', 'SELECT'].includes(t.tagName)
+        !isTyping(e.target as Element)
       )
         navigate({name: 'projects'});
     };

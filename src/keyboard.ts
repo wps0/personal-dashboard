@@ -147,11 +147,24 @@ export function blockKeys(h: {
   };
 }
 
-function isTyping(el: Element | null): boolean {
+/** Inputs that take no typing: keys pressed on them are shortcuts. */
+const NON_TEXT_INPUTS = new Set([
+  'checkbox',
+  'radio',
+  'button',
+  'submit',
+  'reset',
+  'range',
+  'color',
+  'file',
+]);
+
+/** Focus is in a text field, which owns the keys. */
+export function isTyping(el: Element | null): boolean {
   if (!el) return false;
   const tag = el.tagName;
   return (
-    tag === 'INPUT' ||
+    (tag === 'INPUT' && !NON_TEXT_INPUTS.has((el as HTMLInputElement).type)) ||
     tag === 'TEXTAREA' ||
     tag === 'SELECT' ||
     (el as HTMLElement).isContentEditable
@@ -174,7 +187,9 @@ function overlayOpen(): boolean {
 /** Global single-key shortcuts (see SHORTCUT_HELP). */
 export function useGlobalShortcuts(route: Route) {
   const onKey = useEffectEvent((e: KeyboardEvent) => {
-    if (e.defaultPrevented || (e.repeat && e.key.length === 1)) return;
+    // isComposing: the key belongs to an input method (IME) composition.
+    if (e.defaultPrevented || e.isComposing || (e.repeat && e.key.length === 1))
+      return;
     const action = actionFor(e);
     if (!action) return;
     const typing = isTyping(document.activeElement);
@@ -227,6 +242,13 @@ export function useGlobalShortcuts(route: Route) {
         }
         break;
       case 'move':
+        // Radio buttons and sliders use the arrows themselves.
+        if (
+          document.activeElement?.matches(
+            'input[type=radio], input[type=range]',
+          )
+        )
+          return;
         if (!moveFocus(action.dir)) return; // nothing to select: let the arrow scroll
         break;
       default:
