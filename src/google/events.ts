@@ -47,7 +47,7 @@ export interface GEvent {
   first: ISODate;
   last: ISODate;
   allDay: boolean;
-  /** Minutes since midnight on `date`; 0–1440. */
+  /** Minutes since midnight on `date`; 0–1440. Equal for a zero-length event (see shownEndMin). */
   startMin: number;
   endMin: number;
   /** The event's own colour, or its calendar's. */
@@ -154,17 +154,21 @@ export function expandEvent(
   if (!ev.start.dateTime || !ev.end.dateTime) return [];
   const s = new Date(ev.start.dateTime);
   const e = new Date(ev.end.dateTime);
-  if (!(e > s)) return [];
+  // Zero-length events (e.g. reminders) are kept: Google shows them as short blocks.
+  if (!(e >= s)) return [];
   const first = toISODate(s);
-  const last = toISODate(new Date(e.getTime() - 1)); // ends at midnight → previous day is the last
+  // Ends at midnight → previous day is the last.
+  const last = e > s ? toISODate(new Date(e.getTime() - 1)) : first;
   const busy =
     !declined &&
     ev.transparency !== 'transparent' &&
     ev.eventType !== 'workingLocation';
   const when =
-    first === last
-      ? `${dayOnly(first)}, ${hhmm(s)} – ${hhmm(e)}`
-      : `${dayOnly(first)} ${hhmm(s)} – ${dayOnly(toISODate(e))} ${hhmm(e)}`;
+    e.getTime() === s.getTime()
+      ? `${dayOnly(first)}, ${hhmm(s)}`
+      : first === last
+        ? `${dayOnly(first)}, ${hhmm(s)} – ${hhmm(e)}`
+        : `${dayOnly(first)} ${hhmm(s)} – ${dayOnly(toISODate(e))} ${hhmm(e)}`;
   const out: GEvent[] = [];
   const days = clipDays(first, last, range);
   if (!days) return out;
@@ -185,6 +189,17 @@ export function expandEvent(
     });
   }
   return out;
+}
+
+/** The shortest a timed piece is drawn: zero-length events, or 02:30 CEST–02:30 CET on the DST fall-back night. */
+const MIN_SHOWN = 15;
+
+/**
+ * Where a timed piece's block ends in a day column: at least MIN_SHOWN after
+ * its start, within the day. Busy time still counts the real `endMin`.
+ */
+export function shownEndMin(ev: GEvent): number {
+  return Math.min(1440, Math.max(ev.endMin, ev.startMin + MIN_SHOWN));
 }
 
 /** RFC 3339 bounds for local midnight at the start of `from` and after `to`. */

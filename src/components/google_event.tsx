@@ -16,7 +16,7 @@ import {
   type ReactElement,
   type ReactNode,
 } from 'react';
-import type {GEvent} from '../google/events';
+import {shownEndMin, type GEvent} from '../google/events';
 import {blockKeys} from '../keyboard';
 import {fromMinutes} from '../model/time';
 import type {ISODate} from '../model/types';
@@ -160,7 +160,7 @@ export const GoogleTimedBlock = memo(function GoogleTimedBlock(props: {
 }) {
   const {ev, pos = {lane: 0, lanes: 1}, hourHeight} = props;
   const height = Math.max(
-    ((ev.endMin - ev.startMin) / 60) * hourHeight - 1,
+    ((shownEndMin(ev) - ev.startMin) / 60) * hourHeight - 1,
     14,
   );
   return (

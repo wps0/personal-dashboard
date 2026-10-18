@@ -1,5 +1,10 @@
 import {describe, expect, it} from 'vitest';
-import {expandEvent, rangeBounds, type ApiCalendar} from './events';
+import {
+  expandEvent,
+  rangeBounds,
+  shownEndMin,
+  type ApiCalendar,
+} from './events';
 
 // Tests run with TZ=Europe/Warsaw (see package.json) so local-time handling is exercised.
 const cal: ApiCalendar = {
@@ -192,6 +197,90 @@ describe('expandEvent with a range', () => {
     );
     expect(parts.map(p => p.date)).toEqual(['2026-10-17', '2026-10-18']);
     expect(parts[0].when).toBe('Sat 17 Oct – Wed 31 Dec');
+  });
+});
+
+describe('short events', () => {
+  it('keeps zero-length events, drawn 15 min long', () => {
+    const [e, ...rest] = expandEvent(
+      {
+        id: 'z',
+        summary: 'Take meds',
+        start: {dateTime: '2026-10-12T10:00:00+02:00'},
+        end: {dateTime: '2026-10-12T10:00:00+02:00'},
+      },
+      cal,
+    );
+    expect(rest).toEqual([]);
+    expect([e.date, e.startMin, e.endMin, e.busy]).toEqual([
+      '2026-10-12',
+      600,
+      600,
+      true,
+    ]);
+    expect(e.when).toBe('Mon 12 Oct, 10:00');
+    expect(shownEndMin(e)).toBe(615);
+  });
+
+  it('keeps a zero-length event at midnight on its own day', () => {
+    const parts = expandEvent(
+      {
+        id: 'm',
+        start: {dateTime: '2026-10-13T00:00:00+02:00'},
+        end: {dateTime: '2026-10-13T00:00:00+02:00'},
+      },
+      cal,
+    );
+    expect(parts.map(p => [p.date, p.startMin, p.endMin])).toEqual([
+      ['2026-10-13', 0, 0],
+    ]);
+  });
+
+  it('draws the repeated hour on the DST fall-back night', () => {
+    // 02:30 CEST – 02:30 CET is an hour long, but both read 02:30.
+    const [e] = expandEvent(
+      {
+        id: 'dst',
+        start: {dateTime: '2026-10-25T02:30:00+02:00'},
+        end: {dateTime: '2026-10-25T02:30:00+01:00'},
+      },
+      cal,
+    );
+    expect([e.startMin, e.endMin, shownEndMin(e)]).toEqual([150, 150, 165]);
+  });
+
+  it('draws longer events as they are, within the day', () => {
+    const [e] = expandEvent(
+      {
+        id: 'l',
+        start: {dateTime: '2026-10-12T23:50:00+02:00'},
+        end: {dateTime: '2026-10-12T23:55:00+02:00'},
+      },
+      cal,
+    );
+    expect(shownEndMin(e)).toBe(1440);
+    const [long] = expandEvent(
+      {
+        id: 'h',
+        start: {dateTime: '2026-10-12T09:00:00+02:00'},
+        end: {dateTime: '2026-10-12T10:00:00+02:00'},
+      },
+      cal,
+    );
+    expect(shownEndMin(long)).toBe(600);
+  });
+
+  it('still drops events that end before they start', () => {
+    expect(
+      expandEvent(
+        {
+          id: 'x',
+          start: {dateTime: '2026-10-12T10:00:00+02:00'},
+          end: {dateTime: '2026-10-12T09:00:00+02:00'},
+        },
+        cal,
+      ),
+    ).toEqual([]);
   });
 });
 
