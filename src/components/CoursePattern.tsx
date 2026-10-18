@@ -12,7 +12,7 @@ import {BufferedInput} from './Buffered';
  * class type), with the timetable courses it matches shown live.
  */
 export function CoursePattern({project}: {project: Project}) {
-  const hasSource = useStore(s => !!s.data.settings.usos.source);
+  const hasSource = useStore(s => !!s.data.settings.usos.source.case);
   if (!hasSource && !project.coursePattern) return null;
   return <PatternField project={project} />;
 }

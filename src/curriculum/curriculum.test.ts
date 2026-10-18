@@ -3,6 +3,7 @@ import ex1Expected from '../../docs/curriculum-import/example-1.expected.json';
 import ex2Text from '../../docs/curriculum-import/example-2.txt?raw';
 import ex2Expected from '../../docs/curriculum-import/example-2.expected.json';
 import {afterEach, describe, expect, it, vi} from 'vitest';
+import {ItemKind} from '../model/types';
 import {
   RESPONSE_SCHEMA,
   SYSTEM_INSTRUCTION,
@@ -106,7 +107,7 @@ describe('itemsFromTopics', () => {
     const items = itemsFromTopics(ex1.expected.topics, 'topic', 1.5);
     expect(items).toHaveLength(6);
     expect(items[1]).toEqual({
-      kind: 'class',
+      kind: ItemKind.CLASS,
       estimateHours: 1.5,
       title: 'Pisanie prac naukowych (po angielsku)',
       notes: ex1.expected.topics[1].description,
@@ -140,7 +141,7 @@ describe('itemsFromTopics', () => {
     const items = itemsFromTopics(ex2.expected.topics, 'lecture');
     expect(items).toHaveLength(17);
     expect(items[10]).toEqual({
-      kind: 'class',
+      kind: ItemKind.CLASS,
       estimateHours: undefined,
       title: '11. Klawiatura multipleksowana 4 ✕ 4',
       notes: undefined,

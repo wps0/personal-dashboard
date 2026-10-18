@@ -4,7 +4,7 @@
  * items. Pure functions plus the API call; the UI is in components/.
  */
 import type {Schema} from '@google/genai';
-import type {Item} from '../model/types';
+import {ItemKind, type ItemInit} from '../model/types';
 
 export interface Topic {
   title: string;
@@ -226,8 +226,8 @@ export function itemsFromTopics(
   topics: Topic[],
   granularity: Granularity,
   estimateHours?: number,
-): Partial<Omit<Item, 'id' | 'projectId'>>[] {
-  const base = {kind: 'class' as const, estimateHours};
+): ItemInit[] {
+  const base = {kind: ItemKind.CLASS, estimateHours};
   if (granularity === 'topic')
     return topics.map(t => ({
       ...base,

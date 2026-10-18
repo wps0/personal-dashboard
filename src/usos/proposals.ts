@@ -20,7 +20,8 @@ export function useUsosProposals(projectId?: string): Proposal[] {
     if (!rules.length || !meetings.length) return [];
     const done = new Set(handled);
     for (const i of items)
-      if (i.source?.kind === 'usos') done.add(i.source.key);
+      if (i.source?.source.case === 'usosMeeting')
+        done.add(i.source.source.value);
     const all = proposeImports(meetings, rules, done);
     return projectId ? all.filter(p => p.projectId === projectId) : all;
   }, [meetings, projects, items, handled, projectId]);

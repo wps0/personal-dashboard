@@ -27,8 +27,8 @@ describe('fetchMeetings (iCal link)', () => {
     vi.stubGlobal('fetch', fetchMock);
     vi.useFakeTimers({now: new Date('2026-10-12T12:00:00Z'), toFake: ['Date']});
     const {meetings} = await fetchMeetings({
-      kind: 'ical',
-      url: 'https://usosweb.example/plan.ics',
+      case: 'icalUrl',
+      value: 'https://usosweb.example/plan.ics',
     });
     vi.useRealTimers();
     expect(meetings.map(m => m.key)).toEqual(['in@2026-10-14T10:00']);
@@ -44,14 +44,14 @@ describe('fetchMeetings (iCal link)', () => {
       throw new TypeError('Failed to fetch');
     });
     await expect(
-      fetchMeetings({kind: 'ical', url: 'https://x.example/a.ics'}),
+      fetchMeetings({case: 'icalUrl', value: 'https://x.example/a.ics'}),
     ).rejects.toThrow(/CORS/);
     vi.stubGlobal(
       'fetch',
       async () => new Response('', {status: 403, statusText: 'Forbidden'}),
     );
     await expect(
-      fetchMeetings({kind: 'ical', url: 'https://x.example/a.ics'}),
+      fetchMeetings({case: 'icalUrl', value: 'https://x.example/a.ics'}),
     ).rejects.toThrow('The iCal link returned 403 Forbidden.');
   });
 
@@ -60,7 +60,7 @@ describe('fetchMeetings (iCal link)', () => {
     expect(isValidICalUrl('webcal://x.example/a.ics')).toBe(false);
     expect(isValidICalUrl('https://x.example/a.ics')).toBe(true);
     await expect(
-      fetchMeetings({kind: 'ical', url: 'http://x.example/a.ics'}),
+      fetchMeetings({case: 'icalUrl', value: 'http://x.example/a.ics'}),
     ).rejects.toThrow(/https/);
   });
 });

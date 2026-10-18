@@ -1,6 +1,17 @@
+import {create} from '@bufbuild/protobuf';
+import * as pb from '../gen/dashboard/v2/data_pb';
 import {addDays, startOfWeek, todayISO} from './dates';
-import type {Allocation, AppData, Item, Project} from './types';
-import {emptyData} from './types';
+import {
+  ItemKind,
+  ItemStatus,
+  ProgressMode,
+  emptyData,
+  type Allocation,
+  type AppData,
+  type InitOf,
+  type Item,
+  type Project,
+} from './types';
 
 /** Demo data placed relative to today, so the week view has something in it. */
 export function sampleData(today = todayISO()): AppData {
@@ -11,41 +22,45 @@ export function sampleData(today = todayISO()): AppData {
   const created = new Date().toISOString();
 
   d.areas = [
-    {id: 'uni', name: 'University', color: '#60a5fa'},
-    {id: 'work', name: 'Work', color: '#34d399'},
-    {id: 'personal', name: 'Personal', color: '#f472b6'},
+    create(pb.AreaSchema, {id: 'uni', name: 'University', color: '#60a5fa'}),
+    create(pb.AreaSchema, {id: 'work', name: 'Work', color: '#34d399'}),
+    create(pb.AreaSchema, {
+      id: 'personal',
+      name: 'Personal',
+      color: '#f472b6',
+    }),
   ];
 
   const project = (
     areaId: string,
     name: string,
-    extra: Partial<Project> = {},
+    extra: InitOf<typeof pb.ProjectSchema> = {},
   ): Project => {
-    const p: Project = {
+    const p = create(pb.ProjectSchema, {
       id: id('p'),
       areaId,
       name,
-      progressMode: 'checklist',
-      manualProgress: 0,
-      overviewDoc: '',
-      log: [],
-      archived: false,
+      progressMode: ProgressMode.CHECKLIST,
       createdAt: created,
       ...extra,
-    };
+    });
     d.projects.push(p);
     return p;
   };
-  const item = (p: Project, title: string, extra: Partial<Item> = {}): Item => {
-    const i: Item = {
+  const item = (
+    p: Project,
+    title: string,
+    extra: InitOf<typeof pb.ItemSchema> = {},
+  ): Item => {
+    const i = create(pb.ItemSchema, {
       id: id('i'),
       projectId: p.id,
-      kind: 'task',
+      kind: ItemKind.TASK,
       title,
-      status: 'todo',
+      status: ItemStatus.TODO,
       createdAt: created,
       ...extra,
-    };
+    });
     d.items.push(i);
     return i;
   };
@@ -56,7 +71,7 @@ export function sampleData(today = todayISO()): AppData {
     done = false,
     start?: string,
   ): Allocation => {
-    const a: Allocation = {
+    const a = create(pb.AllocationSchema, {
       id: id('a'),
       itemId: i.id,
       date,
@@ -64,7 +79,7 @@ export function sampleData(today = todayISO()): AppData {
       done,
       actualHours: done ? plannedHours : undefined,
       start,
-    };
+    });
     d.allocations.push(a);
     return a;
   };
@@ -91,20 +106,25 @@ export function sampleData(today = todayISO()): AppData {
   ) {
     lectures.push(
       item(os, `Lecture ${k + 1}`, {
-        kind: 'class',
+        kind: ItemKind.CLASS,
         estimateHours: 1.5,
         heldOn: date,
-        status: k < 3 ? 'done' : k === 3 ? 'doing' : 'todo',
+        status:
+          k < 3
+            ? ItemStatus.DONE
+            : k === 3
+              ? ItemStatus.DOING
+              : ItemStatus.TODO,
       }),
     );
   }
   const assignment = item(os, 'Assignment 2: scheduler', {
-    kind: 'assignment',
+    kind: ItemKind.ASSIGNMENT,
     estimateHours: 8,
     dueDate: addDays(today, 4),
   });
   item(os, 'Midterm', {
-    kind: 'exam',
+    kind: ItemKind.EXAM,
     estimateHours: 6,
     dueDate: addDays(today, 24),
   });
@@ -114,16 +134,18 @@ export function sampleData(today = todayISO()): AppData {
   alloc(assignment, addDays(monday, 2), 2);
   alloc(assignment, addDays(monday, 5), 3);
 
-  const net = project('uni', 'Computer Networks', {progressMode: 'hours'});
+  const net = project('uni', 'Computer Networks', {
+    progressMode: ProgressMode.HOURS,
+  });
   for (let k = 0; k < 6; k++) {
     item(net, `Lecture ${k + 1}`, {
-      kind: 'class',
+      kind: ItemKind.CLASS,
       estimateHours: 1.5,
-      status: k < 2 ? 'done' : 'todo',
+      status: k < 2 ? ItemStatus.DONE : ItemStatus.TODO,
     });
   }
   const lab = item(net, 'Lab report: TCP congestion', {
-    kind: 'assignment',
+    kind: ItemKind.ASSIGNMENT,
     estimateHours: 3,
     dueDate: addDays(today, 9),
   });
@@ -133,9 +155,9 @@ export function sampleData(today = todayISO()): AppData {
   const slo = project('work', 'SLO dashboards (Q4)', {
     dueDate: addDays(today, 50),
   });
-  item(slo, 'Inventory existing alerts', {status: 'done'});
+  item(slo, 'Inventory existing alerts', {status: ItemStatus.DONE});
   item(slo, 'Draft SLI definitions', {
-    status: 'doing',
+    status: ItemStatus.DOING,
     dueDate: addDays(today, 6),
   });
   item(slo, 'Review with team');
@@ -143,11 +165,11 @@ export function sampleData(today = todayISO()): AppData {
 
   // Personal.
   project('personal', 'Driving license', {
-    progressMode: 'manual',
+    progressMode: ProgressMode.MANUAL,
     manualProgress: 40,
   });
   const homelab = project('personal', 'Homelab migration');
-  item(homelab, 'Pick new hardware', {status: 'done'});
+  item(homelab, 'Pick new hardware', {status: ItemStatus.DONE});
   const k8s = item(homelab, 'Set up k3s', {estimateHours: 4});
   item(homelab, 'Migrate Nextcloud');
   alloc(k8s, addDays(monday, 6), 2);
@@ -161,19 +183,31 @@ export function sampleData(today = todayISO()): AppData {
     end: string,
     title: string,
     notes?: string,
-  ) => d.events.push({id: id('e'), date, start, end, title, notes});
+  ) =>
+    d.events.push(
+      create(pb.CalendarEventSchema, {
+        id: id('e'),
+        date,
+        start,
+        end,
+        title,
+        notes,
+      }),
+    );
   event(addDays(monday, 1), '10:15', '12:00', 'OS lecture (USOS)', 'Room 3180');
   event(addDays(monday, 2), '14:15', '15:45', 'Networks lab (USOS)');
   event(addDays(monday, 8), '10:15', '12:00', 'OS lecture (USOS)', 'Room 3180');
   event(today, '19:00', '20:30', 'Climbing');
-  d.events.push({
-    id: id('e'),
-    date: addDays(today, 2),
-    allDay: true,
-    start: '00:00',
-    end: '23:59',
-    title: 'Mum’s birthday',
-  });
+  d.events.push(
+    create(pb.CalendarEventSchema, {
+      id: id('e'),
+      date: addDays(today, 2),
+      allDay: true,
+      start: '00:00',
+      end: '23:59',
+      title: 'Mum’s birthday',
+    }),
+  );
   event(addDays(today, 1), '08:30', '09:00', 'Dentist');
   event(addDays(today, 2), '09:30', '10:00', 'Team standup');
   event(addDays(today, 2), '14:00', '14:30', '1:1 with manager');

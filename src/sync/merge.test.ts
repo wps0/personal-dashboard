@@ -1,4 +1,6 @@
+import {create} from '@bufbuild/protobuf';
 import {describe, expect, it} from 'vitest';
+import * as pb from '../gen/dashboard/v2/data_pb';
 import {sampleData} from '../model/sample';
 import type {AppData} from '../model/types';
 import {merge3, mergeData, same} from './merge';
@@ -75,7 +77,8 @@ describe('merge3', () => {
   it('keeps records added on both sides, in a sensible order', () => {
     const b = base();
     const p = b.projects[0];
-    const entry = (id: string) => ({id, at: '2026-10-13T10:00:00Z', text: id});
+    const entry = (id: string) =>
+      create(pb.LogEntrySchema, {id, at: '2026-10-13T10:00:00Z', text: id});
     const local = edit(b, d => {
       d.projects[0].log.unshift(entry('mine'));
       d.dayNotes['2026-10-13'] = 'mine';
@@ -91,6 +94,17 @@ describe('merge3', () => {
     expect(log).toEqual(['theirs', 'mine', ...p.log.map(e => e.id)]);
     expect(data.dayNotes['2026-10-13']).toBe('mine');
     expect(data.dayNotes['2026-10-14']).toBe('theirs');
+  });
+
+  it('merges a oneof as a whole, never mixing its case and value', () => {
+    const base = {source: {case: 'googleCalendarId', value: 'cal-a'}};
+    const local = {source: {case: 'googleCalendarId', value: 'cal-b'}};
+    const remote = {
+      source: {case: 'icalUrl', value: 'https://x.example/p.ics'},
+    };
+    const {value, conflicts} = merge3(base, local, remote);
+    expect(value).toEqual(local);
+    expect(conflicts.map(c => c.path)).toEqual([['source']]);
   });
 
   it('merges lists of plain values as sets', () => {

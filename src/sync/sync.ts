@@ -1,6 +1,7 @@
 import type {DriveFile} from '../google/drive';
 import {emptyData, type AppData} from '../model/types';
-import {exportJson, parseAppData} from '../storage/storage';
+import {encode} from '../storage/codec';
+import {readStored} from '../storage/storage';
 import {mergeData, same, type Conflict} from './merge';
 
 /** Where this device stands with Drive: the file, and its version and content at the last sync. */
@@ -14,9 +15,9 @@ export interface SyncBase {
 export interface Remote {
   findFile(): Promise<DriveFile | null>;
   fileInfo(id: string): Promise<DriveFile | null>;
-  download(id: string): Promise<string>;
-  createFile(content: string): Promise<DriveFile>;
-  updateFile(id: string, content: string): Promise<DriveFile>;
+  download(id: string): Promise<Uint8Array>;
+  createFile(content: Uint8Array<ArrayBuffer>): Promise<DriveFile>;
+  updateFile(id: string, content: Uint8Array<ArrayBuffer>): Promise<DriveFile>;
 }
 
 /**
@@ -103,9 +104,9 @@ async function firstSync(
 }
 
 async function read(drive: Remote, id: string): Promise<AppData> {
-  const text = await drive.download(id);
+  const bytes = await drive.download(id);
   try {
-    return parseAppData(JSON.parse(text));
+    return readStored(bytes);
   } catch (e) {
     // Never overwrite what we can't read (e.g. saved by a newer version of the app).
     throw new Error(
@@ -115,7 +116,7 @@ async function read(drive: Remote, id: string): Promise<AppData> {
 }
 
 async function create(local: AppData, drive: Remote): Promise<SyncResult> {
-  const file = await drive.createFile(exportJson(local));
+  const file = await drive.createFile(encode(local));
   return done('created', local, at(file, local));
 }
 
@@ -126,7 +127,7 @@ async function push(
   drive: Remote,
   conflicts: Conflict[] = [],
 ): Promise<SyncResult> {
-  const file = await drive.updateFile(fileId, exportJson(data));
+  const file = await drive.updateFile(fileId, encode(data));
   return done(kind, data, at(file, data), conflicts);
 }
 

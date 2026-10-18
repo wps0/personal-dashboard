@@ -25,20 +25,32 @@ export async function fetchMeetings(
   source: UsosSource,
 ): Promise<{meetings: ClassMeeting[]; warnings: string[]}> {
   const {from, to} = usosRange();
-  if (source.kind === 'google') {
-    const events = await listEvents(
-      source.calendarId,
-      new Date(`${from}T00:00`).toISOString(),
-      new Date(`${addDays(to, 1)}T00:00`).toISOString(),
-    );
-    return {meetings: meetingsFromGoogle(events), warnings: []};
+  switch (source.case) {
+    case 'googleCalendarId': {
+      const events = await listEvents(
+        source.value,
+        new Date(`${from}T00:00`).toISOString(),
+        new Date(`${addDays(to, 1)}T00:00`).toISOString(),
+      );
+      return {meetings: meetingsFromGoogle(events), warnings: []};
+    }
+    case 'icalUrl':
+      return fetchICal(source.value);
+    default:
+      throw new Error('No timetable source is set.');
   }
-  if (!isValidICalUrl(source.url))
+}
+
+async function fetchICal(
+  url: string,
+): Promise<{meetings: ClassMeeting[]; warnings: string[]}> {
+  if (!isValidICalUrl(url))
     throw new Error('The iCal link must start with https://.');
+  const {from, to} = usosRange();
   let res: Response;
   try {
     // No cookies or referrer: the link itself is the credential.
-    res = await fetch(source.url, {
+    res = await fetch(url, {
       credentials: 'omit',
       referrerPolicy: 'no-referrer',
       cache: 'no-store',

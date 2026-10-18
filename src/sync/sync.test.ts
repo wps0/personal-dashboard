@@ -1,4 +1,7 @@
+import {create, toBinary} from '@bufbuild/protobuf';
 import {beforeEach, describe, expect, it} from 'vitest';
+import * as pb from '../gen/dashboard/v2/data_pb';
+import {SCHEMA_VERSION} from '../storage/codec';
 import {sampleData} from '../model/sample';
 import {emptyData, type AppData} from '../model/types';
 import {FakeDrive} from './fakeDrive';
@@ -74,7 +77,9 @@ describe('syncOnce', () => {
   it('asks before mixing a device’s own data with Drive’s on the first sync', async () => {
     await new Device(sample(), drive).sync();
     const own = edit(emptyData(), d => {
-      d.areas.push({id: 'a-own', name: 'Own', color: '#fff'});
+      d.areas.push(
+        create(pb.AreaSchema, {id: 'a-own', name: 'Own', color: '#fff'}),
+      );
     });
     const other = new Device(own, drive);
     drive.calls = [];
@@ -103,10 +108,14 @@ describe('syncOnce', () => {
     const laptop = new Device(sample(), drive);
     await laptop.sync();
     const id = [...drive.files.keys()][0];
-    drive.files.set(id, {content: '{"version": 2}', version: 9});
+    const newer = toBinary(
+      pb.AppDataSchema,
+      create(pb.AppDataSchema, {schemaVersion: SCHEMA_VERSION + 1}),
+    );
+    drive.files.set(id, {content: newer, version: 9});
     laptop.data = edit(laptop.data, d => (d.items[0].title = 'x'));
-    await expect(laptop.sync()).rejects.toThrow(/can’t be read.*version/);
-    expect(drive.files.get(id)!.content).toBe('{"version": 2}');
+    await expect(laptop.sync()).rejects.toThrow(/can’t be read.*newer version/);
+    expect(drive.files.get(id)!.content).toBe(newer);
   });
 
   it('makes a new file if the old one was deleted', async () => {

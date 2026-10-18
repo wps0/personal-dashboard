@@ -1,9 +1,10 @@
 import type {DriveFile} from '../google/drive';
+import {readStored} from '../storage/storage';
 import type {Remote} from './sync';
 
 /** An in-memory Drive for tests: versions grow on every write, like Drive's. */
 export class FakeDrive implements Remote {
-  files = new Map<string, {content: string; version: number}>();
+  files = new Map<string, {content: Uint8Array; version: number}>();
   calls: string[] = [];
   private next = 1;
 
@@ -29,13 +30,13 @@ export class FakeDrive implements Remote {
     this.calls.push('download');
     return this.files.get(id)!.content;
   }
-  async createFile(content: string) {
+  async createFile(content: Uint8Array) {
     this.calls.push('create');
     const id = `f${this.next++}`;
     this.files.set(id, {content, version: 1});
     return this.info(id);
   }
-  async updateFile(id: string, content: string) {
+  async updateFile(id: string, content: Uint8Array) {
     this.calls.push('update');
     const f = this.files.get(id)!;
     this.files.set(id, {content, version: f.version + 1});
@@ -43,6 +44,6 @@ export class FakeDrive implements Remote {
   }
   /** The data currently in the (only) file. */
   content() {
-    return JSON.parse([...this.files.values()].at(-1)!.content);
+    return readStored([...this.files.values()].at(-1)!.content);
   }
 }

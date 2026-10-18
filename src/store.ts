@@ -1,21 +1,27 @@
+import {create as createMessage} from '@bufbuild/protobuf';
 import {create} from 'zustand';
+import * as pb from './gen/dashboard/v2/data_pb';
 import type {
   Allocation,
   AppData,
   Area,
   CalendarEvent,
-  CalView,
+  CalendarView,
+  EventInit,
   ISODate,
   Item,
+  ItemInit,
   Project,
   UsosSource,
 } from './model/types';
-import {AREA_COLORS, emptyData} from './model/types';
 import {
-  withRuleChange,
-  type CapacityRule,
-  type DayCapacity,
-} from './model/capacity';
+  AREA_COLORS,
+  ItemKind,
+  ItemStatus,
+  ProgressMode,
+  emptyData,
+} from './model/types';
+import {withRuleChange, type CapacityRule} from './model/capacity';
 import {todayISO} from './model/dates';
 
 const uid = () => crypto.randomUUID();
@@ -35,10 +41,7 @@ interface Actions {
   updateLog(projectId: string, logId: string, text: string): void;
   deleteLog(projectId: string, logId: string): void;
 
-  addItems(
-    projectId: string,
-    items: Partial<Omit<Item, 'id' | 'projectId'>>[],
-  ): void;
+  addItems(projectId: string, items: ItemInit[]): void;
   updateItem(id: string, patch: Partial<Omit<Item, 'id'>>): void;
   deleteItem(id: string): void;
 
@@ -52,7 +55,7 @@ interface Actions {
   toggleAllocation(id: string): void;
   deleteAllocation(id: string): void;
 
-  addEvent(event: Omit<CalendarEvent, 'id'>): string;
+  addEvent(event: EventInit): string;
   updateEvent(id: string, patch: Partial<Omit<CalendarEvent, 'id'>>): void;
   deleteEvent(id: string): void;
 
@@ -61,12 +64,15 @@ interface Actions {
   /** Changes planning windows / global adjustment from today on (past days keep theirs). */
   changeCapacityRule(patch: Partial<Omit<CapacityRule, 'from'>>): void;
   setDefaultEventMinutes(minutes: number): void;
-  setDefaultCalendarView(view: CalView): void;
-  setUsosSource(source: UsosSource | undefined): void;
+  setDefaultCalendarView(view: CalendarView): void;
+  setUsosSource(source: UsosSource): void;
   /** Remembers class meetings as imported or skipped, so they aren't offered again. */
   markUsosHandled(keys: string[]): void;
   /** Per-day tweak; ignored for past days. `null` resets the day. */
-  setDayCapacity(date: ISODate, patch: DayCapacity | null): void;
+  setDayCapacity(
+    date: ISODate,
+    patch: {delta?: number; override?: number} | null,
+  ): void;
 }
 
 type State = {data: AppData} & Actions;
@@ -103,7 +109,11 @@ export const useStore = create<State>()((set, get) => {
       update(d => ({
         areas: [
           ...d.areas,
-          {id, name, color: AREA_COLORS[d.areas.length % AREA_COLORS.length]},
+          createMessage(pb.AreaSchema, {
+            id,
+            name,
+            color: AREA_COLORS[d.areas.length % AREA_COLORS.length],
+          }),
         ],
       }));
       return id;
@@ -121,17 +131,13 @@ export const useStore = create<State>()((set, get) => {
 
     addProject: (areaId, name) => {
       const id = uid();
-      const project: Project = {
+      const project = createMessage(pb.ProjectSchema, {
         id,
         areaId,
         name,
-        progressMode: 'checklist',
-        manualProgress: 0,
-        overviewDoc: '',
-        log: [],
-        archived: false,
+        progressMode: ProgressMode.CHECKLIST,
         createdAt: now(),
-      };
+      });
       update(d => ({projects: [...d.projects, project]}));
       return id;
     },
@@ -142,7 +148,10 @@ export const useStore = create<State>()((set, get) => {
       const p = get().data.projects.find(x => x.id === projectId);
       if (!p) return;
       get().updateProject(projectId, {
-        log: [{id: uid(), at: now(), text}, ...p.log],
+        log: [
+          createMessage(pb.LogEntrySchema, {id: uid(), at: now(), text}),
+          ...p.log,
+        ],
       });
     },
     updateLog: (projectId, logId, text) => {
@@ -164,15 +173,17 @@ export const useStore = create<State>()((set, get) => {
       update(d => ({
         items: [
           ...d.items,
-          ...items.map((i): Item => ({
-            kind: 'task',
-            title: 'Untitled',
-            status: 'todo',
-            createdAt: now(),
-            ...i,
-            id: uid(),
-            projectId,
-          })),
+          ...items.map(i =>
+            createMessage(pb.ItemSchema, {
+              kind: ItemKind.TASK,
+              title: 'Untitled',
+              status: ItemStatus.TODO,
+              createdAt: now(),
+              ...i,
+              id: uid(),
+              projectId,
+            }),
+          ),
         ],
       })),
     updateItem: (id, patch) =>
@@ -184,7 +195,13 @@ export const useStore = create<State>()((set, get) => {
       update(d => ({
         allocations: [
           ...d.allocations,
-          {id, itemId, date, plannedHours, done: false, start},
+          createMessage(pb.AllocationSchema, {
+            id,
+            itemId,
+            date,
+            plannedHours,
+            start,
+          }),
         ],
       }));
       return id;
@@ -206,7 +223,12 @@ export const useStore = create<State>()((set, get) => {
 
     addEvent: event => {
       const id = uid();
-      update(d => ({events: [...d.events, {...event, id}]}));
+      update(d => ({
+        events: [
+          ...d.events,
+          createMessage(pb.CalendarEventSchema, {...event, id}),
+        ],
+      }));
       return id;
     },
     updateEvent: (id, patch) =>
@@ -253,7 +275,12 @@ export const useStore = create<State>()((set, get) => {
       update(d => {
         const dayCapacity = {...d.settings.dayCapacity};
         if (patch === null) delete dayCapacity[date];
-        else dayCapacity[date] = {...dayCapacity[date], ...patch};
+        else
+          dayCapacity[date] = createMessage(pb.DayCapacitySchema, {
+            delta: dayCapacity[date]?.delta,
+            override: dayCapacity[date]?.override,
+            ...patch,
+          });
         return {settings: {...d.settings, dayCapacity}};
       });
     },

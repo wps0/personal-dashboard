@@ -3,7 +3,9 @@ import {BufferedInput} from '../components/Buffered';
 import {TimeSelect} from '../components/TimeSelect';
 import {fmtH} from '../format';
 import {
-  DEFAULT_RESERVED,
+  range,
+  reservedDay,
+  reservedDays,
   ruleFor,
   type PlanningWindow,
   type Reserved,
@@ -28,12 +30,15 @@ export function CapacitySettings() {
   const change = useStore(s => s.changeCapacityRule);
   const today = todayISO();
   const rule = ruleFor(rules, today);
-  const reserved = rule.reserved ?? DEFAULT_RESERVED;
+  // Edited as one list of ranges per weekday.
+  const reserved = reservedDays(rule).map(day => day.ranges);
 
   const setWindow = (i: number, w: Partial<PlanningWindow>) =>
     change({windows: rule.windows.map((x, j) => (j === i ? {...x, ...w} : x))});
   const setReserved = (i: number, list: Reserved[]) =>
-    change({reserved: reserved.map((x, j) => (j === i ? list : x))});
+    change({
+      reserved: reserved.map((x, j) => reservedDay(...(j === i ? list : x))),
+    });
   const history = rules.filter(r => r.from > '0000-01-01' && r.from < today);
 
   return (
@@ -117,7 +122,9 @@ export function CapacitySettings() {
                                 j > 0 && j < 5 ? rule.windows[0] : x,
                               ),
                               reserved: reserved.map((x, j) =>
-                                j > 0 && j < 5 ? reserved[0] : x,
+                                reservedDay(
+                                  ...(j > 0 && j < 5 ? reserved[0] : x),
+                                ),
                               ),
                             })
                           }
@@ -192,7 +199,7 @@ export function CapacitySettings() {
                         onClick={() =>
                           setReserved(i, [
                             ...reserved[i],
-                            {start: '12:00', end: '13:00', label: ''},
+                            range('12:00', '13:00'),
                           ])
                         }
                       >

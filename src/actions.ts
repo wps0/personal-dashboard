@@ -1,4 +1,9 @@
-import type {Allocation, CalendarEvent, Item} from './model/types';
+import {
+  ItemStatus,
+  type Allocation,
+  type CalendarEvent,
+  type Item,
+} from './model/types';
 import {useStore} from './store';
 import {withUndo} from './toast';
 import {taskFromMeeting, type Proposal} from './usos/usos';
@@ -38,7 +43,7 @@ export const deleteEvent = (e: CalendarEvent) =>
 
 export const completeItem = (item: Item) =>
   withUndo(`Completed “${item.title}”`, () =>
-    s().updateItem(item.id, {status: 'done'}),
+    s().updateItem(item.id, {status: ItemStatus.DONE}),
   );
 
 export const deleteItem = (item: Item) =>
