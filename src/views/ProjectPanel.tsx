@@ -3,7 +3,7 @@ import {withUndo} from '../toast';
 import {BufferedTextarea} from '../components/Buffered';
 import {DateField} from '../components/DateField';
 import {StatusSelect} from '../components/StatusSelect';
-import {Select, type Option} from '../components/ui/Select';
+import {Select} from '../components/ui/Select';
 import {Pencil, Trash2, X} from 'lucide-react';
 import {HoursInput} from '../components/HoursInput';
 import {InlineText} from '../components/InlineText';
@@ -11,7 +11,7 @@ import {CoursePattern} from '../components/CoursePattern';
 import {UsosBanner} from '../components/UsosReview';
 import {Markdown} from '../components/Markdown';
 import {ProgressRing} from '../components/ProgressRing';
-import {fmtNum, KIND_BADGE, KINDS, URGENCY_CLASS} from '../format';
+import {fmtNum, kindBadge, KIND_OPTIONS, URGENCY_CLASS} from '../format';
 import {countdown, shortDate, todayISO} from '../model/dates';
 import {
   actualHours,
@@ -20,12 +20,12 @@ import {
   plannedHours,
   urgency,
 } from '../model/selectors';
-import type {
-  Allocation,
-  Item,
+import {
   ItemKind,
   ProgressMode,
-  Project,
+  type Allocation,
+  type Item,
+  type Project,
 } from '../model/types';
 import {href, navigate} from '../router';
 import {useStore} from '../store';
@@ -120,7 +120,7 @@ function Header({
           className="w-52"
           ariaLabel="How progress is computed"
         />
-        {project.progressMode === 'manual' && (
+        {project.progressMode === ProgressMode.MANUAL && (
           <input
             type="range"
             min={0}
@@ -172,15 +172,10 @@ function Header({
 const NO_ALLOCS: Allocation[] = [];
 
 const PROGRESS_OPTIONS = [
-  {value: 'checklist', label: 'Progress: items done'},
-  {value: 'hours', label: 'Progress: hours spent / estimate'},
-  {value: 'manual', label: 'Progress: manual'},
-] as const;
-
-const KIND_OPTIONS = KINDS.map((k): Option<ItemKind> => ({
-  value: k,
-  label: k[0].toUpperCase() + k.slice(1),
-}));
+  {value: ProgressMode.CHECKLIST, label: 'Progress: items done'},
+  {value: ProgressMode.HOURS, label: 'Progress: hours spent / estimate'},
+  {value: ProgressMode.MANUAL, label: 'Progress: manual'},
+];
 
 function ItemsTab({project}: {project: Project}) {
   const allItems = useStore(s => s.data.items);
@@ -293,7 +288,7 @@ const ItemRow = memo(function ItemRow({
           title="Open task details"
         >
           <span className="tabular-nums text-[10px] text-dim">
-            {KIND_BADGE[item.kind]}
+            {kindBadge(item.kind)}
           </span>
           <span className="truncate">
             <span className={`strike ${done ? 'is-struck' : ''}`}>
@@ -347,7 +342,7 @@ const ItemRow = memo(function ItemRow({
 });
 
 function AddItem({projectId}: {projectId: string}) {
-  const [kind, setKind] = useState<ItemKind>('task');
+  const [kind, setKind] = useState(ItemKind.TASK);
   const [title, setTitle] = useState('');
   const [dueDate, setDueDate] = useState<string | undefined>();
   const [estimate, setEstimate] = useState<number | undefined>();
@@ -403,7 +398,7 @@ function AddItem({projectId}: {projectId: string}) {
 }
 
 function BulkAdd({projectId, onDone}: {projectId: string; onDone(): void}) {
-  const [kind, setKind] = useState<ItemKind>('class');
+  const [kind, setKind] = useState(ItemKind.CLASS);
   const [prefix, setPrefix] = useState('Lecture');
   const [from, setFrom] = useState(1);
   const [to, setTo] = useState(13);

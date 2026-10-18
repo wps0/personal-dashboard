@@ -1,18 +1,19 @@
 import {daysBetween} from './dates';
-import type {
-  Allocation,
-  AppData,
-  ISODate,
-  Item,
+import {
   ItemStatus,
-  Project,
+  ProgressMode,
+  type Allocation,
+  type AppData,
+  type ISODate,
+  type Item,
+  type Project,
 } from './types';
 
 /** The slices planning selectors need; lets callers memoize on just these. */
 type PlanData = Pick<AppData, 'items' | 'allocations' | 'projects'>;
 
 export function isItemDone(item: Item): boolean {
-  return item.status === 'done';
+  return item.status === ItemStatus.DONE;
 }
 
 export function plannedHours(allocs: Allocation[]): number {
@@ -57,10 +58,10 @@ export function projectStats(
 
   let percent: number;
   switch (project.progressMode) {
-    case 'manual':
+    case ProgressMode.MANUAL:
       percent = project.manualProgress;
       break;
-    case 'hours': {
+    case ProgressMode.HOURS: {
       const estimate = own.reduce((s, i) => s + (i.estimateHours ?? 0), 0);
       const spent = own.reduce(
         (s, i) => s + actualHours(allocs.get(i.id) ?? []),
@@ -69,9 +70,9 @@ export function projectStats(
       percent = estimate > 0 ? (spent / estimate) * 100 : 0;
       break;
     }
-    case 'checklist':
+    default:
+      // Checklist, and any mode this version doesn't know.
       percent = total > 0 ? (done / total) * 100 : 0;
-      break;
   }
   percent = Math.max(0, Math.min(100, Math.round(percent)));
 
@@ -168,15 +169,14 @@ export function compareItems(a: Item, b: Item): number {
   return a.title.localeCompare(b.title, undefined, {numeric: true});
 }
 
-/** Maps statuses from older data (lecture stages) onto todo / in progress / done. */
-export function migrateStatus(status: string): ItemStatus {
-  if (status === 'watched') return 'doing';
-  if (status === 'notes' || status === 'revised') return 'done';
-  return status === 'doing' || status === 'done' ? status : 'todo';
-}
-
-export const STATUS_LABEL: Record<ItemStatus, string> = {
-  todo: 'To do',
-  doing: 'In progress',
-  done: 'Done',
+const STATUS_LABEL: Record<ItemStatus, string> = {
+  [ItemStatus.UNSPECIFIED]: 'Unknown',
+  [ItemStatus.TODO]: 'To do',
+  [ItemStatus.DOING]: 'In progress',
+  [ItemStatus.DONE]: 'Done',
 };
+
+/** How a status reads in the UI. */
+export function statusLabel(status: ItemStatus): string {
+  return STATUS_LABEL[status] ?? 'Unknown';
+}

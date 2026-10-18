@@ -14,7 +14,7 @@ import {
   startOfWeek,
   todayISO,
 } from '../model/dates';
-import type {ISODate} from '../model/types';
+import {calViewOf, type ISODate} from '../model/types';
 import {href, navigate, type CalView} from '../router';
 import {useGoogle} from '../google/auth';
 import {useGoogleCalendars} from '../google/calendars';
@@ -77,7 +77,9 @@ export function CalendarView({
   date?: ISODate;
 }) {
   // Coming from another page (no view in the URL) always opens the default view.
-  const defaultView = useStore(s => s.data.settings.defaultCalendarView);
+  const defaultView = useStore(s =>
+    calViewOf(s.data.settings.defaultCalendarView),
+  );
   // A 7-day week is unreadable on a phone: there, the week default opens as
   // 3 days. A view chosen explicitly (in the URL) is kept.
   const phone = useMediaQuery('(max-width: 639px)');

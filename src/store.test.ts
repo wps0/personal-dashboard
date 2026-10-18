@@ -7,10 +7,11 @@ describe('USOS settings in the store', () => {
   const usos = () => useStore.getState().data.settings.usos;
 
   it('sets and clears the source', () => {
-    useStore.getState().setUsosSource({kind: 'google', calendarId: 'usos@x'});
-    expect(usos().source).toEqual({kind: 'google', calendarId: 'usos@x'});
-    useStore.getState().setUsosSource(undefined);
-    expect(usos().source).toBeUndefined();
+    const source = {case: 'googleCalendarId', value: 'usos@x'} as const;
+    useStore.getState().setUsosSource(source);
+    expect(usos().source).toEqual(source);
+    useStore.getState().setUsosSource({case: undefined});
+    expect(usos().source.case).toBeUndefined();
   });
 
   it('remembers handled class meetings once each', () => {

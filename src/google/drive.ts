@@ -4,9 +4,10 @@ import {googleFetch} from './request';
 
 const API = 'https://www.googleapis.com/drive/v3/files';
 const UPLOAD = 'https://www.googleapis.com/upload/drive/v3/files';
-const FILE_NAME = 'personal-dashboard.json';
-/** Marks the sync file, so it's found even if renamed. */
-const MARK = {key: 'personalDashboard', value: 'data'};
+const FILE_NAME = 'personal-dashboard.binpb';
+const MIME_TYPE = 'application/octet-stream';
+/** Marks the sync file (protobuf binary), so it's found even if renamed. */
+const MARK = {key: 'personalDashboard', value: 'binpb'};
 const FIELDS = 'id,version,modifiedTime';
 
 /** The sync file's identity and revision. `version` grows with every change. */
@@ -52,34 +53,38 @@ export async function fileInfo(id: string): Promise<DriveFile | null> {
   }
 }
 
-export async function download(id: string): Promise<string> {
+export async function download(id: string): Promise<Uint8Array> {
   const res = await googleFetch(
     'drive',
     `${API}/${encodeURIComponent(id)}?alt=media`,
   );
-  return res.text();
+  return new Uint8Array(await res.arrayBuffer());
 }
 
 /** Creates the sync file with this content. */
-export async function createFile(content: string): Promise<DriveFile> {
+export async function createFile(
+  content: Uint8Array<ArrayBuffer>,
+): Promise<DriveFile> {
   const boundary = `pd-${crypto.randomUUID()}`;
   const metadata = {
     name: FILE_NAME,
-    mimeType: 'application/json',
+    mimeType: MIME_TYPE,
     appProperties: {[MARK.key]: MARK.value},
   };
-  const body = [
-    `--${boundary}`,
-    'Content-Type: application/json; charset=UTF-8',
-    '',
-    JSON.stringify(metadata),
-    `--${boundary}`,
-    'Content-Type: application/json; charset=UTF-8',
-    '',
+  const body = new Blob([
+    [
+      `--${boundary}`,
+      'Content-Type: application/json; charset=UTF-8',
+      '',
+      JSON.stringify(metadata),
+      `--${boundary}`,
+      `Content-Type: ${MIME_TYPE}`,
+      '',
+      '',
+    ].join('\r\n'),
     content,
-    `--${boundary}--`,
-    '',
-  ].join('\r\n');
+    `\r\n--${boundary}--\r\n`,
+  ]);
   return json<DriveFile>(
     googleFetch('drive', `${UPLOAD}?uploadType=multipart&fields=${FIELDS}`, {
       method: 'POST',
@@ -92,7 +97,7 @@ export async function createFile(content: string): Promise<DriveFile> {
 /** Replaces the file's content; returns its new revision. */
 export async function updateFile(
   id: string,
-  content: string,
+  content: Uint8Array<ArrayBuffer>,
 ): Promise<DriveFile> {
   return json<DriveFile>(
     googleFetch(
@@ -100,7 +105,7 @@ export async function updateFile(
       `${UPLOAD}/${encodeURIComponent(id)}?uploadType=media&fields=${FIELDS}`,
       {
         method: 'PATCH',
-        headers: {'Content-Type': 'application/json; charset=UTF-8'},
+        headers: {'Content-Type': MIME_TYPE},
         body: content,
       },
     ),

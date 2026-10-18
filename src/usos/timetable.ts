@@ -28,9 +28,8 @@ export const useTimetable = create<Timetable>(() => ({
 
 /** Fetches the timetable unless a fresh copy from the same source is already here (or on its way). */
 export async function loadTimetable(force = false): Promise<void> {
-  const src: UsosSource | undefined =
-    useStore.getState().data.settings.usos.source;
-  if (!src) return;
+  const src: UsosSource = useStore.getState().data.settings.usos.source;
+  if (!src.case) return;
   const key = JSON.stringify(src);
   const t = useTimetable.getState();
   const fresh =
@@ -63,7 +62,7 @@ export function useTimetableLoaded(): Timetable {
   const source = useStore(s => s.data.settings.usos.source);
   const t = useTimetable();
   useEffect(() => {
-    if (source) void loadTimetable();
+    if (source.case) void loadTimetable();
   }, [source]);
   return t;
 }

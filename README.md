@@ -84,7 +84,7 @@ On first launch, choose **Load sample data** to explore, or create empty areas.
 - **Settings**:
   - Planning windows, the global adjustment and reserved time per weekday
     (changes apply from today; past days don't change).
-  - Areas, JSON export/import, reset.
+  - Areas, export/import (protobuf's JSON form), reset.
   - The header icon switches the theme (auto / light / dark).
 
 ## Google Calendar (read-only)
@@ -121,7 +121,7 @@ expected for a personal client.
 
 To use the dashboard on several devices, turn on **Settings → Google Drive
 sync** on each of them. The data goes into one file in your Drive,
-`personal-dashboard.json`, and every device keeps its own copy in the browser,
+`personal-dashboard.binpb` (protobuf), and every device keeps its own copy in the browser,
 so the app still works offline. The app asks for `drive.file` only when you
 turn sync on: access to the files it creates, nothing else in your Drive.
 

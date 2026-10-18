@@ -1,31 +1,36 @@
+import {create} from '@bufbuild/protobuf';
 import {describe, expect, it} from 'vitest';
+import * as pb from '../gen/dashboard/v2/data_pb';
 import {
   busyMinutes,
   capacityFor,
   defaultRules,
+  range,
   reservedFor,
   ruleFor,
-  rulesFromLegacyHours,
   withRuleChange,
 } from './capacity';
-import type {CalendarEvent} from './types';
+import type {CalendarEvent, InitOf} from './types';
 
 const ev = (
   start: string,
   end: string,
-  extra: Partial<CalendarEvent> = {},
-): CalendarEvent => ({
-  id: start,
-  title: '',
-  date: '2026-10-12',
-  start,
-  end,
-  ...extra,
-});
+  extra: InitOf<typeof pb.CalendarEventSchema> = {},
+): CalendarEvent =>
+  create(pb.CalendarEventSchema, {
+    id: start,
+    date: '2026-10-12',
+    start,
+    end,
+    ...extra,
+  });
+
+const day = (d: {delta?: number; override?: number}) =>
+  create(pb.DayCapacitySchema, d);
 
 describe('capacity', () => {
   it('subtracts merged event time inside the planning window only', () => {
-    const w = {start: '18:00', end: '22:00'};
+    const w = range('18:00', '22:00');
     expect(busyMinutes(w, [])).toBe(0);
     expect(busyMinutes(w, [ev('09:00', '10:00')])).toBe(0); // outside
     expect(busyMinutes(w, [ev('17:00', '19:00')])).toBe(60); // clipped
@@ -41,25 +46,26 @@ describe('capacity', () => {
 
   it('combines window, events, global adjustment, day delta and override', () => {
     const rules = [
-      {
+      create(pb.CapacityRuleSchema, {
         from: '0000-01-01',
-        windows: Array(7).fill({start: '18:00', end: '22:00'}),
+        windows: Array.from({length: 7}, () => range('18:00', '22:00')),
         adjustment: -0.5,
-      },
+      }),
     ];
     const monday = '2026-10-12';
     expect(capacityFor(monday, rules, {}, [ev('19:00', '20:00')]).total).toBe(
       2.5,
     ); // 4 - 1 - 0.5
-    expect(capacityFor(monday, rules, {[monday]: {delta: 1}}, []).total).toBe(
-      4.5,
-    );
     expect(
-      capacityFor(monday, rules, {[monday]: {delta: 1, override: 2}}, []).total,
+      capacityFor(monday, rules, {[monday]: day({delta: 1})}, []).total,
+    ).toBe(4.5);
+    expect(
+      capacityFor(monday, rules, {[monday]: day({delta: 1, override: 2})}, [])
+        .total,
     ).toBe(2);
-    expect(capacityFor(monday, rules, {[monday]: {delta: -9}}, []).total).toBe(
-      0,
-    );
+    expect(
+      capacityFor(monday, rules, {[monday]: day({delta: -9})}, []).total,
+    ).toBe(0);
   });
 
   it('applies rule changes from today on, leaving past days alone', () => {
@@ -77,12 +83,6 @@ describe('capacity', () => {
       ruleFor(rules, '2026-10-15').adjustment,
       ruleFor(rules, '2026-10-25').adjustment,
     ]).toEqual([0, 2, -1]);
-  });
-
-  it('converts legacy fixed hours into windows of the same length', () => {
-    const [r] = rulesFromLegacyHours([2, 2, 2, 2, 2, 5, 5]);
-    expect(r.windows[0]).toEqual({start: '18:00', end: '20:00'});
-    expect(r.windows[6]).toEqual({start: '10:00', end: '15:00'});
   });
 });
 

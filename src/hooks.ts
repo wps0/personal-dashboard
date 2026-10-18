@@ -1,3 +1,4 @@
+import {create} from '@bufbuild/protobuf';
 import {
   useLayoutEffect,
   useMemo,
@@ -5,6 +6,7 @@ import {
   useState,
   useSyncExternalStore,
 } from 'react';
+import * as pb from './gen/dashboard/v2/data_pb';
 import {capacityFor, type CapacityInfo} from './model/capacity';
 import type {Area, CalendarEvent, ISODate, Item, Project} from './model/types';
 import {useStore} from './store';
@@ -73,13 +75,15 @@ export function useCapacities(days: ISODate[]): Map<ISODate, CapacityInfo> {
       if (!want.has(d)) continue;
       const busy = list
         .filter(g => g.busy)
-        .map((g): CalendarEvent => ({
-          id: g.key,
-          title: g.title,
-          date: d,
-          start: fromMinutes(g.startMin),
-          end: fromMinutes(Math.min(g.endMin, 1439)),
-        }));
+        .map(g =>
+          create(pb.CalendarEventSchema, {
+            id: g.key,
+            title: g.title,
+            date: d,
+            start: fromMinutes(g.startMin),
+            end: fromMinutes(Math.min(g.endMin, 1439)),
+          }),
+        );
       byDay.set(d, [...(byDay.get(d) ?? []), ...busy]);
     }
     return new Map(

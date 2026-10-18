@@ -10,14 +10,14 @@ import {
 } from 'react';
 import {Popover, PopoverContent, PopoverTrigger} from './Popover';
 
-export interface Option<T extends string> {
+export interface Option<T extends string | number> {
   value: T;
   label: ReactNode;
   /** Optional color dot (areas, statuses). */
   color?: string;
 }
 
-interface Props<T extends string> {
+interface Props<T extends string | number> {
   value: T;
   onChange(v: NoInfer<T>): void;
   options: readonly Option<NoInfer<T>>[];
@@ -34,7 +34,7 @@ interface Props<T extends string> {
  * (Radix Select renders every option even when closed, which made time pickers
  * with 96 options slow). Keyboard: arrows, Home/End, Enter/Space, Esc, type to jump.
  */
-function SelectImpl<T extends string>({
+function SelectImpl<T extends string | number>({
   value,
   onChange,
   options,
@@ -102,7 +102,7 @@ function SelectImpl<T extends string>({
 /** Memoized: re-renders only when its props change. */
 export const Select = memo(SelectImpl) as typeof SelectImpl;
 
-function Listbox<T extends string>({
+function Listbox<T extends string | number>({
   options,
   value,
   onPick,

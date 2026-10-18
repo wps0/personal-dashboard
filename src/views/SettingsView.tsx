@@ -1,8 +1,8 @@
 import {useRef, useState, type ReactNode} from 'react';
 import {InlineText} from '../components/InlineText';
 import {sampleData} from '../model/sample';
-import {AREA_COLORS, emptyData} from '../model/types';
-import {downloadJson, parseAppData} from '../storage/storage';
+import {AREA_COLORS, CalendarView, emptyData} from '../model/types';
+import {downloadJson, importJson} from '../storage/storage';
 import {useData, useStore} from '../store';
 import {useGoogle} from '../google/auth';
 import {CapacitySettings} from './CapacitySettings';
@@ -14,11 +14,11 @@ import {GeminiSettings} from '../components/GeminiSettings';
 import {Select} from '../components/ui/Select';
 
 const CAL_VIEW_OPTIONS = [
-  {value: 'day', label: 'Day'},
-  {value: '3day', label: '3 days'},
-  {value: 'week', label: 'Week'},
-  {value: 'month', label: 'Month'},
-] as const;
+  {value: CalendarView.DAY, label: 'Day'},
+  {value: CalendarView.THREE_DAY, label: '3 days'},
+  {value: CalendarView.WEEK, label: 'Week'},
+  {value: CalendarView.MONTH, label: 'Month'},
+];
 
 const EVENT_LENGTHS = [15, 30, 45, 60, 90, 120].map(m => ({
   value: String(m),
@@ -40,7 +40,7 @@ export function SettingsView() {
 
   const importFile = async (file: File) => {
     try {
-      const parsed = parseAppData(JSON.parse(await file.text()));
+      const parsed = importJson(await file.text());
       if (
         confirm(`Replace all current data with "${file.name}"?${everywhere()}`)
       ) {

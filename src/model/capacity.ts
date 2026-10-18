@@ -1,38 +1,28 @@
+import {create} from '@bufbuild/protobuf';
+import * as pb from '../gen/dashboard/v2/data_pb';
 import {weekdayIndex} from './dates';
 import {toMinutes} from './time';
 import type {CalendarEvent, ISODate} from './types';
 
+/** A time range; `end` before `start` wraps past midnight (e.g. sleep 23:00–07:00). */
+export type TimeRange = pb.TimeRange;
 /** Time of day you can plan work into, per weekday. */
-export interface PlanningWindow {
-  start: string;
-  end: string;
-}
-
+export type PlanningWindow = pb.TimeRange;
+/** A reserved time range, e.g. sleep or work. */
+export type Reserved = pb.TimeRange;
+/** One weekday's reserved time. */
+export type ReservedDay = pb.ReservedDay;
 /**
  * Capacity settings effective from a date. Edits create (or update) the rule
  * starting today, so past days keep the values they had.
  */
-export interface CapacityRule {
-  from: ISODate;
-  /** Indexed Mon=0 … Sun=6. */
-  windows: PlanningWindow[];
-  /** Hours added to (or, if negative, removed from) every day. */
-  adjustment: number;
-  /** Reserved time per weekday (sleep, work), shown hatched on the calendar. Informational only. */
-  reserved?: Reserved[][];
-}
-
-/** A reserved time range; `end` before `start` wraps past midnight (e.g. sleep 23:00–07:00). */
-export interface Reserved {
-  start: string;
-  end: string;
-  label?: string;
-}
-
+export type CapacityRule = pb.CapacityRule;
 /** Per-day tweaks: a relative delta, or an absolute override that wins over everything. */
-export interface DayCapacity {
-  delta?: number;
-  override?: number;
+export type DayCapacity = pb.DayCapacity;
+
+/** A time range, e.g. `range('09:00', '17:00', 'Work')`. */
+export function range(start: string, end: string, label?: string): TimeRange {
+  return create(pb.TimeRangeSchema, {start, end, label});
 }
 
 export interface CapacityInfo {
@@ -48,29 +38,38 @@ export interface CapacityInfo {
 }
 
 const DEFAULT_WINDOWS: PlanningWindow[] = [
-  ...Array.from({length: 5}, () => ({start: '18:00', end: '21:00'})),
-  {start: '10:00', end: '16:00'},
-  {start: '10:00', end: '16:00'},
+  ...Array.from({length: 5}, () => range('18:00', '21:00')),
+  range('10:00', '16:00'),
+  range('10:00', '16:00'),
 ];
 
-const SLEEP: Reserved = {start: '23:00', end: '07:00', label: 'Sleep'};
-export const DEFAULT_RESERVED: Reserved[][] = [
-  ...Array.from({length: 5}, () => [
-    SLEEP,
-    {start: '09:00', end: '17:00', label: 'Work'},
-  ]),
-  [SLEEP],
-  [SLEEP],
+const SLEEP = range('23:00', '07:00', 'Sleep');
+/** One weekday's reserved time, from its ranges. */
+export function reservedDay(...ranges: Reserved[]): ReservedDay {
+  return create(pb.ReservedDaySchema, {ranges});
+}
+
+const DEFAULT_RESERVED: ReservedDay[] = [
+  ...Array.from({length: 5}, () =>
+    reservedDay(SLEEP, range('09:00', '17:00', 'Work')),
+  ),
+  reservedDay(SLEEP),
+  reservedDay(SLEEP),
 ];
+
+/** A rule's reserved time per weekday, or the defaults if it has none. */
+export function reservedDays(rule: CapacityRule): ReservedDay[] {
+  return rule.reserved.length ? rule.reserved : DEFAULT_RESERVED;
+}
 
 export function defaultRules(): CapacityRule[] {
   return [
-    {
+    create(pb.CapacityRuleSchema, {
       from: '0000-01-01',
       windows: DEFAULT_WINDOWS,
       adjustment: 0,
       reserved: DEFAULT_RESERVED,
-    },
+    }),
   ];
 }
 
@@ -80,8 +79,7 @@ export function reservedFor(
   date: ISODate,
 ): {start: number; end: number; label?: string}[] {
   const ranges =
-    (ruleFor(rules, date).reserved ?? DEFAULT_RESERVED)[weekdayIndex(date)] ??
-    [];
+    reservedDays(ruleFor(rules, date))[weekdayIndex(date)]?.ranges ?? [];
   return ranges.flatMap(r => {
     const s = toMinutes(r.start);
     const e = toMinutes(r.end);
@@ -92,20 +90,6 @@ export function reservedFor(
       {start: s, end: 24 * 60, label: r.label},
     ].filter(x => x.end > x.start);
   });
-}
-
-/** Converts the old fixed hours-per-weekday setting into windows of the same length. */
-export function rulesFromLegacyHours(hours: number[]): CapacityRule[] {
-  const windows = hours.map((h, i) => {
-    const start = i < 5 ? 18 * 60 : 10 * 60;
-    const end = Math.min(start + Math.round(h * 60), 24 * 60 - 1);
-    const t = (m: number) =>
-      `${String(Math.floor(m / 60)).padStart(2, '0')}:${String(m % 60).padStart(2, '0')}`;
-    return {start: t(start), end: t(end)};
-  });
-  return [
-    {from: '0000-01-01', windows, adjustment: 0, reserved: DEFAULT_RESERVED},
-  ];
 }
 
 export function ruleFor(rules: CapacityRule[], date: ISODate): CapacityRule {

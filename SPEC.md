@@ -15,8 +15,8 @@ See README.md for running and deploying it.
 | Decision | Choice |
 |---|---|
 | Hosting | Static site on GitHub Pages, no backend. Deployed by GitHub Actions from `main` only (see 6). |
-| Storage (v1) | Browser storage (IndexedDB) behind a `Storage` interface, with JSON export/import. |
-| Storage (v2) | ✅ IndexedDB stays the local copy on every device; Drive sync (4.3) keeps a JSON file in the user's Google Drive in step with it (`drive.file` scope — the app sees only files it creates). |
+| Storage (v1) | Browser storage (IndexedDB), as protobuf binary (see Data schema in 6), with export/import as protobuf's JSON form. |
+| Storage (v2) | ✅ IndexedDB stays the local copy on every device; Drive sync (4.3) keeps a protobuf file in the user's Google Drive in step with it (`drive.file` scope — the app sees only files it creates). |
 | Auth | Google sign-in (Google Identity Services token model, browser only, no refresh tokens) with an OAuth Client ID from a GCP project the user owns, in "testing" mode. It asks for read-only Calendar access (4.1), plus `drive.file` only while Drive sync is on (4.3). The access token lives in `sessionStorage` and expires after an hour (Reconnect). |
 | Devices | Desktop-first, phone usable. Below 640px: an icon-only header with scrollable tabs, the calendar opens in 3-day view when the default is Week, Settings rows stack, and the week journal's days stack into a list. Installable as an app (PWA; Settings → App), and usable offline after the first visit (a service worker caches the app's own files only, never API calls). |
 | Stack | React + TypeScript 6.0 + Vite, Tailwind CSS, dnd-kit (drag and drop), Zustand (state), Radix Popover. TypeScript stays on 6.0 (the last release with a JavaScript API) until ESLint's TypeScript support handles 7. |
@@ -256,7 +256,7 @@ asking for write access.
 Use the dashboard on several devices. Turned on per device in Settings →
 Google Drive sync.
 
-- **Storage.** One file, `personal-dashboard.json`, created by the app and
+- **Storage.** One file, `personal-dashboard.binpb` (protobuf binary), created by the app and
   found again by an app property (so renaming it is fine). Every device keeps
   its own copy in IndexedDB, so the app works offline; the sync base (the
   file's id and version, and the data at the last sync) is stored with it,
@@ -481,8 +481,9 @@ compares Gemini's output against the `*.expected.json` files.
   cope with enum values it doesn't know. Adding a field is safe: older
   versions keep fields they don't know when they save. Any change older
   versions can't handle raises `SCHEMA_VERSION`; they refuse such data and ask
-  to be updated. `buf lint` checks the schema's style. (The app doesn't use it
-  yet; the move is in progress.)
+  to be updated. `buf lint` checks the schema's style. The app's records are
+  the generated messages: new ones are made with `create()`, which also
+  checks that nested records are messages.
 - **Checks:** `npm run lint`, `format:check`, `proto:lint`, `typecheck`,
   `test`, `build`.
   The **Checks** workflow runs them on every pull request with a read-only

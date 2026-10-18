@@ -6,7 +6,7 @@
  */
 import type {ApiEvent} from '../google/events';
 import {dayName, shortDate, toISODate} from '../model/dates';
-import type {ISODate, Item} from '../model/types';
+import {ItemKind, type ISODate, type ItemInit} from '../model/types';
 
 /** One class meeting from the timetable. */
 export interface ClassMeeting {
@@ -310,16 +310,14 @@ export function meetingTitle(m: ClassMeeting): string {
  * The task made from a class meeting: a class item, dated by the class,
  * remembering which meeting it came from.
  */
-export function taskFromMeeting(
-  m: ClassMeeting,
-): Partial<Omit<Item, 'id' | 'projectId'>> {
+export function taskFromMeeting(m: ClassMeeting): ItemInit {
   return {
-    kind: 'class',
+    kind: ItemKind.CLASS,
     title: meetingTitle(m),
     heldOn: m.date,
     notes: [`${m.type} ${m.start}–${m.end}`, m.location]
       .filter(Boolean)
       .join(' · '),
-    source: {kind: 'usos', key: m.key},
+    source: {source: {case: 'usosMeeting', value: m.key}},
   };
 }
