@@ -11,14 +11,20 @@ vi.stubGlobal('sessionStorage', storage);
 
 /** A fake Google Identity Services that grants what `grant` lists. */
 let requested = '';
+let includeGranted: boolean | undefined;
 let grant: (scope: string) => string = s => s;
 vi.stubGlobal('window', {
   google: {
     accounts: {
       oauth2: {
-        initTokenClient: (cfg: {scope: string; callback(r: object): void}) => ({
+        initTokenClient: (cfg: {
+          scope: string;
+          include_granted_scopes?: boolean;
+          callback(r: object): void;
+        }) => ({
           requestAccessToken: () => {
             requested = cfg.scope;
+            includeGranted = cfg.include_granted_scopes;
             cfg.callback({
               access_token: 'tok',
               expires_in: 3600,
@@ -49,6 +55,8 @@ describe('Drive access in the Google sign-in', () => {
   it('is not requested while Drive sync is off', async () => {
     await useGoogle.getState().signIn();
     expect(requested.split(' ').sort()).toEqual([...SCOPES].sort());
+    // Nor carried over from an earlier grant.
+    expect(includeGranted).toBe(false);
     expect(hasDriveAccess(useGoogle.getState().token)).toBe(false);
   });
 
