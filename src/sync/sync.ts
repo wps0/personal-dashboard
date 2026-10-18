@@ -1,7 +1,7 @@
 import type {DriveFile} from '../google/drive';
 import {emptyData, type AppData} from '../model/types';
 import {exportJson, parseAppData} from '../storage/storage';
-import {mergeData, same} from './merge';
+import {mergeData, same, type Conflict} from './merge';
 
 /** Where this device stands with Drive: the file, and its version and content at the last sync. */
 export interface SyncBase {
@@ -31,8 +31,8 @@ export type SyncResult =
       /** This device's data after the sync. */
       data: AppData;
       base: SyncBase;
-      /** Paths both sides changed differently (this device's value was kept). */
-      conflicts: string[];
+      /** Values both sides changed differently (this device's was kept). */
+      conflicts: Conflict[];
     }
   | {kind: 'choose'; file: DriveFile; remote: AppData};
 
@@ -124,7 +124,7 @@ async function push(
   data: AppData,
   fileId: string,
   drive: Remote,
-  conflicts: string[] = [],
+  conflicts: Conflict[] = [],
 ): Promise<SyncResult> {
   const file = await drive.updateFile(fileId, exportJson(data));
   return done(kind, data, at(file, data), conflicts);
@@ -140,5 +140,5 @@ const done = (
   kind: Exclude<SyncResult['kind'], 'choose'>,
   data: AppData,
   base: SyncBase,
-  conflicts: string[] = [],
+  conflicts: Conflict[] = [],
 ): SyncResult => ({kind, data, base, conflicts});

@@ -34,7 +34,7 @@ export function setUpSync(storage: IndexedDbStorage) {
     loadBase: () => storage.loadSyncBase(),
     saveSynced: (data, base) => storage.saveSynced(data, base),
     clearBase: () => storage.clearSyncBase(),
-    onConflicts: n =>
+    onConflicts: ({length: n}) =>
       toast(
         `Synced with Google Drive. ${n === 1 ? 'One value was' : `${n} values were`} changed on another device too; this device’s ${n === 1 ? 'was' : 'were'} kept.`,
       ),
