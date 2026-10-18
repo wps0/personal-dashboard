@@ -123,8 +123,9 @@ export function UsosSettings() {
             aria-label="iCal link"
           />
           <span className="w-full text-[12px] text-dim sm:pl-51">
-            USOSweb → timetable → export (iCalendar). The link is personal: it
-            stays in this browser.
+            USOSweb → timetable → export (iCalendar). The link is personal: it’s
+            saved with your data, so it syncs to Google Drive (if on) and is
+            included in exports.
           </span>
         </label>
       )}

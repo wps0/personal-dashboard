@@ -242,6 +242,12 @@ export function SettingsView() {
               Reset everything
             </button>
           </div>
+          {data.settings.usos.source.case === 'icalUrl' && (
+            <p className="mt-2 text-[12px] text-dim">
+              Exports include your personal USOS iCal link: share them with
+              care.
+            </p>
+          )}
           {message && <p className="mt-2 text-dim">{message}</p>}
         </Section>
       </div>
