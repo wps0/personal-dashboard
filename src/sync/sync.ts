@@ -40,15 +40,18 @@ export type SyncResult =
     }
   | {kind: 'choose'; file: DriveFile; remote: AppData};
 
-/** Nothing worth keeping yet: a fresh install (settings aside). */
+/**
+ * Nothing worth keeping yet: a fresh install (settings aside). A cleared
+ * note stays as '', which is nothing too.
+ */
 function isBlank(d: AppData) {
   return (
     !d.areas.length &&
     !d.projects.length &&
     !d.items.length &&
     !d.events.length &&
-    !Object.keys(d.dayNotes).length &&
-    !Object.keys(d.monthNotes).length
+    !Object.values(d.dayNotes).some(Boolean) &&
+    !Object.values(d.monthNotes).some(Boolean)
   );
 }
 
