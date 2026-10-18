@@ -2,8 +2,10 @@ import {StrictMode} from 'react';
 import {createRoot} from 'react-dom/client';
 import {App} from './app';
 import {LoadError} from './components/load_error';
+import {OpenElsewhere} from './components/open_elsewhere';
 import './index.css';
 import {setUpPwa} from './pwa';
+import {claimSingleTab} from './storage/single_tab';
 import {IndexedDbStorage} from './storage/storage';
 import {useStore} from './store';
 import {setUpSync} from './sync/setup';
@@ -13,6 +15,10 @@ setUpPwa();
 
 async function boot() {
   const root = createRoot(document.getElementById('root')!);
+  if (!(await claimSingleTab())) {
+    root.render(<OpenElsewhere />);
+    return;
+  }
   try {
     const data = await storage.load();
     if (data) useStore.getState().replaceAll(data);
