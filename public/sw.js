@@ -2,8 +2,8 @@
 //
 // - Only this site's own GET requests are handled. Calls to Google, Gemini,
 //   USOS and any other origin go straight to the network, never cached.
-// - Pages: network first (so a new deploy shows up at once), the cached copy
-//   when offline.
+// - Pages: network first, revalidating the HTTP cache (so a new deploy shows
+//   up at once, not after its max-age), the cached copy when offline.
 // - Built assets (/assets/*, content-hashed, never change): cache first.
 // - On install and after each page load, every file of the current build is
 //   cached (see asset-manifest.json), so the app works offline after the
@@ -42,6 +42,14 @@ async function cacheBuild() {
       await cache.delete(req);
 }
 
+/** Whether `url` is the app's page: the scope's root or its index.html. */
+function isPage(url) {
+  return (
+    url.pathname === scope.pathname ||
+    url.pathname === `${scope.pathname}index.html`
+  );
+}
+
 self.addEventListener('install', event => {
   event.waitUntil(
     Promise.all([
@@ -70,9 +78,10 @@ self.addEventListener('fetch', event => {
   if (req.method !== 'GET' || url.origin !== scope.origin) return;
   if (req.mode === 'navigate') {
     event.respondWith(
-      fetch(req)
+      fetch(req, {cache: 'no-cache'})
         .then(res => {
-          if (res.ok) {
+          // Only the app's own page becomes the offline copy.
+          if (res.ok && isPage(url)) {
             const copy = res.clone();
             // Keep the offline copy current, including a new deploy's files.
             event.waitUntil(
