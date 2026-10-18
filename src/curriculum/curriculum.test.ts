@@ -10,6 +10,7 @@ import {
   extractCurriculum,
   isVerbatim,
   itemsFromTopics,
+  lectureNumber,
   notVerbatim,
   parseResponse,
   validateResult,
@@ -55,6 +56,34 @@ describe('validateResult / parseResponse', () => {
       warnings: [],
       corrections: [],
     });
+  });
+
+  it('drops lecture numbers that are not plausible, keeping the topic', () => {
+    const topic = (lectureFrom: unknown, lectureTo: unknown) =>
+      validateResult({topics: [{title: 'T', lectureFrom, lectureTo}]})
+        .topics[0];
+    const range = (from: unknown, to: unknown) => {
+      const t = topic(from, to);
+      return [t.lectureFrom, t.lectureTo];
+    };
+    expect(range(0, 0)).toEqual([null, null]);
+    expect(range(1.5, null)).toEqual([null, null]);
+    expect(range(-2, 4)).toEqual([4, 4]);
+    expect(range(1, 2_000_000_000)).toEqual([1, 1]);
+    expect(range(501, 502)).toEqual([null, null]);
+    expect(range(500, 500)).toEqual([500, 500]);
+  });
+
+  it('puts reversed ranges in order and caps their length', () => {
+    const range = (lectureFrom: number, lectureTo: number) => {
+      const [t] = validateResult({
+        topics: [{title: 'T', lectureFrom, lectureTo}],
+      }).topics;
+      return [t.lectureFrom, t.lectureTo];
+    };
+    expect(range(5, 3)).toEqual([3, 5]);
+    expect(range(1, 300)).toEqual([1, 100]);
+    expect(range(400, 200)).toEqual([200, 299]);
   });
 
   it('explains blocked, cut-off and non-JSON answers', () => {
@@ -150,12 +179,43 @@ describe('itemsFromTopics', () => {
     });
   });
 
+  it('handles reversed and huge ranges typed in the review', () => {
+    const topic = (lectureFrom: number, lectureTo: number) => ({
+      title: 'T',
+      description: '',
+      lectureFrom,
+      lectureTo,
+    });
+    expect(itemsFromTopics([topic(5, 3)], 'lecture').map(i => i.title)).toEqual(
+      ['3. T', '4. T', '5. T'],
+    );
+    const t = Date.now();
+    const items = itemsFromTopics([topic(1, 2_000_000_000)], 'lecture');
+    expect(Date.now() - t).toBeLessThan(100);
+    expect(items).toHaveLength(100);
+    expect(items[99].title).toBe('100. T');
+  });
+
   it('keeps topics without lecture numbers as one item each', () => {
     const items = itemsFromTopics(
       [{title: 'Wstęp', description: '', lectureFrom: null, lectureTo: null}],
       'lecture',
     );
     expect(items.map(i => i.title)).toEqual(['Wstęp']);
+  });
+});
+
+describe('lectureNumber', () => {
+  it('keeps positive integers up to 500, as typed in the review', () => {
+    expect([1, 42, 500].map(lectureNumber)).toEqual([1, 42, 500]);
+    expect([0, -1, 2.5, 501, NaN, null].map(lectureNumber)).toEqual([
+      null,
+      null,
+      null,
+      null,
+      null,
+      null,
+    ]);
   });
 });
 

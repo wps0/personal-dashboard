@@ -3,6 +3,7 @@ import {useMemo, useState, type ReactNode} from 'react';
 import {
   extractCurriculum,
   itemsFromTopics,
+  lectureNumber,
   notVerbatim,
   type CurriculumResult,
   type Granularity,
@@ -371,7 +372,7 @@ function NumberInput({
       value={value ?? ''}
       onChange={e => {
         const n = parseInt(e.target.value, 10);
-        onChange(Number.isFinite(n) && n > 0 ? n : null);
+        onChange(lectureNumber(Number.isFinite(n) ? n : null));
       }}
       aria-label={label}
       className="field h-7 w-9 px-1 text-center tabular-nums"

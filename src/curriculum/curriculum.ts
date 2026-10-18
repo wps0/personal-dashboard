@@ -66,8 +66,26 @@ export const RESPONSE_SCHEMA = {
 function isStr(v: unknown): v is string {
   return typeof v === 'string';
 }
-function isNum(v: unknown): v is number | null {
-  return v === null || (Number.isInteger(v) && (v as number) > 0);
+function isNumOrNull(v: unknown): v is number | null {
+  return v === null || typeof v === 'number';
+}
+
+/** Lecture numbers above this are taken as a mistake. */
+const MAX_LECTURE = 500;
+/** The most lectures one topic can span. */
+const MAX_LECTURES_PER_TOPIC = 100;
+
+/** A lecture number: a positive integer up to MAX_LECTURE, otherwise null. */
+export function lectureNumber(v: number | null): number | null {
+  return v !== null && Number.isInteger(v) && v > 0 && v <= MAX_LECTURE
+    ? v
+    : null;
+}
+
+/** A topic's lectures in order, at most MAX_LECTURES_PER_TOPIC of them. */
+function lectureSpan(from: number, to: number): [number, number] {
+  const lo = Math.min(from, to);
+  return [lo, Math.min(Math.max(from, to), lo + MAX_LECTURES_PER_TOPIC - 1)];
 }
 
 /** Checks the model's JSON against the schema. Throws a readable error otherwise. */
@@ -77,17 +95,21 @@ export function validateResult(raw: unknown): CurriculumResult {
     throw new Error('Gemini’s answer has no topic list.');
   const topics = r.topics.map((t, i) => {
     const x = (t ?? {}) as Partial<Topic>;
-    const from = x.lectureFrom ?? null;
-    const to = x.lectureTo ?? null;
+    const rawFrom = x.lectureFrom ?? null;
+    const rawTo = x.lectureTo ?? null;
     if (!isStr(x.title) || !x.title.trim() || !isStr(x.description ?? ''))
       throw new Error(`Topic ${i + 1} in Gemini’s answer is incomplete.`);
-    if (!isNum(from) || !isNum(to))
+    if (!isNumOrNull(rawFrom) || !isNumOrNull(rawTo))
       throw new Error(`Topic ${i + 1} has invalid lecture numbers.`);
+    // 0, fractions and absurd numbers count as not stated.
+    const from = lectureNumber(rawFrom) ?? lectureNumber(rawTo);
+    const to = lectureNumber(rawTo) ?? from;
+    const span = from !== null && to !== null ? lectureSpan(from, to) : null;
     return {
       title: x.title.trim(),
       description: (x.description ?? '').trim(),
-      lectureFrom: from ?? to,
-      lectureTo: to ?? from,
+      lectureFrom: span?.[0] ?? null,
+      lectureTo: span?.[1] ?? null,
     };
   });
   return {
@@ -246,8 +268,12 @@ export function itemsFromTopics(
       unnumbered.push(t);
       continue;
     }
-    for (let n = t.lectureFrom; n <= t.lectureTo; n++)
-      byLecture.set(n, [...(byLecture.get(n) ?? []), t]);
+    // Ranges typed in the review can be backwards or long.
+    const [lo, hi] = lectureSpan(t.lectureFrom, t.lectureTo);
+    for (let n = lo; n <= hi; n++) {
+      if (!byLecture.has(n)) byLecture.set(n, []);
+      byLecture.get(n)!.push(t);
+    }
   }
   return [
     ...[...byLecture]
