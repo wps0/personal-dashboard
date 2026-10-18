@@ -48,7 +48,13 @@ if (typeof window !== 'undefined') {
   });
 }
 
-async function fetchRange(from: ISODate, to: ISODate) {
+/** For tests. */
+export function cachedRanges() {
+  return useCache.getState().ranges;
+}
+
+/** Fetches the range's events from the selected calendars into the cache. */
+export async function fetchRange(from: ISODate, to: ISODate) {
   const key = `${from}|${to}`;
   if (inFlight.has(key)) return;
   inFlight.add(key);
@@ -64,8 +70,14 @@ async function fetchRange(from: ISODate, to: ISODate) {
         ),
       ),
     );
+    // A calendar that failed this time (offline, rate limit) keeps what it had.
+    const before = useCache.getState().ranges[key]?.events ?? [];
     const events = results
-      .flatMap(r => (r.status === 'fulfilled' ? r.value : []))
+      .flatMap((r, i) =>
+        r.status === 'fulfilled'
+          ? r.value
+          : before.filter(e => e.calendarId === chosen[i].id),
+      )
       .filter(e => e.date >= from && e.date <= to);
     const failed = results.findIndex(r => r.status === 'rejected');
     if (failed >= 0)
