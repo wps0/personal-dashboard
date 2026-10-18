@@ -11,7 +11,13 @@ import {ProgressRing} from '../components/progress_ring';
 import {TimeGrid} from '../components/time_grid';
 import {fmtH, URGENCY_CLASS} from '../format';
 import {useLookups, useToday, type Lookups} from '../hooks';
-import {addDays, countdown, dayName, shortDate} from '../model/dates';
+import {
+  addDays,
+  countdown,
+  dayName,
+  isISODate,
+  shortDate,
+} from '../model/dates';
 import {
   allocationsByItem,
   isItemDone,
@@ -30,7 +36,7 @@ import {blockKeys} from '../keyboard';
 /** Landing page: three days (today by default; ‹ › move a day at a time), what's planned, and how projects stand. */
 export function HomeView({date}: {date?: ISODate}) {
   const today = useToday();
-  const start = date && /^\d{4}-\d{2}-\d{2}$/.test(date) ? date : today;
+  const start = date && isISODate(date) ? date : today;
   const days = useMemo(
     () => [start, addDays(start, 1), addDays(start, 2)],
     [start],
