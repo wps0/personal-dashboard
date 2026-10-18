@@ -17,7 +17,7 @@ export type SyncStatus =
   | {kind: 'signed-out'}
   | {kind: 'offline'}
   | {kind: 'error'; message: string; help?: string}
-  /** First sync, and Drive already has different data: the user decides. */
+  /** First sync (or a new file), and Drive has different data: the user decides. */
   | {
       kind: 'choose';
       drive: {projects: number; items: number; modifiedTime: string};

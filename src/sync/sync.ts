@@ -23,8 +23,9 @@ export interface Remote {
 }
 
 /**
- * First sync on a device whose data differs from what Drive already has:
- * use Drive's data (this device's is replaced), or merge both.
+ * First sync on a device, or with a file it hasn't synced with before, when
+ * its data differs from Drive's: use Drive's data (this device's is
+ * replaced), or merge both.
  */
 export type FirstSyncChoice = 'drive' | 'merge';
 
@@ -75,9 +76,11 @@ export async function syncOnce(
     info = await drive.findFile();
     if (!info) return create(local, drive);
   }
+  // A different file (another Google account's, or one a device made after
+  // the deletion) has nothing in common with the base.
+  if (info.id !== base.fileId) return unrelated(local, info, drive, choice);
   const localChanged = !same(local, base.data);
-  const remoteChanged =
-    info.id !== base.fileId || info.version !== base.version;
+  const remoteChanged = info.version !== base.version;
 
   if (!remoteChanged) {
     if (!localChanged) return done('up-to-date', local, base);
@@ -99,6 +102,19 @@ async function firstSync(
 ): Promise<SyncResult> {
   const file = await drive.findFile();
   if (!file) return create(local, drive);
+  return unrelated(local, file, drive, choice);
+}
+
+/**
+ * Syncs with a file that shares no history with this device's data: takes
+ * it if the data is the same or there's nothing here yet, else asks.
+ */
+async function unrelated(
+  local: AppData,
+  file: DriveFile,
+  drive: Remote,
+  choice?: FirstSyncChoice,
+): Promise<SyncResult> {
   const remote = await read(drive, file.id);
   if (same(local, remote) || isBlank(local) || choice === 'drive')
     return done('pulled', remote, at(file, remote));

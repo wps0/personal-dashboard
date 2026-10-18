@@ -117,6 +117,25 @@ describe('SyncRunner', () => {
     expect(state.data.projects.length).toBe(sample().projects.length);
   });
 
+  it('asks the same way when switched to another Google account’s file', async () => {
+    const {runner, state, deps} = setUp(sample());
+    await runner.sync();
+    const other = new FakeDrive();
+    const theirs = emptyData();
+    theirs.dayNotes['2026-10-13'] = 'theirs';
+    other.files.set('g1', {content: encode(theirs), version: 3});
+    deps.remote = other;
+    await runner.sync();
+    expect(useSync.getState().status.kind).toBe('choose');
+    expect(state.data.projects.length).toBe(sample().projects.length);
+
+    await runner.sync('merge');
+    expect(useSync.getState().status).toEqual({kind: 'idle'});
+    expect(state.data.dayNotes['2026-10-13']).toBe('theirs');
+    expect(state.data.projects.length).toBe(sample().projects.length);
+    expect(state.saved?.base.fileId).toBe('g1');
+  });
+
   it('reports conflicts', async () => {
     const drive = new FakeDrive();
     const laptop = setUp(sample(), drive);
