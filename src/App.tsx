@@ -51,7 +51,7 @@ const THEME_ICON: Record<ThemeChoice, ReactNode> = {
   dark: <Moon size={15} />,
 };
 
-export default function App() {
+export function App() {
   const route = useRoute();
   const hasAreas = useStore(s => s.data.areas.length > 0);
   const [theme, setTheme] = useTheme();

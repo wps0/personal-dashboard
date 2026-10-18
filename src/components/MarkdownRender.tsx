@@ -3,7 +3,7 @@ import DOMPurify from 'dompurify';
 import {marked} from 'marked';
 import {useMemo} from 'react';
 
-export default function MarkdownRender({source}: {source: string}) {
+export function MarkdownRender({source}: {source: string}) {
   const html = useMemo(
     () => DOMPurify.sanitize(marked.parse(source, {async: false})),
     [source],
