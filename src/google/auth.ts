@@ -13,6 +13,13 @@ export const SCOPES = [
   'https://www.googleapis.com/auth/calendar.calendarlist.readonly',
 ] as const;
 
+/**
+ * The only Drive permission, requested only while Drive sync is on (and so
+ * never by the Calendar sign-in alone): access to the files this app creates,
+ * and nothing else in your Drive.
+ */
+export const DRIVE_SCOPE = 'https://www.googleapis.com/auth/drive.file';
+
 const PREFS_KEY = 'personal-dashboard/google';
 const TOKEN_KEY = 'personal-dashboard/google-token';
 const GIS_SRC = 'https://accounts.google.com/gsi/client';
