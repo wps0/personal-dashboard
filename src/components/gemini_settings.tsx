@@ -2,6 +2,8 @@ import {ExternalLink, Lock} from 'lucide-react';
 import {DEFAULT_MODEL, useGemini} from '../curriculum/gemini';
 import {BufferedInput} from './buffered';
 
+const ORIGIN = typeof window !== 'undefined' ? window.location.origin : '';
+
 /** Settings → Gemini: the API key and model used to import curricula. */
 export function GeminiSettings() {
   const {apiKey, model, set} = useGemini();
@@ -12,7 +14,9 @@ export function GeminiSettings() {
         <span>
           The key is stored only in this browser, never exported or synced. When
           you import a curriculum, the pasted text is sent to Google’s Gemini
-          API under your key.
+          API under your key. In Google Cloud, restrict the key to the
+          Generative Language API and to this site’s address ({ORIGIN}), so it’s
+          of no use anywhere else.
         </span>
       </p>
       <label className="flex flex-wrap items-center gap-x-3 gap-y-1">
