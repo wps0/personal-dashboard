@@ -159,7 +159,7 @@ export function mergeData(base: AppData, local: AppData, remote: AppData) {
  * one of `versions` but not in `d`. Records whose parent never existed are
  * left alone; that isn't the merge's doing.
  */
-function withoutOrphans(d: AppData, versions: AppData[]): AppData {
+export function withoutOrphans(d: AppData, versions: AppData[]): AppData {
   const deleted = <T extends WithId>(key: (v: AppData) => T[], kept: T[]) => {
     const ids = new Set(kept.map(x => x.id));
     return new Set(
