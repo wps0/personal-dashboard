@@ -13,8 +13,13 @@ export interface SyncBase {
 
 /** The Drive operations a sync needs (google/drive.ts; a fake in tests). */
 export interface Remote {
-  findFile(): Promise<DriveFile | null>;
+  /** All sync files; normally one. */
+  listFiles(): Promise<DriveFile[]>;
   fileInfo(id: string): Promise<DriveFile | null>;
+  /** Trashes a duplicate, noting the file it was merged into. Gone is fine. */
+  trash(id: string, into: string): Promise<void>;
+  /** The file a trashed duplicate was merged into, else null. */
+  mergedInto(id: string): Promise<string | null>;
   download(id: string): Promise<Uint8Array>;
   createFile(content: Uint8Array<ArrayBuffer>): Promise<DriveFile>;
   updateFile(id: string, content: Uint8Array<ArrayBuffer>): Promise<DriveFile>;
@@ -60,6 +65,7 @@ function isBlank(d: AppData) {
  * - only this device changed since the last sync → upload;
  * - only Drive changed → take Drive's data;
  * - both → merge (see merge.ts) and upload the result.
+ * First, more than one sync file is made into one (see dedupe).
  *
  * Drive has no conditional writes, so a write from another device between
  * our version check and our upload (a fraction of a second) would be
@@ -71,14 +77,91 @@ export async function syncOnce(
   drive: Remote,
   choice?: FirstSyncChoice,
 ): Promise<SyncResult> {
-  if (!base) return firstSync(local, drive, choice);
+  const files = (await drive.listFiles()).sort(older);
+  const dup = await dedupe(files, drive);
+  const res = await syncWith(local, base, dup?.file ?? files[0], drive, choice);
+  if (dup?.conflicts.length && res.kind !== 'choose')
+    res.conflicts = [...dup.conflicts, ...res.conflicts];
+  return res;
+}
+
+/** The canonical file comes first: the oldest, then the lowest id. */
+function older(a: DriveFile, b: DriveFile) {
+  if (a.createdTime !== b.createdTime)
+    return a.createdTime < b.createdTime ? -1 : 1;
+  return a.id < b.id ? -1 : a.id > b.id ? 1 : 0;
+}
+
+/**
+ * More than one sync file (two first syncs at once, a search lagging behind
+ * a new file, a lost create response): merges them all into the canonical
+ * one (files[0]), which every device picks alike, and trashes the others.
+ * With no shared history this is the first sync's 'merge', so nothing is
+ * lost. Skipped while any of them can't be read. Two devices doing it at
+ * once upload the same merge to the same file.
+ */
+async function dedupe(
+  files: DriveFile[],
+  drive: Remote,
+): Promise<{file: DriveFile; conflicts: Conflict[]} | null> {
+  if (files.length < 2) return null;
+  const contents: AppData[] = [];
+  for (const f of files) {
+    const bytes = await drive.download(f.id);
+    try {
+      contents.push(readStored(bytes));
+    } catch {
+      return null; // never touch what we can't read
+    }
+  }
+  const [first, ...others] = contents;
+  let data = first;
+  const conflicts: Conflict[] = [];
+  for (const other of others) {
+    const m = mergeData(emptyData(), data, other);
+    data = m.data;
+    conflicts.push(...m.conflicts);
+  }
+  let file = files[0];
+  if (!same(data, first)) {
+    file = await drive.updateFile(file.id, encode(data));
+    await writeCopy(data, drive);
+  }
+  for (const f of files.slice(1)) {
+    // Changed since it was read: merged again next time.
+    if ((await drive.fileInfo(f.id))?.version !== f.version) continue;
+    await drive.trash(f.id, file.id);
+  }
+  return {file, conflicts};
+}
+
+async function syncWith(
+  local: AppData,
+  base: SyncBase | null,
+  canonical: DriveFile | undefined,
+  drive: Remote,
+  choice?: FirstSyncChoice,
+): Promise<SyncResult> {
+  if (!base) {
+    if (!canonical) return create(local, drive);
+    return unrelated(local, canonical, drive, choice);
+  }
 
   let info = await drive.fileInfo(base.fileId);
-  if (!info) {
-    // The file was deleted: another device may have made a new one.
-    info = await drive.findFile();
-    if (!info) return create(local, drive);
+  if (!info && canonical) {
+    if ((await drive.mergedInto(base.fileId)) === canonical.id) {
+      // The base's file was a duplicate, merged into the canonical one (here
+      // or on another device) as it was at least at the base's version. So
+      // base.data is a common ancestor of this device's data and the
+      // canonical file's, as if the base had been on it all along: the
+      // three-way merge below keeps this device's edits (deletions too)
+      // since the base. The version never matches, so it's read.
+      base = {...base, fileId: canonical.id, version: ''};
+    }
+    // Else the file was deleted: another device may have made a new one.
+    info = canonical;
   }
+  if (!info) return create(local, drive);
   // A different file (another Google account's, or one a device made after
   // the deletion) has nothing in common with the base.
   if (info.id !== base.fileId) return unrelated(local, info, drive, choice);
@@ -96,16 +179,6 @@ export async function syncOnce(
   const {data, conflicts} = mergeData(base.data, local, remote);
   if (same(data, remote)) return done('merged', data, at(info, remote));
   return push('merged', data, info.id, drive, conflicts);
-}
-
-async function firstSync(
-  local: AppData,
-  drive: Remote,
-  choice?: FirstSyncChoice,
-): Promise<SyncResult> {
-  const file = await drive.findFile();
-  if (!file) return create(local, drive);
-  return unrelated(local, file, drive, choice);
 }
 
 /**
