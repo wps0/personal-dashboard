@@ -1,6 +1,6 @@
 import {ChevronLeft, ChevronRight} from 'lucide-react';
 import {useState} from 'react';
-import {useSlide} from '../hooks';
+import {useSlide, useWeekStart} from '../hooks';
 import {
   addMonths,
   firstOfMonth,
@@ -8,6 +8,7 @@ import {
   monthGrid,
   startOfWeek,
   todayISO,
+  weekdayNames,
 } from '../model/dates';
 import type {ISODate} from '../model/types';
 
@@ -21,11 +22,10 @@ interface Props {
   weekHover?: boolean;
 }
 
-const WEEKDAYS = ['M', 'T', 'W', 'T', 'F', 'S', 'S'];
-
-/** Google-Calendar-style month picker. Weeks start on Monday. */
+/** Google-Calendar-style month picker. Weeks start on the day set in Settings. */
 export function MiniMonth({selected, range, onSelect, weekHover}: Props) {
   const today = todayISO();
+  const weekStart = useWeekStart();
   const [month, setMonth] = useState(firstOfMonth(selected ?? today));
   const [hoverWeek, setHoverWeek] = useState<ISODate | null>(null);
   // Jump to a newly selected date's month (set during render, not in an effect).
@@ -35,7 +35,7 @@ export function MiniMonth({selected, range, onSelect, weekHover}: Props) {
     if (selected) setMonth(firstOfMonth(selected));
   }
 
-  const days = monthGrid(month);
+  const days = monthGrid(month, weekStart);
   const slide = useSlide(month);
   const inRange = (d: ISODate) =>
     range ? d >= range[0] && d <= range[1] : false;
@@ -62,9 +62,9 @@ export function MiniMonth({selected, range, onSelect, weekHover}: Props) {
         </button>
       </div>
       <div className="grid grid-cols-7 text-center text-[10px] font-medium text-dim">
-        {WEEKDAYS.map((d, i) => (
-          <span key={i} className="py-1">
-            {d}
+        {weekdayNames(weekStart).map(d => (
+          <span key={d} className="py-1">
+            {d[0]}
           </span>
         ))}
       </div>
@@ -78,7 +78,8 @@ export function MiniMonth({selected, range, onSelect, weekHover}: Props) {
           const isSelected = d === selected;
           const outside = d.slice(0, 7) !== month.slice(0, 7);
           const tinted =
-            inRange(d) || (weekHover && hoverWeek === startOfWeek(d));
+            inRange(d) ||
+            (weekHover && hoverWeek === startOfWeek(d, weekStart));
           return (
             <div
               key={d}
@@ -86,7 +87,9 @@ export function MiniMonth({selected, range, onSelect, weekHover}: Props) {
             >
               <button
                 onClick={() => onSelect(d)}
-                onMouseEnter={() => weekHover && setHoverWeek(startOfWeek(d))}
+                onMouseEnter={() =>
+                  weekHover && setHoverWeek(startOfWeek(d, weekStart))
+                }
                 className={`flex h-7 w-7 items-center justify-center rounded-full text-[11px] tabular-nums transition-[background-color,transform] duration-150 active:scale-90 ${
                   isToday
                     ? 'bg-accent font-semibold text-on-accent'

@@ -13,6 +13,7 @@ import type {
   ItemInit,
   Project,
   UsosSource,
+  Weekday,
 } from './model/types';
 import {
   AREA_COLORS,
@@ -70,6 +71,7 @@ interface Actions {
   changeCapacityRule(patch: Partial<Omit<CapacityRule, 'from'>>): void;
   setDefaultEventMinutes(minutes: number): void;
   setDefaultCalendarView(view: CalendarView): void;
+  setWeekStart(day: Weekday): void;
   setUsosSource(source: UsosSource): void;
   /** Remembers class meetings as imported or skipped, so they aren't offered again. */
   markUsosHandled(keys: string[]): void;
@@ -263,6 +265,8 @@ export const useStore = create<State>()((set, get) => {
       })),
     setDefaultCalendarView: view =>
       update(d => ({settings: {...d.settings, defaultCalendarView: view}})),
+    setWeekStart: day =>
+      update(d => ({settings: {...d.settings, weekStart: day}})),
     setDefaultEventMinutes: minutes =>
       update(d => ({settings: {...d.settings, defaultEventMinutes: minutes}})),
     setUsosSource: source =>

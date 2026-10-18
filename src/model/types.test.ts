@@ -1,7 +1,7 @@
 import {create} from '@bufbuild/protobuf';
 import {describe, expect, it} from 'vitest';
 import * as pb from '../gen/dashboard/data_pb';
-import {AREA_COLORS, isHexColor, withDefaults} from './types';
+import {AREA_COLORS, isHexColor, weekStartOf, withDefaults} from './types';
 
 describe('isHexColor', () => {
   it('accepts only #rrggbb', () => {
@@ -36,5 +36,16 @@ describe('withDefaults', () => {
       AREA_COLORS[2],
     ]);
     expect(data.areas[1]).toMatchObject({id: 'b', name: 'B'});
+  });
+});
+
+describe('weekStartOf', () => {
+  it('maps the stored weekday to getDay numbers, Sunday by default', () => {
+    expect(weekStartOf(pb.Weekday.MONDAY)).toBe(1);
+    expect(weekStartOf(pb.Weekday.WEDNESDAY)).toBe(3);
+    expect(weekStartOf(pb.Weekday.SATURDAY)).toBe(6);
+    expect(weekStartOf(pb.Weekday.SUNDAY)).toBe(0);
+    expect(weekStartOf(pb.Weekday.UNSPECIFIED)).toBe(0);
+    expect(weekStartOf(42 as pb.Weekday)).toBe(0); // from a newer version
   });
 });

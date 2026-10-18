@@ -144,6 +144,9 @@ message Settings {
   // The view the calendar opens in.
   CalendarView default_calendar_view = 4;
   UsosSettings usos = 5;
+  // The first day of the week in the calendar, mini months and the week
+  // journal. Unset means Sunday.
+  Weekday week_start = 6;
 }
 
 message CapacityRule {
@@ -180,6 +183,18 @@ enum CalendarView {
   CALENDAR_VIEW_THREE_DAY = 2;
   CALENDAR_VIEW_WEEK = 3;
   CALENDAR_VIEW_MONTH = 4;
+}
+
+// A day of the week, numbered ISO-style: Monday is 1, Sunday is 7.
+enum Weekday {
+  WEEKDAY_UNSPECIFIED = 0;
+  WEEKDAY_MONDAY = 1;
+  WEEKDAY_TUESDAY = 2;
+  WEEKDAY_WEDNESDAY = 3;
+  WEEKDAY_THURSDAY = 4;
+  WEEKDAY_FRIDAY = 5;
+  WEEKDAY_SATURDAY = 6;
+  WEEKDAY_SUNDAY = 7;
 }
 
 message UsosSettings {
