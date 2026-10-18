@@ -4,13 +4,17 @@
   "version": "0.1.0",
   "type": "module",
   "scripts": {
+    "predev": "npm run proto:generate",
     "dev": "vite",
+    "prebuild": "npm run proto:generate",
     "build": "tsc -b && vite build",
     "preview": "vite preview",
+    "pretypecheck": "npm run proto:generate",
     "typecheck": "tsc -b",
     "lint": "eslint .",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
+    "pretest": "npm run proto:generate",
     "test": "TZ=Europe/Warsaw vitest run",
     "proto:lint": "buf lint",
     "proto:generate": "buf generate"
