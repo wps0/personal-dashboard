@@ -31,14 +31,22 @@ export async function googleFetch(
   }
 }
 
+/** Marks the session expired, unless a newer token has replaced the one used. */
+function expire(used: string) {
+  const {token, markExpired} = useGoogle.getState();
+  if (token?.value === used) markExpired();
+}
+
 async function fetchOnce(
   service: Service,
   url: string,
   init: RequestInit,
 ): Promise<Response> {
-  const {token, markExpired} = useGoogle.getState();
-  if (!token || token.expiresAt < Date.now()) {
-    markExpired();
+  const {token} = useGoogle.getState();
+  // Signed out (or disconnected): nothing has expired.
+  if (!token) throw new GoogleApiError('expired', 'Google session expired');
+  if (token.expiresAt < Date.now()) {
+    expire(token.value);
     throw new GoogleApiError('expired', 'Google session expired');
   }
   let res: Response;
@@ -51,7 +59,7 @@ async function fetchOnce(
     throw new GoogleApiError('offline', 'Can’t reach Google. Are you offline?');
   }
   if (res.status === 401) {
-    markExpired();
+    expire(token.value);
     throw new GoogleApiError('expired', 'Google session expired', 401);
   }
   if (!res.ok)
