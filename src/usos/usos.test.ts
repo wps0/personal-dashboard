@@ -39,6 +39,13 @@ describe('parseClassTitle', () => {
     });
   });
 
+  it('reads the first line only', () => {
+    expect(parseClassTitle('LAB - Analiza\nGrupa 2')).toEqual({
+      type: 'LAB',
+      course: 'Analiza',
+    });
+  });
+
   it('rejects other titles', () => {
     expect(parseClassTitle('Dentist')).toBeNull();
     expect(parseClassTitle('Team standup - weekly')).toBeNull();
@@ -169,6 +176,100 @@ describe('meetingsFromICal', () => {
     expect(meetings.map(m => m.course)).toEqual(['Analiza']);
     expect(warnings).toHaveLength(1);
     expect(warnings[0]).toMatch(/not supported/);
+  });
+
+  it('finds the value after the first colon outside quotes', () => {
+    const {meetings} = meetingsFromICal(
+      ics(
+        [
+          'BEGIN:VEVENT',
+          'UID:q',
+          'SUMMARY:WYK - Systemy "Big data',
+          'DTSTART:20261014T080000Z',
+          'DTEND:20261014T090000Z',
+          'LOCATION;ALTREP="https://maps.example/a:b":Sala 1',
+          'END:VEVENT',
+        ].join('\r\n'),
+      ),
+    );
+    expect(meetings).toMatchObject([
+      {course: 'Systemy "Big data', location: 'Sala 1'},
+    ]);
+  });
+
+  it('reads lines with many colons in linear time', () => {
+    const t = Date.now();
+    const {meetings} = meetingsFromICal(
+      ics(
+        [
+          'BEGIN:VEVENT',
+          'UID:c',
+          'SUMMARY:WYK - Analiza',
+          // An odd quote after them made each colon rescan the rest of the line.
+          `DESCRIPTION:${':'.repeat(50_000)}"`,
+          'DTSTART:20261014T080000Z',
+          'DTEND:20261014T090000Z',
+          'END:VEVENT',
+        ].join('\r\n'),
+      ),
+    );
+    expect(meetings).toHaveLength(1);
+    expect(Date.now() - t).toBeLessThan(1000);
+  });
+
+  it('ignores trailing whitespace on lines', () => {
+    const {meetings} = meetingsFromICal(
+      ics(
+        [
+          'BEGIN:VEVENT ',
+          'UID:w',
+          'SUMMARY:WYK - Analiza',
+          'DTSTART:20261014T080000Z\t',
+          'DTEND:20261014T090000Z',
+          'END:VEVENT  ',
+        ].join('\r\n'),
+      ),
+    );
+    expect(meetings).toMatchObject([{course: 'Analiza', start: '10:00'}]);
+  });
+
+  it('unescapes text in one pass and keeps the first line of a title', () => {
+    const {meetings} = meetingsFromICal(
+      ics(
+        [
+          'BEGIN:VEVENT',
+          'UID:e',
+          'SUMMARY:WYK - Analiza\\nGrupa 2',
+          'DTSTART:20261014T080000Z',
+          'DTEND:20261014T090000Z',
+          'LOCATION:C:\\\\new\\; sala 1\\, 2',
+          'END:VEVENT',
+        ].join('\r\n'),
+      ),
+    );
+    expect(meetings).toMatchObject([
+      {course: 'Analiza', location: 'C:\\new; sala 1, 2'},
+    ]);
+  });
+
+  it('takes the end from DURATION when there is no DTEND', () => {
+    const {meetings} = meetingsFromICal(
+      ics(
+        [
+          'BEGIN:VEVENT',
+          'UID:d',
+          'SUMMARY:LAB - Analiza',
+          'DTSTART;TZID=Europe/Warsaw:20261019T081500',
+          'DURATION:PT1H30M',
+          'RRULE:FREQ=WEEKLY;COUNT=2',
+          'END:VEVENT',
+        ].join('\r\n'),
+      ),
+    );
+    expect(meetings.map(m => `${m.date} ${m.start}–${m.end}`)).toEqual([
+      '2026-10-19 08:15–09:45',
+      '2026-10-26 08:15–09:45',
+    ]);
   });
 
   it('says when the text is not iCalendar', () => {

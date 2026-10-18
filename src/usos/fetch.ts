@@ -20,6 +20,9 @@ export function isValidICalUrl(url: string): boolean {
   }
 }
 
+/** A timetable is a few hundred kB; anything much bigger is the wrong link. */
+const MAX_ICAL_BYTES = 5_000_000;
+
 /** Class meetings from the configured source, plus warnings about anything skipped. */
 export async function fetchMeetings(
   source: UsosSource,
@@ -64,11 +67,36 @@ async function fetchICal(
     throw new Error(
       `The iCal link returned ${res.status}${res.statusText ? ` ${res.statusText}` : ''}.`,
     );
-  const {meetings, warnings} = meetingsFromICal(await res.text());
+  const {meetings, warnings} = meetingsFromICal(await readLimited(res));
   return {
     meetings: meetings.filter(m => m.date >= from && m.date <= to),
     warnings,
   };
+}
+
+/** The body as text, refusing one over MAX_ICAL_BYTES without reading it all. */
+async function readLimited(res: Response): Promise<string> {
+  const tooLarge = () =>
+    new Error(
+      `The iCal link returned more than ${MAX_ICAL_BYTES / 1_000_000} MB, too much for a timetable: check the link.`,
+    );
+  if (Number(res.headers.get('Content-Length')) > MAX_ICAL_BYTES)
+    throw tooLarge();
+  if (!res.body) return res.text();
+  const reader = res.body.getReader();
+  const chunks: BlobPart[] = [];
+  let size = 0;
+  for (;;) {
+    const {done, value} = await reader.read();
+    if (done) break;
+    size += value.byteLength;
+    if (size > MAX_ICAL_BYTES) {
+      void reader.cancel();
+      throw tooLarge();
+    }
+    chunks.push(value);
+  }
+  return new Blob(chunks).text();
 }
 
 /** Courses found in a timetable, with their class types and number of meetings. */

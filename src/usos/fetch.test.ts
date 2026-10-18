@@ -55,6 +55,32 @@ describe('fetchMeetings (iCal link)', () => {
     ).rejects.toThrow('The iCal link returned 403 Forbidden.');
   });
 
+  it('refuses a body over 5 MB', async () => {
+    const link = {case: 'icalUrl', value: 'https://x.example/a.ics'} as const;
+    vi.stubGlobal(
+      'fetch',
+      async () => new Response(ics, {headers: {'Content-Length': '6000000'}}),
+    );
+    await expect(fetchMeetings(link)).rejects.toThrow(/more than 5 MB/);
+    // No Content-Length: counted while reading.
+    const chunk = new Uint8Array(1_000_000);
+    let sent = 0;
+    vi.stubGlobal(
+      'fetch',
+      async () =>
+        new Response(
+          new ReadableStream({
+            pull(c) {
+              if (sent++ < 10) c.enqueue(chunk);
+              else c.close();
+            },
+          }),
+        ),
+    );
+    await expect(fetchMeetings(link)).rejects.toThrow(/more than 5 MB/);
+    expect(sent).toBeLessThan(10);
+  });
+
   it('refuses links that are not https', async () => {
     expect(isValidICalUrl('http://x.example/a.ics')).toBe(false);
     expect(isValidICalUrl('webcal://x.example/a.ics')).toBe(false);

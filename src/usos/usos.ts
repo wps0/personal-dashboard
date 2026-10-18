@@ -26,13 +26,16 @@ export interface ClassMeeting {
 /**
  * Splits a USOS class title into its type designator and course title:
  * "SEM-MGR - Dane, strumienie, rozpraszanie" → {type: "SEM-MGR", course:
- * "Dane, strumienie, rozpraszanie"}. Null for titles of another shape.
+ * "Dane, strumienie, rozpraszanie"}. Only the first line counts. Null for
+ * titles of another shape.
  */
 export function parseClassTitle(
   title: string,
 ): {type: string; course: string} | null {
   const m =
-    /^\s*(\p{Lu}[\p{Lu}\d]*(?:-[\p{Lu}\d]+)*)\s+[-–—]\s+(.+?)\s*$/u.exec(title);
+    /^\s*(\p{Lu}[\p{Lu}\d]*(?:-[\p{Lu}\d]+)*)\s+[-–—]\s+(.+?)\s*$/u.exec(
+      title.split('\n', 1)[0],
+    );
   return m ? {type: m[1], course: m[2]} : null;
 }
 
@@ -107,11 +110,18 @@ function unfold(text: string): string[] {
   return text
     .replace(/\r\n|\r/g, '\n')
     .replace(/\n[ \t]/g, '')
-    .split('\n');
+    .split('\n')
+    .map(line => line.trimEnd());
 }
 
 function parseProp(line: string): Prop | null {
-  const colon = line.search(/:(?=(?:[^"]*"[^"]*")*[^"]*$)/);
+  // The value starts after the first colon outside a quoted parameter value.
+  let colon = -1;
+  let quoted = false;
+  for (let i = 0; i < line.length && colon < 0; i++) {
+    if (line[i] === '"') quoted = !quoted;
+    else if (line[i] === ':' && !quoted) colon = i;
+  }
   if (colon < 0) return null;
   const [name, ...params] = line.slice(0, colon).split(';');
   const p: Record<string, string> = {};
@@ -124,7 +134,9 @@ function parseProp(line: string): Prop | null {
 }
 
 function unescapeText(v: string) {
-  return v.replace(/\\n/gi, '\n').replace(/\\([,;\\])/g, '$1');
+  return v.replace(/\\([\\;,nN])/g, (_, c: string) =>
+    c === 'n' || c === 'N' ? '\n' : c,
+  );
 }
 
 /** Minutes to add to UTC to get the wall-clock time in `tz` at instant `ms`. */
@@ -170,6 +182,22 @@ function parseDateTime(value: string, tzid?: string): Date | null {
   return new Date(y, mo - 1, d, h, mi, s);
 }
 
+/**
+ * A DURATION value added to `start`, or null if malformed or negative. Days
+ * and weeks are calendar days, so the wall-clock time survives DST changes.
+ */
+function addDuration(start: Date, value: string): Date | null {
+  const m =
+    /^\+?P(?:(\d+)W|(?:(\d+)D)?(?:T(?:(\d+)H)?(?:(\d+)M)?(?:(\d+)S)?)?)$/.exec(
+      value,
+    );
+  if (!m || value.endsWith('P') || value.endsWith('T')) return null;
+  const [w, d, h, mi, s] = m.slice(1).map(v => Number(v ?? 0));
+  const end = new Date(start);
+  end.setDate(end.getDate() + w * 7 + d);
+  return new Date(end.getTime() + ((h * 60 + mi) * 60 + s) * 1000);
+}
+
 /** Start times of a weekly RRULE (the only kind timetables use), or null if unsupported. */
 function weeklyStarts(
   rrule: string,
@@ -213,8 +241,13 @@ export function meetingsFromICal(text: string): {
       const title = unescapeText(one('SUMMARY')?.value ?? '');
       const ds = one('DTSTART');
       const de = one('DTEND');
+      const dur = one('DURATION');
       const start = ds && parseDateTime(ds.value, ds.params.TZID);
-      const end = de ? parseDateTime(de.value, de.params.TZID) : start;
+      const end = de
+        ? parseDateTime(de.value, de.params.TZID)
+        : start && dur
+          ? addDuration(start, dur.value)
+          : start;
       const location = unescapeText(one('LOCATION')?.value ?? '');
       if (one('STATUS')?.value === 'CANCELLED' || !start || !end) {
         ev = null;
