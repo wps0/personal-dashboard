@@ -57,7 +57,7 @@ import {
 } from './google_event';
 import {noGoogleEvents, useGoogleEvents} from '../google/use_google_events';
 import {layoutAllDay} from '../google/spans';
-import type {GEvent} from '../google/events';
+import {shownEndMin, type GEvent} from '../google/events';
 import {DraftEditor, EventEditor} from './event_editor';
 import {BlockLabel, blockTextClass} from './block_label';
 import {Popover, PopoverAnchor, PopoverContent, useBeside} from './ui/popover';
@@ -735,7 +735,11 @@ const Column = memo(function Column({
   const layout = useMemo(
     () =>
       layoutSpans([
-        ...google.map(e => ({id: e.key, start: e.startMin, end: e.endMin})),
+        ...google.map(e => ({
+          id: e.key,
+          start: e.startMin,
+          end: shownEndMin(e),
+        })),
         ...events.map(e => ({
           id: e.id,
           start: toMinutes(e.start),
