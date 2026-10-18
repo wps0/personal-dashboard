@@ -38,6 +38,21 @@ message Area {
 }
 
 message Project {
+  enum ProgressMode {
+    PROGRESS_MODE_UNSPECIFIED = 0;
+    PROGRESS_MODE_CHECKLIST = 1;
+    PROGRESS_MODE_HOURS = 2;
+    PROGRESS_MODE_MANUAL = 3;
+  }
+
+  // A timestamped progress note.
+  message LogEntry {
+    string id = 1;
+    string at = 2;
+    string text = 3;
+    optional string edited_at = 4;
+  }
+
   string id = 1;
   string area_id = 2;
   string name = 3;
@@ -53,39 +68,9 @@ message Project {
   // For a university course: a case-insensitive regular expression on the
   // course title of USOS classes; matching classes become its tasks.
   optional string course_pattern = 11;
-
-  enum ProgressMode {
-    PROGRESS_MODE_UNSPECIFIED = 0;
-    PROGRESS_MODE_CHECKLIST = 1;
-    PROGRESS_MODE_HOURS = 2;
-    PROGRESS_MODE_MANUAL = 3;
-  }
-
-  // A timestamped progress note.
-  message LogEntry {
-    string id = 1;
-    string at = 2;
-    string text = 3;
-    optional string edited_at = 4;
-  }
 }
 
 message Item {
-  string id = 1;
-  string project_id = 2;
-  Kind kind = 3;
-  string title = 4;
-  Status status = 5;
-  optional string due_date = 6;
-  // When the class took place; not a deadline.
-  optional string held_on = 7;
-  optional double estimate_hours = 8;
-  // Markdown: details, links, where you stopped.
-  optional string notes = 9;
-  string created_at = 10;
-  // Where the item was imported from, if it was.
-  Source source = 11;
-
   enum Kind {
     KIND_UNSPECIFIED = 0;
     // A class meeting to attend or catch up on (lecture, lab, tutorial).
@@ -108,6 +93,21 @@ message Item {
       string usos_meeting = 1;
     }
   }
+
+  string id = 1;
+  string project_id = 2;
+  Kind kind = 3;
+  string title = 4;
+  Status status = 5;
+  optional string due_date = 6;
+  // When the class took place; not a deadline.
+  optional string held_on = 7;
+  optional double estimate_hours = 8;
+  // Markdown: details, links, where you stopped.
+  optional string notes = 9;
+  string created_at = 10;
+  // Where the item was imported from, if it was.
+  Source source = 11;
 }
 
 // A slice of an item planned on a day. One item may have many.
@@ -135,26 +135,7 @@ message CalendarEvent {
 }
 
 message Settings {
-  // Planning windows and adjustments, each effective from a date.
-  repeated CapacityRule capacity_rules = 1;
-  // Per-day capacity tweaks, keyed by date.
-  map<string, DayCapacity> day_capacity = 2;
-  // Length of an event created by clicking the calendar.
-  int32 default_event_minutes = 3;
-  // The view the calendar opens in.
-  CalendarView default_calendar_view = 4;
-  Usos usos = 5;
-
   message CapacityRule {
-    // The date from which the rule applies.
-    string from = 1;
-    // One per weekday, Monday first.
-    repeated TimeRange windows = 2;
-    // Hours added to (or, if negative, removed from) every day.
-    double adjustment = 3;
-    // Reserved time (sleep, work) per weekday, Monday first. Informational.
-    repeated ReservedDay reserved = 4;
-
     message ReservedDay {
       repeated TimeRange ranges = 1;
     }
@@ -165,6 +146,15 @@ message Settings {
       string end = 2;
       optional string label = 3;
     }
+
+    // The date from which the rule applies.
+    string from = 1;
+    // One per weekday, Monday first.
+    repeated TimeRange windows = 2;
+    // Hours added to (or, if negative, removed from) every day.
+    double adjustment = 3;
+    // Reserved time (sleep, work) per weekday, Monday first. Informational.
+    repeated ReservedDay reserved = 4;
   }
 
   // A relative delta, or an absolute override that wins over everything.
@@ -193,4 +183,14 @@ message Settings {
     // Class meetings already imported or skipped (keys); never offered again.
     repeated string handled = 3;
   }
+
+  // Planning windows and adjustments, each effective from a date.
+  repeated CapacityRule capacity_rules = 1;
+  // Per-day capacity tweaks, keyed by date.
+  map<string, DayCapacity> day_capacity = 2;
+  // Length of an event created by clicking the calendar.
+  int32 default_event_minutes = 3;
+  // The view the calendar opens in.
+  CalendarView default_calendar_view = 4;
+  Usos usos = 5;
 }
