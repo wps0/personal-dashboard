@@ -12,7 +12,8 @@ import {UsosBanner} from '../components/usos_review';
 import {Markdown} from '../components/markdown';
 import {ProgressRing} from '../components/progress_ring';
 import {fmtNum, kindBadge, KIND_OPTIONS, URGENCY_CLASS} from '../format';
-import {countdown, shortDate, todayISO} from '../model/dates';
+import {countdown, shortDate} from '../model/dates';
+import {useToday} from '../hooks';
 import {
   actualHours,
   compareItems,
@@ -182,7 +183,7 @@ function ItemsTab({project}: {project: Project}) {
   const allocations = useStore(s => s.data.allocations);
   const [hideDone, setHideDone] = useState(false);
   const [bulk, setBulk] = useState(false);
-  const today = todayISO();
+  const today = useToday();
 
   const items = useMemo(
     () => allItems.filter(i => i.projectId === project.id).sort(compareItems),
