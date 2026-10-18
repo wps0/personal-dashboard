@@ -41,6 +41,32 @@ export interface DriveFile {
   modifiedTime: string;
 }
 
+/** What Drive shows about one of the app's files. */
+export interface FileDetails {
+  name: string;
+  /** Bytes, as a decimal string. */
+  size?: string;
+  modifiedTime: string;
+  version: string;
+  /** Opens the file in Drive. */
+  webViewLink?: string;
+}
+
+const DETAILS = 'name,size,modifiedTime,version,webViewLink';
+
+/** The sync file's details. */
+export async function fileDetails(id: string): Promise<FileDetails> {
+  return json<FileDetails>(
+    googleFetch('drive', `${API}/${encodeURIComponent(id)}?fields=${DETAILS}`),
+  );
+}
+
+/** The readable copy's details, or null if it hasn't been written yet. */
+export async function copyDetails(): Promise<FileDetails | null> {
+  const copy = await find(COPY);
+  return copy ? fileDetails(copy.id) : null;
+}
+
 async function json<T>(res: Promise<Response>) {
   return (await res).json() as Promise<T>;
 }

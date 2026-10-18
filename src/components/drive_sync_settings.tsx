@@ -1,6 +1,14 @@
-import {CloudOff, GitMerge, HardDrive, RefreshCw} from 'lucide-react';
-import type {ReactNode} from 'react';
+import {
+  CloudOff,
+  ExternalLink,
+  GitMerge,
+  HardDrive,
+  RefreshCw,
+} from 'lucide-react';
+import {useState, type ReactNode} from 'react';
 import {DRIVE_SCOPE, useGoogle} from '../google/auth';
+import {copyDetails, fileDetails, type FileDetails} from '../google/drive';
+import {SCHEMA_VERSION} from '../storage/codec';
 import {downloadJson} from '../storage/storage';
 import {useStore} from '../store';
 import {useSync, type SyncStatus} from '../sync/runner';
@@ -20,7 +28,7 @@ export function DriveSyncSettings() {
   const clientId = useGoogle(s => s.clientId);
   const on = useGoogle(s => s.driveSync);
   const setDriveSync = useGoogle(s => s.setDriveSync);
-  const {status, lastSynced} = useSync();
+  const {status, lastSynced, fileId} = useSync();
   const conflicts = usePendingConflicts(s => s.conflicts.length);
 
   return (
@@ -56,6 +64,7 @@ export function DriveSyncSettings() {
       </label>
 
       {on && <Status status={status} lastSynced={lastSynced} />}
+      {on && fileId && <DriveFiles fileId={fileId} />}
       {conflicts > 0 && (
         <p className="flex flex-wrap items-center gap-x-1.5 gap-y-1 text-[13px] text-warn">
           <GitMerge size={14} />
@@ -199,5 +208,94 @@ function FirstSyncChoice({
         everything from both, which can duplicate things you set up twice.
       </p>
     </div>
+  );
+}
+
+interface Files {
+  data: FileDetails;
+  copy: FileDetails | null;
+}
+
+/** The sync file and its readable copy as Drive shows them, loaded when opened. */
+function DriveFiles({fileId}: {fileId: string}) {
+  const [files, setFiles] = useState<Files | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const load = async () => {
+    setError(null);
+    try {
+      const [data, copy] = await Promise.all([
+        fileDetails(fileId),
+        copyDetails(),
+      ]);
+      setFiles({data, copy});
+    } catch (e) {
+      setError((e as Error).message);
+    }
+  };
+  return (
+    <details
+      className="rounded-md border border-line px-3 py-2 text-[12px]"
+      onToggle={e => {
+        if ((e.target as HTMLDetailsElement).open) void load();
+      }}
+    >
+      <summary className="cursor-pointer text-fg">File in Google Drive</summary>
+      <div className="mt-2 space-y-2">
+        {error ? (
+          <p className="text-danger">{error}</p>
+        ) : !files ? (
+          <p className="text-dim">Loading…</p>
+        ) : (
+          <>
+            <FileRows
+              file={files.data}
+              note={`protobuf binary, schema version ${SCHEMA_VERSION}`}
+            />
+            {files.copy && (
+              <FileRows
+                file={files.copy}
+                note="readable copy, never read by the app"
+              />
+            )}
+          </>
+        )}
+        <button className="btn h-6 text-[12px]" onClick={() => void load()}>
+          <RefreshCw size={12} /> Refresh
+        </button>
+      </div>
+    </details>
+  );
+}
+
+function FileRows({file, note}: {file: FileDetails; note: string}) {
+  return (
+    <dl className="grid grid-cols-[7rem_1fr] gap-x-2 gap-y-0.5">
+      <dt className="text-dim">Name</dt>
+      <dd className="flex flex-wrap items-center gap-x-2">
+        <span className="font-mono text-fg">{file.name}</span>
+        {file.webViewLink && (
+          <a
+            href={file.webViewLink}
+            target="_blank"
+            rel="noreferrer"
+            className="inline-flex items-center gap-1 text-accent hover:underline"
+          >
+            Open in Drive <ExternalLink size={11} />
+          </a>
+        )}
+      </dd>
+      <dt className="text-dim">Format</dt>
+      <dd>{note}</dd>
+      <dt className="text-dim">Size</dt>
+      <dd className="tabular-nums">
+        {file.size ? `${(Number(file.size) / 1024).toFixed(1)} kB` : '–'}
+      </dd>
+      <dt className="text-dim">Last changed</dt>
+      <dd className="tabular-nums">
+        {new Date(file.modifiedTime).toLocaleString()}
+      </dd>
+      <dt className="text-dim">Drive version</dt>
+      <dd className="tabular-nums">{file.version}</dd>
+    </dl>
   );
 }
