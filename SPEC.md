@@ -474,11 +474,14 @@ compares Gemini's output against the `*.expected.json` files.
 - **Data schema:** `proto/dashboard/v2/data.proto` (protobuf) describes the
   stored data; `npm run proto:generate` writes the TypeScript for it to
   `src/gen/`. Generated code isn't committed: it is regenerated before every
-  `dev`, `build`, `typecheck` and `test` run. Changes must stay compatible
-  both ways, so older and newer versions of the app can share the same data:
-  add fields with new numbers; never renumber, retype or reuse a field or enum
-  value (mark removed ones `reserved`); and code must cope with enum values it
-  doesn't know. `buf lint` checks the schema's style. (The app doesn't use it
+  `dev`, `build`, `typecheck` and `test` run. The data is stored as protobuf
+  binary (`storage/codec.ts`), with protobuf's JSON form beside it as a
+  read-only copy for people that the app never reads. Never renumber, retype
+  or reuse a field or enum value (mark removed ones `reserved`); code must
+  cope with enum values it doesn't know. Adding a field is safe: older
+  versions keep fields they don't know when they save. Any change older
+  versions can't handle raises `SCHEMA_VERSION`; they refuse such data and ask
+  to be updated. `buf lint` checks the schema's style. (The app doesn't use it
   yet; the move is in progress.)
 - **Checks:** `npm run lint`, `format:check`, `proto:lint`, `typecheck`,
   `test`, `build`.
