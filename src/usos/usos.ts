@@ -232,61 +232,75 @@ export function meetingsFromICal(text: string): {
 } {
   const meetings: ClassMeeting[] = [];
   const warnings: string[] = [];
+  const events: Prop[][] = [];
   let ev: Prop[] | null = null;
   for (const line of unfold(text)) {
     if (line === 'BEGIN:VEVENT') ev = [];
     else if (line === 'END:VEVENT' && ev) {
-      const one = (n: string) => ev!.find(p => p.name === n);
-      const uid = one('UID')?.value ?? '';
-      const title = unescapeText(one('SUMMARY')?.value ?? '');
-      const ds = one('DTSTART');
-      const de = one('DTEND');
-      const dur = one('DURATION');
-      const start = ds && parseDateTime(ds.value, ds.params.TZID);
-      const end = de
-        ? parseDateTime(de.value, de.params.TZID)
-        : start && dur
-          ? addDuration(start, dur.value)
-          : start;
-      const location = unescapeText(one('LOCATION')?.value ?? '');
-      if (one('STATUS')?.value === 'CANCELLED' || !start || !end) {
-        ev = null;
-        continue;
-      }
-      const length = end.getTime() - start.getTime();
-      const rrule = one('RRULE')?.value;
-      let starts = [start];
-      if (rrule) {
-        const ex = new Set(
-          ev
-            .filter(p => p.name === 'EXDATE')
-            .flatMap(p =>
-              p.value
-                .split(',')
-                .map(v => parseDateTime(v, p.params.TZID)?.getTime() ?? NaN),
-            ),
-        );
-        const expanded = weeklyStarts(rrule, start, ex);
-        if (expanded) starts = expanded;
-        else
-          warnings.push(
-            `“${title}”: repeat rule not supported (${rrule}); only its first class is used.`,
-          );
-      }
-      for (const s of starts) {
-        const m = meeting(
-          uid,
-          title,
-          s,
-          new Date(s.getTime() + length),
-          location,
-        );
-        if (m) meetings.push(m);
-      }
+      events.push(ev);
       ev = null;
     } else if (ev) {
       const p = parseProp(line);
       if (p) ev.push(p);
+    }
+  }
+  const prop = (ev: Prop[], n: string) => ev.find(p => p.name === n);
+  // Original starts of the instances that RECURRENCE-ID events move or
+  // cancel, by UID: the repeat rule leaves them out, like EXDATEs.
+  const overridden = new Map<string, number[]>();
+  for (const ev of events) {
+    const rid = prop(ev, 'RECURRENCE-ID');
+    const t = rid && parseDateTime(rid.value, rid.params.TZID);
+    if (!t) continue;
+    const uid = prop(ev, 'UID')?.value ?? '';
+    if (!overridden.has(uid)) overridden.set(uid, []);
+    overridden.get(uid)!.push(t.getTime());
+  }
+  for (const ev of events) {
+    const one = (n: string) => prop(ev, n);
+    const uid = one('UID')?.value ?? '';
+    const title = unescapeText(one('SUMMARY')?.value ?? '');
+    const ds = one('DTSTART');
+    const de = one('DTEND');
+    const dur = one('DURATION');
+    const start = ds && parseDateTime(ds.value, ds.params.TZID);
+    const end = de
+      ? parseDateTime(de.value, de.params.TZID)
+      : start && dur
+        ? addDuration(start, dur.value)
+        : start;
+    const location = unescapeText(one('LOCATION')?.value ?? '');
+    if (one('STATUS')?.value === 'CANCELLED' || !start || !end) continue;
+    const length = end.getTime() - start.getTime();
+    const rrule = one('RRULE')?.value;
+    let starts = [start];
+    if (rrule && !one('RECURRENCE-ID')) {
+      const ex = new Set([
+        ...ev
+          .filter(p => p.name === 'EXDATE')
+          .flatMap(p =>
+            p.value
+              .split(',')
+              .map(v => parseDateTime(v, p.params.TZID)?.getTime() ?? NaN),
+          ),
+        ...(overridden.get(uid) ?? []),
+      ]);
+      const expanded = weeklyStarts(rrule, start, ex);
+      if (expanded) starts = expanded;
+      else
+        warnings.push(
+          `“${title}”: repeat rule not supported (${rrule}); only its first class is used.`,
+        );
+    }
+    for (const s of starts) {
+      const m = meeting(
+        uid,
+        title,
+        s,
+        new Date(s.getTime() + length),
+        location,
+      );
+      if (m) meetings.push(m);
     }
   }
   if (!meetings.length && !/BEGIN:VCALENDAR/.test(text))

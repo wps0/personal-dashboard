@@ -146,6 +146,47 @@ describe('meetingsFromICal', () => {
     expect(new Set(meetings.map(m => m.key)).size).toBe(2);
   });
 
+  it('applies RECURRENCE-ID overrides: moved and cancelled classes', () => {
+    const {meetings, warnings} = meetingsFromICal(
+      ics(
+        [
+          'BEGIN:VEVENT',
+          'UID:usos-4',
+          'SUMMARY:LAB - Programowanie mikrokontrolerów',
+          'DTSTART;TZID=Europe/Warsaw:20261019T081500',
+          'DTEND;TZID=Europe/Warsaw:20261019T094500',
+          'RRULE:FREQ=WEEKLY;COUNT=3',
+          'END:VEVENT',
+          // The second class moves to Wednesday afternoon, in another room.
+          'BEGIN:VEVENT',
+          'UID:usos-4',
+          'RECURRENCE-ID;TZID=Europe/Warsaw:20261026T081500',
+          'SUMMARY:LAB - Programowanie mikrokontrolerów',
+          'DTSTART;TZID=Europe/Warsaw:20261028T141500',
+          'DTEND;TZID=Europe/Warsaw:20261028T154500',
+          'LOCATION:Sala 2',
+          'END:VEVENT',
+          // The third is cancelled (its original start in UTC).
+          'BEGIN:VEVENT',
+          'UID:usos-4',
+          'RECURRENCE-ID:20261102T071500Z',
+          'SUMMARY:LAB - Programowanie mikrokontrolerów',
+          'STATUS:CANCELLED',
+          'DTSTART;TZID=Europe/Warsaw:20261102T081500',
+          'DTEND;TZID=Europe/Warsaw:20261102T094500',
+          'END:VEVENT',
+        ].join('\r\n'),
+      ),
+    );
+    expect(warnings).toEqual([]);
+    expect(
+      meetings.map(m => `${m.key} ${m.start}–${m.end} ${m.location ?? ''}`),
+    ).toEqual([
+      'usos-4@2026-10-19T08:15 08:15–09:45 ',
+      'usos-4@2026-10-28T14:15 14:15–15:45 Sala 2',
+    ]);
+  });
+
   it('skips cancelled and non-class events, and warns about unsupported repeats', () => {
     const {meetings, warnings} = meetingsFromICal(
       ics(
