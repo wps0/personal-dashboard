@@ -4,7 +4,7 @@
  * so the app works offline.
  */
 
-import {del, get, set, setMany} from 'idb-keyval';
+import {del, delMany, get, set, setMany} from 'idb-keyval';
 import {withDefaults, type AppData} from '../model/types';
 import type {SyncBase} from '../sync/sync';
 import {decode, encode, fromReadableJson, toReadableJson} from './codec';
@@ -62,6 +62,25 @@ export class IndexedDbStorage {
 
   async clearSyncBase(): Promise<void> {
     await del(BASE_KEY);
+  }
+
+  /**
+   * The saved data exactly as stored, for keeping a copy of data that can't
+   * be read: protobuf binary, or the JSON an older version saved.
+   */
+  async loadRaw(): Promise<Blob | null> {
+    const raw = await get<unknown>(KEY);
+    if (raw == null) return null;
+    return raw instanceof Uint8Array
+      ? new Blob([raw as Uint8Array<ArrayBuffer>], {
+          type: 'application/octet-stream',
+        })
+      : new Blob([JSON.stringify(raw)], {type: 'application/json'});
+  }
+
+  /** Deletes the saved data and the sync base: the app starts empty. */
+  async reset(): Promise<void> {
+    await delMany([KEY, BASE_KEY]);
   }
 }
 

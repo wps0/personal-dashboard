@@ -22,6 +22,23 @@ describe('storage', () => {
     expect(sameData((await s.load())!, data)).toBe(true);
   });
 
+  it('hands out unreadable data as stored, and resets to empty', async () => {
+    const s = new IndexedDbStorage();
+    await set('personal-dashboard/data', {version: 1, areas: []});
+    await expect(s.load()).rejects.toThrow(/no longer reads/);
+    const blob = (await s.loadRaw())!;
+    expect(blob.type).toBe('application/json');
+    expect(JSON.parse(await blob.text())).toEqual({version: 1, areas: []});
+
+    const data = sampleData('2026-10-10');
+    await s.saveSynced(data, {fileId: 'f1', version: '3', data});
+    expect((await s.loadRaw())!.type).toBe('application/octet-stream');
+    await s.reset();
+    expect(await s.load()).toBeNull();
+    expect(await s.loadSyncBase()).toBeNull();
+    expect(await s.loadRaw()).toBeNull();
+  });
+
   it('saves synced data and its base together, and forgets the base', async () => {
     const s = new IndexedDbStorage();
     const data = sampleData('2026-10-10');
