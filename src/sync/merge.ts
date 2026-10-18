@@ -4,6 +4,17 @@ type Json = unknown;
 type Obj = Record<string, Json>;
 type WithId = {id: string};
 
+/**
+ * A value both sides changed differently since the last sync. `path` leads
+ * to it: object keys, and record ids inside arrays of records (e.g.
+ * ['items', '<id>', 'title']). `undefined` means deleted on that side.
+ */
+export interface Conflict {
+  path: string[];
+  local: Json;
+  remote: Json;
+}
+
 const isObj = (v: Json): v is Obj =>
   typeof v === 'object' && v !== null && !Array.isArray(v);
 const hasIds = (v: Json): v is WithId[] =>
@@ -38,11 +49,11 @@ export function same(a: Json, b: Json): boolean {
  * - arrays of plain values merge as sets;
  * - a real conflict (the same value changed differently on both sides) keeps
  *   this device's value, except that an edit wins over a deletion.
- * `conflicts` lists the paths of real conflicts.
+ * `conflicts` lists the real conflicts, with both sides' values.
  */
 export function merge3(base: Json, local: Json, remote: Json) {
-  const conflicts: string[] = [];
-  const value = mergeValue(base, local, remote, '', conflicts);
+  const conflicts: Conflict[] = [];
+  const value = mergeValue(base, local, remote, [], conflicts);
   return {value, conflicts};
 }
 
@@ -50,8 +61,8 @@ function mergeValue(
   b: Json,
   l: Json,
   r: Json,
-  path: string,
-  conflicts: string[],
+  path: string[],
+  conflicts: Conflict[],
 ): Json {
   if (same(l, r)) return l;
   if (same(l, b)) return r;
@@ -62,15 +73,21 @@ function mergeValue(
     return mergeById(hasIds(b) ? b : [], l, r, path, conflicts);
   if (isScalars(l) && isScalars(r))
     return mergeSet(isScalars(b) ? b : [], l, r);
-  conflicts.push(path || '/');
+  conflicts.push({path, local: l, remote: r});
   return l === undefined ? r : l;
 }
 
-function mergeObj(b: Json, l: Obj, r: Obj, path: string, conflicts: string[]) {
+function mergeObj(
+  b: Json,
+  l: Obj,
+  r: Obj,
+  path: string[],
+  conflicts: Conflict[],
+) {
   const base = isObj(b) ? b : {};
   const out: Obj = {};
   for (const k of new Set([...Object.keys(l), ...Object.keys(r)])) {
-    const v = mergeValue(base[k], l[k], r[k], `${path}/${k}`, conflicts);
+    const v = mergeValue(base[k], l[k], r[k], [...path, k], conflicts);
     if (v !== undefined) out[k] = v;
   }
   return out;
@@ -85,13 +102,13 @@ function mergeById(
   b: WithId[],
   l: WithId[],
   r: WithId[],
-  path: string,
-  conflicts: string[],
+  path: string[],
+  conflicts: Conflict[],
 ) {
   const byId = (xs: WithId[]) => new Map(xs.map(x => [x.id, x]));
   const [bm, lm, rm] = [byId(b), byId(l), byId(r)];
   const pick = (id: string) =>
-    mergeValue(bm.get(id), lm.get(id), rm.get(id), `${path}/${id}`, conflicts);
+    mergeValue(bm.get(id), lm.get(id), rm.get(id), [...path, id], conflicts);
 
   // Records only on Drive, grouped by the record they follow there.
   const after = new Map<string | null, Json[]>();

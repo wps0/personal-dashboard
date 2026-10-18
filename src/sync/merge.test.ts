@@ -48,7 +48,9 @@ describe('merge3', () => {
     const remote = edit(b, d => (d.items[0].title = 'Remote'));
     const {data, conflicts} = mergeData(b, local, remote);
     expect(data.items[0].title).toBe('Local');
-    expect(conflicts).toEqual([`/items/${id}/title`]);
+    expect(conflicts).toEqual([
+      {path: ['items', id, 'title'], local: 'Local', remote: 'Remote'},
+    ]);
   });
 
   it('applies a deletion from either side, but an edit wins over a deletion', () => {
@@ -61,7 +63,13 @@ describe('merge3', () => {
     const editedThere = edit(b, d => (d.events[0].title = 'Moved'));
     const {data, conflicts} = mergeData(b, deletedHere, editedThere);
     expect(data.events.find(e => e.id === first.id)?.title).toBe('Moved');
-    expect(conflicts).toEqual([`/events/${first.id}`]);
+    expect(conflicts).toEqual([
+      {
+        path: ['events', first.id],
+        local: undefined,
+        remote: editedThere.events[0],
+      },
+    ]);
   });
 
   it('keeps records added on both sides, in a sensible order', () => {

@@ -1,7 +1,7 @@
 import {create} from 'zustand';
 import {GoogleApiError} from '../google/errors';
 import type {AppData} from '../model/types';
-import {mergeData} from './merge';
+import {mergeData, type Conflict} from './merge';
 import {
   syncOnce,
   type FirstSyncChoice,
@@ -43,7 +43,7 @@ export interface SyncDeps {
   saveSynced(data: AppData, base: SyncBase): Promise<void>;
   clearBase(): Promise<void>;
   /** Some values were changed differently on both sides; this device's were kept. */
-  onConflicts?(count: number): void;
+  onConflicts?(conflicts: Conflict[]): void;
 }
 
 /**
@@ -123,7 +123,7 @@ export class SyncRunner {
       await deps.saveSynced(data, res.base);
       this.base = res.base;
       if (data !== res.data) this.again = true; // upload those edits
-      if (res.conflicts.length) deps.onConflicts?.(res.conflicts.length);
+      if (res.conflicts.length) deps.onConflicts?.(res.conflicts);
       useSync.setState({status: {kind: 'idle'}, lastSynced: Date.now()});
       return true;
     } catch (e) {

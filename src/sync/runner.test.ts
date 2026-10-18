@@ -127,7 +127,13 @@ describe('SyncRunner', () => {
     laptop.state.data.items[0].title = 'Laptop';
     await laptop.runner.sync();
     expect(laptop.state.data.items[0].title).toBe('Laptop');
-    expect(laptop.deps.onConflicts).toHaveBeenCalledWith(1);
+    expect(laptop.deps.onConflicts).toHaveBeenCalledWith([
+      {
+        path: ['items', laptop.state.data.items[0].id, 'title'],
+        local: 'Laptop',
+        remote: 'Phone',
+      },
+    ]);
   });
 
   it('forgets the base when stopped', async () => {
