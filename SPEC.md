@@ -195,6 +195,37 @@ today's date) is dark navy in the dark theme and white in the light theme.
 Sections (Calendar, Google Calendar, Capacity & reserved time, Areas, Data)
 are cards with a heading and a one-line hint.
 
+### 3.9 How many actions things take (UX review, October 2026)
+Counted in a browser for 37 everyday tasks, from a fresh Home page with the
+sample data. One action is a click, key press, drag, scroll or typed field.
+Google's own screens and Drive sync were counted from the code. Verdict: it
+works, but it takes too much clicking around (see the TODO in 5).
+
+**Quick already:** today's plan 0 (desktop); check off a session 1; open a
+project from Home 1; move or time-block a session 1 drag; add an event 3;
+review new USOS classes 2; page, week and view switching 1–2 keys.
+
+**Costliest for how often they're done:**
+
+| Task | Actions now | Why |
+|---|---|---|
+| Plan a backlog item onto a day | 2 by drag; 6 by clicks; 7 on phone; 52 by keyboard; 4 to give it a time | The backlog is only on Week, never next to a time grid; the task card can only add a session for today |
+| Log progress on a project | 5 | The log is the panel's third tab |
+| Change a status / mark complete | 3–4 | Behind a dropdown in the task card |
+| Add a task | 4 (8 with due date and estimate) | Needs its project open first |
+| Reconnect Google (hourly) | 2 + Google's popup | Only in Calendar or Settings |
+| Add a day note | 3 | Day notes are only on Week |
+| Phone: reschedule a missed session; add an event; jump to a date | 6; 4–5; 6 | Missed list at the bottom of Week; title not focused; no month picker in Calendar |
+| Keyboard: check off; event at a set time | 4; 8 | Selection starts on the calendar; `c` fixes the next hour |
+
+Also found: on a phone the calendar layers can't be shown or hidden (the
+sidebar is hidden), and a tap on a short event may hit its resize grip
+(seen in emulation).
+
+**The pattern:** Home answers "what's today", but nearly every change happens
+somewhere else (backlog and day notes on Week, the log in the panel, status
+behind a dropdown, Google reconnect in Calendar or Settings).
+
 ## 4. Integrations (v2)
 
 ### 4.1 Google Calendar (personal account only)
@@ -324,6 +355,22 @@ Google Drive sync.
   local events become Google events, and time blocks go to a
   "Study/Projects" calendar), Google events in the week journal's day boxes
   (3.2).
+- **Next — UX rework (TODO).** Make Home the place where planning happens,
+  cutting the counts in 3.9. Ideas, each a small change of its own:
+  - A "To plan" backlog on Home with a **Plan ▾** menu (Today / Tomorrow /
+    date) and dragging onto Home's calendar: planning 2 clicks or 1 drag
+    (phone 2), time-blocking 1.
+  - One-click status pill on rows (To do → In progress → Done): 1.
+  - Today's day note on Home: 2.
+  - "Add log note" on the toast after checking off a session: 3.
+  - Quick add from any page (`n` or a header "+"), understanding text such
+    as `Problem set 3 #OS due fri ~2h`: 3.
+  - A "Reconnect Google" chip in the header on every page: 1.
+  - Phone: "→ Today / → Tomorrow" on missed sessions, focus the event title,
+    a month picker in the Calendar title, a floating "+", a bigger tap target
+    on short events, calendar layers reachable.
+  - Keyboard: start the selection on today's first planned row; let the `c`
+    card take text like `15:00 Gym tomorrow`; arrow keys in the mini month.
 - **Later.** Suggested scheduling (a backward-from-deadline spread), timers,
   more card metrics (at-risk indicator, hours this week, backlog count),
   search, multi-day all-day events drawn as one spanning bar.
