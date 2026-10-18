@@ -974,15 +974,23 @@ function useResize(
           Math.min(DAY_MIN, snap(((y - col.top) / hourHeight) * 60)),
         );
       const move = (ev: PointerEvent) => setPreviewEnd(toEnd(ev.clientY));
-      const up = (ev: PointerEvent) => {
+      // Cancelled (e.g. the browser took the touch over): drop the preview, keep the length.
+      const stop = () => {
         target.removeEventListener('pointermove', move);
         target.removeEventListener('pointerup', up);
+        target.removeEventListener('pointercancel', stop);
+        target.removeEventListener('lostpointercapture', stop);
         setPreviewEnd(null);
+      };
+      const up = (ev: PointerEvent) => {
+        stop();
         suppressClicks();
         commit(toEnd(ev.clientY));
       };
       target.addEventListener('pointermove', move);
       target.addEventListener('pointerup', up);
+      target.addEventListener('pointercancel', stop);
+      target.addEventListener('lostpointercapture', stop);
     },
     onClick: (e: ReactMouseEvent) => e.stopPropagation(),
   };
