@@ -41,6 +41,7 @@ interface Gis {
       initTokenClient(cfg: {
         client_id: string;
         scope: string;
+        include_granted_scopes?: boolean;
         callback(r: TokenResponse): void;
         error_callback?(e: {type: string; message?: string}): void;
       }): TokenClient;
@@ -211,6 +212,9 @@ export const useGoogle = create<GoogleState>()((set, get) => {
         const client = gis.accounts.oauth2.initTokenClient({
           client_id: clientId,
           scope,
+          // Only what's asked for now: without this, a token would also carry
+          // scopes granted before, e.g. Drive access after sync was turned off.
+          include_granted_scopes: false,
           callback: r => {
             if (r.error || !r.access_token) {
               set({
