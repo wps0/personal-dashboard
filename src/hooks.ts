@@ -8,7 +8,7 @@ import {
 } from 'react';
 import * as pb from './gen/dashboard/data_pb';
 import {capacityFor, type CapacityInfo} from './model/capacity';
-import type {DayOfWeek} from './model/dates';
+import {todayISO, type DayOfWeek} from './model/dates';
 import {
   weekStartOf,
   type Area,
@@ -136,4 +136,33 @@ export function useMediaQuery(query: string): boolean {
     },
     () => window.matchMedia(query).matches,
   );
+}
+
+/** Re-checks the date at the next local midnight and whenever the app comes back to the foreground. */
+function subscribeToday(onChange: () => void) {
+  let timer = 0;
+  const check = () => {
+    onChange();
+    window.clearTimeout(timer);
+    const now = new Date();
+    const midnight = new Date(
+      now.getFullYear(),
+      now.getMonth(),
+      now.getDate() + 1,
+    );
+    timer = window.setTimeout(check, midnight.getTime() - now.getTime());
+  };
+  check();
+  window.addEventListener('focus', check);
+  document.addEventListener('visibilitychange', check);
+  return () => {
+    window.clearTimeout(timer);
+    window.removeEventListener('focus', check);
+    document.removeEventListener('visibilitychange', check);
+  };
+}
+
+/** Today's date, changing at midnight so an app left open overnight moves on to the new day. */
+export function useToday(): ISODate {
+  return useSyncExternalStore(subscribeToday, todayISO);
 }

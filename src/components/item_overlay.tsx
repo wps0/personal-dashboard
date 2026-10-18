@@ -9,7 +9,8 @@ import {HoursInput} from './hours_input';
 import {Markdown} from './markdown';
 import {GroupSelect} from './group_select';
 import {Modal} from './modal';
-import {countdown, todayISO} from '../model/dates';
+import {countdown} from '../model/dates';
+import {useToday} from '../hooks';
 import {
   actualHours,
   isItemDone,
@@ -58,7 +59,7 @@ function ItemDetails({item, onClose}: {item: Item; onClose(): void}) {
     [allAllocs, item.id],
   );
   const [editingNotes, setEditingNotes] = useState(!item.notes);
-  const today = todayISO();
+  const today = useToday();
   const set = (patch: Partial<Item>) => updateItem(item.id, patch);
   const project = projects.find(p => p.id === item.projectId);
   const color = areas.find(a => a.id === project?.areaId)?.color;

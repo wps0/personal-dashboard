@@ -6,7 +6,8 @@ import {
 } from 'react';
 import {ProgressRing} from '../components/progress_ring';
 import {URGENCY_CLASS} from '../format';
-import {countdown, todayISO} from '../model/dates';
+import {countdown} from '../model/dates';
+import {useToday} from '../hooks';
 import {
   allocationsByItem,
   projectStats,
@@ -31,7 +32,7 @@ export function ProjectsView({selectedId}: {selectedId?: string}) {
   const items = useStore(s => s.data.items);
   const allocations = useStore(s => s.data.allocations);
   const [showArchived, setShowArchived] = useState(false);
-  const today = todayISO();
+  const today = useToday();
 
   const stats = useMemo(() => {
     const allocs = allocationsByItem({allocations});

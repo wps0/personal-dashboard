@@ -13,8 +13,14 @@ import {
   useDragSensors,
 } from '../dnd';
 import {memo, useMemo, useState} from 'react';
-import {useLookups, useSlide, useWeekStart, type Lookups} from '../hooks';
-import {monthGrid, todayISO, weekdayNames} from '../model/dates';
+import {
+  useLookups,
+  useSlide,
+  useToday,
+  useWeekStart,
+  type Lookups,
+} from '../hooks';
+import {monthGrid, weekdayNames} from '../model/dates';
 import {dueByDay} from '../model/selectors';
 import {
   EventColor,
@@ -113,7 +119,7 @@ function MonthBody({
   const weekStart = useWeekStart();
   const days = useMemo(() => monthGrid(date, weekStart), [date, weekStart]);
   const month = date.slice(0, 7);
-  const today = todayISO();
+  const today = useToday();
   const slide = useSlide(date);
 
   const google = useGoogleEvents(days);

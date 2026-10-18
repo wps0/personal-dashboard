@@ -10,8 +10,8 @@ import {
 import {ProgressRing} from '../components/progress_ring';
 import {TimeGrid} from '../components/time_grid';
 import {fmtH, URGENCY_CLASS} from '../format';
-import {useLookups, type Lookups} from '../hooks';
-import {addDays, countdown, dayName, shortDate, todayISO} from '../model/dates';
+import {useLookups, useToday, type Lookups} from '../hooks';
+import {addDays, countdown, dayName, shortDate} from '../model/dates';
 import {
   allocationsByItem,
   isItemDone,
@@ -29,7 +29,7 @@ import {blockKeys} from '../keyboard';
 
 /** Landing page: three days (today by default; ‹ › move a day at a time), what's planned, and how projects stand. */
 export function HomeView({date}: {date?: ISODate}) {
-  const today = todayISO();
+  const today = useToday();
   const start = date && /^\d{4}-\d{2}-\d{2}$/.test(date) ? date : today;
   const days = useMemo(
     () => [start, addDays(start, 1), addDays(start, 2)],
@@ -143,7 +143,7 @@ function Planned({days}: {days: ISODate[]}) {
   const items = useStore(s => s.data.items);
   const projects = useStore(s => s.data.projects);
   const lookups = useLookups();
-  const today = todayISO();
+  const today = useToday();
   const missed = useMemo(
     () => missedAllocations({items, allocations, projects}, today).length,
     [items, allocations, projects, today],
@@ -269,7 +269,7 @@ function Projects() {
   const items = useStore(s => s.data.items);
   const allocations = useStore(s => s.data.allocations);
   const lookups = useLookups();
-  const today = todayISO();
+  const today = useToday();
 
   // Active projects, nearest deadline first.
   const rows = useMemo(() => {
