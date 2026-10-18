@@ -47,11 +47,14 @@ interface UiState {
   /** The calendar's all-day row shows only a couple of items per day. Per device. */
   allDayCollapsed: boolean;
   /** Dialogs: shortcut help, go-to-date, or reviewing new USOS classes. */
-  dialog: 'help' | 'goto' | 'usos' | null;
+  dialog: 'help' | 'goto' | 'usos' | 'curriculum' | null;
   setDialog(d: UiState['dialog']): void;
   /** The project whose USOS classes are under review; all projects if null. */
   usosProjectId: string | null;
   reviewUsos(projectId?: string): void;
+  /** The project a curriculum is being imported into. */
+  curriculumProjectId: string | null;
+  importCurriculum(projectId: string): void;
   openItem(id: string | null): void;
   openEvent(id: string | null): void;
   openGoogle(key: string | null): void;
@@ -79,6 +82,9 @@ export const useUi = create<UiState>()((set, get) => ({
   usosProjectId: null,
   reviewUsos: projectId =>
     set({dialog: 'usos', usosProjectId: projectId ?? null}),
+  curriculumProjectId: null,
+  importCurriculum: projectId =>
+    set({dialog: 'curriculum', curriculumProjectId: projectId}),
   openItem: id =>
     set({openItemId: id, openEventId: null, openGoogleKey: null, draft: null}),
   openEvent: id =>
