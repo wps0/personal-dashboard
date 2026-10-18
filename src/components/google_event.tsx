@@ -10,6 +10,7 @@ import {
 } from 'lucide-react';
 import {
   memo,
+  useEffect,
   useMemo,
   type CSSProperties,
   type ReactElement,
@@ -18,6 +19,7 @@ import {
 import type {GEvent} from '../google/events';
 import {blockKeys} from '../keyboard';
 import {fromMinutes} from '../model/time';
+import type {ISODate} from '../model/types';
 import {readableOn} from '../format';
 import {sanitizeHtml} from '../sanitize';
 import {useUi} from '../ui';
@@ -132,6 +134,18 @@ function declinedStyle(color: string) {
 
 function tooltip(ev: GEvent) {
   return `${ev.title}${ev.declined ? ' (declined)' : ''}\n${ev.when}\n${ev.calendarName} (Google, read-only)`;
+}
+
+/**
+ * Closes the open card once its event is no longer shown (deleted in Google
+ * and refetched, calendar deselected), so its key can't linger.
+ */
+export function useCloseMissingCard(events: Map<ISODate, GEvent[]>) {
+  useEffect(() => {
+    const key = useUi.getState().openGoogleKey;
+    if (key && ![...events.values()].some(l => l.some(e => e.key === key)))
+      useUi.getState().openGoogle(null);
+  }, [events]);
 }
 
 function openCard(ev: GEvent) {

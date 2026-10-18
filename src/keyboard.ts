@@ -7,6 +7,7 @@ import {useLatest} from './hooks';
 import type {CalView, ISODate} from './model/types';
 import {navigate, type Route} from './router';
 import {actionFor, adjacentPage} from './shortcuts';
+import {useStore} from './store';
 import {undoLast} from './toast';
 import {nextHourDraft, useUi} from './ui';
 
@@ -157,17 +158,16 @@ function isTyping(el: Element | null): boolean {
   );
 }
 
-/** Something floating is open (popover, menu, dialog): leave keys to it. */
+/**
+ * Something floating is open (popover, menu, dialog): leave keys to it. Event
+ * editors, Google cards and the draft are popovers, so they count only while
+ * shown: an id whose block isn't on screen must not swallow every key.
+ */
 function overlayOpen(): boolean {
   const ui = useUi.getState();
   return (
-    !!(
-      ui.openItemId ||
-      ui.openEventId ||
-      ui.openGoogleKey ||
-      ui.draft ||
-      ui.dialog
-    ) || !!document.querySelector('[data-radix-popper-content-wrapper]')
+    !!(ui.openItemId || ui.dialog) ||
+    !!document.querySelector('[data-radix-popper-content-wrapper]')
   );
 }
 
@@ -215,6 +215,8 @@ export function useGlobalShortcuts(route: Route) {
         else navigate({name: 'calendar', view: action.view});
         break;
       case 'create':
+        // The first-run screen (no areas yet) has no calendar to show a draft on.
+        if (!useStore.getState().data.areas.length) return;
         if (target?.create) target.create();
         else if (route.name === 'projects')
           document.querySelector<HTMLElement>('[data-new-item]')?.focus();
