@@ -2,9 +2,9 @@ import {useEffect, useMemo} from 'react';
 import {create} from 'zustand';
 import type {ISODate} from '../model/types';
 import {useUi} from '../ui';
-import {listCalendars, listEvents} from './api';
+import {listEvents} from './api';
 import {clearGoogleError, reportGoogleError} from './status';
-import {useGoogleCalendars} from './calendars';
+import {loadCalendars, useGoogleCalendars} from './calendars';
 import {calendarConnected, useGoogle} from './auth';
 import {expandEvent, rangeBounds, type GEvent} from './events';
 
@@ -20,9 +20,13 @@ const useCache = create<{ranges: Record<string, Entry>}>()(() => ({
   ranges: {},
 }));
 const inFlight = new Set<string>();
+/** Bumped by every clear, so a fetch started before it doesn't write stale data. */
+let generation = 0;
 
 /** Drops everything (sign-in/out, calendar selection changed, manual refresh). */
 export function clearGoogleCache() {
+  generation++;
+  inFlight.clear();
   useCache.setState({ranges: {}});
 }
 
@@ -62,6 +66,7 @@ export async function fetchRange(from: ISODate, to: ISODate) {
   const key = `${from}|${to}`;
   if (inFlight.has(key)) return;
   inFlight.add(key);
+  const gen = generation;
   try {
     const {calendars, selected} = useGoogle.getState();
     const {timeMin, timeMax} = rangeBounds(from, to);
@@ -74,6 +79,8 @@ export async function fetchRange(from: ISODate, to: ISODate) {
         ),
       ),
     );
+    // Cleared meanwhile (e.g. another selection): a newer fetch takes over.
+    if (gen !== generation) return;
     // A calendar that failed this time (offline, rate limit) keeps what it had.
     const before = useCache.getState().ranges[key]?.events ?? [];
     const events = results
@@ -96,7 +103,7 @@ export async function fetchRange(from: ISODate, to: ISODate) {
     const at = failed >= 0 ? Date.now() - FRESH_MS + 60_000 : Date.now();
     useCache.setState(s => ({ranges: {...s.ranges, [key]: {at, events}}}));
   } finally {
-    inFlight.delete(key);
+    if (gen === generation) inFlight.delete(key);
   }
 }
 
@@ -104,11 +111,7 @@ export async function fetchRange(from: ISODate, to: ISODate) {
 export function retryGoogle() {
   clearGoogleError();
   clearGoogleCache();
-  if (!useGoogle.getState().calendars.length) {
-    listCalendars()
-      .then(list => useGoogle.getState().setCalendars(list))
-      .catch(e => reportGoogleError(e));
-  }
+  if (!useGoogle.getState().calendars.length) void loadCalendars();
 }
 
 const EMPTY: GEvent[] = [];

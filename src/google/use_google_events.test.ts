@@ -87,4 +87,22 @@ describe('Google events cache', () => {
     useGoogle.setState({token: {value: 'new', expiresAt: Date.now() + 1}});
     expect(cachedRanges()).toEqual({});
   });
+
+  it('drops a fetch that was in flight when the selection changed', async () => {
+    const pending: (() => void)[] = [];
+    fetchMock.mockImplementation(async url => {
+      const cal = calendarOf(String(url));
+      if (pending.length < 2)
+        await new Promise<void>(resolve => pending.push(resolve));
+      return events(cal);
+    });
+    const old = fetchRange(FROM, TO);
+    await vi.waitFor(() => expect(pending).toHaveLength(2));
+    useGoogle.setState({selected: ['a']});
+    await fetchRange(FROM, TO);
+    for (const resolve of pending) resolve();
+    await old;
+    const titles = cachedRanges()[`${FROM}|${TO}`].events.map(e => e.title);
+    expect(titles).toEqual(['a']);
+  });
 });
