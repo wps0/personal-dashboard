@@ -1,6 +1,8 @@
 import type {ISODate} from './types';
 
-const pad = (n: number) => String(n).padStart(2, '0');
+function pad(n: number) {
+  return String(n).padStart(2, '0');
+}
 
 export function toISODate(d: Date): ISODate {
   return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
@@ -90,8 +92,9 @@ export function isoWeek(s: ISODate): number {
   );
 }
 
-const fmt = (opts: Intl.DateTimeFormatOptions) =>
-  new Intl.DateTimeFormat('en-GB', opts);
+function fmt(opts: Intl.DateTimeFormatOptions) {
+  return new Intl.DateTimeFormat('en-GB', opts);
+}
 const LONG = fmt({weekday: 'long', day: 'numeric', month: 'long'});
 const MEDIUM = fmt({
   weekday: 'short',
@@ -102,12 +105,17 @@ const MEDIUM = fmt({
 const MONTH_YEAR = fmt({month: 'long', year: 'numeric'});
 
 /** "Tuesday 14 October". */
-export const formatLong = (s: ISODate) => LONG.format(parseISODate(s));
+export function formatLong(s: ISODate) {
+  return LONG.format(parseISODate(s));
+}
 /** "Tue 14 Oct 2026". */
-export const formatMedium = (s: ISODate) => MEDIUM.format(parseISODate(s));
+export function formatMedium(s: ISODate) {
+  return MEDIUM.format(parseISODate(s));
+}
 /** "October 2026". */
-export const formatMonthYear = (s: ISODate) =>
-  MONTH_YEAR.format(parseISODate(s));
+export function formatMonthYear(s: ISODate) {
+  return MONTH_YEAR.format(parseISODate(s));
+}
 
 export function firstOfMonth(s: ISODate): ISODate {
   return `${s.slice(0, 7)}-01`;

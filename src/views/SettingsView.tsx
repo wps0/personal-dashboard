@@ -26,10 +26,11 @@ const EVENT_LENGTHS = [15, 30, 45, 60, 90, 120].map(m => ({
 }));
 
 /** Whole-data replacements reach every synced device; say so before they happen. */
-const everywhere = () =>
-  useGoogle.getState().driveSync
+function everywhere() {
+  return useGoogle.getState().driveSync
     ? ' Drive sync is on, so this applies to your other devices too.'
     : '';
+}
 
 export function SettingsView() {
   const data = useData();

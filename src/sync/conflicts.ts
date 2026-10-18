@@ -5,8 +5,9 @@ import {same, withoutOrphans, type Conflict} from './merge';
 export type Side = 'local' | 'remote';
 
 /** Which side's value the merge kept: this device's, unless it had deleted it. */
-export const keptSide = (c: Conflict): Side =>
-  c.local === undefined ? 'remote' : 'local';
+export function keptSide(c: Conflict): Side {
+  return c.local === undefined ? 'remote' : 'local';
+}
 
 /** A conflict in words, for the review list. */
 export interface ConflictView {
@@ -150,9 +151,12 @@ export function applyChoices(
   return {data: withoutOrphans(out as AppData, [data]), skipped};
 }
 
-const isRecords = (v: unknown): v is Rec[] =>
-  Array.isArray(v) &&
-  v.every(x => !!x && typeof x === 'object' && typeof x.id === 'string');
+function isRecords(v: unknown): v is Rec[] {
+  return (
+    Array.isArray(v) &&
+    v.every(x => !!x && typeof x === 'object' && typeof x.id === 'string')
+  );
+}
 
 function getAt(v: unknown, path: string[]): unknown {
   let cur = v;

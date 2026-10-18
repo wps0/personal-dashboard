@@ -5,14 +5,16 @@ import {useStore} from './store';
 import {clearHistory, undoLast, useToasts} from './toast';
 import type {ClassMeeting, Proposal} from './usos/usos';
 
-const meeting = (key: string, date: string): ClassMeeting => ({
-  key,
-  type: 'WYK',
-  course: 'Analiza',
-  date,
-  start: '10:15',
-  end: '12:00',
-});
+function meeting(key: string, date: string): ClassMeeting {
+  return {
+    key,
+    type: 'WYK',
+    course: 'Analiza',
+    date,
+    start: '10:15',
+    end: '12:00',
+  };
+}
 
 describe('importClasses', () => {
   let projectId: string;

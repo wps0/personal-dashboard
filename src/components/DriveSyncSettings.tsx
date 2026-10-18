@@ -8,8 +8,12 @@ import {usePendingConflicts} from '../sync/pending';
 import {syncNow} from '../sync/setup';
 import {useUi} from '../ui';
 
-const time = (ms: number) =>
-  new Date(ms).toLocaleTimeString([], {hour: '2-digit', minute: '2-digit'});
+function time(ms: number) {
+  return new Date(ms).toLocaleTimeString([], {
+    hour: '2-digit',
+    minute: '2-digit',
+  });
+}
 
 /** Settings → Google Drive sync: on/off for this device, status, and the first-sync choice. */
 export function DriveSyncSettings() {

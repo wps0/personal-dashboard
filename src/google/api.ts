@@ -29,22 +29,27 @@ async function paged<T>(
   return out;
 }
 
-export const listCalendars = () =>
-  paged<ApiCalendar>('/users/me/calendarList', {
+export function listCalendars() {
+  return paged<ApiCalendar>('/users/me/calendarList', {
     minAccessRole: 'reader',
     maxResults: '250',
   });
+}
 
 /** Expanded instances (recurring events become single events) between the bounds. */
-export const listEvents = (
+export function listEvents(
   calendarId: string,
   timeMin: string,
   timeMax: string,
-) =>
-  paged<ApiEvent>(`/calendars/${encodeURIComponent(calendarId)}/events`, {
-    timeMin,
-    timeMax,
-    singleEvents: 'true',
-    orderBy: 'startTime',
-    maxResults: '2500',
-  });
+) {
+  return paged<ApiEvent>(
+    `/calendars/${encodeURIComponent(calendarId)}/events`,
+    {
+      timeMin,
+      timeMax,
+      singleEvents: 'true',
+      orderBy: 'startTime',
+      maxResults: '2500',
+    },
+  );
+}

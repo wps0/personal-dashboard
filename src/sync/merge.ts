@@ -17,15 +17,22 @@ export interface Conflict {
   remote: Json;
 }
 
-const isObj = (v: Json): v is Obj =>
-  typeof v === 'object' && v !== null && !Array.isArray(v);
-const hasIds = (v: Json): v is WithId[] =>
-  Array.isArray(v) &&
-  v.every(x => isObj(x) && typeof (x as Obj).id === 'string');
+function isObj(v: Json): v is Obj {
+  return typeof v === 'object' && v !== null && !Array.isArray(v);
+}
+function hasIds(v: Json): v is WithId[] {
+  return (
+    Array.isArray(v) &&
+    v.every(x => isObj(x) && typeof (x as Obj).id === 'string')
+  );
+}
 /** A protobuf `oneof` ({case, value}): its parts only make sense together. */
-const isOneof = (v: Json) => isObj(v) && 'case' in v;
-const isScalars = (v: Json): v is (string | number | boolean)[] =>
-  Array.isArray(v) && v.every(x => x === null || typeof x !== 'object');
+function isOneof(v: Json) {
+  return isObj(v) && 'case' in v;
+}
+function isScalars(v: Json): v is (string | number | boolean)[] {
+  return Array.isArray(v) && v.every(x => x === null || typeof x !== 'object');
+}
 
 /**
  * Deep equality for JSON-like data. Key order is ignored, and a key set to

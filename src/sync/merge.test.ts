@@ -5,12 +5,14 @@ import {sampleData} from '../model/sample';
 import type {AppData} from '../model/types';
 import {merge3, mergeData, same} from './merge';
 
-const base = () => structuredClone(sampleData('2026-10-12'));
-const edit = (d: AppData, f: (d: AppData) => void) => {
+function base() {
+  return structuredClone(sampleData('2026-10-12'));
+}
+function edit(d: AppData, f: (d: AppData) => void) {
   const c = structuredClone(d);
   f(c);
   return c;
-};
+}
 
 describe('same', () => {
   it('ignores key order and undefined keys', () => {

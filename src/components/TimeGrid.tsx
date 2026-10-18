@@ -916,7 +916,9 @@ interface Pos {
 }
 
 /** Resize grip height: 6px on normal blocks, a thin edge on short ones so the rest stays clickable. */
-const handleHeight = (blockPx: number) => Math.max(3, Math.min(6, blockPx / 5));
+function handleHeight(blockPx: number) {
+  return Math.max(3, Math.min(6, blockPx / 5));
+}
 
 function blockStyle(start: number, end: number, pos: Pos, hourHeight: number) {
   return {

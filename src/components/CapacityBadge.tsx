@@ -9,8 +9,9 @@ import {useStore} from '../store';
 import {HoursInput} from './HoursInput';
 import {Popover, PopoverContent, PopoverTrigger} from './ui/Popover';
 
-const signed = (n: number) =>
-  n > 0 ? `+${fmtH(n)}` : n < 0 ? `−${fmtH(-n)}` : '±0h';
+function signed(n: number) {
+  return n > 0 ? `+${fmtH(n)}` : n < 0 ? `−${fmtH(-n)}` : '±0h';
+}
 
 /** "planned/capacity" for a day; click for the breakdown and per-day adjustments. */
 function CapacityBadgeImpl({

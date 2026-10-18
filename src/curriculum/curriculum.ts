@@ -63,9 +63,12 @@ export const RESPONSE_SCHEMA = {
   propertyOrdering: ['topics', 'courseNotes', 'warnings', 'corrections'],
 };
 
-const isStr = (v: unknown): v is string => typeof v === 'string';
-const isNum = (v: unknown): v is number | null =>
-  v === null || (Number.isInteger(v) && (v as number) > 0);
+function isStr(v: unknown): v is string {
+  return typeof v === 'string';
+}
+function isNum(v: unknown): v is number | null {
+  return v === null || (Number.isInteger(v) && (v as number) > 0);
+}
 
 /** Checks the model's JSON against the schema. Throws a readable error otherwise. */
 export function validateResult(raw: unknown): CurriculumResult {
@@ -182,7 +185,9 @@ function apiErrorMessage(raw: string): string {
 }
 
 /** Unicode-normalised, whitespace collapsed, for comparing wording. */
-const norm = (s: string) => s.normalize('NFC').replace(/\s+/g, ' ').trim();
+function norm(s: string) {
+  return s.normalize('NFC').replace(/\s+/g, ' ').trim();
+}
 
 /**
  * Whether `fragment` appears in the pasted text (ignoring whitespace), after

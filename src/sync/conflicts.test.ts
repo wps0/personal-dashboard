@@ -4,12 +4,14 @@ import type {AppData} from '../model/types';
 import {applyChoices, describe, keptSide} from './conflicts';
 import {mergeData} from './merge';
 
-const base = () => structuredClone(sampleData('2026-10-12'));
-const edit = (d: AppData, f: (d: AppData) => void) => {
+function base() {
+  return structuredClone(sampleData('2026-10-12'));
+}
+function edit(d: AppData, f: (d: AppData) => void) {
   const c = structuredClone(d);
   f(c);
   return c;
-};
+}
 
 /** Both devices changed the first task's title and the first event. */
 function conflicted() {

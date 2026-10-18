@@ -41,8 +41,9 @@ export interface DriveFile {
   modifiedTime: string;
 }
 
-const json = async <T>(res: Promise<Response>) =>
-  (await res).json() as Promise<T>;
+async function json<T>(res: Promise<Response>) {
+  return (await res).json() as Promise<T>;
+}
 
 /** The most recently changed sync file, or null if there is none yet. */
 export async function findFile(): Promise<DriveFile | null> {

@@ -15,8 +15,9 @@ const KINDS = [
   {value: 'icalUrl', label: 'iCal link'},
 ] as const;
 
-const plural = (n: number, one: string, many: string) =>
-  `${n} ${n === 1 ? one : many}`;
+function plural(n: number, one: string, many: string) {
+  return `${n} ${n === 1 ? one : many}`;
+}
 
 type Check =
   | {state: 'loading'}

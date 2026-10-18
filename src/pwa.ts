@@ -8,8 +8,9 @@ interface BeforeInstallPromptEvent extends Event {
 
 let deferred: BeforeInstallPromptEvent | null = null;
 
-const standalone = () =>
-  window.matchMedia('(display-mode: standalone)').matches;
+function standalone() {
+  return window.matchMedia('(display-mode: standalone)').matches;
+}
 
 /** Whether the browser offers to install the app, and whether it already runs installed. */
 export const useInstall = create<{canInstall: boolean; installed: boolean}>(

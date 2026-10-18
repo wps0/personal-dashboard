@@ -1,6 +1,8 @@
 import {lazy, Suspense} from 'react';
 
-const load = () => import('./MarkdownRender');
+function load() {
+  return import('./MarkdownRender');
+}
 const MarkdownRender = lazy(() =>
   load().then(m => ({default: m.MarkdownRender})),
 );

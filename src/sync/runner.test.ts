@@ -8,7 +8,9 @@ import {same} from './merge';
 import {SyncRunner, useSync, type SyncDeps} from './runner';
 import type {SyncBase} from './sync';
 
-const sample = () => structuredClone(sampleData('2026-10-12'));
+function sample() {
+  return structuredClone(sampleData('2026-10-12'));
+}
 
 /** A runner over an in-memory store and Drive. */
 function setUp(initial: AppData, drive = new FakeDrive()) {

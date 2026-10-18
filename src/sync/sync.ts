@@ -40,13 +40,16 @@ export type SyncResult =
   | {kind: 'choose'; file: DriveFile; remote: AppData};
 
 /** Nothing worth keeping yet: a fresh install (settings aside). */
-const isBlank = (d: AppData) =>
-  !d.areas.length &&
-  !d.projects.length &&
-  !d.items.length &&
-  !d.events.length &&
-  !Object.keys(d.dayNotes).length &&
-  !Object.keys(d.monthNotes).length;
+function isBlank(d: AppData) {
+  return (
+    !d.areas.length &&
+    !d.projects.length &&
+    !d.items.length &&
+    !d.events.length &&
+    !Object.keys(d.dayNotes).length &&
+    !Object.keys(d.monthNotes).length
+  );
+}
 
 /**
  * One sync of `local` with the Drive file:
@@ -144,15 +147,19 @@ async function writeCopy(data: AppData, drive: Remote): Promise<void> {
   }
 }
 
-const at = (file: DriveFile, data: AppData): SyncBase => ({
-  fileId: file.id,
-  version: file.version,
-  data,
-});
+function at(file: DriveFile, data: AppData): SyncBase {
+  return {
+    fileId: file.id,
+    version: file.version,
+    data,
+  };
+}
 
-const done = (
+function done(
   kind: Exclude<SyncResult['kind'], 'choose'>,
   data: AppData,
   base: SyncBase,
   conflicts: Conflict[] = [],
-): SyncResult => ({kind, data, base, conflicts});
+): SyncResult {
+  return {kind, data, base, conflicts};
+}

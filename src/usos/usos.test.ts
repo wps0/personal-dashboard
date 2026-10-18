@@ -59,8 +59,11 @@ describe('coursePattern', () => {
   });
 });
 
-const ics = (events: string) =>
-  ['BEGIN:VCALENDAR', 'VERSION:2.0', events, 'END:VCALENDAR'].join('\r\n');
+function ics(events: string) {
+  return ['BEGIN:VCALENDAR', 'VERSION:2.0', events, 'END:VCALENDAR'].join(
+    '\r\n',
+  );
+}
 
 describe('meetingsFromICal', () => {
   it('reads timed classes with a TZID, in local time', () => {

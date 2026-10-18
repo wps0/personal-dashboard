@@ -21,8 +21,9 @@ type Step =
   | {kind: 'loading'}
   | {kind: 'review'; result: CurriculumResult};
 
-const plural = (n: number, one: string, many: string) =>
-  `${n} ${n === 1 ? one : many}`;
+function plural(n: number, one: string, many: string) {
+  return `${n} ${n === 1 ? one : many}`;
+}
 
 /**
  * Import curriculum (SPEC 5.2): paste a course description, Gemini extracts

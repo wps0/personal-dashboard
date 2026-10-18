@@ -13,41 +13,53 @@ import {taskFromMeeting, type Proposal} from './usos/usos';
  * resize, ticking off) is recorded quietly because its result is already
  * visible; destructive or bulk actions also show a toast with Undo.
  */
-const s = () => useStore.getState();
+function s() {
+  return useStore.getState();
+}
 
-export const toggleSession = (id: string) =>
+export function toggleSession(id: string) {
   withUndo('Session updated', () => s().toggleAllocation(id), {quiet: true});
+}
 
-export const updateSession = (
+export function updateSession(
   id: string,
   patch: Partial<Omit<Allocation, 'id'>>,
   message = 'Session moved',
-) => withUndo(message, () => s().updateAllocation(id, patch), {quiet: true});
+) {
+  withUndo(message, () => s().updateAllocation(id, patch), {quiet: true});
+}
 
-export const planSession = (itemId: string, date: string, hours: number) =>
+export function planSession(itemId: string, date: string, hours: number) {
   withUndo('Planned', () => s().addAllocation(itemId, date, hours), {
     quiet: true,
   });
+}
 
-export const removeSession = (id: string, message = 'Removed from plan') =>
+export function removeSession(id: string, message = 'Removed from plan') {
   withUndo(message, () => s().deleteAllocation(id));
+}
 
-export const updateEvent = (
+export function updateEvent(
   id: string,
   patch: Partial<Omit<CalendarEvent, 'id'>>,
   message = 'Event moved',
-) => withUndo(message, () => s().updateEvent(id, patch), {quiet: true});
+) {
+  withUndo(message, () => s().updateEvent(id, patch), {quiet: true});
+}
 
-export const deleteEvent = (e: CalendarEvent) =>
+export function deleteEvent(e: CalendarEvent) {
   withUndo(`Deleted “${e.title}”`, () => s().deleteEvent(e.id));
+}
 
-export const completeItem = (item: Item) =>
+export function completeItem(item: Item) {
   withUndo(`Completed “${item.title}”`, () =>
     s().updateItem(item.id, {status: ItemStatus.DONE}),
   );
+}
 
-export const deleteItem = (item: Item) =>
+export function deleteItem(item: Item) {
   withUndo(`Deleted “${item.title}”`, () => s().deleteItem(item.id));
+}
 
 /**
  * Imports the chosen USOS classes as tasks; every class that was shown is

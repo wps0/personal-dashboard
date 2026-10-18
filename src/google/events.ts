@@ -79,15 +79,20 @@ const EVENT_COLORS: Record<string, string> = {
   '11': '#d50000', // Tomato
 };
 
-const minutesOf = (d: Date) => d.getHours() * 60 + d.getMinutes();
-const hhmm = (d: Date) =>
-  `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
+function minutesOf(d: Date) {
+  return d.getHours() * 60 + d.getMinutes();
+}
+function hhmm(d: Date) {
+  return `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
+}
 const dayFmt = new Intl.DateTimeFormat('en-GB', {
   weekday: 'short',
   day: 'numeric',
   month: 'short',
 });
-const dayOnly = (s: ISODate) => dayFmt.format(new Date(`${s}T00:00`));
+function dayOnly(s: ISODate) {
+  return dayFmt.format(new Date(`${s}T00:00`));
+}
 
 /** Splits an API event into per-day pieces in local time. Cancelled events disappear. */
 export function expandEvent(ev: ApiEvent, cal: ApiCalendar): GEvent[] {

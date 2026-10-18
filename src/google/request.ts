@@ -4,7 +4,9 @@ import {classify, GoogleApiError, isRetryable, type Service} from './errors';
 /** Retry policy for rate limits and server errors (exponential backoff with jitter). Tests shorten it. */
 export const retryPolicy = {attempts: 3, baseMs: 800};
 
-const sleep = (ms: number) => new Promise(r => setTimeout(r, ms));
+function sleep(ms: number) {
+  return new Promise(r => setTimeout(r, ms));
+}
 
 /**
  * A Google API request with the signed-in user's token. Rate limits and server

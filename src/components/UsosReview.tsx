@@ -7,8 +7,9 @@ import {useUsosProposals} from '../usos/proposals';
 import {meetingTitle, type Proposal} from '../usos/usos';
 import {Modal} from './Modal';
 
-const plural = (n: number, one: string, many: string) =>
-  `${n} ${n === 1 ? one : many}`;
+function plural(n: number, one: string, many: string) {
+  return `${n} ${n === 1 ? one : many}`;
+}
 
 /** "3 new classes from USOS · Review", on Home (all courses) and in a course's project panel. */
 export function UsosBanner({projectId}: {projectId?: string}) {

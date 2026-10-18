@@ -128,6 +128,9 @@ export function classify(
 }
 
 /** Worth retrying automatically with backoff. */
-export const isRetryable = (e: unknown) =>
-  e instanceof GoogleApiError &&
-  (e.kind === 'rate-limit' || e.kind === 'server');
+export function isRetryable(e: unknown) {
+  return (
+    e instanceof GoogleApiError &&
+    (e.kind === 'rate-limit' || e.kind === 'server')
+  );
+}
