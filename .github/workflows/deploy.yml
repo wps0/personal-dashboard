@@ -43,7 +43,7 @@ jobs:
           # Not a secret: the OAuth client ID is public, and Google accepts it
           # only from the JavaScript origins allowed in the Cloud console.
           VITE_GOOGLE_CLIENT_ID: ${{ vars.GOOGLE_CLIENT_ID }}
-      - uses: actions/upload-pages-artifact@56afc609e74202658d3ffba0e8f6dda462b719fa # v3.0.1
+      - uses: actions/upload-pages-artifact@fc324d3547104276b827a68afc52ff2a11cc49c9 # v5.0.0
         with:
           path: dist
 
