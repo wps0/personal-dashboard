@@ -16,20 +16,20 @@ import * as pb from '../gen/dashboard/data_pb';
 import {defaultRules} from './capacity';
 
 export {
-  CalendarView,
-  ItemKind,
-  ItemStatus,
-  ProgressMode,
+  Settings_CalendarView as CalendarView,
+  Item_Kind as ItemKind,
+  Item_Status as ItemStatus,
+  Project_ProgressMode as ProgressMode,
 } from '../gen/dashboard/data_pb';
 
 export type Area = pb.Area;
 export type Project = pb.Project;
-export type LogEntry = pb.LogEntry;
+export type LogEntry = pb.Project_LogEntry;
 export type Item = pb.Item;
-export type ItemSource = pb.ItemSource;
+export type ItemSource = pb.Item_Source;
 export type Allocation = pb.Allocation;
 export type CalendarEvent = pb.CalendarEvent;
-export type UsosSettings = pb.UsosSettings;
+export type UsosSettings = pb.Settings_Usos;
 
 /** A record's fields as plain values, as `create()` accepts them. */
 export type InitOf<Desc extends DescMessage> = Exclude<
@@ -42,7 +42,7 @@ export type ItemInit = Omit<InitOf<typeof pb.ItemSchema>, 'id' | 'projectId'>;
 export type EventInit = Omit<InitOf<typeof pb.CalendarEventSchema>, 'id'>;
 
 /** Where the USOS timetable comes from: a Google calendar, an iCal link, or nowhere (off). */
-export type UsosSource = pb.UsosSettings['source'];
+export type UsosSource = pb.Settings_Usos['source'];
 
 /** Settings, with their USOS part always present. */
 export interface Settings extends pb.Settings {
@@ -61,24 +61,24 @@ export type ISODate = string;
 export const CAL_VIEWS = ['day', '3day', 'week', 'month'] as const;
 export type CalView = (typeof CAL_VIEWS)[number];
 
-const CAL_VIEW_OF: Record<pb.CalendarView, CalView> = {
-  [pb.CalendarView.UNSPECIFIED]: 'week',
-  [pb.CalendarView.DAY]: 'day',
-  [pb.CalendarView.THREE_DAY]: '3day',
-  [pb.CalendarView.WEEK]: 'week',
-  [pb.CalendarView.MONTH]: 'month',
+const CAL_VIEW_OF: Record<pb.Settings_CalendarView, CalView> = {
+  [pb.Settings_CalendarView.UNSPECIFIED]: 'week',
+  [pb.Settings_CalendarView.DAY]: 'day',
+  [pb.Settings_CalendarView.THREE_DAY]: '3day',
+  [pb.Settings_CalendarView.WEEK]: 'week',
+  [pb.Settings_CalendarView.MONTH]: 'month',
 };
 
 /** The UI view for a stored calendar view; week for one this version doesn't know. */
-export function calViewOf(view: pb.CalendarView): CalView {
+export function calViewOf(view: pb.Settings_CalendarView): CalView {
   return CAL_VIEW_OF[view] ?? 'week';
 }
 
 /** The statuses an item moves through, in order. */
 export const STATUSES = [
-  pb.ItemStatus.TODO,
-  pb.ItemStatus.DOING,
-  pb.ItemStatus.DONE,
+  pb.Item_Status.TODO,
+  pb.Item_Status.DOING,
+  pb.Item_Status.DONE,
 ] as const;
 
 export const AREA_COLORS = [
@@ -97,8 +97,8 @@ export function defaultSettings(): Settings {
   return create(pb.SettingsSchema, {
     capacityRules: defaultRules(),
     defaultEventMinutes: 60,
-    defaultCalendarView: pb.CalendarView.WEEK,
-    usos: create(pb.UsosSettingsSchema),
+    defaultCalendarView: pb.Settings_CalendarView.WEEK,
+    usos: create(pb.Settings_UsosSchema),
   }) as Settings;
 }
 

@@ -17,15 +17,15 @@ function sample(): pb.AppData {
       {
         id: 'i1',
         projectId: 'p1',
-        kind: pb.ItemKind.CLASS,
-        status: pb.ItemStatus.DONE,
+        kind: pb.Item_Kind.CLASS,
+        status: pb.Item_Status.DONE,
         title: 'Lecture 1',
         source: {source: {case: 'usosMeeting', value: 'abc@2026-10-14T10:15'}},
       },
     ],
     dayNotes: {'2026-10-13': 'Note'},
     settings: {
-      defaultCalendarView: pb.CalendarView.THREE_DAY,
+      defaultCalendarView: pb.Settings_CalendarView.THREE_DAY,
       usos: {source: {case: 'icalUrl', value: 'https://x.example/p.ics'}},
     },
   });
@@ -61,7 +61,7 @@ describe('binary', () => {
     const item = create(pb.ItemSchema, {
       id: 'i1',
       title: 'Lab 3',
-      kind: 9 as pb.ItemKind,
+      kind: 9 as pb.Item_Kind,
     });
     const bytes = new BinaryWriter()
       .tag(9, WireType.Varint)
@@ -91,7 +91,7 @@ describe('readable JSON', () => {
   it('is indented, with enum names and the schema version', () => {
     const text = toReadableJson(sample());
     expect(text).toContain('\n  "areas": [');
-    expect(text).toContain('"kind": "ITEM_KIND_CLASS"');
+    expect(text).toContain('"kind": "KIND_CLASS"');
     expect(text).toContain('"defaultCalendarView": "CALENDAR_VIEW_THREE_DAY"');
     expect(text).toContain(`"schemaVersion": ${SCHEMA_VERSION}`);
   });

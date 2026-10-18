@@ -5,24 +5,24 @@ import {toMinutes} from './time';
 import type {CalendarEvent, ISODate} from './types';
 
 /** A time range; `end` before `start` wraps past midnight (e.g. sleep 23:00–07:00). */
-export type TimeRange = pb.TimeRange;
+export type TimeRange = pb.Settings_CapacityRule_TimeRange;
 /** Time of day you can plan work into, per weekday. */
-export type PlanningWindow = pb.TimeRange;
+export type PlanningWindow = pb.Settings_CapacityRule_TimeRange;
 /** A reserved time range, e.g. sleep or work. */
-export type Reserved = pb.TimeRange;
+export type Reserved = pb.Settings_CapacityRule_TimeRange;
 /** One weekday's reserved time. */
-export type ReservedDay = pb.ReservedDay;
+export type ReservedDay = pb.Settings_CapacityRule_ReservedDay;
 /**
  * Capacity settings effective from a date. Edits create (or update) the rule
  * starting today, so past days keep the values they had.
  */
-export type CapacityRule = pb.CapacityRule;
+export type CapacityRule = pb.Settings_CapacityRule;
 /** Per-day tweaks: a relative delta, or an absolute override that wins over everything. */
-export type DayCapacity = pb.DayCapacity;
+export type DayCapacity = pb.Settings_DayCapacity;
 
 /** A time range, e.g. `range('09:00', '17:00', 'Work')`. */
 export function range(start: string, end: string, label?: string): TimeRange {
-  return create(pb.TimeRangeSchema, {start, end, label});
+  return create(pb.Settings_CapacityRule_TimeRangeSchema, {start, end, label});
 }
 
 export interface CapacityInfo {
@@ -46,7 +46,7 @@ const DEFAULT_WINDOWS: PlanningWindow[] = [
 const SLEEP = range('23:00', '07:00', 'Sleep');
 /** One weekday's reserved time, from its ranges. */
 export function reservedDay(...ranges: Reserved[]): ReservedDay {
-  return create(pb.ReservedDaySchema, {ranges});
+  return create(pb.Settings_CapacityRule_ReservedDaySchema, {ranges});
 }
 
 const DEFAULT_RESERVED: ReservedDay[] = [
@@ -64,7 +64,7 @@ export function reservedDays(rule: CapacityRule): ReservedDay[] {
 
 export function defaultRules(): CapacityRule[] {
   return [
-    create(pb.CapacityRuleSchema, {
+    create(pb.Settings_CapacityRuleSchema, {
       from: '0000-01-01',
       windows: DEFAULT_WINDOWS,
       adjustment: 0,

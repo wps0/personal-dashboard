@@ -155,7 +155,11 @@ export const useStore = create<State>()((set, get) => {
       if (!p) return;
       get().updateProject(projectId, {
         log: [
-          createMessage(pb.LogEntrySchema, {id: uid(), at: now(), text}),
+          createMessage(pb.Project_LogEntrySchema, {
+            id: uid(),
+            at: now(),
+            text,
+          }),
           ...p.log,
         ],
       });
@@ -282,7 +286,7 @@ export const useStore = create<State>()((set, get) => {
         const dayCapacity = {...d.settings.dayCapacity};
         if (patch === null) delete dayCapacity[date];
         else
-          dayCapacity[date] = createMessage(pb.DayCapacitySchema, {
+          dayCapacity[date] = createMessage(pb.Settings_DayCapacitySchema, {
             delta: dayCapacity[date]?.delta,
             override: dayCapacity[date]?.override,
             ...patch,

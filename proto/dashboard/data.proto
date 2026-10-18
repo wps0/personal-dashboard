@@ -53,29 +53,29 @@ message Project {
   // For a university course: a case-insensitive regular expression on the
   // course title of USOS classes; matching classes become its tasks.
   optional string course_pattern = 11;
-}
 
-enum ProgressMode {
-  PROGRESS_MODE_UNSPECIFIED = 0;
-  PROGRESS_MODE_CHECKLIST = 1;
-  PROGRESS_MODE_HOURS = 2;
-  PROGRESS_MODE_MANUAL = 3;
-}
+  enum ProgressMode {
+    PROGRESS_MODE_UNSPECIFIED = 0;
+    PROGRESS_MODE_CHECKLIST = 1;
+    PROGRESS_MODE_HOURS = 2;
+    PROGRESS_MODE_MANUAL = 3;
+  }
 
-// A timestamped progress note on a project.
-message LogEntry {
-  string id = 1;
-  string at = 2;
-  string text = 3;
-  optional string edited_at = 4;
+  // A timestamped progress note.
+  message LogEntry {
+    string id = 1;
+    string at = 2;
+    string text = 3;
+    optional string edited_at = 4;
+  }
 }
 
 message Item {
   string id = 1;
   string project_id = 2;
-  ItemKind kind = 3;
+  Kind kind = 3;
   string title = 4;
-  ItemStatus status = 5;
+  Status status = 5;
   optional string due_date = 6;
   // When the class took place; not a deadline.
   optional string held_on = 7;
@@ -84,29 +84,29 @@ message Item {
   optional string notes = 9;
   string created_at = 10;
   // Where the item was imported from, if it was.
-  ItemSource source = 11;
-}
+  Source source = 11;
 
-enum ItemKind {
-  ITEM_KIND_UNSPECIFIED = 0;
-  // A class meeting to attend or catch up on (lecture, lab, tutorial).
-  ITEM_KIND_CLASS = 1;
-  ITEM_KIND_ASSIGNMENT = 2;
-  ITEM_KIND_EXAM = 3;
-  ITEM_KIND_TASK = 4;
-}
+  enum Kind {
+    KIND_UNSPECIFIED = 0;
+    // A class meeting to attend or catch up on (lecture, lab, tutorial).
+    KIND_CLASS = 1;
+    KIND_ASSIGNMENT = 2;
+    KIND_EXAM = 3;
+    KIND_TASK = 4;
+  }
 
-enum ItemStatus {
-  ITEM_STATUS_UNSPECIFIED = 0;
-  ITEM_STATUS_TODO = 1;
-  ITEM_STATUS_DOING = 2;
-  ITEM_STATUS_DONE = 3;
-}
+  enum Status {
+    STATUS_UNSPECIFIED = 0;
+    STATUS_TODO = 1;
+    STATUS_DOING = 2;
+    STATUS_DONE = 3;
+  }
 
-message ItemSource {
-  oneof source {
-    // A class meeting from the USOS timetable, by its key.
-    string usos_meeting = 1;
+  message Source {
+    oneof source {
+      // A class meeting from the USOS timetable, by its key.
+      string usos_meeting = 1;
+    }
   }
 }
 
@@ -143,53 +143,54 @@ message Settings {
   int32 default_event_minutes = 3;
   // The view the calendar opens in.
   CalendarView default_calendar_view = 4;
-  UsosSettings usos = 5;
-}
+  Usos usos = 5;
 
-message CapacityRule {
-  // The date from which the rule applies.
-  string from = 1;
-  // One per weekday, Monday first.
-  repeated TimeRange windows = 2;
-  // Hours added to (or, if negative, removed from) every day.
-  double adjustment = 3;
-  // Reserved time (sleep, work) per weekday, Monday first. Informational.
-  repeated ReservedDay reserved = 4;
-}
+  message CapacityRule {
+    // The date from which the rule applies.
+    string from = 1;
+    // One per weekday, Monday first.
+    repeated TimeRange windows = 2;
+    // Hours added to (or, if negative, removed from) every day.
+    double adjustment = 3;
+    // Reserved time (sleep, work) per weekday, Monday first. Informational.
+    repeated ReservedDay reserved = 4;
 
-message ReservedDay {
-  repeated TimeRange ranges = 1;
-}
+    message ReservedDay {
+      repeated TimeRange ranges = 1;
+    }
 
-// A time range; an end before the start wraps past midnight.
-message TimeRange {
-  string start = 1;
-  string end = 2;
-  optional string label = 3;
-}
-
-// A relative delta, or an absolute override that wins over everything.
-message DayCapacity {
-  optional double delta = 1;
-  optional double override = 2;
-}
-
-enum CalendarView {
-  CALENDAR_VIEW_UNSPECIFIED = 0;
-  CALENDAR_VIEW_DAY = 1;
-  CALENDAR_VIEW_THREE_DAY = 2;
-  CALENDAR_VIEW_WEEK = 3;
-  CALENDAR_VIEW_MONTH = 4;
-}
-
-message UsosSettings {
-  // Where the timetable comes from; unset when the import is off.
-  oneof source {
-    // A Google calendar, by id.
-    string google_calendar_id = 1;
-    // An iCalendar (.ics) link.
-    string ical_url = 2;
+    // A time range; an end before the start wraps past midnight.
+    message TimeRange {
+      string start = 1;
+      string end = 2;
+      optional string label = 3;
+    }
   }
-  // Class meetings already imported or skipped (keys); never offered again.
-  repeated string handled = 3;
+
+  // A relative delta, or an absolute override that wins over everything.
+  message DayCapacity {
+    optional double delta = 1;
+    optional double override = 2;
+  }
+
+  enum CalendarView {
+    CALENDAR_VIEW_UNSPECIFIED = 0;
+    CALENDAR_VIEW_DAY = 1;
+    CALENDAR_VIEW_THREE_DAY = 2;
+    CALENDAR_VIEW_WEEK = 3;
+    CALENDAR_VIEW_MONTH = 4;
+  }
+
+  // The USOS timetable import.
+  message Usos {
+    // Where the timetable comes from; unset when the import is off.
+    oneof source {
+      // A Google calendar, by id.
+      string google_calendar_id = 1;
+      // An iCalendar (.ics) link.
+      string ical_url = 2;
+    }
+    // Class meetings already imported or skipped (keys); never offered again.
+    repeated string handled = 3;
+  }
 }

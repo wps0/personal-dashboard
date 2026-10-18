@@ -27,7 +27,7 @@ function ev(
 }
 
 function day(d: {delta?: number; override?: number}) {
-  return create(pb.DayCapacitySchema, d);
+  return create(pb.Settings_DayCapacitySchema, d);
 }
 
 describe('capacity', () => {
@@ -48,7 +48,7 @@ describe('capacity', () => {
 
   it('combines window, events, global adjustment, day delta and override', () => {
     const rules = [
-      create(pb.CapacityRuleSchema, {
+      create(pb.Settings_CapacityRuleSchema, {
         from: '0000-01-01',
         windows: Array.from({length: 7}, () => range('18:00', '22:00')),
         adjustment: -0.5,

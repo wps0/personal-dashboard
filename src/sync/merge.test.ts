@@ -80,7 +80,11 @@ describe('merge3', () => {
     const b = base();
     const p = b.projects[0];
     const entry = (id: string) =>
-      create(pb.LogEntrySchema, {id, at: '2026-10-13T10:00:00Z', text: id});
+      create(pb.Project_LogEntrySchema, {
+        id,
+        at: '2026-10-13T10:00:00Z',
+        text: id,
+      });
     const local = edit(b, d => {
       d.projects[0].log.unshift(entry('mine'));
       d.dayNotes['2026-10-13'] = 'mine';
