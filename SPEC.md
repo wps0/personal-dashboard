@@ -544,6 +544,9 @@ compares Gemini's output against the `*.expected.json` files.
   only from `main`. The build job can only read; only the deploy job (which
   runs no repository code) can publish. The `github-pages` environment must
   be limited to `main` in the repository settings, since the site's origin
-  holds the app's data and is trusted by the Google OAuth client.
+  holds the app's data and is trusted by the Google OAuth client. For the
+  same reason this must stay the account's only Pages site: every Pages site
+  of an account shares the `<user>.github.io` origin (see the README's Deploy
+  section).
 - **Changes** go in small, focused pull requests, stacked when they build on
   each other.
