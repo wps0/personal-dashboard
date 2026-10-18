@@ -1,6 +1,7 @@
 import {useEffect, useState} from 'react';
 
 import {CAL_VIEWS, type CalView} from './model/types';
+import {unreachable} from './unreachable';
 export type {CalView};
 
 export type Route =
@@ -47,6 +48,8 @@ export function href(route: Route): string {
       return route.id ? `#/projects/${route.id}` : '#/projects';
     case 'settings':
       return '#/settings';
+    default:
+      return unreachable(route);
   }
 }
 

@@ -24,6 +24,7 @@ import {useStore} from '../store';
 import {nextHourDraft, useUi} from '../ui';
 import {useNavTarget} from '../keyboard';
 import {useMediaQuery} from '../hooks';
+import {unreachable} from '../unreachable';
 
 const VIEW_OPTIONS = [
   {value: 'day', label: 'Day'},
@@ -45,6 +46,8 @@ function visibleDays(view: CalView, date: ISODate): ISODate[] {
     }
     case 'month':
       return monthGrid(date);
+    default:
+      return unreachable(view);
   }
 }
 

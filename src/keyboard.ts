@@ -227,6 +227,9 @@ export function useGlobalShortcuts(route: Route) {
       case 'move':
         if (!moveFocus(action.dir)) return; // nothing to select: let the arrow scroll
         break;
+      default:
+        // Undo is handled above, before the checks for typing and overlays.
+        return;
     }
     e.preventDefault();
   });
