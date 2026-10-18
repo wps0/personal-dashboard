@@ -190,6 +190,7 @@ message UsosSettings {
     // An iCalendar (.ics) link.
     string ical_url = 2;
   }
-  // Class meetings already imported or skipped (keys); never offered again.
+  // Class meetings skipped in a review (keys); not offered again. Imported
+  // ones are known by their task, so they come back if it's deleted.
   repeated string handled = 3;
 }

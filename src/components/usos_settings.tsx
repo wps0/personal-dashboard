@@ -33,6 +33,7 @@ type Check =
 export function UsosSettings() {
   useGoogleCalendars();
   const source = useStore(s => s.data.settings.usos.source);
+  const skipped = useStore(s => s.data.settings.usos.handled.length);
   const setSource = useStore.getState().setUsosSource;
   const calendars = useGoogle(s => s.calendars);
   const signedIn = useGoogle(calendarConnected);
@@ -149,6 +150,17 @@ export function UsosSettings() {
           {check?.state === 'error' && (
             <p role="alert" className="text-[12px] text-danger">
               {check.message}
+            </p>
+          )}
+          {skipped > 0 && (
+            <p className="text-[12px] text-dim">
+              {plural(skipped, 'class', 'classes')} skipped in reviews.{' '}
+              <button
+                className="text-accent hover:underline"
+                onClick={() => useStore.getState().clearUsosHandled()}
+              >
+                Show skipped classes again
+              </button>
             </p>
           )}
           {check?.state === 'done' && (

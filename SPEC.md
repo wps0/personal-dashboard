@@ -282,9 +282,11 @@ asking for write access.
   are considered.
 - **Reviewed, never silent:** "N new classes from USOS · Review" on Home and
   in the course's project panel opens a list, all ticked. Ticked classes
-  become tasks; unticked ones are skipped. Both are remembered (by iCal UID +
-  start, the same from either source) and never offered again, even if the
-  task is later deleted. "Not now" leaves them for later. One undo step.
+  become tasks; unticked ones are skipped. Skipped classes are remembered (by
+  iCal UID + start, the same from either source) and not offered again, until
+  "Show skipped classes again" in Settings. Imported ones are known by their
+  task: deleting it, or its project, offers the class again (e.g. to import it
+  into another project). "Not now" leaves them for later. One undo step.
 
 ### 4.3 Google Drive sync ✅
 
