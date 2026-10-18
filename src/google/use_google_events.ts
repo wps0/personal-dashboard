@@ -75,7 +75,7 @@ export async function fetchRange(from: ISODate, to: ISODate) {
     const results = await Promise.allSettled(
       chosen.map(async cal =>
         (await listEvents(cal.id, timeMin, timeMax)).flatMap(e =>
-          expandEvent(e, cal),
+          expandEvent(e, cal, {from, to}),
         ),
       ),
     );
@@ -83,13 +83,11 @@ export async function fetchRange(from: ISODate, to: ISODate) {
     if (gen !== generation) return;
     // A calendar that failed this time (offline, rate limit) keeps what it had.
     const before = useCache.getState().ranges[key]?.events ?? [];
-    const events = results
-      .flatMap((r, i) =>
-        r.status === 'fulfilled'
-          ? r.value
-          : before.filter(e => e.calendarId === chosen[i].id),
-      )
-      .filter(e => e.date >= from && e.date <= to);
+    const events = results.flatMap((r, i) =>
+      r.status === 'fulfilled'
+        ? r.value
+        : before.filter(e => e.calendarId === chosen[i].id),
+    );
     const failed = results.findIndex(r => r.status === 'rejected');
     if (failed >= 0)
       reportGoogleError(

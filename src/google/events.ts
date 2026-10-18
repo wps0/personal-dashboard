@@ -91,11 +91,37 @@ const dayFmt = new Intl.DateTimeFormat('en-GB', {
   month: 'short',
 });
 function dayOnly(s: ISODate) {
-  return dayFmt.format(new Date(`${s}T00:00`));
+  // By parts: `${s}T00:00` is an invalid date past year 9999.
+  const [y, m, d] = s.split('-').map(Number);
+  return dayFmt.format(new Date(y, m - 1, d));
 }
 
-/** Splits an API event into per-day pieces in local time. Cancelled events disappear. */
-export function expandEvent(ev: ApiEvent, cal: ApiCalendar): GEvent[] {
+/** `a` before `b`, also past year 9999, where string order fails. */
+function earlier(a: ISODate, b: ISODate) {
+  return a.length === b.length ? a < b : a.length < b.length;
+}
+
+/** The days `first`…`last` inside `range` (all of them without one), or null if none. */
+function clipDays(
+  first: ISODate,
+  last: ISODate,
+  range?: {from: ISODate; to: ISODate},
+): [ISODate, ISODate] | null {
+  if (!range) return [first, last];
+  const lo = earlier(first, range.from) ? range.from : first;
+  const hi = earlier(range.to, last) ? range.to : last;
+  return earlier(hi, lo) ? null : [lo, hi];
+}
+
+/**
+ * Splits an API event into per-day pieces in local time, only on the days in
+ * `range` if given (an event can span centuries). Cancelled events disappear.
+ */
+export function expandEvent(
+  ev: ApiEvent,
+  cal: ApiCalendar,
+  range?: {from: ISODate; to: ISODate},
+): GEvent[] {
   if (ev.status === 'cancelled') return [];
   const declined =
     ev.attendees?.some(a => a.self && a.responseStatus === 'declined') ?? false;
@@ -121,7 +147,9 @@ export function expandEvent(ev: ApiEvent, cal: ApiCalendar): GEvent[] {
     const when =
       first === last ? dayOnly(first) : `${dayOnly(first)} – ${dayOnly(last)}`;
     const out: GEvent[] = [];
-    for (let d = first; d <= last; d = addDays(d, 1)) {
+    const days = clipDays(first, last, range);
+    if (!days) return out;
+    for (let d = days[0]; d <= days[1]; d = addDays(d, 1)) {
       out.push({
         ...base,
         key: `${cal.id}|${ev.id}|${d}`,
@@ -153,7 +181,9 @@ export function expandEvent(ev: ApiEvent, cal: ApiCalendar): GEvent[] {
       ? `${dayOnly(first)}, ${hhmm(s)} – ${hhmm(e)}`
       : `${dayOnly(first)} ${hhmm(s)} – ${dayOnly(toISODate(e))} ${hhmm(e)}`;
   const out: GEvent[] = [];
-  for (let d = first; d <= last; d = addDays(d, 1)) {
+  const days = clipDays(first, last, range);
+  if (!days) return out;
+  for (let d = days[0]; d <= days[1]; d = addDays(d, 1)) {
     const startMin = d === first ? minutesOf(s) : 0;
     const endMin = d === toISODate(e) ? minutesOf(e) : 1440;
     out.push({

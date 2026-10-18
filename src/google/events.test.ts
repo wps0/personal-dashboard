@@ -123,6 +123,78 @@ describe('expandEvent', () => {
   });
 });
 
+describe('expandEvent with a range', () => {
+  const range = {from: '2026-10-12', to: '2026-10-18'};
+
+  it('makes pieces only for the days in the range', () => {
+    const t = Date.now();
+    const parts = expandEvent(
+      {
+        id: 'long',
+        start: {date: '2026-01-01'},
+        end: {date: '3026-01-01'},
+      },
+      cal,
+      range,
+    );
+    expect(Date.now() - t).toBeLessThan(100);
+    expect(parts.map(p => p.date)).toEqual([
+      '2026-10-12',
+      '2026-10-13',
+      '2026-10-14',
+      '2026-10-15',
+      '2026-10-16',
+      '2026-10-17',
+      '2026-10-18',
+    ]);
+    expect([parts[0].first, parts[0].last]).toEqual([
+      '2026-01-01',
+      '3025-12-31',
+    ]);
+  });
+
+  it('keeps the times of timed pieces at the range edges', () => {
+    const parts = expandEvent(
+      {
+        id: 'trip',
+        start: {dateTime: '2026-10-10T10:00:00+02:00'},
+        end: {dateTime: '2026-10-13T12:00:00+02:00'},
+      },
+      cal,
+      range,
+    );
+    expect(parts.map(p => [p.date, p.startMin, p.endMin])).toEqual([
+      ['2026-10-12', 0, 1440],
+      ['2026-10-13', 0, 720],
+    ]);
+    expect(parts[0].first).toBe('2026-10-10');
+  });
+
+  it('gives nothing for an event outside the range', () => {
+    expect(
+      expandEvent(
+        {
+          id: 'later',
+          start: {dateTime: '2026-10-19T10:00:00+02:00'},
+          end: {dateTime: '2026-10-19T11:00:00+02:00'},
+        },
+        cal,
+        range,
+      ),
+    ).toEqual([]);
+  });
+
+  it('handles events ending after year 9999', () => {
+    const parts = expandEvent(
+      {id: 'far', start: {date: '2026-10-17'}, end: {date: '12026-01-01'}},
+      cal,
+      range,
+    );
+    expect(parts.map(p => p.date)).toEqual(['2026-10-17', '2026-10-18']);
+    expect(parts[0].when).toBe('Sat 17 Oct – Wed 31 Dec');
+  });
+});
+
 describe('rangeBounds', () => {
   it('covers whole local days', () => {
     expect(rangeBounds('2026-10-12', '2026-10-18')).toEqual({
