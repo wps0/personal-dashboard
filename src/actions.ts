@@ -6,7 +6,7 @@ import {
 } from './model/types';
 import {useStore} from './store';
 import {withUndo} from './toast';
-import {taskFromMeeting, type Proposal} from './usos/usos';
+import {meetingHours, taskFromMeeting, type Proposal} from './usos/usos';
 
 /**
  * User-level operations, all undoable with Ctrl+Z. Direct manipulation (drag,
@@ -62,8 +62,9 @@ export function deleteItem(item: Item) {
 }
 
 /**
- * Imports the chosen USOS classes as tasks; every class that was shown is
- * remembered (imported or skipped) so it isn't offered again. One undo step.
+ * Imports the chosen USOS classes as tasks, each planned as a session at the
+ * class's own day, time and length; every class that was shown is remembered
+ * (imported or skipped) so it isn't offered again. One undo step.
  */
 export function importClasses(chosen: Proposal[], shown: Proposal[]) {
   const n = chosen.length;
@@ -74,11 +75,16 @@ export function importClasses(chosen: Proposal[], shown: Proposal[]) {
     const byProject = new Map<string, Proposal[]>();
     for (const p of chosen)
       byProject.set(p.projectId, [...(byProject.get(p.projectId) ?? []), p]);
-    for (const [projectId, list] of byProject)
-      s().addItems(
+    for (const [projectId, list] of byProject) {
+      const ids = s().addItems(
         projectId,
         list.map(p => taskFromMeeting(p.meeting)),
       );
+      list.forEach(({meeting: m}, k) => {
+        const hours = meetingHours(m);
+        if (hours > 0) s().addAllocation(ids[k], m.date, hours, m.start);
+      });
+    }
     s().markUsosHandled(shown.map(p => p.meeting.key));
   });
 }

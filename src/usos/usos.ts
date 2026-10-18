@@ -7,6 +7,7 @@
 import type {ApiEvent} from '../google/events';
 import {dayName, shortDate, toISODate} from '../model/dates';
 import {ItemKind, type ISODate, type ItemInit} from '../model/types';
+import {toMinutes} from '../model/time';
 
 /** One class meeting from the timetable. */
 export interface ClassMeeting {
@@ -362,11 +363,17 @@ export function meetingTitle(m: ClassMeeting): string {
  * The task made from a class meeting: a class item, dated by the class,
  * remembering which meeting it came from.
  */
+/** How long a class meeting lasts, in hours (0 if its times make no sense). */
+export function meetingHours(m: ClassMeeting): number {
+  return Math.max(0, toMinutes(m.end) - toMinutes(m.start)) / 60;
+}
+
 export function taskFromMeeting(m: ClassMeeting): ItemInit {
   return {
     kind: ItemKind.CLASS,
     title: meetingTitle(m),
     heldOn: m.date,
+    estimateHours: meetingHours(m),
     notes: [`${m.type} ${m.start}–${m.end}`, m.location]
       .filter(Boolean)
       .join(' · '),
