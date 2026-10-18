@@ -8,7 +8,15 @@ import {
 } from 'react';
 import * as pb from './gen/dashboard/data_pb';
 import {capacityFor, type CapacityInfo} from './model/capacity';
-import type {Area, CalendarEvent, ISODate, Item, Project} from './model/types';
+import type {DayOfWeek} from './model/dates';
+import {
+  weekStartOf,
+  type Area,
+  type CalendarEvent,
+  type ISODate,
+  type Item,
+  type Project,
+} from './model/types';
 import {useStore} from './store';
 import {useGoogleEvents} from './google/use_google_events';
 import {fromMinutes} from './model/time';
@@ -34,6 +42,11 @@ export function useLatest<T>(value: T) {
     ref.current = value;
   });
   return ref;
+}
+
+/** The first day of the week (Settings → Calendar), as `Date.getDay()` numbers it. */
+export function useWeekStart(): DayOfWeek {
+  return useStore(s => weekStartOf(s.data.settings.weekStart));
 }
 
 /** Id lookups that only change when items, projects or areas change (not on notes or plans). */

@@ -14,12 +14,14 @@ import {
 } from '@bufbuild/protobuf';
 import * as pb from '../gen/dashboard/data_pb';
 import {defaultRules} from './capacity';
+import type {DayOfWeek} from './dates';
 
 export {
   CalendarView,
   ItemKind,
   ItemStatus,
   ProgressMode,
+  Weekday,
 } from '../gen/dashboard/data_pb';
 
 export type Area = pb.Area;
@@ -72,6 +74,22 @@ const CAL_VIEW_OF: Record<pb.CalendarView, CalView> = {
 /** The UI view for a stored calendar view; week for one this version doesn't know. */
 export function calViewOf(view: pb.CalendarView): CalView {
   return CAL_VIEW_OF[view] ?? 'week';
+}
+
+const DAY_OF_WEEK: Record<pb.Weekday, DayOfWeek> = {
+  [pb.Weekday.UNSPECIFIED]: 0,
+  [pb.Weekday.MONDAY]: 1,
+  [pb.Weekday.TUESDAY]: 2,
+  [pb.Weekday.WEDNESDAY]: 3,
+  [pb.Weekday.THURSDAY]: 4,
+  [pb.Weekday.FRIDAY]: 5,
+  [pb.Weekday.SATURDAY]: 6,
+  [pb.Weekday.SUNDAY]: 0,
+};
+
+/** The first day of the week for a stored setting; Sunday when unset or unknown. */
+export function weekStartOf(day: pb.Weekday): DayOfWeek {
+  return DAY_OF_WEEK[day] ?? 0;
 }
 
 /** The statuses an item moves through, in order. */

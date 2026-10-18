@@ -24,14 +24,17 @@ export function addDays(s: ISODate, n: number): ISODate {
   return toISODate(d);
 }
 
-/** Monday=0 … Sunday=6. */
+/** A day of the week as `Date.getDay()` numbers it: Sunday=0 … Saturday=6. */
+export type DayOfWeek = number;
+
+/** Monday=0 … Sunday=6 (capacity rules list weekdays Monday first). */
 export function weekdayIndex(s: ISODate): number {
   return (parseISODate(s).getDay() + 6) % 7;
 }
 
-/** The Monday of the week containing `s`. */
-export function startOfWeek(s: ISODate): ISODate {
-  return addDays(s, -weekdayIndex(s));
+/** The first day of the week containing `s`, for weeks starting on `weekStart`. */
+export function startOfWeek(s: ISODate, weekStart: DayOfWeek = 1): ISODate {
+  return addDays(s, -((parseISODate(s).getDay() - weekStart + 7) % 7));
 }
 
 export function daysBetween(from: ISODate, to: ISODate): number {
@@ -64,6 +67,11 @@ export function dayName(s: ISODate): string {
   return DAY_NAMES[weekdayIndex(s)];
 }
 
+/** Short day names in week order, for weeks starting on `weekStart`. */
+export function weekdayNames(weekStart: DayOfWeek): string[] {
+  return Array.from({length: 7}, (_, i) => DAY_NAMES[(weekStart + i + 6) % 7]);
+}
+
 /** e.g. "12 Oct". */
 export function shortDate(s: ISODate): string {
   const d = parseISODate(s);
@@ -90,6 +98,16 @@ export function isoWeek(s: ISODate): number {
   return (
     Math.floor(daysBetween(`${thursday.slice(0, 4)}-01-01`, thursday) / 7) + 1
   );
+}
+
+/**
+ * The number shown for the week starting on `start`: the ISO week of its
+ * middle (fourth) day, which is the ISO week holding most of its days. For a
+ * Monday start that's the Thursday, so exactly the ISO week; for a Sunday
+ * start, the Wednesday.
+ */
+export function weekNumber(start: ISODate): number {
+  return isoWeek(addDays(start, 3));
 }
 
 function fmt(opts: Intl.DateTimeFormatOptions) {
@@ -127,8 +145,8 @@ export function addMonths(s: ISODate, n: number): ISODate {
   return toISODate(d);
 }
 
-/** The 6×7 grid of dates shown for the month containing `s` (Monday first). */
-export function monthGrid(s: ISODate): ISODate[] {
-  const start = startOfWeek(firstOfMonth(s));
+/** The 6×7 grid of dates shown for the month containing `s`, weeks starting on `weekStart`. */
+export function monthGrid(s: ISODate, weekStart: DayOfWeek = 1): ISODate[] {
+  const start = startOfWeek(firstOfMonth(s), weekStart);
   return Array.from({length: 42}, (_, i) => addDays(start, i));
 }
