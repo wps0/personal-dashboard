@@ -1,0 +1,190 @@
+// The dashboard's data: everything stored in the browser and synced to Drive.
+//
+// Compatibility rules (SPEC 6): add fields with new numbers; never renumber,
+// retype or reuse a field or enum value; mark removed ones `reserved`. Code
+// must cope with enum values it doesn't know, since a newer app may write
+// them.
+//
+// Dates are `YYYY-MM-DD` and times of day `HH:MM`, in local time; timestamps
+// are ISO 8601 strings.
+syntax = "proto3";
+
+package dashboard.v2;
+
+message AppData {
+  repeated Area areas = 1;
+  repeated Project projects = 2;
+  repeated Item items = 3;
+  repeated Allocation allocations = 4;
+  repeated CalendarEvent events = 5;
+  // Freeform text per day, keyed by date.
+  map<string, string> day_notes = 6;
+  // Freeform text per month, keyed `YYYY-MM`.
+  map<string, string> month_notes = 7;
+  Settings settings = 8;
+}
+
+// A top-level group of projects, e.g. University or Work.
+message Area {
+  string id = 1;
+  string name = 2;
+  // CSS colour, e.g. `#60a5fa`.
+  string color = 3;
+}
+
+message Project {
+  string id = 1;
+  string area_id = 2;
+  string name = 3;
+  ProgressMode progress_mode = 4;
+  // 0–100, used when progress_mode is MANUAL.
+  double manual_progress = 5;
+  optional string due_date = 6;
+  // Markdown: goals, links, decisions.
+  string overview_doc = 7;
+  repeated LogEntry log = 8;
+  bool archived = 9;
+  string created_at = 10;
+  // For a university course: a case-insensitive regular expression on the
+  // course title of USOS classes; matching classes become its tasks.
+  optional string course_pattern = 11;
+}
+
+enum ProgressMode {
+  PROGRESS_MODE_UNSPECIFIED = 0;
+  PROGRESS_MODE_CHECKLIST = 1;
+  PROGRESS_MODE_HOURS = 2;
+  PROGRESS_MODE_MANUAL = 3;
+}
+
+// A timestamped progress note on a project.
+message LogEntry {
+  string id = 1;
+  string at = 2;
+  string text = 3;
+  optional string edited_at = 4;
+}
+
+message Item {
+  string id = 1;
+  string project_id = 2;
+  ItemKind kind = 3;
+  string title = 4;
+  ItemStatus status = 5;
+  optional string due_date = 6;
+  // When the class took place; not a deadline.
+  optional string held_on = 7;
+  optional double estimate_hours = 8;
+  // Markdown: details, links, where you stopped.
+  optional string notes = 9;
+  string created_at = 10;
+  // Where the item was imported from, if it was.
+  ItemSource source = 11;
+}
+
+enum ItemKind {
+  ITEM_KIND_UNSPECIFIED = 0;
+  // A class meeting to attend or catch up on (lecture, lab, tutorial).
+  ITEM_KIND_CLASS = 1;
+  ITEM_KIND_ASSIGNMENT = 2;
+  ITEM_KIND_EXAM = 3;
+  ITEM_KIND_TASK = 4;
+}
+
+enum ItemStatus {
+  ITEM_STATUS_UNSPECIFIED = 0;
+  ITEM_STATUS_TODO = 1;
+  ITEM_STATUS_DOING = 2;
+  ITEM_STATUS_DONE = 3;
+}
+
+message ItemSource {
+  oneof source {
+    // A class meeting from the USOS timetable, by its key.
+    string usos_meeting = 1;
+  }
+}
+
+// A slice of an item planned on a day. One item may have many.
+message Allocation {
+  string id = 1;
+  string item_id = 2;
+  string date = 3;
+  double planned_hours = 4;
+  bool done = 5;
+  // Hours actually spent; set to planned_hours when checked off.
+  optional double actual_hours = 6;
+  // Start time; makes the slice a time block on the calendar.
+  optional string start = 7;
+}
+
+message CalendarEvent {
+  string id = 1;
+  string title = 2;
+  string date = 3;
+  // All-day events show in the all-day row; start and end are kept but ignored.
+  bool all_day = 4;
+  string start = 5;
+  string end = 6;
+  optional string notes = 7;
+}
+
+message Settings {
+  // Planning windows and adjustments, each effective from a date.
+  repeated CapacityRule capacity_rules = 1;
+  // Per-day capacity tweaks, keyed by date.
+  map<string, DayCapacity> day_capacity = 2;
+  // Length of an event created by clicking the calendar.
+  int32 default_event_minutes = 3;
+  // The view the calendar opens in.
+  CalendarView default_calendar_view = 4;
+  UsosSettings usos = 5;
+}
+
+message CapacityRule {
+  // The date from which the rule applies.
+  string from = 1;
+  // One per weekday, Monday first.
+  repeated TimeRange windows = 2;
+  // Hours added to (or, if negative, removed from) every day.
+  double adjustment = 3;
+  // Reserved time (sleep, work) per weekday, Monday first. Informational.
+  repeated ReservedDay reserved = 4;
+}
+
+message ReservedDay {
+  repeated TimeRange ranges = 1;
+}
+
+// A time range; an end before the start wraps past midnight.
+message TimeRange {
+  string start = 1;
+  string end = 2;
+  optional string label = 3;
+}
+
+// A relative delta, or an absolute override that wins over everything.
+message DayCapacity {
+  optional double delta = 1;
+  optional double override = 2;
+}
+
+enum CalendarView {
+  CALENDAR_VIEW_UNSPECIFIED = 0;
+  CALENDAR_VIEW_DAY = 1;
+  CALENDAR_VIEW_THREE_DAY = 2;
+  CALENDAR_VIEW_WEEK = 3;
+  CALENDAR_VIEW_MONTH = 4;
+}
+
+message UsosSettings {
+  // Where the timetable comes from; unset when the import is off.
+  oneof source {
+    // A Google calendar, by id.
+    string google_calendar_id = 1;
+    // An iCalendar (.ics) link.
+    string ical_url = 2;
+  }
+  // Class meetings already imported or skipped (keys); never offered again.
+  repeated string handled = 3;
+}

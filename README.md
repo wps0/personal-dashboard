@@ -148,6 +148,7 @@ Enable it once under repo Settings → Pages → Source: **GitHub Actions**.
 | `src/model/` | Types, date/time helpers, selectors (progress, backlog, missed), capacity rules, block layout, sample data |
 | `src/store.ts` | Zustand store: all mutations, cascading deletes |
 | `src/ui.ts`, `src/theme.ts` | Transient UI state (open overlays), theme preference |
+| `proto/` | The data schema (protobuf). The TypeScript for it is generated into `src/gen/` (not committed) before `dev`, `build`, `typecheck` and `test` |
 | `src/storage/` | `Storage` interface, IndexedDB implementation, import validation |
 | `src/sync/` | Drive sync: three-way merge, sync engine, runner and triggers |
 | `src/views/` | Home, Week, Calendar, Projects (+ side panel), Settings |
