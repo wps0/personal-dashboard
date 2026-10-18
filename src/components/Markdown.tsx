@@ -1,7 +1,9 @@
 import {lazy, Suspense} from 'react';
 
 const load = () => import('./MarkdownRender');
-const MarkdownRender = lazy(load);
+const MarkdownRender = lazy(() =>
+  load().then(m => ({default: m.MarkdownRender})),
+);
 
 /** Fetches the renderer ahead of time (see App). */
 export const preloadMarkdown = load;
