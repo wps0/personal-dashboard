@@ -1,5 +1,5 @@
 import {create} from '@bufbuild/protobuf';
-import * as pb from '../gen/dashboard/v2/data_pb';
+import * as pb from '../gen/dashboard/data_pb';
 import {addDays, startOfWeek, todayISO} from './dates';
 import {
   ItemKind,

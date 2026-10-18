@@ -475,7 +475,7 @@ compares Gemini's output against the `*.expected.json` files.
   hooks rules. Two deviations, both documented there: `== null` is allowed
   (as the style guide itself allows), and named function expressions are
   allowed for `memo(function Name…)`. Prettier with gts's settings.
-- **Data schema:** `proto/dashboard/v2/data.proto` (protobuf) describes the
+- **Data schema:** `proto/dashboard/data.proto` (protobuf) describes the
   stored data; `npm run proto:generate` writes the TypeScript for it to
   `src/gen/`. Generated code isn't committed: it is regenerated before every
   `dev`, `build`, `typecheck` and `test` run. The data is stored as protobuf

@@ -1,6 +1,6 @@
 import {create as createMessage} from '@bufbuild/protobuf';
 import {create} from 'zustand';
-import * as pb from './gen/dashboard/v2/data_pb';
+import * as pb from './gen/dashboard/data_pb';
 import type {
   Allocation,
   AppData,

@@ -2,7 +2,7 @@ import 'fake-indexeddb/auto';
 import {create, equals} from '@bufbuild/protobuf';
 import {get, set} from 'idb-keyval';
 import {describe, expect, it} from 'vitest';
-import * as pb from '../gen/dashboard/v2/data_pb';
+import * as pb from '../gen/dashboard/data_pb';
 import {sampleData} from '../model/sample';
 import {CalendarView} from '../model/types';
 import {encode, toReadableJson} from './codec';

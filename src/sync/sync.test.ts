@@ -1,6 +1,6 @@
 import {create, toBinary} from '@bufbuild/protobuf';
 import {beforeEach, describe, expect, it} from 'vitest';
-import * as pb from '../gen/dashboard/v2/data_pb';
+import * as pb from '../gen/dashboard/data_pb';
 import {SCHEMA_VERSION, toReadableJson} from '../storage/codec';
 import {sampleData} from '../model/sample';
 import {emptyData, type AppData} from '../model/types';
