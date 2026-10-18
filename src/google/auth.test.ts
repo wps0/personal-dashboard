@@ -14,6 +14,8 @@ let requested = '';
 let revoked = 0;
 let includeGranted: boolean | undefined;
 let grant: (scope: string) => string = s => s;
+/** Set to make the next sign-in fail this way instead of granting. */
+let fail: 'popup_closed' | 'access_denied' | undefined;
 vi.stubGlobal('window', {
   google: {
     accounts: {
@@ -22,10 +24,14 @@ vi.stubGlobal('window', {
           scope: string;
           include_granted_scopes?: boolean;
           callback(r: object): void;
+          error_callback?(e: {type: string}): void;
         }) => ({
           requestAccessToken: () => {
             requested = cfg.scope;
             includeGranted = cfg.include_granted_scopes;
+            if (fail === 'popup_closed')
+              return cfg.error_callback?.({type: fail});
+            if (fail) return cfg.callback({error: fail});
             cfg.callback({
               access_token: 'tok',
               expires_in: 3600,
@@ -132,6 +138,32 @@ describe('Drive access in the Google sign-in', () => {
     expect(useGoogle.getState().error).toMatch(/calendar stays off/);
     expect(hasDriveAccess(useGoogle.getState().token)).toBe(true);
     grant = s => s;
+  });
+
+  it('keeps the session, and turns sync back off, when the popup is closed', async () => {
+    await useGoogle.getState().signIn();
+    fail = 'popup_closed';
+    useGoogle.getState().setDriveSync(true);
+    await vi.waitFor(() => expect(requested).toContain(DRIVE_SCOPE));
+    fail = undefined;
+    const s = useGoogle.getState();
+    expect(s.status).toBe('signed-in');
+    expect(s.calendar).toBe(true);
+    expect(s.driveSync).toBe(false);
+    expect(s.token?.value).toBe('tok');
+  });
+
+  it('keeps the session, with the error, when access is denied', async () => {
+    await useGoogle.getState().signIn();
+    fail = 'access_denied';
+    useGoogle.getState().setDriveSync(true);
+    await vi.waitFor(() => expect(requested).toContain(DRIVE_SCOPE));
+    fail = undefined;
+    const s = useGoogle.getState();
+    expect(s.status).toBe('signed-in');
+    expect(s.error).toBe('access_denied');
+    expect(s.calendar).toBe(true);
+    expect(s.driveSync).toBe(false);
   });
 
   it('only counts unexpired tokens that carry the Drive scope', () => {

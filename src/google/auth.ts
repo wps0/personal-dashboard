@@ -192,6 +192,25 @@ export const useGoogle = create<GoogleState>()((set, get) => {
     set(patch);
     savePrefs({...get(), ...patch});
   };
+  /**
+   * A sign-in that brought no token (popup closed, access denied, script not
+   * loaded) leaves a still-valid session as it was, and turns off what asked
+   * for access that token lacks.
+   */
+  const keepSession = (error?: string) => {
+    const {token, calendar, driveSync} = get();
+    if (!token || token.expiresAt <= Date.now()) {
+      set({status: token ? 'expired' : 'signed-out', error});
+      return;
+    }
+    const granted = token.scope?.split(' ') ?? [];
+    prefs({
+      ...(calendar &&
+        !SCOPES.every(s => granted.includes(s)) && {calendar: false}),
+      ...(driveSync && !granted.includes(DRIVE_SCOPE) && {driveSync: false}),
+    });
+    set({status: 'signed-in', error});
+  };
   return {
     ...loadPrefs(),
     status: initialToken ? 'signed-in' : 'signed-out',
@@ -258,10 +277,7 @@ export const useGoogle = create<GoogleState>()((set, get) => {
           include_granted_scopes: false,
           callback: r => {
             if (r.error || !r.access_token) {
-              set({
-                status: 'error',
-                error: r.error_description ?? r.error ?? 'Sign-in failed',
-              });
+              keepSession(r.error_description ?? r.error ?? 'Sign-in failed');
               return;
             }
             // Google's consent screen lets people untick individual permissions:
@@ -303,15 +319,13 @@ export const useGoogle = create<GoogleState>()((set, get) => {
             set({token, status: 'signed-in', error: error || undefined});
           },
           error_callback: e =>
-            set({
-              status: get().token ? 'expired' : 'signed-out',
-              error:
-                e.type === 'popup_closed' ? undefined : (e.message ?? e.type),
-            }),
+            keepSession(
+              e.type === 'popup_closed' ? undefined : (e.message ?? e.type),
+            ),
         });
         client.requestAccessToken({prompt: consented ? '' : 'consent'});
       } catch (e) {
-        set({status: 'error', error: String((e as Error).message ?? e)});
+        keepSession(String((e as Error).message ?? e));
       }
     },
 
