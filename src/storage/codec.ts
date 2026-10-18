@@ -20,7 +20,7 @@ import * as pb from '../gen/dashboard/v2/data_pb';
 export const SCHEMA_VERSION = 1;
 
 /** The data as stored: protobuf binary, stamped with the schema version. */
-export function encode(data: pb.AppData): Uint8Array {
+export function encode(data: pb.AppData): Uint8Array<ArrayBuffer> {
   return toBinary(
     pb.AppDataSchema,
     create(pb.AppDataSchema, {...data, schemaVersion: SCHEMA_VERSION}),
@@ -39,8 +39,7 @@ export function decode(bytes: Uint8Array): pb.AppData {
   } catch (e) {
     throw new Error(`The data can’t be read: ${(e as Error).message}`);
   }
-  checkVersion(data.schemaVersion);
-  return data;
+  return checked(data);
 }
 
 /** The read-only copy: the data as protobuf's JSON form, indented. */
@@ -62,14 +61,20 @@ export function fromReadableJson(text: string): pb.AppData {
       `This isn’t dashboard data, or it’s from a newer version of the app: ${(e as Error).message}`,
     );
   }
-  checkVersion(data.schemaVersion);
-  return data;
+  return checked(data);
 }
 
-function checkVersion(version: number) {
+/**
+ * `data` once its schema version is checked, with the version cleared: it
+ * only exists in what's stored, so data read from storage and data made in
+ * the app compare equal.
+ */
+function checked(data: pb.AppData): pb.AppData {
+  const version = data.schemaVersion;
   if (version > SCHEMA_VERSION)
     throw new Error(
       'This data was saved by a newer version of the app. Update the app (reload it) to use it.',
     );
   if (version < 1) throw new Error('This isn’t dashboard data.');
+  return {...data, schemaVersion: 0};
 }

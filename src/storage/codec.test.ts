@@ -1,4 +1,4 @@
-import {create, equals, toBinary} from '@bufbuild/protobuf';
+import {create, equals, fromBinary, toBinary} from '@bufbuild/protobuf';
 import {BinaryWriter, WireType} from '@bufbuild/protobuf/wire';
 import {describe, expect, it} from 'vitest';
 import * as pb from '../gen/dashboard/v2/data_pb';
@@ -32,13 +32,15 @@ function sample(): pb.AppData {
 }
 
 describe('binary', () => {
-  it('round-trips, stamped with the schema version', () => {
+  it('round-trips; the schema version is only in what’s stored', () => {
     const data = sample();
-    const out = decode(encode(data));
-    expect(out.schemaVersion).toBe(SCHEMA_VERSION);
-    expect(
-      equals(pb.AppDataSchema, out, {...data, schemaVersion: SCHEMA_VERSION}),
-    ).toBe(true);
+    const bytes = encode(data);
+    expect(fromBinary(pb.AppDataSchema, bytes).schemaVersion).toBe(
+      SCHEMA_VERSION,
+    );
+    const out = decode(bytes);
+    expect(out.schemaVersion).toBe(0);
+    expect(equals(pb.AppDataSchema, out, data)).toBe(true);
   });
 
   it('refuses a newer schema version and anything that isn’t its data', () => {
@@ -97,10 +99,7 @@ describe('readable JSON', () => {
   it('reads back to the same data', () => {
     const data = sample();
     expect(
-      equals(pb.AppDataSchema, fromReadableJson(toReadableJson(data)), {
-        ...data,
-        schemaVersion: SCHEMA_VERSION,
-      }),
+      equals(pb.AppDataSchema, fromReadableJson(toReadableJson(data)), data),
     ).toBe(true);
   });
 
