@@ -5,6 +5,7 @@ import {LoadError} from './components/load_error';
 import {OpenElsewhere} from './components/open_elsewhere';
 import './index.css';
 import {setUpPwa} from './pwa';
+import {setUpAutosave} from './storage/autosave';
 import {claimSingleTab} from './storage/single_tab';
 import {IndexedDbStorage} from './storage/storage';
 import {useStore} from './store';
@@ -28,22 +29,9 @@ async function boot() {
     return;
   }
 
-  // Debounced autosave; flush when the tab is hidden or closed.
-  let timer: number | undefined;
-  const flush = () => {
-    window.clearTimeout(timer);
-    timer = undefined;
-    void storage.save(useStore.getState().data);
-  };
-  useStore.subscribe((s, prev) => {
-    if (s.data === prev.data) return;
-    window.clearTimeout(timer);
-    timer = window.setTimeout(flush, 400);
-  });
-  document.addEventListener('visibilitychange', () => {
-    if (document.visibilityState === 'hidden' && timer !== undefined) flush();
-  });
-  window.addEventListener('pagehide', () => timer !== undefined && flush());
+  // Asks the browser not to evict the data when space runs low.
+  navigator.storage?.persist?.().catch(() => {});
+  setUpAutosave(storage);
   setUpSync(storage);
 
   root.render(
