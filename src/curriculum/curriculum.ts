@@ -134,6 +134,22 @@ interface GenerateResponse {
   promptFeedback?: {blockReason?: string};
 }
 
+/** Why Gemini stopped early, for the finish reasons that leave no usable answer. */
+function finishError(reason: string | undefined): string | null {
+  switch (reason) {
+    case 'MAX_TOKENS':
+      return 'The answer was cut off: the description is too long.';
+    case 'RECITATION':
+      return 'Gemini stopped because its answer repeated published text word for word (its recitation filter). Try again, or import the description in smaller parts.';
+    case 'SAFETY':
+      return 'Gemini’s safety filter blocked the answer. Check that you pasted only the course description.';
+    case 'PROHIBITED_CONTENT':
+      return 'Gemini refused the text as prohibited content. Check that you pasted only the course description.';
+    default:
+      return null;
+  }
+}
+
 /** The result from a generateContent response, or a readable error. */
 export function parseResponse(res: GenerateResponse): CurriculumResult {
   if (res.promptFeedback?.blockReason)
@@ -142,8 +158,9 @@ export function parseResponse(res: GenerateResponse): CurriculumResult {
     );
   const c = res.candidates?.[0];
   const text = c?.content?.parts?.map(p => p.text ?? '').join('') ?? '';
-  if (c?.finishReason === 'MAX_TOKENS')
-    throw new Error('The answer was cut off: the description is too long.');
+  // The text, if any, is cut off where Gemini stopped.
+  const stopped = finishError(c?.finishReason);
+  if (stopped) throw new Error(stopped);
   if (!text) throw new Error('Gemini returned no answer.');
   let json: unknown;
   try {
@@ -162,7 +179,16 @@ export async function extractCurriculum(
   text: string,
   {apiKey, model}: {apiKey: string; model: string},
 ): Promise<CurriculumResult> {
-  const {GoogleGenAI, ApiError} = await import('@google/genai');
+  let sdk: typeof import('@google/genai');
+  try {
+    sdk = await import('@google/genai');
+  } catch {
+    // After a deploy, the old version's chunks are gone.
+    throw new Error(
+      'Couldn’t load the Gemini client. If you’re online, the app was probably updated: reload the page and try again.',
+    );
+  }
+  const {GoogleGenAI, ApiError} = sdk;
   const ai = new GoogleGenAI({apiKey});
   let res: GenerateResponse;
   try {
