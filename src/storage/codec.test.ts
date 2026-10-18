@@ -1,7 +1,7 @@
 import {create, equals, fromBinary, toBinary} from '@bufbuild/protobuf';
 import {BinaryWriter, WireType} from '@bufbuild/protobuf/wire';
 import {describe, expect, it} from 'vitest';
-import * as pb from '../gen/dashboard/v2/data_pb';
+import * as pb from '../gen/dashboard/data_pb';
 import {
   SCHEMA_VERSION,
   decode,

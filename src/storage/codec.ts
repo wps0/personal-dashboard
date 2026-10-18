@@ -1,7 +1,7 @@
 /**
  * @fileoverview How the data is stored: protobuf binary, which the app reads
  * and writes, and protobuf's JSON form as a read-only copy for people. Both
- * come from the schema in proto/dashboard/v2/data.proto.
+ * come from the schema in proto/dashboard/data.proto.
  */
 
 import {
@@ -11,7 +11,7 @@ import {
   toBinary,
   toJson,
 } from '@bufbuild/protobuf';
-import * as pb from '../gen/dashboard/v2/data_pb';
+import * as pb from '../gen/dashboard/data_pb';
 
 /**
  * The schema version this version of the app reads and writes. Raise it for

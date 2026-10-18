@@ -6,7 +6,7 @@ import {
   useState,
   useSyncExternalStore,
 } from 'react';
-import * as pb from './gen/dashboard/v2/data_pb';
+import * as pb from './gen/dashboard/data_pb';
 import {capacityFor, type CapacityInfo} from './model/capacity';
 import type {Area, CalendarEvent, ISODate, Item, Project} from './model/types';
 import {useStore} from './store';

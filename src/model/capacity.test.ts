@@ -1,6 +1,6 @@
 import {create} from '@bufbuild/protobuf';
 import {describe, expect, it} from 'vitest';
-import * as pb from '../gen/dashboard/v2/data_pb';
+import * as pb from '../gen/dashboard/data_pb';
 import {
   busyMinutes,
   capacityFor,

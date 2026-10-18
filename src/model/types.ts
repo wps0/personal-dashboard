@@ -1,6 +1,6 @@
 /**
  * @fileoverview The data model. Records are the protobuf messages generated
- * from proto/dashboard/v2/data.proto, which documents their fields: make new
+ * from proto/dashboard/data.proto, which documents their fields: make new
  * ones with `create()` (nested records too), change them by copying (spread
  * keeps a message a message). Code must cope with enum values it doesn't
  * know, since a newer version of the app may add some.
@@ -12,7 +12,7 @@ import {
   type MessageInitShape,
   type MessageShape,
 } from '@bufbuild/protobuf';
-import * as pb from '../gen/dashboard/v2/data_pb';
+import * as pb from '../gen/dashboard/data_pb';
 import {defaultRules} from './capacity';
 
 export {
@@ -20,7 +20,7 @@ export {
   ItemKind,
   ItemStatus,
   ProgressMode,
-} from '../gen/dashboard/v2/data_pb';
+} from '../gen/dashboard/data_pb';
 
 export type Area = pb.Area;
 export type Project = pb.Project;

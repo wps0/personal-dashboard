@@ -11,7 +11,7 @@
 // are ISO 8601 strings.
 syntax = "proto3";
 
-package dashboard.v2;
+package dashboard;
 
 message AppData {
   // Raised on every change older versions of the app can't read correctly;

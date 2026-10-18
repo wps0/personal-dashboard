@@ -4,3 +4,7 @@ modules:
 lint:
   use:
     - STANDARD
+  except:
+    # The data carries its own schema_version (see data.proto); the package
+    # name stays the same across versions.
+    - PACKAGE_VERSION_SUFFIX
