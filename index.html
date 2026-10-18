@@ -1,6 +1,15 @@
 <!doctype html>
 <html lang="en">
   <head>
+    <!--
+      GitHub Pages can't send headers, so the policy is set here, before
+      anything it governs. https: in connect-src is for the iCal link. The
+      hash is the theme script's below (checked by src/csp.test.ts).
+    -->
+    <meta
+      http-equiv="Content-Security-Policy"
+      content="default-src 'none'; script-src 'self' 'sha256-wc2NscKmjjaKyESu5NPMrvafpm3kEN5p+7xaTADN7AY=' https://accounts.google.com/gsi/client; style-src 'self' https://accounts.google.com/gsi/style; img-src 'self' data:; font-src 'self'; connect-src 'self' https://www.googleapis.com https://generativelanguage.googleapis.com https://accounts.google.com/gsi/ https:; frame-src https://accounts.google.com/gsi/; worker-src 'self'; manifest-src 'self'; form-action 'none'; base-uri 'none'; object-src 'none'"
+    />
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta
