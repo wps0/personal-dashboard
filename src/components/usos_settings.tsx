@@ -1,5 +1,5 @@
 import {useState} from 'react';
-import {useGoogle} from '../google/auth';
+import {calendarConnected, useGoogle} from '../google/auth';
 import {useGoogleCalendars} from '../google/calendars';
 import type {UsosSource} from '../model/types';
 import {useStore} from '../store';
@@ -35,7 +35,7 @@ export function UsosSettings() {
   const source = useStore(s => s.data.settings.usos.source);
   const setSource = useStore.getState().setUsosSource;
   const calendars = useGoogle(s => s.calendars);
-  const signedIn = useGoogle(s => s.status === 'signed-in');
+  const signedIn = useGoogle(calendarConnected);
   const [check, setCheck] = useState<Check | null>(null);
   const kind: Kind = source.case ?? 'off';
 
@@ -104,7 +104,7 @@ export function UsosSettings() {
           </label>
         ) : (
           <p className="text-[12px] text-dim">
-            Sign in under Google Calendar above to choose a calendar.
+            Connect Google Calendar above to choose a calendar.
           </p>
         ))}
 

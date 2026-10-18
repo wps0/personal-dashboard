@@ -5,7 +5,7 @@ import {useUi} from '../ui';
 import {listCalendars, listEvents} from './api';
 import {clearGoogleError, reportGoogleError} from './status';
 import {useGoogleCalendars} from './calendars';
-import {useGoogle} from './auth';
+import {calendarConnected, useGoogle} from './auth';
 import {expandEvent, rangeBounds, type GEvent} from './events';
 
 const FRESH_MS = 5 * 60_000;
@@ -103,7 +103,9 @@ const EMPTY: GEvent[] = [];
  */
 export function useGoogleEvents(days: ISODate[]): Map<ISODate, GEvent[]> {
   useGoogleCalendars();
-  const status = useGoogle(s => s.status);
+  const connected = useGoogle(calendarConnected);
+  // While a session has expired, the events already loaded still show.
+  const shown = useGoogle(s => s.calendar && s.status !== 'signed-out');
   const ready = useGoogle(s => s.calendars.length > 0 && s.selected.length > 0);
   const from = days[0];
   const to = days[days.length - 1];
@@ -111,17 +113,13 @@ export function useGoogleEvents(days: ISODate[]): Map<ISODate, GEvent[]> {
   const hidden = useUi(s => s.hidden);
 
   useEffect(() => {
-    if (
-      status === 'signed-in' &&
-      ready &&
-      (!entry || Date.now() - entry.at > FRESH_MS)
-    )
+    if (connected && ready && (!entry || Date.now() - entry.at > FRESH_MS))
       void fetchRange(from, to);
-  }, [status, ready, from, to, entry]);
+  }, [connected, ready, from, to, entry]);
 
   return useMemo(() => {
     const m = new Map<ISODate, GEvent[]>();
-    if (status === 'signed-out' || !entry) return m;
+    if (!shown || !entry) return m;
     for (const e of entry.events) {
       if (hidden.includes(`g:${e.calendarId}`)) continue;
       const list = m.get(e.date);
@@ -129,7 +127,7 @@ export function useGoogleEvents(days: ISODate[]): Map<ISODate, GEvent[]> {
       else m.set(e.date, [e]);
     }
     return m;
-  }, [entry, hidden, status]);
+  }, [entry, hidden, shown]);
 }
 
 export const noGoogleEvents = EMPTY;

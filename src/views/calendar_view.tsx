@@ -16,7 +16,7 @@ import {
 } from '../model/dates';
 import {calViewOf, type ISODate} from '../model/types';
 import {href, navigate, type CalView} from '../router';
-import {useGoogle} from '../google/auth';
+import {calendarConnected, useGoogle} from '../google/auth';
 import {useGoogleCalendars} from '../google/calendars';
 import {clearGoogleCache} from '../google/use_google_events';
 import {GoogleErrorNotice} from '../components/google_error_notice';
@@ -276,7 +276,7 @@ function GoogleLayers() {
       </a>
     );
   }
-  if (g.status !== 'signed-in') {
+  if (!calendarConnected(g)) {
     return (
       <div className="px-1">
         <div className="mb-1 text-[13px] font-medium text-strong">
@@ -284,14 +284,14 @@ function GoogleLayers() {
         </div>
         <button
           className="btn"
-          onClick={() => void g.signIn()}
+          onClick={() => void g.connectCalendar()}
           disabled={g.status === 'signing-in'}
         >
-          {g.status === 'expired'
+          {g.calendar && g.status === 'expired'
             ? 'Reconnect'
             : g.status === 'signing-in'
               ? 'Waiting…'
-              : 'Sign in'}
+              : 'Connect'}
         </button>
         {g.error && <p className="mt-1 text-[11px] text-danger">{g.error}</p>}
       </div>

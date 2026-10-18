@@ -93,7 +93,8 @@ The app can show your Google calendars next to your plan. It requests only two
 read-only scopes, `calendar.events.readonly` and
 `calendar.calendarlist.readonly`, so it can read events and your calendar list
 but never create, change or delete anything (it can't read calendar settings or
-sharing either). There's no backend: the browser talks to Google directly, and the
+sharing either). It asks for them only when you connect the calendar, so using
+just Drive sync never grants calendar access. There's no backend: the browser talks to Google directly, and the
 access token lives in the current tab for up to an hour.
 
 One-time setup (free, about 5 minutes):

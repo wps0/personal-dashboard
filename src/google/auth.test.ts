@@ -11,6 +11,7 @@ vi.stubGlobal('sessionStorage', storage);
 
 /** A fake Google Identity Services that grants what `grant` lists. */
 let requested = '';
+let revoked = 0;
 let includeGranted: boolean | undefined;
 let grant: (scope: string) => string = s => s;
 vi.stubGlobal('window', {
@@ -34,7 +35,7 @@ vi.stubGlobal('window', {
         }),
         hasGrantedAllScopes: (r: {scope: string}, ...s: string[]) =>
           s.every(x => r.scope.split(' ').includes(x)),
-        revoke: () => {},
+        revoke: () => void revoked++,
       },
     },
   },
@@ -43,14 +44,17 @@ vi.stubGlobal('window', {
 const {DRIVE_SCOPE, SCOPES, hasDriveAccess, useGoogle} = await import('./auth');
 
 describe('Drive access in the Google sign-in', () => {
-  beforeEach(() =>
+  beforeEach(() => {
+    requested = '';
     useGoogle.setState({
       clientId: 'id',
       driveSync: false,
+      calendar: true,
+      status: 'signed-out',
       token: undefined,
       error: undefined,
-    }),
-  );
+    });
+  });
 
   it('is not requested while Drive sync is off', async () => {
     await useGoogle.getState().signIn();
@@ -80,11 +84,76 @@ describe('Drive access in the Google sign-in', () => {
     grant = s => s;
   });
 
+  it('asks for Drive alone when the calendar is off', async () => {
+    useGoogle.setState({calendar: false});
+    await useGoogle.getState().signIn();
+    expect(requested).toBe('');
+    useGoogle.getState().setDriveSync(true);
+    await vi.waitFor(() => expect(requested).toBe(DRIVE_SCOPE));
+    expect(useGoogle.getState().status).toBe('signed-in');
+  });
+
+  it('connects the calendar on demand, and swaps in a Drive-only token when it’s disconnected', async () => {
+    useGoogle.setState({calendar: false, driveSync: true});
+    await useGoogle.getState().connectCalendar();
+    expect(requested.split(' ').sort()).toEqual(
+      [...SCOPES, DRIVE_SCOPE].sort(),
+    );
+    expect(useGoogle.getState().calendar).toBe(true);
+
+    useGoogle.getState().disconnectCalendar();
+    await vi.waitFor(() => expect(requested).toBe(DRIVE_SCOPE));
+    expect(useGoogle.getState().calendar).toBe(false);
+    expect(hasDriveAccess(useGoogle.getState().token)).toBe(true);
+  });
+
+  it('gives access back when neither the calendar nor sync is on', async () => {
+    useGoogle.setState({calendar: false});
+    useGoogle.getState().setDriveSync(true);
+    await vi.waitFor(() =>
+      expect(useGoogle.getState().status).toBe('signed-in'),
+    );
+    const before = revoked;
+    useGoogle.getState().setDriveSync(false);
+    expect(useGoogle.getState().status).toBe('signed-out');
+    await vi.waitFor(() => expect(revoked).toBe(before + 1));
+  });
+
+  it('keeps sync working if the calendar permissions are refused', async () => {
+    grant = s =>
+      s
+        .split(' ')
+        .filter(x => x === DRIVE_SCOPE)
+        .join(' ');
+    useGoogle.setState({driveSync: true});
+    await useGoogle.getState().signIn();
+    expect(useGoogle.getState().status).toBe('signed-in');
+    expect(useGoogle.getState().calendar).toBe(false);
+    expect(useGoogle.getState().error).toMatch(/calendar stays off/);
+    expect(hasDriveAccess(useGoogle.getState().token)).toBe(true);
+    grant = s => s;
+  });
+
   it('only counts unexpired tokens that carry the Drive scope', () => {
     const t = {value: 'x', expiresAt: Date.now() + 60_000, scope: DRIVE_SCOPE};
     expect(hasDriveAccess(t)).toBe(true);
     expect(hasDriveAccess({...t, expiresAt: Date.now() - 1})).toBe(false);
     expect(hasDriveAccess({...t, scope: undefined})).toBe(false);
     expect(hasDriveAccess(undefined)).toBe(false);
+  });
+});
+
+describe('Calendar preference', () => {
+  it('stays on for people who connected the calendar before it existed', async () => {
+    const key = 'personal-dashboard/google';
+    const fresh = async (prefs: object) => {
+      store.set(key, JSON.stringify(prefs));
+      vi.resetModules();
+      return (await import('./auth')).useGoogle.getState().calendar;
+    };
+    expect(await fresh({clientId: 'id', consented: true})).toBe(true);
+    expect(await fresh({clientId: 'id'})).toBe(false);
+    expect(await fresh({consented: true, calendar: false})).toBe(false);
+    store.delete(key);
   });
 });
