@@ -1,7 +1,8 @@
 import 'fake-indexeddb/auto';
 import {describe, expect, it} from 'vitest';
 import {sampleData} from '../model/sample';
-import {IndexedDbStorage, parseAppData} from './storage';
+import {parseAppData} from './parse_v1';
+import {IndexedDbStorage} from './storage';
 
 describe('storage', () => {
   it('round-trips data through IndexedDB', async () => {

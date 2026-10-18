@@ -13,7 +13,7 @@ import {fromBinary, toBinary, toJson, type JsonValue} from '@bufbuild/protobuf';
 import {base64Decode, base64Encode} from '@bufbuild/protobuf/wire';
 import * as pb from '../gen/dashboard/v2/data_pb';
 import {fromV1} from './from_v1';
-import {parseAppData} from './storage';
+import {parseAppData} from './parse_v1';
 
 /** The current stored format. Older formats are converted on reading. */
 export const FORMAT = 2;

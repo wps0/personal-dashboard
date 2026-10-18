@@ -1,6 +1,7 @@
 import type {DriveFile} from '../google/drive';
 import {emptyData, type AppData} from '../model/types';
-import {exportJson, parseAppData} from '../storage/storage';
+import {parseAppData} from '../storage/parse_v1';
+import {exportJson} from '../storage/storage';
 import {mergeData, same, type Conflict} from './merge';
 
 /** Where this device stands with Drive: the file, and its version and content at the last sync. */
