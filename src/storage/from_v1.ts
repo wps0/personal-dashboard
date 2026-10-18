@@ -38,15 +38,12 @@ function itemFromV1(i: v1.Item): pb.Item {
   return create(pb.ItemSchema, {
     ...i,
     source: i.source
-      ? create(pb.ItemSourceSchema, {
-          source: {case: 'usosMeeting', value: i.source.key},
-        })
+      ? create(pb.ItemSourceSchema, {source: i.source.source})
       : undefined,
   });
 }
 
 function settingsFromV1(s: v1.Settings): pb.Settings {
-  const source = s.usos.source;
   return create(pb.SettingsSchema, {
     capacityRules: s.capacityRules.map(ruleFromV1),
     dayCapacity: Object.fromEntries(
@@ -58,12 +55,7 @@ function settingsFromV1(s: v1.Settings): pb.Settings {
     defaultEventMinutes: s.defaultEventMinutes,
     defaultCalendarView: s.defaultCalendarView,
     usos: create(pb.UsosSettingsSchema, {
-      source:
-        source?.kind === 'google'
-          ? {case: 'googleCalendarId', value: source.calendarId}
-          : source?.kind === 'ical'
-            ? {case: 'icalUrl', value: source.url}
-            : {case: undefined},
+      source: s.usos.source,
       handled: [...s.usos.handled],
     }),
   });
@@ -74,9 +66,9 @@ function ruleFromV1(rule: CapacityRule): pb.CapacityRule {
     from: rule.from,
     windows: rule.windows.map(w => create(pb.TimeRangeSchema, w)),
     adjustment: rule.adjustment,
-    reserved: (rule.reserved ?? []).map(day =>
+    reserved: rule.reserved.map(day =>
       create(pb.ReservedDaySchema, {
-        ranges: day.map(r => create(pb.TimeRangeSchema, r)),
+        ranges: day.ranges.map(r => create(pb.TimeRangeSchema, r)),
       }),
     ),
   });

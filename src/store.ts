@@ -68,7 +68,7 @@ interface Actions {
   changeCapacityRule(patch: Partial<Omit<CapacityRule, 'from'>>): void;
   setDefaultEventMinutes(minutes: number): void;
   setDefaultCalendarView(view: CalendarView): void;
-  setUsosSource(source: UsosSource | undefined): void;
+  setUsosSource(source: UsosSource): void;
   /** Remembers class meetings as imported or skipped, so they aren't offered again. */
   markUsosHandled(keys: string[]): void;
   /** Per-day tweak; ignored for past days. `null` resets the day. */

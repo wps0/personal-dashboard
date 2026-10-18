@@ -1,6 +1,7 @@
 import {beforeEach, describe, expect, it, vi} from 'vitest';
 import {GoogleApiError} from '../google/errors';
 import {sampleData} from '../model/sample';
+import {exportJson} from '../storage/storage';
 import {emptyData, type AppData} from '../model/types';
 import {FakeDrive} from './fakeDrive';
 import {same} from './merge';
@@ -61,7 +62,7 @@ describe('SyncRunner', () => {
     // Drive gets a change from another device.
     const other = structuredClone(state.data);
     other.items[0].title = 'From the phone';
-    await drive.updateFile([...drive.files.keys()][0], JSON.stringify(other));
+    await drive.updateFile([...drive.files.keys()][0], exportJson(other));
 
     // The user edits something while the download is in flight.
     const download = drive.download.bind(drive);

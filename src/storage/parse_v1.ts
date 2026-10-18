@@ -4,7 +4,12 @@
  * values.
  */
 
-import {defaultRules, rulesFromLegacyHours} from '../model/capacity';
+import {
+  defaultRules,
+  rulesFromLegacyHours,
+  type CapacityRule,
+  type Reserved,
+} from '../model/capacity';
 import {
   CalendarView,
   ItemKind,
@@ -48,12 +53,21 @@ const CALENDAR_VIEWS: Record<string, CalendarView> = {
   month: CalendarView.MONTH,
 };
 
-/** v1 JSON as stored: the enums are strings. */
+/** v1 JSON as stored: enums are strings, and some shapes differ. */
 interface StoredV1 {
   version?: unknown;
-  items?: Array<{kind?: string; status?: string}>;
+  items?: Array<{
+    kind?: string;
+    status?: string;
+    source?: {kind?: string; key?: unknown};
+  }>;
   projects?: Array<{progressMode?: string}>;
   settings?: unknown;
+}
+
+/** A v1 capacity rule: reserved time was an array of ranges per weekday. */
+interface StoredRuleV1 extends Omit<CapacityRule, 'reserved'> {
+  reserved?: Reserved[][];
 }
 
 /** Validates and normalizes data from storage or an imported file. Throws on garbage. */
@@ -79,6 +93,10 @@ export function parseAppData(raw: unknown): AppData {
       ...i,
       kind: ITEM_KINDS[i.kind ?? ''] ?? ItemKind.TASK,
       status: ITEM_STATUSES[i.status ?? ''] ?? ItemStatus.TODO,
+      source:
+        i.source?.kind === 'usos' && typeof i.source.key === 'string'
+          ? {source: {case: 'usosMeeting' as const, value: i.source.key}}
+          : undefined,
     })),
     events: Array.isArray(r.events) ? r.events : [],
     dayNotes: r.dayNotes ?? {},
@@ -89,11 +107,18 @@ export function parseAppData(raw: unknown): AppData {
 
 function parseSettings(raw: unknown): AppData['settings'] {
   const s = (raw ?? {}) as Partial<
-    Omit<AppData['settings'], 'defaultCalendarView'>
-  > & {capacity?: number[]; defaultCalendarView?: string};
+    Omit<AppData['settings'], 'defaultCalendarView' | 'capacityRules'>
+  > & {
+    capacity?: number[];
+    capacityRules?: StoredRuleV1[];
+    defaultCalendarView?: string;
+  };
   const capacityRules =
     Array.isArray(s.capacityRules) && s.capacityRules.length
-      ? s.capacityRules
+      ? s.capacityRules.map(rule => ({
+          ...rule,
+          reserved: (rule.reserved ?? []).map(ranges => ({ranges})),
+        }))
       : Array.isArray(s.capacity) && s.capacity.length === 7
         ? rulesFromLegacyHours(s.capacity) // before planning windows existed
         : defaultRules();
@@ -113,15 +138,22 @@ function parseSettings(raw: unknown): AppData['settings'] {
   };
 }
 
+/** v1's timetable source: a tagged union. */
+interface StoredUsosSourceV1 {
+  kind?: string;
+  calendarId?: unknown;
+  url?: unknown;
+}
+
 function parseUsos(raw: unknown): UsosSettings {
-  const u = (raw ?? {}) as Partial<UsosSettings>;
-  const src = u.source as Partial<UsosSource> | undefined;
-  const source: UsosSource | undefined =
+  const u = (raw ?? {}) as {source?: StoredUsosSourceV1; handled?: unknown};
+  const src = u.source;
+  const source: UsosSource =
     src?.kind === 'google' && typeof src.calendarId === 'string'
-      ? {kind: 'google', calendarId: src.calendarId}
+      ? {case: 'googleCalendarId', value: src.calendarId}
       : src?.kind === 'ical' && typeof src.url === 'string'
-        ? {kind: 'ical', url: src.url}
-        : undefined;
+        ? {case: 'icalUrl', value: src.url}
+        : {case: undefined};
   const handled = Array.isArray(u.handled)
     ? u.handled.filter((k): k is string => typeof k === 'string')
     : [];

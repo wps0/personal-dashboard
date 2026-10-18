@@ -10,16 +10,19 @@ import v1Sample from './testdata/v1_sample.json';
 describe('toV1', () => {
   it('gives back the same data that went in', () => {
     const data = parseAppData(structuredClone(v1Sample));
-    data.items[0].source = {kind: 'usos', key: 'abc'};
+    data.items[0].source = {source: {case: 'usosMeeting', value: 'abc'}};
     data.events[0].allDay = true;
     data.settings.defaultCalendarView = pb.CalendarView.MONTH;
     data.settings.dayCapacity['2026-10-13'] = {delta: -1};
     data.settings.usos = {
-      source: {kind: 'google', calendarId: 'usos@group.calendar.google.com'},
+      source: {
+        case: 'googleCalendarId',
+        value: 'usos@group.calendar.google.com',
+      },
       handled: ['a'],
     };
     data.settings.capacityRules[0].reserved = [
-      [{start: '23:00', end: '07:00'}],
+      {ranges: [{start: '23:00', end: '07:00'}]},
     ];
     expect(same(toV1(fromV1(data)), data)).toBe(true);
   });

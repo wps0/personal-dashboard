@@ -110,7 +110,7 @@ describe('storage', () => {
       allocations: [],
     };
     expect(parseAppData(base).settings.usos).toEqual({
-      source: undefined,
+      source: {case: undefined},
       handled: [],
     });
     const ok = {
@@ -119,7 +119,7 @@ describe('storage', () => {
     };
     expect(parseAppData({...base, settings: {usos: ok}}).settings.usos).toEqual(
       {
-        source: {kind: 'ical', url: 'https://usosweb.example/plan.ics'},
+        source: {case: 'icalUrl', value: 'https://usosweb.example/plan.ics'},
         handled: ['a@2026-10-14T10:15'],
       },
     );
@@ -128,7 +128,7 @@ describe('storage', () => {
         ...base,
         settings: {usos: {source: {kind: 'google'}, handled: 'x'}},
       }).settings.usos,
-    ).toEqual({source: undefined, handled: []});
+    ).toEqual({source: {case: undefined}, handled: []});
   });
 
   it('migrates old data: fixed capacity hours and lecture statuses', () => {

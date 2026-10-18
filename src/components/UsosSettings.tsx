@@ -7,12 +7,12 @@ import {coursesIn, fetchMeetings, isValidICalUrl} from '../usos/fetch';
 import {BufferedInput} from './Buffered';
 import {Select} from './ui/Select';
 
-type Kind = 'off' | UsosSource['kind'];
+type Kind = 'off' | NonNullable<UsosSource['case']>;
 
 const KINDS = [
   {value: 'off', label: 'Off'},
-  {value: 'google', label: 'One of my Google calendars'},
-  {value: 'ical', label: 'iCal link'},
+  {value: 'googleCalendarId', label: 'One of my Google calendars'},
+  {value: 'icalUrl', label: 'iCal link'},
 ] as const;
 
 const plural = (n: number, one: string, many: string) =>
@@ -36,18 +36,18 @@ export function UsosSettings() {
   const calendars = useGoogle(s => s.calendars);
   const signedIn = useGoogle(s => s.status === 'signed-in');
   const [check, setCheck] = useState<Check | null>(null);
-  const kind: Kind = source?.kind ?? 'off';
+  const kind: Kind = source.case ?? 'off';
 
   const pickKind = (k: Kind) => {
     setCheck(null);
-    if (k === 'off') setSource(undefined);
-    else if (k === 'google')
-      setSource({kind: 'google', calendarId: calendars[0]?.id ?? ''});
-    else setSource({kind: 'ical', url: ''});
+    if (k === 'off') setSource({case: undefined});
+    else if (k === 'googleCalendarId')
+      setSource({case: k, value: calendars[0]?.id ?? ''});
+    else setSource({case: k, value: ''});
   };
 
   const runCheck = async () => {
-    if (!source) return;
+    if (!source.case) return;
     setCheck({state: 'loading'});
     try {
       const {meetings, warnings} = await fetchMeetings(source);
@@ -63,9 +63,9 @@ export function UsosSettings() {
   };
 
   const ready =
-    source?.kind === 'google'
-      ? signedIn && !!source.calendarId
-      : source?.kind === 'ical' && isValidICalUrl(source.url);
+    source.case === 'googleCalendarId'
+      ? signedIn && !!source.value
+      : source.case === 'icalUrl' && isValidICalUrl(source.value);
 
   return (
     <div className="space-y-3">
@@ -80,15 +80,15 @@ export function UsosSettings() {
         />
       </label>
 
-      {source?.kind === 'google' &&
+      {source.case === 'googleCalendarId' &&
         (signedIn ? (
           <label className="flex flex-wrap items-center gap-x-3 gap-y-1">
             <span className="w-full sm:w-48">Calendar</span>
             <Select
-              value={source.calendarId}
+              value={source.value}
               onChange={calendarId => {
                 setCheck(null);
-                setSource({kind: 'google', calendarId});
+                setSource({case: 'googleCalendarId', value: calendarId});
               }}
               options={calendars.map(c => ({
                 value: c.id,
@@ -107,15 +107,15 @@ export function UsosSettings() {
           </p>
         ))}
 
-      {source?.kind === 'ical' && (
+      {source.case === 'icalUrl' && (
         <label className="flex flex-wrap items-center gap-x-3 gap-y-1">
           <span className="w-full sm:w-48">iCal link</span>
           <BufferedInput
-            value={source.url}
+            value={source.value}
             placeholder="https://usosweb…/plan.ics"
             onCommit={url => {
               setCheck(null);
-              setSource({kind: 'ical', url: url.trim()});
+              setSource({case: 'icalUrl', value: url.trim()});
             }}
             className="field h-8 min-w-0 flex-1"
             spellCheck={false}
@@ -128,7 +128,7 @@ export function UsosSettings() {
         </label>
       )}
 
-      {source && (
+      {source.case && (
         <div className="space-y-2">
           <button
             className="btn"
@@ -137,9 +137,9 @@ export function UsosSettings() {
           >
             {check?.state === 'loading' ? 'Checking…' : 'Check'}
           </button>
-          {source.kind === 'ical' &&
-            source.url &&
-            !isValidICalUrl(source.url) && (
+          {source.case === 'icalUrl' &&
+            source.value &&
+            !isValidICalUrl(source.value) && (
               <p className="text-[12px] text-danger">
                 The link must start with https://.
               </p>

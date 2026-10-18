@@ -3,6 +3,8 @@ import {
   ItemKind,
   ItemStatus,
   ProgressMode,
+  type ItemSource as ItemSourceMessage,
+  type UsosSettings as UsosSettingsMessage,
 } from '../gen/dashboard/v2/data_pb';
 import {defaultRules, type CapacityRule, type DayCapacity} from './capacity';
 
@@ -85,8 +87,8 @@ export interface Item {
   /** Markdown notes: details, links, where you stopped. */
   notes?: string;
   createdAt: string;
-  /** The USOS class meeting this task was imported from. */
-  source?: {kind: 'usos'; key: string};
+  /** Where this task was imported from, if it was. */
+  source?: ItemSource;
 }
 
 /** A slice of an item planned on a given day. One item may have many. */
@@ -117,12 +119,16 @@ export interface CalendarEvent {
   notes?: string;
 }
 
-/** Where the USOS timetable comes from. */
-export type UsosSource =
-  {kind: 'google'; calendarId: string} | {kind: 'ical'; url: string};
+/** Where an item was imported from: a USOS class meeting, by its key. */
+export interface ItemSource {
+  source: ItemSourceMessage['source'];
+}
+
+/** Where the USOS timetable comes from: a Google calendar, an iCal link, or nowhere (off). */
+export type UsosSource = UsosSettingsMessage['source'];
 
 export interface UsosSettings {
-  source?: UsosSource;
+  source: UsosSource;
   /** Class meetings already imported or skipped (keys); never offered again. */
   handled: string[];
 }
@@ -179,7 +185,7 @@ export function emptyData(): AppData {
       dayCapacity: {},
       defaultEventMinutes: 60,
       defaultCalendarView: CalendarView.WEEK,
-      usos: {handled: []},
+      usos: {source: {case: undefined}, handled: []},
     },
   };
 }

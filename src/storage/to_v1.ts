@@ -67,7 +67,6 @@ function projectToV1(p: pb.Project): v1.Project {
 }
 
 function itemToV1(i: pb.Item): v1.Item {
-  const source = i.source?.source;
   return withoutUndefined({
     id: i.id,
     projectId: i.projectId,
@@ -79,15 +78,11 @@ function itemToV1(i: pb.Item): v1.Item {
     estimateHours: i.estimateHours,
     notes: i.notes,
     createdAt: i.createdAt,
-    source:
-      source?.case === 'usosMeeting'
-        ? {kind: 'usos' as const, key: source.value}
-        : undefined,
+    source: i.source ? {source: i.source.source} : undefined,
   });
 }
 
 function settingsToV1(s: pb.Settings | undefined): v1.Settings {
-  const source = s?.usos?.source;
   return {
     capacityRules: s?.capacityRules.length
       ? s.capacityRules.map(ruleToV1)
@@ -101,12 +96,7 @@ function settingsToV1(s: pb.Settings | undefined): v1.Settings {
     defaultEventMinutes: s?.defaultEventMinutes || 60,
     defaultCalendarView: s?.defaultCalendarView ?? pb.CalendarView.WEEK,
     usos: {
-      source:
-        source?.case === 'googleCalendarId'
-          ? {kind: 'google', calendarId: source.value}
-          : source?.case === 'icalUrl'
-            ? {kind: 'ical', url: source.value}
-            : undefined,
+      source: s?.usos?.source ?? {case: undefined},
       handled: [...(s?.usos?.handled ?? [])],
     },
   };
@@ -117,13 +107,11 @@ function ruleToV1(rule: pb.CapacityRule): CapacityRule {
     from: rule.from,
     windows: rule.windows.map(w => ({start: w.start, end: w.end})),
     adjustment: rule.adjustment,
-    reserved: rule.reserved.length
-      ? rule.reserved.map(day =>
-          day.ranges.map(r =>
-            withoutUndefined({start: r.start, end: r.end, label: r.label}),
-          ),
-        )
-      : undefined,
+    reserved: rule.reserved.map(day => ({
+      ranges: day.ranges.map(r =>
+        withoutUndefined({start: r.start, end: r.end, label: r.label}),
+      ),
+    })),
   });
 }
 

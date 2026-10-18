@@ -40,7 +40,7 @@ describe('importClasses', () => {
         kind: ItemKind.CLASS,
         title: 'WYK · Wed 21 Oct, 10:15',
         heldOn: '2026-10-21',
-        source: {kind: 'usos', key: 'b'},
+        source: {source: {case: 'usosMeeting', value: 'b'}},
       },
     ]);
     expect(settings.usos.handled).toEqual(['a', 'b']);

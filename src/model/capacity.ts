@@ -18,8 +18,16 @@ export interface CapacityRule {
   windows: PlanningWindow[];
   /** Hours added to (or, if negative, removed from) every day. */
   adjustment: number;
-  /** Reserved time per weekday (sleep, work), shown hatched on the calendar. Informational only. */
-  reserved?: Reserved[][];
+  /**
+   * Reserved time per weekday (sleep, work), Monday first, shown hatched on
+   * the calendar. Informational only. Empty: the defaults.
+   */
+  reserved: ReservedDay[];
+}
+
+/** One weekday's reserved time. */
+export interface ReservedDay {
+  ranges: Reserved[];
 }
 
 /** A reserved time range; `end` before `start` wraps past midnight (e.g. sleep 23:00–07:00). */
@@ -54,14 +62,18 @@ const DEFAULT_WINDOWS: PlanningWindow[] = [
 ];
 
 const SLEEP: Reserved = {start: '23:00', end: '07:00', label: 'Sleep'};
-export const DEFAULT_RESERVED: Reserved[][] = [
-  ...Array.from({length: 5}, () => [
-    SLEEP,
-    {start: '09:00', end: '17:00', label: 'Work'},
-  ]),
-  [SLEEP],
-  [SLEEP],
+export const DEFAULT_RESERVED: ReservedDay[] = [
+  ...Array.from({length: 5}, () => ({
+    ranges: [SLEEP, {start: '09:00', end: '17:00', label: 'Work'}],
+  })),
+  {ranges: [SLEEP]},
+  {ranges: [SLEEP]},
 ];
+
+/** A rule's reserved time per weekday, or the defaults if it has none. */
+export function reservedDays(rule: CapacityRule): ReservedDay[] {
+  return rule.reserved.length ? rule.reserved : DEFAULT_RESERVED;
+}
 
 export function defaultRules(): CapacityRule[] {
   return [
@@ -80,8 +92,7 @@ export function reservedFor(
   date: ISODate,
 ): {start: number; end: number; label?: string}[] {
   const ranges =
-    (ruleFor(rules, date).reserved ?? DEFAULT_RESERVED)[weekdayIndex(date)] ??
-    [];
+    reservedDays(ruleFor(rules, date))[weekdayIndex(date)]?.ranges ?? [];
   return ranges.flatMap(r => {
     const s = toMinutes(r.start);
     const e = toMinutes(r.end);

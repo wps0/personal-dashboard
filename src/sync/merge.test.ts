@@ -93,6 +93,17 @@ describe('merge3', () => {
     expect(data.dayNotes['2026-10-14']).toBe('theirs');
   });
 
+  it('merges a oneof as a whole, never mixing its case and value', () => {
+    const base = {source: {case: 'googleCalendarId', value: 'cal-a'}};
+    const local = {source: {case: 'googleCalendarId', value: 'cal-b'}};
+    const remote = {
+      source: {case: 'icalUrl', value: 'https://x.example/p.ics'},
+    };
+    const {value, conflicts} = merge3(base, local, remote);
+    expect(value).toEqual(local);
+    expect(conflicts.map(c => c.path)).toEqual([['source']]);
+  });
+
   it('merges lists of plain values as sets', () => {
     const {value} = merge3(
       {handled: ['a', 'b']},

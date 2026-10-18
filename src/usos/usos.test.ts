@@ -298,7 +298,9 @@ describe('taskFromMeeting', () => {
       title: 'WYK · Wed 14 Oct, 10:15',
       heldOn: '2026-10-14',
       notes: 'WYK 10:15–12:00 · Banacha 2, sala 3180',
-      source: {kind: 'usos', key: 'usos-1@2026-10-14T10:15'},
+      source: {
+        source: {case: 'usosMeeting', value: 'usos-1@2026-10-14T10:15'},
+      },
     });
   });
 });

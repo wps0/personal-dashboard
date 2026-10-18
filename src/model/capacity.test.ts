@@ -45,6 +45,7 @@ describe('capacity', () => {
         from: '0000-01-01',
         windows: Array(7).fill({start: '18:00', end: '22:00'}),
         adjustment: -0.5,
+        reserved: [],
       },
     ];
     const monday = '2026-10-12';

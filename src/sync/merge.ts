@@ -20,6 +20,8 @@ const isObj = (v: Json): v is Obj =>
 const hasIds = (v: Json): v is WithId[] =>
   Array.isArray(v) &&
   v.every(x => isObj(x) && typeof (x as Obj).id === 'string');
+/** A protobuf `oneof` ({case, value}): its parts only make sense together. */
+const isOneof = (v: Json) => isObj(v) && 'case' in v;
 const isScalars = (v: Json): v is (string | number | boolean)[] =>
   Array.isArray(v) && v.every(x => x === null || typeof x !== 'object');
 
@@ -46,6 +48,7 @@ export function same(a: Json, b: Json): boolean {
  * - a change made on one side only is taken from that side;
  * - objects merge key by key, and arrays of `{id}` objects record by record,
  *   so different fields of the same task edited on two devices both survive;
+ *   a protobuf `oneof` ({case, value}) merges as a whole;
  * - arrays of plain values merge as sets;
  * - a real conflict (the same value changed differently on both sides) keeps
  *   this device's value, except that an edit wins over a deletion.
@@ -68,7 +71,8 @@ function mergeValue(
   if (same(l, b)) return r;
   if (same(r, b)) return l;
   // Both sides changed it, differently.
-  if (isObj(l) && isObj(r)) return mergeObj(b, l, r, path, conflicts);
+  if (isObj(l) && isObj(r) && !isOneof(l) && !isOneof(r))
+    return mergeObj(b, l, r, path, conflicts);
   if (hasIds(l) && hasIds(r))
     return mergeById(hasIds(b) ? b : [], l, r, path, conflicts);
   if (isScalars(l) && isScalars(r))

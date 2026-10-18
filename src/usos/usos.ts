@@ -320,6 +320,6 @@ export function taskFromMeeting(
     notes: [`${m.type} ${m.start}–${m.end}`, m.location]
       .filter(Boolean)
       .join(' · '),
-    source: {kind: 'usos', key: m.key},
+    source: {source: {case: 'usosMeeting', value: m.key}},
   };
 }
