@@ -75,10 +75,11 @@ export function actionFor(e: KeyLike): Action | null {
       return {type: 'move', dir: 'left'};
     case 'ArrowRight':
       return {type: 'move', dir: 'right'};
+    default:
+      if (/^[1-5]$/.test(e.key))
+        return {type: 'page', page: PAGES[Number(e.key) - 1]};
+      return null;
   }
-  if (/^[1-5]$/.test(e.key))
-    return {type: 'page', page: PAGES[Number(e.key) - 1]};
-  return null;
 }
 
 /** The help dialog's content, grouped. Kept next to the mapping so they can't drift apart. */

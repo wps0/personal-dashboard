@@ -14,6 +14,7 @@ import {useUi} from './ui';
 import {CalendarView} from './views/CalendarView';
 import {HomeView} from './views/HomeView';
 import {WeekView} from './views/WeekView';
+import {unreachable} from './unreachable';
 
 // Not needed for the first screen: loaded separately to keep the first load
 // small, then fetched in the background once the app is idle, so opening them
@@ -135,6 +136,8 @@ function Page({route}: {route: Route}) {
       return <ProjectsView selectedId={route.id} />;
     case 'settings':
       return <SettingsView />;
+    default:
+      return unreachable(route);
   }
 }
 
