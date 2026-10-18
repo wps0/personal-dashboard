@@ -6,7 +6,9 @@ const API = 'https://www.googleapis.com/drive/v3/files';
 const UPLOAD = 'https://www.googleapis.com/upload/drive/v3/files';
 /** Marks the app's files, so they're found even if renamed. */
 const MARK_KEY = 'personalDashboard';
-const FIELDS = 'id,version,modifiedTime';
+/** Set on a duplicate sync file when it's trashed: the file it was merged into. */
+const MERGED_KEY = 'personalDashboardMergedInto';
+const FIELDS = 'id,version,modifiedTime,createdTime';
 
 /** A file the app keeps in Drive. */
 interface FileKind {
@@ -39,15 +41,16 @@ export interface DriveFile {
   id: string;
   version: string;
   modifiedTime: string;
+  createdTime: string;
 }
 
 async function json<T>(res: Promise<Response>) {
   return (await res).json() as Promise<T>;
 }
 
-/** The most recently changed sync file, or null if there is none yet. */
-export async function findFile(): Promise<DriveFile | null> {
-  return find(DATA);
+/** All sync files, oldest first: normally one, but see sync.ts. */
+export async function listFiles(): Promise<DriveFile[]> {
+  return list(DATA, 'createdTime');
 }
 
 /** The file's current revision, or null if it was deleted or trashed. */
@@ -61,7 +64,49 @@ export async function fileInfo(id: string): Promise<DriveFile | null> {
     );
     return f.trashed
       ? null
-      : {id: f.id, version: f.version, modifiedTime: f.modifiedTime};
+      : {
+          id: f.id,
+          version: f.version,
+          modifiedTime: f.modifiedTime,
+          createdTime: f.createdTime,
+        };
+  } catch (e) {
+    if (e instanceof GoogleApiError && e.kind === 'not-found') return null;
+    throw e;
+  }
+}
+
+/** Moves a duplicate sync file to the trash, noting the file it was merged into. */
+export async function trash(id: string, into: string): Promise<void> {
+  try {
+    await googleFetch('drive', `${API}/${encodeURIComponent(id)}?fields=id`, {
+      method: 'PATCH',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({
+        trashed: true,
+        appProperties: {[MERGED_KEY]: into},
+      }),
+    });
+  } catch (e) {
+    // Already gone (e.g. another device's dedupe got there first).
+    if (e instanceof GoogleApiError && e.kind === 'not-found') return;
+    throw e;
+  }
+}
+
+/** The file a trashed duplicate was merged into (see trash), else null. */
+export async function mergedInto(id: string): Promise<string | null> {
+  try {
+    const f = await json<{
+      trashed?: boolean;
+      appProperties?: Record<string, string>;
+    }>(
+      googleFetch(
+        'drive',
+        `${API}/${encodeURIComponent(id)}?fields=trashed,appProperties`,
+      ),
+    );
+    return (f.trashed && f.appProperties?.[MERGED_KEY]) || null;
   } catch (e) {
     if (e instanceof GoogleApiError && e.kind === 'not-found') return null;
     throw e;
@@ -93,23 +138,23 @@ export async function updateFile(
 
 /** Writes the read-only copy of the data, making the file if needed. */
 export async function writeCopy(text: string): Promise<void> {
-  const copy = await find(COPY);
+  const [copy] = await list(COPY, 'modifiedTime desc');
   if (copy) await replace(COPY, copy.id, text);
   else await create(COPY, text);
 }
 
-async function find(kind: FileKind): Promise<DriveFile | null> {
+async function list(kind: FileKind, orderBy: string): Promise<DriveFile[]> {
   const params = new URLSearchParams({
     q: `appProperties has { key='${MARK_KEY}' and value='${kind.mark}' } and trashed = false`,
     spaces: 'drive',
-    orderBy: 'modifiedTime desc',
+    orderBy,
     pageSize: '10',
     fields: `files(${FIELDS})`,
   });
   const {files} = await json<{files?: DriveFile[]}>(
     googleFetch('drive', `${API}?${params}`),
   );
-  return files?.[0] ?? null;
+  return files ?? [];
 }
 
 async function create(

@@ -55,7 +55,7 @@ describe('SyncRunner', () => {
     const {runner, drive} = setUp(sample());
     await Promise.all([runner.sync(), runner.sync(), runner.sync()]);
     // The first creates the file; the queued one finds nothing new.
-    expect(drive.calls).toEqual(['find', 'create', 'copy', 'info']);
+    expect(drive.calls).toEqual(['list', 'create', 'copy', 'list', 'info']);
   });
 
   it('keeps edits made during a sync, and uploads them', async () => {
@@ -121,7 +121,8 @@ describe('SyncRunner', () => {
 
   it('reports offline, expired sessions and other errors', async () => {
     const {runner, deps} = setUp(sample());
-    const fail = (e: Error) => (deps.remote.findFile = () => Promise.reject(e));
+    const fail = (e: Error) =>
+      (deps.remote.listFiles = () => Promise.reject(e));
     fail(new GoogleApiError('offline', 'offline'));
     await runner.sync();
     expect(useSync.getState().status).toEqual({kind: 'offline'});

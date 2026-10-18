@@ -15,7 +15,9 @@ const {
   createFile,
   download,
   fileInfo,
-  findFile,
+  listFiles,
+  mergedInto,
+  trash,
   updateFile,
   writeCopy,
 } = await import('./drive');
@@ -26,7 +28,12 @@ const {SCOPES, useGoogle} = await import('./auth');
 function ok(body: unknown) {
   return new Response(JSON.stringify(body), {status: 200});
 }
-const file = {id: 'f1', version: '7', modifiedTime: '2026-10-13T10:00:00Z'};
+const file = {
+  id: 'f1',
+  version: '7',
+  modifiedTime: '2026-10-13T10:00:00Z',
+  createdTime: '2026-10-12T10:00:00Z',
+};
 
 describe('Drive access', () => {
   it('is limited to the files the app creates', () => {
@@ -51,27 +58,68 @@ describe('Drive client', () => {
     });
   });
 
-  it('finds the newest sync file by its app property, skipping the trash', async () => {
-    fetchMock.mockResolvedValueOnce(ok({files: [file]}));
-    expect(await findFile()).toEqual(file);
-    const q = new URL(call().url).searchParams.get('q');
-    expect(q).toBe(
+  it('lists all sync files by their app property, oldest first, skipping the trash', async () => {
+    const other = {...file, id: 'f2', createdTime: '2026-10-13T09:00:00Z'};
+    fetchMock.mockResolvedValueOnce(ok({files: [file, other]}));
+    expect(await listFiles()).toEqual([file, other]);
+    const params = new URL(call().url).searchParams;
+    expect(params.get('q')).toBe(
       "appProperties has { key='personalDashboard' and value='binpb' } and trashed = false",
     );
-    expect(new URL(call().url).searchParams.get('orderBy')).toBe(
-      'modifiedTime desc',
+    expect(params.get('orderBy')).toBe('createdTime');
+    expect(params.get('fields')).toBe(
+      'files(id,version,modifiedTime,createdTime)',
     );
     expect((call().init.headers as Record<string, string>).Authorization).toBe(
       'Bearer tok',
     );
 
-    fetchMock.mockResolvedValueOnce(ok({files: []}));
-    expect(await findFile()).toBeNull();
+    fetchMock.mockResolvedValueOnce(ok({}));
+    expect(await listFiles()).toEqual([]);
+  });
+
+  it('trashes a duplicate with the file it was merged into, gone or not', async () => {
+    fetchMock.mockResolvedValueOnce(ok({id: 'f2'}));
+    await trash('f2', 'f1');
+    const {url, init} = call();
+    expect(url).toMatch(/\/drive\/v3\/files\/f2\?fields=id$/);
+    expect(init.method).toBe('PATCH');
+    expect(JSON.parse(init.body as string)).toEqual({
+      trashed: true,
+      appProperties: {personalDashboardMergedInto: 'f1'},
+    });
+    expect((init.headers as Record<string, string>)['Content-Type']).toBe(
+      'application/json',
+    );
+
+    fetchMock.mockResolvedValueOnce(new Response('{}', {status: 404}));
+    await expect(trash('f2', 'f1')).resolves.toBeUndefined();
+    fetchMock.mockResolvedValueOnce(new Response('{}', {status: 400}));
+    await expect(trash('f2', 'f1')).rejects.toThrow(/Google Drive error 400/);
+  });
+
+  it('tells which file a trashed duplicate was merged into', async () => {
+    const merged = {personalDashboardMergedInto: 'f1'};
+    fetchMock.mockResolvedValueOnce(ok({trashed: true, appProperties: merged}));
+    expect(await mergedInto('f2')).toBe('f1');
+    expect(call().url).toMatch(/\/files\/f2\?fields=trashed,appProperties$/);
+    // Restored from the trash, trashed by the user, or deleted.
+    fetchMock.mockResolvedValueOnce(
+      ok({trashed: false, appProperties: merged}),
+    );
+    expect(await mergedInto('f2')).toBeNull();
+    fetchMock.mockResolvedValueOnce(ok({trashed: true}));
+    expect(await mergedInto('f2')).toBeNull();
+    fetchMock.mockResolvedValueOnce(new Response('{}', {status: 404}));
+    expect(await mergedInto('f2')).toBeNull();
   });
 
   it('reads the revision, treating a deleted or trashed file as gone', async () => {
     fetchMock.mockResolvedValueOnce(ok({...file, trashed: false}));
     expect(await fileInfo('f1')).toEqual(file);
+    expect(call().url).toMatch(
+      /\?fields=id,version,modifiedTime,createdTime,trashed$/,
+    );
     fetchMock.mockResolvedValueOnce(ok({...file, trashed: true}));
     expect(await fileInfo('f1')).toBeNull();
     fetchMock.mockResolvedValueOnce(new Response('{}', {status: 404}));

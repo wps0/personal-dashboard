@@ -292,6 +292,12 @@ Google Drive sync.
   its own copy in IndexedDB, so the app works offline; the sync base (the
   file's id and version, and the data at the last sync) is stored with it,
   in the same transaction as the data.
+- **Duplicate files.** If there are ever several (two first syncs at once, a
+  search lagging behind a new file), every sync merges them into the oldest
+  (like **Merge both**, with conflicts offered for review) and trashes the
+  others, noting which file each went into: a device that was on one of them
+  carries on with the oldest, keeping its edits. Nothing is merged or trashed
+  while one of them can't be read.
 - **Readable copy.** After every upload the app also writes
   `personal-dashboard.json` (protobuf's JSON form, with its own app property),
   for the user to read if the app breaks. The app never reads it; failing to

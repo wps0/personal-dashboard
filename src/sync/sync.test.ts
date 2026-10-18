@@ -1,5 +1,5 @@
 import {create, toBinary} from '@bufbuild/protobuf';
-import {beforeEach, describe, expect, it} from 'vitest';
+import {beforeEach, describe, expect, it, vi} from 'vitest';
 import * as pb from '../gen/dashboard/data_pb';
 import {encode, SCHEMA_VERSION, toReadableJson} from '../storage/codec';
 import {sampleData} from '../model/sample';
@@ -15,6 +15,10 @@ function edit(d: AppData, f: (d: AppData) => void) {
   const c = structuredClone(d);
   f(c);
   return c;
+}
+
+function area(id: string) {
+  return create(pb.AreaSchema, {id, name: id, color: '#fff'});
 }
 
 /** A device: its data and its base, synced with `drive`. */
@@ -41,7 +45,7 @@ describe('syncOnce', () => {
     expect(same(drive.content(), laptop.data)).toBe(true);
     drive.calls = [];
     expect((await laptop.sync()).kind).toBe('up-to-date');
-    expect(drive.calls).toEqual(['info']); // no download, no upload
+    expect(drive.calls).toEqual(['list', 'info']); // no download, no upload
   });
 
   it('brings a new device up to date, and carries edits both ways', async () => {
@@ -147,7 +151,7 @@ describe('syncOnce', () => {
     phone.data = edit(phone.data, d => (d.items[0].title = 'From the phone'));
     drive.calls = [];
     await phone.sync();
-    expect(drive.calls).toEqual(['info', 'update', 'copy']);
+    expect(drive.calls).toEqual(['list', 'info', 'update', 'copy']);
     expect(drive.copy).toBe(toReadableJson(phone.data));
   });
 
@@ -202,6 +206,117 @@ describe('syncOnce', () => {
     expect(laptop.data.events.length).toBe(sample().events.length);
     expect(laptop.data.items[0].title).toBe('Laptop');
     expect(same(drive.content(), laptop.data)).toBe(true);
+  });
+
+  describe('with more than one sync file', () => {
+    /** The phone's first sync made a second file: the search lagged behind the laptop's. */
+    async function twoFiles(phoneData: AppData, laptopData = sample()) {
+      const laptop = new Device(laptopData, drive);
+      await laptop.sync();
+      vi.spyOn(drive, 'listFiles').mockResolvedValueOnce([]);
+      const phone = new Device(phoneData, drive);
+      expect((await phone.sync()).kind).toBe('created');
+      expect([...drive.files.keys()]).toEqual(['f1', 'f2']);
+      return {laptop, phone};
+    }
+    const phoneOnly = () =>
+      edit(emptyData(), d => d.areas.push(area('a-phone'), area('a-old')));
+
+    it('merges them into the oldest and trashes the rest; both devices keep each other’s records', async () => {
+      const {laptop, phone} = await twoFiles(phoneOnly());
+      expect((await laptop.sync()).kind).toBe('pulled');
+      expect([...drive.files.keys()]).toEqual(['f1']);
+      expect(drive.trashed.get('f2')).toBe('f1');
+      expect(laptop.data.areas.map(a => a.id)).toContain('a-phone');
+      expect(laptop.data.items.length).toBe(sample().items.length);
+      expect(drive.copy).toBe(toReadableJson(drive.content()));
+
+      // The phone, still on the trashed file, carries on with the oldest.
+      phone.data = edit(phone.data, d => (d.dayNotes['2026-10-14'] = 'phone'));
+      expect((await phone.sync()).kind).toBe('merged');
+      expect(phone.base?.fileId).toBe('f1');
+      expect(phone.data.items.length).toBe(sample().items.length);
+      expect((await laptop.sync()).kind).toBe('pulled');
+      expect(laptop.data.dayNotes['2026-10-14']).toBe('phone');
+      expect(same(laptop.data, phone.data)).toBe(true);
+    });
+
+    it('keeps the edits of a device on the other file, deletions too', async () => {
+      const {phone} = await twoFiles(phoneOnly());
+      // Edited before the merge: one area deleted, a note added.
+      phone.data = edit(phone.data, d => {
+        d.areas = d.areas.filter(a => a.id !== 'a-old');
+        d.dayNotes['2026-10-14'] = 'phone';
+      });
+      const res = await phone.sync();
+      expect(res.kind).toBe('merged'); // not asked, as for an unrelated file
+      expect(drive.trashed.get('f2')).toBe('f1');
+      const areas = phone.data.areas.map(a => a.id);
+      expect(areas).toContain('a-phone');
+      expect(areas).not.toContain('a-old');
+      expect(phone.data.dayNotes['2026-10-14']).toBe('phone');
+      expect(phone.data.projects.length).toBe(sample().projects.length);
+      expect(same(drive.content(), phone.data)).toBe(true);
+    });
+
+    it('reports values the files have differently, keeping the oldest file’s', async () => {
+      const own = sample();
+      const {title} = own.items[0];
+      const {laptop} = await twoFiles(
+        edit(own, d => (d.items[0].title = 'Phone')),
+        own,
+      );
+      const res = await laptop.sync();
+      expect(res.kind !== 'choose' && res.conflicts).toEqual([
+        {
+          path: ['items', own.items[0].id, 'title'],
+          local: title,
+          remote: 'Phone',
+        },
+      ]);
+      expect(drive.content().items[0].title).toBe(title);
+    });
+
+    it('converges when two devices merge them at once', async () => {
+      const {laptop, phone} = await twoFiles(phoneOnly());
+      await Promise.all([laptop.sync(), phone.sync()]);
+      expect([...drive.files.keys()]).toEqual(['f1']);
+      expect(same(laptop.data, phone.data)).toBe(true);
+      expect(laptop.data.areas.map(a => a.id)).toContain('a-phone');
+
+      phone.data = edit(phone.data, d => (d.dayNotes['2026-10-14'] = 'phone'));
+      await phone.sync();
+      expect((await laptop.sync()).kind).toBe('pulled');
+      expect(same(laptop.data, phone.data)).toBe(true);
+    });
+
+    it('takes the oldest on a new device', async () => {
+      await twoFiles(phoneOnly());
+      const tablet = new Device(emptyData(), drive);
+      expect((await tablet.sync()).kind).toBe('pulled');
+      expect(tablet.base?.fileId).toBe('f1');
+      expect(tablet.data.areas.map(a => a.id)).toContain('a-phone');
+      expect(tablet.data.items.length).toBe(sample().items.length);
+    });
+
+    it('leaves them all alone while one can’t be read', async () => {
+      const {laptop, phone} = await twoFiles(phoneOnly());
+      const newer = toBinary(
+        pb.AppDataSchema,
+        create(pb.AppDataSchema, {schemaVersion: SCHEMA_VERSION + 1}),
+      );
+      drive.files.set('f2', {
+        ...drive.files.get('f2')!,
+        content: newer,
+        version: 9,
+      });
+      laptop.data = edit(laptop.data, d => (d.items[0].title = 'x'));
+      expect((await laptop.sync()).kind).toBe('pushed');
+      expect([...drive.files.keys()]).toEqual(['f1', 'f2']);
+      expect(drive.files.get('f2')!.content).toBe(newer);
+      expect(drive.calls).not.toContain('trash');
+      await expect(phone.sync()).rejects.toThrow(/can’t be read/);
+    });
   });
 
   it('makes a new file if the old one was deleted', async () => {
