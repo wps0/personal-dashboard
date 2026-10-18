@@ -371,6 +371,11 @@ Google Drive sync.
     on short events, calendar layers reachable.
   - Keyboard: start the selection on today's first planned row; let the `c`
     card take text like `15:00 Gym tomorrow`; arrow keys in the mini month.
+- **TODO — own subdomain.** Move the app from the shared `wps0.github.io`
+  origin to its own custom subdomain (a verified Pages custom domain with
+  Enforce HTTPS), and authorise only that origin in the OAuth client. Until
+  then it must stay the account's only Pages site (see 6). Moving changes the
+  origin, so each device starts empty there: sync from Drive, or export first.
 - **Later.** Suggested scheduling (a backward-from-deadline spread), timers,
   more card metrics (at-risk indicator, hours this week, backlog count),
   search, multi-day all-day events drawn as one spanning bar.
@@ -544,6 +549,9 @@ compares Gemini's output against the `*.expected.json` files.
   only from `main`. The build job can only read; only the deploy job (which
   runs no repository code) can publish. The `github-pages` environment must
   be limited to `main` in the repository settings, since the site's origin
-  holds the app's data and is trusted by the Google OAuth client.
+  holds the app's data and is trusted by the Google OAuth client. For the
+  same reason this must stay the account's only Pages site: every Pages site
+  of an account shares the `<user>.github.io` origin (see the README's Deploy
+  section).
 - **Changes** go in small, focused pull requests, stacked when they build on
   each other.

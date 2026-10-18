@@ -150,7 +150,24 @@ until you click **Connect**.
 ## Deploy
 
 `.github/workflows/deploy.yml` builds and publishes `main` to GitHub Pages.
-Enable it once under repo Settings → Pages → Source: **GitHub Actions**.
+Set it up once:
+
+1. Repo Settings → Pages → Source: **GitHub Actions**.
+2. Repo Settings → Environments → `github-pages` → Deployment branches and
+   tags: only `main`.
+
+**Keep this the only GitHub Pages site on your account.** The browser keeps
+the app's data, the Gemini key and the Google token per origin, and Google
+trusts the origins you authorise. Every Pages site of an account is served
+from the same `https://<you>.github.io` origin, so any other one (or anything
+compromised in it) could read the dashboard's data and get Google tokens with
+your client ID. So:
+
+- don't turn on Pages in any other repository of this account;
+- don't create a `<you>.github.io` repository (a user site);
+- if you ever need another site, move this app to its own custom domain first
+  (Settings → Pages → Custom domain, verified, with Enforce HTTPS) and
+  authorise only that origin in the OAuth client.
 
 ## Code map
 
