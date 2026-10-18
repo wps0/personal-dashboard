@@ -12,7 +12,6 @@ import {
   formatMonthYear,
   monthGrid,
   startOfWeek,
-  todayISO,
 } from '../model/dates';
 import {calViewOf, type ISODate} from '../model/types';
 import {href, navigate, type CalView} from '../router';
@@ -23,7 +22,7 @@ import {GoogleErrorNotice} from '../components/google_error_notice';
 import {useStore} from '../store';
 import {nextHourDraft, useUi} from '../ui';
 import {useNavTarget} from '../keyboard';
-import {useMediaQuery} from '../hooks';
+import {useMediaQuery, useToday} from '../hooks';
 import {unreachable} from '../unreachable';
 
 const VIEW_OPTIONS = [
@@ -88,7 +87,7 @@ export function CalendarView({
   const phone = useMediaQuery('(max-width: 639px)');
   const view =
     routeView ?? (phone && defaultView === 'week' ? '3day' : defaultView);
-  const today = todayISO();
+  const today = useToday();
   const date =
     routeDate && /^\d{4}-\d{2}-\d{2}$/.test(routeDate) ? routeDate : today;
   const days = useMemo(

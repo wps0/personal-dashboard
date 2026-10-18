@@ -17,7 +17,8 @@ import {
   type PlanningWindow,
   type Reserved,
 } from '../model/capacity';
-import {formatMedium, todayISO} from '../model/dates';
+import {formatMedium} from '../model/dates';
+import {useToday} from '../hooks';
 import {toMinutes} from '../model/time';
 import {useStore} from '../store';
 
@@ -35,7 +36,7 @@ const WEEKDAYS = [
 export function CapacitySettings() {
   const rules = useStore(s => s.data.settings.capacityRules);
   const change = useStore(s => s.changeCapacityRule);
-  const today = todayISO();
+  const today = useToday();
   const rule = ruleFor(rules, today);
   // Edited as one list of ranges per weekday.
   const reserved = reservedDays(rule).map(day => day.ranges);

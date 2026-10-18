@@ -13,8 +13,8 @@ import {
   useDragSensors,
 } from '../dnd';
 import {memo, useMemo, useState} from 'react';
-import {useLookups, useSlide, type Lookups} from '../hooks';
-import {monthGrid, todayISO} from '../model/dates';
+import {useLookups, useSlide, useToday, type Lookups} from '../hooks';
+import {monthGrid} from '../model/dates';
 import type {Allocation, CalendarEvent, ISODate} from '../model/types';
 import {useStore} from '../store';
 import {draftAt, useUi} from '../ui';
@@ -100,7 +100,7 @@ function MonthBody({
   const lookups = useLookups();
   const days = useMemo(() => monthGrid(date), [date]);
   const month = date.slice(0, 7);
-  const today = todayISO();
+  const today = useToday();
   const slide = useSlide(date);
 
   const google = useGoogleEvents(days);

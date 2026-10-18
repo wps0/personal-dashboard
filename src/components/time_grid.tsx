@@ -29,9 +29,15 @@ import {
   type PointerEvent as ReactPointerEvent,
 } from 'react';
 import {fmtH} from '../format';
-import {useCapacities, useLookups, useSlide, type Lookups} from '../hooks';
+import {
+  useCapacities,
+  useLookups,
+  useSlide,
+  useToday,
+  type Lookups,
+} from '../hooks';
 import {reservedFor} from '../model/capacity';
-import {dayName, todayISO} from '../model/dates';
+import {dayName} from '../model/dates';
 import {isItemDone} from '../model/selectors';
 import {
   fromMinutes,
@@ -260,7 +266,7 @@ function GridBody({days, hourHeight, scrollToHour, onDayClick}: BodyProps) {
   });
   const lookups = useLookups();
   const capacities = useCapacities(days);
-  const today = todayISO();
+  const today = useToday();
   const scrollRef = useRef<HTMLDivElement>(null);
 
   useLayoutEffect(() => {
