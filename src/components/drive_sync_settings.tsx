@@ -28,9 +28,10 @@ export function DriveSyncSettings() {
       <p className="flex items-start gap-2 rounded-md border border-line bg-panel px-3 py-2 text-[12px] text-dim">
         <HardDrive size={14} className="mt-px shrink-0" />
         <span>
-          Keeps a copy of your data in one file in your Google Drive
-          (personal-dashboard.json) and syncs it with your other devices. The
-          app asks for{' '}
+          Keeps your data in one file in your Google Drive
+          (personal-dashboard.binpb, with a readable copy beside it,
+          personal-dashboard.json) and syncs it with your other devices. The app
+          asks for{' '}
           <code className="text-fg">{DRIVE_SCOPE.split('/').pop()}</code> only:
           access to the files it creates, nothing else in your Drive. This
           browser keeps its own copy, so the app works offline. Needs the{' '}
