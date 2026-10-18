@@ -67,8 +67,9 @@ export function HomeView({date}: {date?: ISODate}) {
   );
 }
 
-const go = (d: ISODate, today: ISODate) =>
+function go(d: ISODate, today: ISODate) {
   navigate({name: 'home', date: d === today ? undefined : d});
+}
 
 function DayNav({start, today}: {start: ISODate; today: ISODate}) {
   const [open, setOpen] = useState(false);

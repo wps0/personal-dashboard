@@ -87,8 +87,9 @@ const WhenFields = memo(
 );
 
 /** Quick-create card for the draft (ghost) event. */
-const patchWhen = (p: Partial<When>) =>
+function patchWhen(p: Partial<When>) {
   useUi.getState().patchDraft(p as Partial<Draft>);
+}
 
 export function DraftEditor() {
   const draft = useUi(s => s.draft);

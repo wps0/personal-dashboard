@@ -20,11 +20,13 @@ const ex1 = {text: ex1Text, expected: ex1Expected as CurriculumResult};
 const ex2 = {text: ex2Text, expected: ex2Expected as CurriculumResult};
 
 /** A generateContent response carrying `json` as the model's text. */
-const reply = (json: unknown) => ({
-  candidates: [
-    {content: {parts: [{text: JSON.stringify(json)}]}, finishReason: 'STOP'},
-  ],
-});
+function reply(json: unknown) {
+  return {
+    candidates: [
+      {content: {parts: [{text: JSON.stringify(json)}]}, finishReason: 'STOP'},
+    ],
+  };
+}
 
 afterEach(() => vi.unstubAllGlobals());
 

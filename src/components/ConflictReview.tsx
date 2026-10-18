@@ -14,8 +14,9 @@ import {toast, withUndo} from '../toast';
 import {useUi} from '../ui';
 import {Modal} from './Modal';
 
-const plural = (n: number, one: string, many: string) =>
-  `${n} ${n === 1 ? one : many}`;
+function plural(n: number, one: string, many: string) {
+  return `${n} ${n === 1 ? one : many}`;
+}
 
 /**
  * Review sync conflicts: values changed differently on this device and

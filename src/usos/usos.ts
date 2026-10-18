@@ -49,8 +49,12 @@ export function coursePattern(source: string): RegExp {
   }
 }
 
-const pad = (n: number) => String(n).padStart(2, '0');
-const hhmm = (d: Date) => `${pad(d.getHours())}:${pad(d.getMinutes())}`;
+function pad(n: number) {
+  return String(n).padStart(2, '0');
+}
+function hhmm(d: Date) {
+  return `${pad(d.getHours())}:${pad(d.getMinutes())}`;
+}
 
 function meeting(
   uid: string,
@@ -119,8 +123,9 @@ function parseProp(line: string): Prop | null {
   return {name: name.toUpperCase(), params: p, value: line.slice(colon + 1)};
 }
 
-const unescapeText = (v: string) =>
-  v.replace(/\\n/gi, '\n').replace(/\\([,;\\])/g, '$1');
+function unescapeText(v: string) {
+  return v.replace(/\\n/gi, '\n').replace(/\\([,;\\])/g, '$1');
+}
 
 /** Minutes to add to UTC to get the wall-clock time in `tz` at instant `ms`. */
 function tzOffset(ms: number, tz: string): number {

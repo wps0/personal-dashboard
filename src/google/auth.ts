@@ -92,10 +92,13 @@ interface Token {
 }
 
 /** Whether the token can be used for Drive sync. */
-export const hasDriveAccess = (t: Token | undefined) =>
-  !!t &&
-  t.expiresAt > Date.now() &&
-  !!t.scope?.split(' ').includes(DRIVE_SCOPE);
+export function hasDriveAccess(t: Token | undefined) {
+  return (
+    !!t &&
+    t.expiresAt > Date.now() &&
+    !!t.scope?.split(' ').includes(DRIVE_SCOPE)
+  );
+}
 
 function loadPrefs(): Prefs {
   const fallback: Prefs = {

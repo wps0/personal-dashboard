@@ -15,7 +15,9 @@ const {retryPolicy} = await import('./request');
 retryPolicy.baseMs = 1;
 const {SCOPES, useGoogle} = await import('./auth');
 
-const ok = (body: unknown) => new Response(JSON.stringify(body), {status: 200});
+function ok(body: unknown) {
+  return new Response(JSON.stringify(body), {status: 200});
+}
 
 describe('Google access is read-only', () => {
   it('requests only the two narrowest read-only scopes it needs', () => {

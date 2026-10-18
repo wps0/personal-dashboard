@@ -27,8 +27,9 @@ export const useToasts = create<ToastState>()((set, get) => ({
   dismiss: id => set({toasts: get().toasts.filter(t => t.id !== id)}),
 }));
 
-export const toast = (message: string, action?: Toast['action']) =>
+export function toast(message: string, action?: Toast['action']) {
   useToasts.getState().push({message, action});
+}
 
 /** One undoable step: the data just before and just after it. */
 interface Step {

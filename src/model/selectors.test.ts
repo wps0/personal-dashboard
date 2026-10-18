@@ -27,16 +27,17 @@ function fixture(): AppData {
   return d;
 }
 
-const project = (extra: InitOf<typeof pb.ProjectSchema> = {}): Project =>
-  create(pb.ProjectSchema, {
+function project(extra: InitOf<typeof pb.ProjectSchema> = {}): Project {
+  return create(pb.ProjectSchema, {
     id: 'p',
     areaId: 'a',
     name: 'OS',
     progressMode: ProgressMode.CHECKLIST,
     ...extra,
   });
-const item = (id: string, extra: InitOf<typeof pb.ItemSchema> = {}): Item =>
-  create(pb.ItemSchema, {
+}
+function item(id: string, extra: InitOf<typeof pb.ItemSchema> = {}): Item {
+  return create(pb.ItemSchema, {
     id,
     projectId: 'p',
     kind: ItemKind.TASK,
@@ -44,14 +45,22 @@ const item = (id: string, extra: InitOf<typeof pb.ItemSchema> = {}): Item =>
     status: ItemStatus.TODO,
     ...extra,
   });
-const alloc = (
+}
+function alloc(
   id: string,
   itemId: string,
   date: string,
   plannedHours: number,
   extra: InitOf<typeof pb.AllocationSchema> = {},
-): Allocation =>
-  create(pb.AllocationSchema, {id, itemId, date, plannedHours, ...extra});
+): Allocation {
+  return create(pb.AllocationSchema, {
+    id,
+    itemId,
+    date,
+    plannedHours,
+    ...extra,
+  });
+}
 
 describe('projectStats', () => {
   it('computes checklist progress from done items', () => {

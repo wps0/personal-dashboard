@@ -306,7 +306,9 @@ function DayNote({date}: {date: ISODate}) {
   );
 }
 
-const stop = (e: {stopPropagation(): void}) => e.stopPropagation();
+function stop(e: {stopPropagation(): void}) {
+  e.stopPropagation();
+}
 
 /**
  * Draggable shell. dnd-kit re-renders every draggable when a drag starts or the

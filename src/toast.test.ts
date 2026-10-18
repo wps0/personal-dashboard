@@ -3,11 +3,14 @@ import {emptyData} from './model/types';
 import {useStore} from './store';
 import {clearHistory, undoLast, useToasts, withUndo} from './toast';
 
-const titles = () => useStore.getState().data.events.map(e => e.title);
-const add = (title: string) =>
-  useStore
+function titles() {
+  return useStore.getState().data.events.map(e => e.title);
+}
+function add(title: string) {
+  return useStore
     .getState()
     .addEvent({title, date: '2026-10-12', start: '10:00', end: '11:00'});
+}
 
 describe('undo history', () => {
   beforeEach(() => {

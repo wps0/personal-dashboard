@@ -127,10 +127,13 @@ function declinedStyle(color: string) {
   };
 }
 
-const tooltip = (ev: GEvent) =>
-  `${ev.title}${ev.declined ? ' (declined)' : ''}\n${ev.when}\n${ev.calendarName} (Google, read-only)`;
+function tooltip(ev: GEvent) {
+  return `${ev.title}${ev.declined ? ' (declined)' : ''}\n${ev.when}\n${ev.calendarName} (Google, read-only)`;
+}
 
-const openCard = (ev: GEvent) => () => useUi.getState().openGoogle(ev.key);
+function openCard(ev: GEvent) {
+  return () => useUi.getState().openGoogle(ev.key);
+}
 
 /** A timed Google event in a day column: same look as local events, in the calendar's color, not draggable. */
 export const GoogleTimedBlock = memo(function GoogleTimedBlock(props: {

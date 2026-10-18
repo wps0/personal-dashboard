@@ -10,7 +10,9 @@ export const usePendingConflicts = create<{conflicts: Conflict[]}>(() => ({
   conflicts: [],
 }));
 
-const key = (c: Conflict) => c.path.join('\u0000');
+function key(c: Conflict) {
+  return c.path.join('\u0000');
+}
 
 /** Adds conflicts; a newer one about the same value replaces the older. */
 export function addConflicts(added: Conflict[]) {

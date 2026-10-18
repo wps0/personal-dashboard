@@ -19,19 +19,23 @@ import {unreachable} from './unreachable';
 // Not needed for the first screen: loaded separately to keep the first load
 // small, then fetched in the background once the app is idle, so opening them
 // later never waits.
-const loadProjects = () => import('./views/ProjectsView');
-const loadSettings = () => import('./views/SettingsView');
+function loadProjects() {
+  return import('./views/ProjectsView');
+}
+function loadSettings() {
+  return import('./views/SettingsView');
+}
 const ProjectsView = lazy(() =>
   loadProjects().then(m => ({default: m.ProjectsView})),
 );
 const SettingsView = lazy(() =>
   loadSettings().then(m => ({default: m.SettingsView})),
 );
-const preload = () => {
+function preload() {
   void loadProjects();
   void loadSettings();
   void preloadMarkdown();
-};
+}
 
 const NAV: {route: Route; label: string}[] = [
   {route: {name: 'home'}, label: 'Home'},

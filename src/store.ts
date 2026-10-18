@@ -24,8 +24,12 @@ import {
 import {withRuleChange, type CapacityRule} from './model/capacity';
 import {todayISO} from './model/dates';
 
-const uid = () => crypto.randomUUID();
-const now = () => new Date().toISOString();
+function uid() {
+  return crypto.randomUUID();
+}
+function now() {
+  return new Date().toISOString();
+}
 
 interface Actions {
   replaceAll(data: AppData): void;
@@ -290,4 +294,6 @@ export const useStore = create<State>()((set, get) => {
 });
 
 /** Subscribes to the whole data object. Prefer narrow selectors in hot components. */
-export const useData = () => useStore(s => s.data);
+export function useData() {
+  return useStore(s => s.data);
+}

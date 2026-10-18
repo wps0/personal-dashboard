@@ -12,21 +12,23 @@ import {
 } from './capacity';
 import type {CalendarEvent, InitOf} from './types';
 
-const ev = (
+function ev(
   start: string,
   end: string,
   extra: InitOf<typeof pb.CalendarEventSchema> = {},
-): CalendarEvent =>
-  create(pb.CalendarEventSchema, {
+): CalendarEvent {
+  return create(pb.CalendarEventSchema, {
     id: start,
     date: '2026-10-12',
     start,
     end,
     ...extra,
   });
+}
 
-const day = (d: {delta?: number; override?: number}) =>
-  create(pb.DayCapacitySchema, d);
+function day(d: {delta?: number; override?: number}) {
+  return create(pb.DayCapacitySchema, d);
+}
 
 describe('capacity', () => {
   it('subtracts merged event time inside the planning window only', () => {

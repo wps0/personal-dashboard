@@ -8,12 +8,14 @@ import {FakeDrive} from './fakeDrive';
 import {same} from './merge';
 import {syncOnce, type SyncBase} from './sync';
 
-const sample = () => structuredClone(sampleData('2026-10-12'));
-const edit = (d: AppData, f: (d: AppData) => void) => {
+function sample() {
+  return structuredClone(sampleData('2026-10-12'));
+}
+function edit(d: AppData, f: (d: AppData) => void) {
   const c = structuredClone(d);
   f(c);
   return c;
-};
+}
 
 /** A device: its data and its base, synced with `drive`. */
 class Device {
