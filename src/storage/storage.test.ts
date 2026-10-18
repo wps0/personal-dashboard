@@ -12,6 +12,18 @@ describe('storage', () => {
     expect(await s.load()).toEqual(data);
   });
 
+  it('saves synced data and its base together, and forgets the base', async () => {
+    const s = new IndexedDbStorage();
+    const data = sampleData('2026-10-10');
+    const base = {fileId: 'f1', version: '3', data};
+    await s.saveSynced(data, base);
+    expect(await s.load()).toEqual(data);
+    expect(await s.loadSyncBase()).toEqual(base);
+    await s.clearSyncBase();
+    expect(await s.loadSyncBase()).toBeNull();
+    expect(await s.load()).toEqual(data);
+  });
+
   it('rejects malformed or future-version imports', () => {
     expect(() => parseAppData(null)).toThrow();
     expect(() => parseAppData({version: 2})).toThrow(/version/);
