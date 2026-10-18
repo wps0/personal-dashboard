@@ -46,7 +46,10 @@ const FIELDS: Record<string, string> = {
   text: 'text',
 };
 
-type Rec = {id: string; [k: string]: unknown};
+interface Rec {
+  id: string;
+  [k: string]: unknown;
+}
 
 /** Describes a conflict using the current data for names. */
 export function describe(c: Conflict, data: AppData): ConflictView {
