@@ -471,7 +471,16 @@ compares Gemini's output against the `*.expected.json` files.
   hooks rules. Two deviations, both documented there: `== null` is allowed
   (as the style guide itself allows), and named function expressions are
   allowed for `memo(function Name…)`. Prettier with gts's settings.
-- **Checks:** `npm run lint`, `format:check`, `typecheck`, `test`, `build`.
+- **Data schema:** `proto/dashboard/v2/data.proto` (protobuf) describes the
+  stored data; `npm run proto:generate` writes the TypeScript for it to
+  `src/gen/` (committed, never edited by hand). Changes must stay compatible
+  both ways, so older and newer versions of the app can share the same data:
+  add fields with new numbers; never renumber, retype or reuse a field or enum
+  value (mark removed ones `reserved`); and code must cope with enum values it
+  doesn't know. `buf lint` checks the schema's style. (The app doesn't use it
+  yet; the move is in progress.)
+- **Checks:** `npm run lint`, `format:check`, `proto:lint`, `typecheck`,
+  `test`, `build`, and that `src/gen/` matches the schema.
   The **Checks** workflow runs them on every pull request with a read-only
   token and no secrets; it can never deploy.
 - **Deploy:** the **Deploy** workflow builds and publishes to GitHub Pages

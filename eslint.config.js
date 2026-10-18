@@ -12,7 +12,7 @@ import globals from 'globals';
 import tseslint from 'typescript-eslint';
 
 export default defineConfig([
-  {ignores: ['dist/', 'node_modules/', 'docs/']},
+  {ignores: ['dist/', 'node_modules/', 'docs/', 'src/gen/']},
 
   // gts
   js.configs.recommended,
