@@ -8,7 +8,7 @@ import {coursePattern} from '../usos/usos';
 import {BufferedInput} from './buffered';
 
 /**
- * A project's USOS course pattern: a regex on the course title (never the
+ * A project's USOS course pattern: text the course title contains (never the
  * class type), with the timetable courses it matches shown live.
  */
 export function CoursePattern({project}: {project: Project}) {
@@ -20,16 +20,10 @@ export function CoursePattern({project}: {project: Project}) {
 function PatternField({project}: {project: Project}) {
   const timetable = useTimetableLoaded();
   const pattern = project.coursePattern ?? '';
-  const result = useMemo(() => {
+  const matches = useMemo(() => {
     if (!pattern.trim()) return null;
-    try {
-      const re = coursePattern(pattern);
-      return {
-        matches: coursesIn(timetable.meetings).filter(c => re.test(c.course)),
-      };
-    } catch (e) {
-      return {error: (e as Error).message};
-    }
+    const re = coursePattern(pattern);
+    return coursesIn(timetable.meetings).filter(c => re.test(c.course));
   }, [pattern, timetable.meetings]);
 
   return (
@@ -48,22 +42,20 @@ function PatternField({project}: {project: Project}) {
           className="field h-7 min-w-0 flex-1 font-mono"
           spellCheck={false}
           aria-label="USOS course pattern"
-          title="A regular expression, case-insensitive, matched against the course title only (not WYK / LAB / CW…)"
+          title="Text the course title contains, case-insensitive (not WYK / LAB / CW…)"
         />
       </label>
       <p className="pl-[1.4rem] text-dim" aria-live="polite">
-        {!result ? (
+        {!matches ? (
           'Classes of the matching course become tasks here after you review them.'
-        ) : 'error' in result ? (
-          <span className="text-danger">{result.error}</span>
         ) : timetable.state === 'loading' ? (
           'Loading the timetable…'
         ) : timetable.state === 'error' ? (
           <span className="text-danger">{timetable.error}</span>
-        ) : result.matches.length ? (
+        ) : matches.length ? (
           <>
             Matches{' '}
-            {result.matches.map((c, i) => (
+            {matches.map((c, i) => (
               <span key={c.course}>
                 {i > 0 && ', '}
                 <span className="text-fg">{c.course}</span> (

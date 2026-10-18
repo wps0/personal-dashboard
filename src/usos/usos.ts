@@ -37,16 +37,14 @@ export function parseClassTitle(
 }
 
 /**
- * Compiles a project's course pattern: a regular expression, case-insensitive,
- * tested against the course title only (never the type designator). Throws
- * a readable error for an invalid pattern.
+ * Compiles a project's course pattern: text the course title must contain,
+ * case-insensitive, tested against the course title only (never the type
+ * designator). The text is escaped, never run as a regular expression: a
+ * pattern syncs to every device, and a pathological expression could freeze
+ * the app on all of them.
  */
 export function coursePattern(source: string): RegExp {
-  try {
-    return new RegExp(source, 'iu');
-  } catch (e) {
-    throw new Error(`Invalid pattern: ${(e as Error).message}`, {cause: e});
-  }
+  return new RegExp(source.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'iu');
 }
 
 function pad(n: number) {
@@ -263,7 +261,7 @@ export function meetingsFromICal(text: string): {
 
 export interface CourseRule {
   projectId: string;
-  /** Regular expression on the course title (see coursePattern). */
+  /** Text the course title contains (see coursePattern). */
   pattern: string;
 }
 
@@ -283,15 +281,11 @@ export function proposeImports(
   rules: CourseRule[],
   importedKeys: ReadonlySet<string>,
 ): Proposal[] {
-  const compiled = rules.flatMap(r => {
-    try {
-      return r.pattern.trim()
-        ? [{projectId: r.projectId, re: coursePattern(r.pattern)}]
-        : [];
-    } catch {
-      return [];
-    }
-  });
+  const compiled = rules.flatMap(r =>
+    r.pattern.trim()
+      ? [{projectId: r.projectId, re: coursePattern(r.pattern)}]
+      : [],
+  );
   const seen = new Set<string>();
   const out: Proposal[] = [];
   for (const m of [...meetings].sort((a, b) =>

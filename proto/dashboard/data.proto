@@ -50,8 +50,9 @@ message Project {
   repeated LogEntry log = 8;
   bool archived = 9;
   string created_at = 10;
-  // For a university course: a case-insensitive regular expression on the
-  // course title of USOS classes; matching classes become its tasks.
+  // For a university course: text the course title of USOS classes contains
+  // (case-insensitive, not a regular expression); matching classes become its
+  // tasks.
   optional string course_pattern = 11;
 }
 

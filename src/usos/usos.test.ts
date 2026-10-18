@@ -47,15 +47,24 @@ describe('parseClassTitle', () => {
 });
 
 describe('coursePattern', () => {
-  it('is a case-insensitive regex on the course title', () => {
+  it('is case-insensitive text the course title contains', () => {
     expect(coursePattern('złożoność').test('Złożoność obliczeniowa')).toBe(
       true,
     );
-    expect(coursePattern('^dane,').test('Dane, strumienie')).toBe(true);
+    expect(coursePattern('dane,').test('Dane, strumienie')).toBe(true);
   });
 
-  it('explains an invalid pattern', () => {
-    expect(() => coursePattern('(')).toThrow(/Invalid pattern/);
+  it('never runs the text as a regular expression', () => {
+    expect(coursePattern('^dane').test('Dane, strumienie')).toBe(false);
+    expect(coursePattern('C++ (2)').test('Programowanie w C++ (2)')).toBe(true);
+    // Would backtrack for seconds as a regular expression.
+    const started = performance.now();
+    expect(
+      coursePattern('^(\\p{L}+\\s?)+$').test(
+        'Programowanie obiektowe 2 abcdef',
+      ),
+    ).toBe(false);
+    expect(performance.now() - started).toBeLessThan(50);
   });
 });
 
@@ -224,7 +233,7 @@ describe('proposeImports', () => {
       meetings,
       [
         {projectId: 'os', pattern: 'systemów operacyjnych'},
-        {projectId: 'cc', pattern: '^złożoność'},
+        {projectId: 'cc', pattern: 'złożoność'},
       ],
       new Set(),
     );
@@ -237,15 +246,15 @@ describe('proposeImports', () => {
 
   it('never matches the type designator', () => {
     expect(
-      proposeImports(meetings, [{projectId: 'x', pattern: '^CW'}], new Set()),
+      proposeImports(meetings, [{projectId: 'x', pattern: 'CW'}], new Set()),
     ).toEqual([]);
   });
 
-  it('skips imported meetings, empty and invalid patterns', () => {
+  it('skips imported meetings and empty patterns', () => {
     const out = proposeImports(
       meetings,
       [
-        {projectId: 'bad', pattern: '('},
+        {projectId: 'none', pattern: '('},
         {projectId: 'empty', pattern: '  '},
         {projectId: 'cc', pattern: 'złożoność'},
       ],

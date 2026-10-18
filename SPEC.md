@@ -269,9 +269,11 @@ asking for write access.
   mikrokontrolerów`, `CW - Złożoność obliczeniowa`,
   `SEM-MGR - Dane, strumienie, rozpraszanie`. The type is split off first;
   other events in the calendar are ignored.
-- **Per project** (a university course): a course pattern, a case-insensitive
-  regular expression matched against the **course title only**, never the
-  type. The panel shows which timetable courses it matches.
+- **Per project** (a university course): a course pattern, case-insensitive
+  text the **course title only** must contain (never the type). It is escaped,
+  not run as a regular expression: it syncs to every device, and a
+  pathological expression could freeze the app on all of them. The panel
+  shows which timetable courses it matches.
 - **One class item per class meeting** (lectures, labs, tutorials…), titled
   "WYK · Wed 14 Oct, 10:15", with `heldOn` = the class date and the time and
   room in its notes. Classes from about a semester back to half a year ahead
