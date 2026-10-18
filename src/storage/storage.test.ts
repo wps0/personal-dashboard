@@ -2,8 +2,10 @@ import 'fake-indexeddb/auto';
 import {get, set} from 'idb-keyval';
 import {describe, expect, it} from 'vitest';
 import {sampleData} from '../model/sample';
+import {CalendarView, ItemKind, ItemStatus} from '../model/types';
 import {parseAppData} from './parse_v1';
 import {IndexedDbStorage} from './storage';
+import v1Sample from './testdata/v1_sample.json';
 
 describe('storage', () => {
   it('round-trips data through IndexedDB', async () => {
@@ -31,8 +33,10 @@ describe('storage', () => {
     await new IndexedDbStorage().save(data);
     expect(await get('personal-dashboard/data')).toMatchObject({format: 2});
 
-    await set('personal-dashboard/data', structuredClone(data));
-    expect(await new IndexedDbStorage().load()).toEqual(data);
+    await set('personal-dashboard/data', structuredClone(v1Sample));
+    expect(await new IndexedDbStorage().load()).toEqual(
+      parseAppData(structuredClone(v1Sample)),
+    );
   });
 
   it('rejects malformed or future-version imports', () => {
@@ -87,12 +91,14 @@ describe('storage', () => {
     expect(
       parseAppData({...base, settings: {defaultCalendarView: 'month'}}).settings
         .defaultCalendarView,
-    ).toBe('month');
+    ).toBe(CalendarView.MONTH);
     expect(
       parseAppData({...base, settings: {defaultCalendarView: 'year'}}).settings
         .defaultCalendarView,
-    ).toBe('week');
-    expect(parseAppData(base).settings.defaultCalendarView).toBe('week');
+    ).toBe(CalendarView.WEEK);
+    expect(parseAppData(base).settings.defaultCalendarView).toBe(
+      CalendarView.WEEK,
+    );
   });
 
   it('reads the USOS settings, dropping anything malformed', () => {
@@ -143,8 +149,8 @@ describe('storage', () => {
       allocations: [],
       settings: {capacity: [2, 2, 2, 2, 2, 5, 5]},
     });
-    expect(d.items[0].status).toBe('done');
-    expect(d.items[0].kind).toBe('class'); // was 'lecture'
+    expect(d.items[0].status).toBe(ItemStatus.DONE); // was 'notes'
+    expect(d.items[0].kind).toBe(ItemKind.CLASS); // was 'lecture'
     expect(d.settings.capacityRules[0].windows[5]).toEqual({
       start: '10:00',
       end: '15:00',

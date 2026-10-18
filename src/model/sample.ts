@@ -1,6 +1,14 @@
 import {addDays, startOfWeek, todayISO} from './dates';
-import type {Allocation, AppData, Item, Project} from './types';
-import {emptyData} from './types';
+import {
+  ItemKind,
+  ItemStatus,
+  ProgressMode,
+  emptyData,
+  type Allocation,
+  type AppData,
+  type Item,
+  type Project,
+} from './types';
 
 /** Demo data placed relative to today, so the week view has something in it. */
 export function sampleData(today = todayISO()): AppData {
@@ -25,7 +33,7 @@ export function sampleData(today = todayISO()): AppData {
       id: id('p'),
       areaId,
       name,
-      progressMode: 'checklist',
+      progressMode: ProgressMode.CHECKLIST,
       manualProgress: 0,
       overviewDoc: '',
       log: [],
@@ -40,9 +48,9 @@ export function sampleData(today = todayISO()): AppData {
     const i: Item = {
       id: id('i'),
       projectId: p.id,
-      kind: 'task',
+      kind: ItemKind.TASK,
       title,
-      status: 'todo',
+      status: ItemStatus.TODO,
       createdAt: created,
       ...extra,
     };
@@ -91,20 +99,25 @@ export function sampleData(today = todayISO()): AppData {
   ) {
     lectures.push(
       item(os, `Lecture ${k + 1}`, {
-        kind: 'class',
+        kind: ItemKind.CLASS,
         estimateHours: 1.5,
         heldOn: date,
-        status: k < 3 ? 'done' : k === 3 ? 'doing' : 'todo',
+        status:
+          k < 3
+            ? ItemStatus.DONE
+            : k === 3
+              ? ItemStatus.DOING
+              : ItemStatus.TODO,
       }),
     );
   }
   const assignment = item(os, 'Assignment 2: scheduler', {
-    kind: 'assignment',
+    kind: ItemKind.ASSIGNMENT,
     estimateHours: 8,
     dueDate: addDays(today, 4),
   });
   item(os, 'Midterm', {
-    kind: 'exam',
+    kind: ItemKind.EXAM,
     estimateHours: 6,
     dueDate: addDays(today, 24),
   });
@@ -114,16 +127,18 @@ export function sampleData(today = todayISO()): AppData {
   alloc(assignment, addDays(monday, 2), 2);
   alloc(assignment, addDays(monday, 5), 3);
 
-  const net = project('uni', 'Computer Networks', {progressMode: 'hours'});
+  const net = project('uni', 'Computer Networks', {
+    progressMode: ProgressMode.HOURS,
+  });
   for (let k = 0; k < 6; k++) {
     item(net, `Lecture ${k + 1}`, {
-      kind: 'class',
+      kind: ItemKind.CLASS,
       estimateHours: 1.5,
-      status: k < 2 ? 'done' : 'todo',
+      status: k < 2 ? ItemStatus.DONE : ItemStatus.TODO,
     });
   }
   const lab = item(net, 'Lab report: TCP congestion', {
-    kind: 'assignment',
+    kind: ItemKind.ASSIGNMENT,
     estimateHours: 3,
     dueDate: addDays(today, 9),
   });
@@ -133,9 +148,9 @@ export function sampleData(today = todayISO()): AppData {
   const slo = project('work', 'SLO dashboards (Q4)', {
     dueDate: addDays(today, 50),
   });
-  item(slo, 'Inventory existing alerts', {status: 'done'});
+  item(slo, 'Inventory existing alerts', {status: ItemStatus.DONE});
   item(slo, 'Draft SLI definitions', {
-    status: 'doing',
+    status: ItemStatus.DOING,
     dueDate: addDays(today, 6),
   });
   item(slo, 'Review with team');
@@ -143,11 +158,11 @@ export function sampleData(today = todayISO()): AppData {
 
   // Personal.
   project('personal', 'Driving license', {
-    progressMode: 'manual',
+    progressMode: ProgressMode.MANUAL,
     manualProgress: 40,
   });
   const homelab = project('personal', 'Homelab migration');
-  item(homelab, 'Pick new hardware', {status: 'done'});
+  item(homelab, 'Pick new hardware', {status: ItemStatus.DONE});
   const k8s = item(homelab, 'Set up k3s', {estimateHours: 4});
   item(homelab, 'Migrate Nextcloud');
   alloc(k8s, addDays(monday, 6), 2);

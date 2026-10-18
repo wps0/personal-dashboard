@@ -8,40 +8,7 @@ import * as pb from '../gen/dashboard/v2/data_pb';
 import {defaultRules, type CapacityRule} from '../model/capacity';
 import type * as v1 from '../model/types';
 
-const ITEM_KINDS: Record<pb.ItemKind, v1.ItemKind> = {
-  [pb.ItemKind.UNSPECIFIED]: 'task',
-  [pb.ItemKind.CLASS]: 'class',
-  [pb.ItemKind.ASSIGNMENT]: 'assignment',
-  [pb.ItemKind.EXAM]: 'exam',
-  [pb.ItemKind.TASK]: 'task',
-};
-
-const ITEM_STATUSES: Record<pb.ItemStatus, v1.ItemStatus> = {
-  [pb.ItemStatus.UNSPECIFIED]: 'todo',
-  [pb.ItemStatus.TODO]: 'todo',
-  [pb.ItemStatus.DOING]: 'doing',
-  [pb.ItemStatus.DONE]: 'done',
-};
-
-const PROGRESS_MODES: Record<pb.ProgressMode, v1.ProgressMode> = {
-  [pb.ProgressMode.UNSPECIFIED]: 'checklist',
-  [pb.ProgressMode.CHECKLIST]: 'checklist',
-  [pb.ProgressMode.HOURS]: 'hours',
-  [pb.ProgressMode.MANUAL]: 'manual',
-};
-
-const CALENDAR_VIEWS: Record<pb.CalendarView, v1.CalView> = {
-  [pb.CalendarView.UNSPECIFIED]: 'week',
-  [pb.CalendarView.DAY]: 'day',
-  [pb.CalendarView.THREE_DAY]: '3day',
-  [pb.CalendarView.WEEK]: 'week',
-  [pb.CalendarView.MONTH]: 'month',
-};
-
-/**
- * The app's model of `data`. Enum values the app doesn't know yet fall back
- * to defaults (a task, to do, checklist progress, week view).
- */
+/** The app's model of `data`. */
 export function toV1(data: pb.AppData): v1.AppData {
   return {
     version: 1,
@@ -81,7 +48,7 @@ function projectToV1(p: pb.Project): v1.Project {
     id: p.id,
     areaId: p.areaId,
     name: p.name,
-    progressMode: PROGRESS_MODES[p.progressMode] ?? 'checklist',
+    progressMode: p.progressMode,
     manualProgress: p.manualProgress,
     dueDate: p.dueDate,
     overviewDoc: p.overviewDoc,
@@ -104,9 +71,9 @@ function itemToV1(i: pb.Item): v1.Item {
   return withoutUndefined({
     id: i.id,
     projectId: i.projectId,
-    kind: ITEM_KINDS[i.kind] ?? 'task',
+    kind: i.kind,
     title: i.title,
-    status: ITEM_STATUSES[i.status] ?? 'todo',
+    status: i.status,
     dueDate: i.dueDate,
     heldOn: i.heldOn,
     estimateHours: i.estimateHours,
@@ -132,8 +99,7 @@ function settingsToV1(s: pb.Settings | undefined): v1.Settings {
       ]),
     ),
     defaultEventMinutes: s?.defaultEventMinutes || 60,
-    defaultCalendarView:
-      CALENDAR_VIEWS[s?.defaultCalendarView ?? pb.CalendarView.WEEK] ?? 'week',
+    defaultCalendarView: s?.defaultCalendarView ?? pb.CalendarView.WEEK,
     usos: {
       source:
         source?.case === 'googleCalendarId'

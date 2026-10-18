@@ -4,13 +4,19 @@ import type {
   AppData,
   Area,
   CalendarEvent,
-  CalView,
+  CalendarView,
   ISODate,
   Item,
   Project,
   UsosSource,
 } from './model/types';
-import {AREA_COLORS, emptyData} from './model/types';
+import {
+  AREA_COLORS,
+  ItemKind,
+  ItemStatus,
+  ProgressMode,
+  emptyData,
+} from './model/types';
 import {
   withRuleChange,
   type CapacityRule,
@@ -61,7 +67,7 @@ interface Actions {
   /** Changes planning windows / global adjustment from today on (past days keep theirs). */
   changeCapacityRule(patch: Partial<Omit<CapacityRule, 'from'>>): void;
   setDefaultEventMinutes(minutes: number): void;
-  setDefaultCalendarView(view: CalView): void;
+  setDefaultCalendarView(view: CalendarView): void;
   setUsosSource(source: UsosSource | undefined): void;
   /** Remembers class meetings as imported or skipped, so they aren't offered again. */
   markUsosHandled(keys: string[]): void;
@@ -125,7 +131,7 @@ export const useStore = create<State>()((set, get) => {
         id,
         areaId,
         name,
-        progressMode: 'checklist',
+        progressMode: ProgressMode.CHECKLIST,
         manualProgress: 0,
         overviewDoc: '',
         log: [],
@@ -165,9 +171,9 @@ export const useStore = create<State>()((set, get) => {
         items: [
           ...d.items,
           ...items.map((i): Item => ({
-            kind: 'task',
+            kind: ItemKind.TASK,
             title: 'Untitled',
-            status: 'todo',
+            status: ItemStatus.TODO,
             createdAt: now(),
             ...i,
             id: uid(),

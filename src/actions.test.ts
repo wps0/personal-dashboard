@@ -1,6 +1,6 @@
 import {beforeEach, describe, expect, it, vi} from 'vitest';
 import {importClasses} from './actions';
-import {emptyData} from './model/types';
+import {ItemKind, emptyData} from './model/types';
 import {useStore} from './store';
 import {clearHistory, undoLast, useToasts} from './toast';
 import type {ClassMeeting, Proposal} from './usos/usos';
@@ -37,7 +37,7 @@ describe('importClasses', () => {
     expect(items).toMatchObject([
       {
         projectId,
-        kind: 'class',
+        kind: ItemKind.CLASS,
         title: 'WYK · Wed 21 Oct, 10:15',
         heldOn: '2026-10-21',
         source: {kind: 'usos', key: 'b'},

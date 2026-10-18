@@ -2,31 +2,26 @@ import {create, equals, fromBinary, toBinary} from '@bufbuild/protobuf';
 import {BinaryWriter, WireType} from '@bufbuild/protobuf/wire';
 import {describe, expect, it} from 'vitest';
 import * as pb from '../gen/dashboard/v2/data_pb';
-import {sampleData} from '../model/sample';
-import type * as v1 from '../model/types';
 import {FORMAT, fromStored, toEnvelope} from './codec';
+import v1Sample from './testdata/v1_sample.json';
 
-function v1Data(): v1.AppData {
-  const data = structuredClone(sampleData('2026-10-12'));
-  data.items[0].source = {kind: 'usos', key: 'abc@2026-10-14T10:15'};
-  data.items[0].kind = 'class';
-  data.events[0].allDay = true;
-  data.settings.defaultCalendarView = '3day';
-  data.settings.dayCapacity['2026-10-13'] = {override: 2};
-  data.settings.usos = {
-    source: {kind: 'ical', url: 'https://usosweb.example/plan.ics'},
-    handled: ['a', 'b'],
-  };
-  data.settings.capacityRules[0].reserved = [
-    [{start: '23:00', end: '07:00', label: 'Sleep'}],
-    [],
-    [],
-    [],
-    [],
-    [],
-    [],
-  ];
-  return data;
+/** Real v1 JSON, as an older version of the app stored it. */
+interface V1Json {
+  areas: Array<{name: string}>;
+  projects: unknown[];
+  items: Array<{
+    id: string;
+    kind: string;
+    status: string;
+    dueDate?: string;
+    notes?: string;
+  }>;
+  allocations: unknown[];
+  events: unknown[];
+}
+
+function v1Data(): V1Json {
+  return structuredClone(v1Sample) as V1Json;
 }
 
 /** A round trip through JSON text, as storage and Drive do. */
@@ -78,9 +73,7 @@ describe('reading v1 data', () => {
   });
 
   it('migrates old values on the way, as v1 reading did', () => {
-    const old = v1Data() as unknown as {
-      items: Array<Record<string, unknown>>;
-    };
+    const old = v1Data();
     old.items[1].kind = 'lecture';
     old.items[1].status = 'notes';
     const item = fromStored(old).items[1];

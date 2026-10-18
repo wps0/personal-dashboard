@@ -1,0 +1,503 @@
+{
+  "version": 1,
+  "areas": [
+    {
+      "id": "uni",
+      "name": "University",
+      "color": "#60a5fa"
+    },
+    {
+      "id": "work",
+      "name": "Work",
+      "color": "#34d399"
+    },
+    {
+      "id": "personal",
+      "name": "Personal",
+      "color": "#f472b6"
+    }
+  ],
+  "projects": [
+    {
+      "id": "p-2",
+      "areaId": "uni",
+      "name": "Operating Systems",
+      "progressMode": "checklist",
+      "manualProgress": 0,
+      "overviewDoc": "## Goals\n- Pass the exam with ≥ 4.0\n- Finish the scheduler assignment on time\n\n## Links\n- Lecture slides: _add link_\n- Recordings: _add link_",
+      "log": [
+        {
+          "id": "l-1",
+          "at": "2026-10-17T14:17:01.919Z",
+          "text": "Caught up on lectures 1–3."
+        }
+      ],
+      "archived": false,
+      "createdAt": "2026-10-18T14:17:01.918Z"
+    },
+    {
+      "id": "p-17",
+      "areaId": "uni",
+      "name": "Computer Networks",
+      "progressMode": "hours",
+      "manualProgress": 0,
+      "overviewDoc": "",
+      "log": [],
+      "archived": false,
+      "createdAt": "2026-10-18T14:17:01.918Z"
+    },
+    {
+      "id": "p-26",
+      "areaId": "work",
+      "name": "SLO dashboards (Q4)",
+      "progressMode": "checklist",
+      "manualProgress": 0,
+      "overviewDoc": "",
+      "log": [],
+      "archived": false,
+      "createdAt": "2026-10-18T14:17:01.918Z",
+      "dueDate": "2026-12-01"
+    },
+    {
+      "id": "p-31",
+      "areaId": "personal",
+      "name": "Driving license",
+      "progressMode": "manual",
+      "manualProgress": 40,
+      "overviewDoc": "",
+      "log": [],
+      "archived": false,
+      "createdAt": "2026-10-18T14:17:01.918Z"
+    },
+    {
+      "id": "p-32",
+      "areaId": "personal",
+      "name": "Homelab migration",
+      "progressMode": "checklist",
+      "manualProgress": 0,
+      "overviewDoc": "",
+      "log": [],
+      "archived": false,
+      "createdAt": "2026-10-18T14:17:01.918Z"
+    }
+  ],
+  "items": [
+    {
+      "id": "i-3",
+      "projectId": "p-2",
+      "kind": "class",
+      "title": "Lecture 1",
+      "status": "done",
+      "createdAt": "2026-10-18T14:17:01.918Z",
+      "estimateHours": 1.5,
+      "heldOn": "2026-09-14",
+      "source": {
+        "kind": "usos",
+        "key": "abc@2026-10-14T10:15"
+      }
+    },
+    {
+      "id": "i-4",
+      "projectId": "p-2",
+      "kind": "class",
+      "title": "Lecture 2",
+      "status": "done",
+      "createdAt": "2026-10-18T14:17:01.918Z",
+      "estimateHours": 1.5,
+      "heldOn": "2026-09-21"
+    },
+    {
+      "id": "i-5",
+      "projectId": "p-2",
+      "kind": "class",
+      "title": "Lecture 3",
+      "status": "done",
+      "createdAt": "2026-10-18T14:17:01.918Z",
+      "estimateHours": 1.5,
+      "heldOn": "2026-09-28"
+    },
+    {
+      "id": "i-6",
+      "projectId": "p-2",
+      "kind": "class",
+      "title": "Lecture 4",
+      "status": "doing",
+      "createdAt": "2026-10-18T14:17:01.918Z",
+      "estimateHours": 1.5,
+      "heldOn": "2026-10-05"
+    },
+    {
+      "id": "i-7",
+      "projectId": "p-2",
+      "kind": "class",
+      "title": "Lecture 5",
+      "status": "todo",
+      "createdAt": "2026-10-18T14:17:01.918Z",
+      "estimateHours": 1.5,
+      "heldOn": "2026-10-12"
+    },
+    {
+      "id": "i-8",
+      "projectId": "p-2",
+      "kind": "class",
+      "title": "Lecture 6",
+      "status": "todo",
+      "createdAt": "2026-10-18T14:17:01.918Z",
+      "estimateHours": 1.5,
+      "heldOn": "2026-10-19"
+    },
+    {
+      "id": "i-9",
+      "projectId": "p-2",
+      "kind": "class",
+      "title": "Lecture 7",
+      "status": "todo",
+      "createdAt": "2026-10-18T14:17:01.918Z",
+      "estimateHours": 1.5,
+      "heldOn": "2026-10-26"
+    },
+    {
+      "id": "i-10",
+      "projectId": "p-2",
+      "kind": "assignment",
+      "title": "Assignment 2: scheduler",
+      "status": "todo",
+      "createdAt": "2026-10-18T14:17:01.918Z",
+      "estimateHours": 8,
+      "dueDate": "2026-10-16"
+    },
+    {
+      "id": "i-11",
+      "projectId": "p-2",
+      "kind": "exam",
+      "title": "Midterm",
+      "status": "todo",
+      "createdAt": "2026-10-18T14:17:01.918Z",
+      "estimateHours": 6,
+      "dueDate": "2026-11-05"
+    },
+    {
+      "id": "i-18",
+      "projectId": "p-17",
+      "kind": "class",
+      "title": "Lecture 1",
+      "status": "done",
+      "createdAt": "2026-10-18T14:17:01.918Z",
+      "estimateHours": 1.5
+    },
+    {
+      "id": "i-19",
+      "projectId": "p-17",
+      "kind": "class",
+      "title": "Lecture 2",
+      "status": "done",
+      "createdAt": "2026-10-18T14:17:01.918Z",
+      "estimateHours": 1.5
+    },
+    {
+      "id": "i-20",
+      "projectId": "p-17",
+      "kind": "class",
+      "title": "Lecture 3",
+      "status": "todo",
+      "createdAt": "2026-10-18T14:17:01.918Z",
+      "estimateHours": 1.5
+    },
+    {
+      "id": "i-21",
+      "projectId": "p-17",
+      "kind": "class",
+      "title": "Lecture 4",
+      "status": "todo",
+      "createdAt": "2026-10-18T14:17:01.918Z",
+      "estimateHours": 1.5
+    },
+    {
+      "id": "i-22",
+      "projectId": "p-17",
+      "kind": "class",
+      "title": "Lecture 5",
+      "status": "todo",
+      "createdAt": "2026-10-18T14:17:01.918Z",
+      "estimateHours": 1.5
+    },
+    {
+      "id": "i-23",
+      "projectId": "p-17",
+      "kind": "class",
+      "title": "Lecture 6",
+      "status": "todo",
+      "createdAt": "2026-10-18T14:17:01.918Z",
+      "estimateHours": 1.5
+    },
+    {
+      "id": "i-24",
+      "projectId": "p-17",
+      "kind": "assignment",
+      "title": "Lab report: TCP congestion",
+      "status": "todo",
+      "createdAt": "2026-10-18T14:17:01.918Z",
+      "estimateHours": 3,
+      "dueDate": "2026-10-21"
+    },
+    {
+      "id": "i-27",
+      "projectId": "p-26",
+      "kind": "task",
+      "title": "Inventory existing alerts",
+      "status": "done",
+      "createdAt": "2026-10-18T14:17:01.918Z"
+    },
+    {
+      "id": "i-28",
+      "projectId": "p-26",
+      "kind": "task",
+      "title": "Draft SLI definitions",
+      "status": "doing",
+      "createdAt": "2026-10-18T14:17:01.918Z",
+      "dueDate": "2026-10-18"
+    },
+    {
+      "id": "i-29",
+      "projectId": "p-26",
+      "kind": "task",
+      "title": "Review with team",
+      "status": "todo",
+      "createdAt": "2026-10-18T14:17:01.918Z"
+    },
+    {
+      "id": "i-30",
+      "projectId": "p-26",
+      "kind": "task",
+      "title": "Roll out burn-rate alerts",
+      "status": "todo",
+      "createdAt": "2026-10-18T14:17:01.918Z"
+    },
+    {
+      "id": "i-33",
+      "projectId": "p-32",
+      "kind": "task",
+      "title": "Pick new hardware",
+      "status": "done",
+      "createdAt": "2026-10-18T14:17:01.918Z"
+    },
+    {
+      "id": "i-34",
+      "projectId": "p-32",
+      "kind": "task",
+      "title": "Set up k3s",
+      "status": "todo",
+      "createdAt": "2026-10-18T14:17:01.918Z",
+      "estimateHours": 4
+    },
+    {
+      "id": "i-35",
+      "projectId": "p-32",
+      "kind": "task",
+      "title": "Migrate Nextcloud",
+      "status": "todo",
+      "createdAt": "2026-10-18T14:17:01.918Z"
+    }
+  ],
+  "allocations": [
+    {
+      "id": "a-12",
+      "itemId": "i-6",
+      "date": "2026-10-10",
+      "plannedHours": 1.5,
+      "done": false
+    },
+    {
+      "id": "a-13",
+      "itemId": "i-7",
+      "date": "2026-10-12",
+      "plannedHours": 1,
+      "done": true,
+      "actualHours": 1
+    },
+    {
+      "id": "a-14",
+      "itemId": "i-7",
+      "date": "2026-10-13",
+      "plannedHours": 0.5,
+      "done": false
+    },
+    {
+      "id": "a-15",
+      "itemId": "i-10",
+      "date": "2026-10-14",
+      "plannedHours": 2,
+      "done": false
+    },
+    {
+      "id": "a-16",
+      "itemId": "i-10",
+      "date": "2026-10-17",
+      "plannedHours": 3,
+      "done": false
+    },
+    {
+      "id": "a-25",
+      "itemId": "i-24",
+      "date": "2026-10-15",
+      "plannedHours": 1.5,
+      "done": false
+    },
+    {
+      "id": "a-36",
+      "itemId": "i-34",
+      "date": "2026-10-18",
+      "plannedHours": 2,
+      "done": false
+    },
+    {
+      "id": "a-37",
+      "itemId": "i-8",
+      "date": "2026-10-12",
+      "plannedHours": 1.5,
+      "done": false,
+      "start": "17:00"
+    },
+    {
+      "id": "a-38",
+      "itemId": "i-10",
+      "date": "2026-10-13",
+      "plannedHours": 2,
+      "done": false,
+      "start": "10:00"
+    }
+  ],
+  "events": [
+    {
+      "id": "e-39",
+      "date": "2026-10-13",
+      "start": "10:15",
+      "end": "12:00",
+      "title": "OS lecture (USOS)",
+      "notes": "Room 3180",
+      "allDay": true
+    },
+    {
+      "id": "e-40",
+      "date": "2026-10-14",
+      "start": "14:15",
+      "end": "15:45",
+      "title": "Networks lab (USOS)"
+    },
+    {
+      "id": "e-41",
+      "date": "2026-10-20",
+      "start": "10:15",
+      "end": "12:00",
+      "title": "OS lecture (USOS)",
+      "notes": "Room 3180"
+    },
+    {
+      "id": "e-42",
+      "date": "2026-10-12",
+      "start": "19:00",
+      "end": "20:30",
+      "title": "Climbing"
+    },
+    {
+      "id": "e-43",
+      "date": "2026-10-14",
+      "allDay": true,
+      "start": "00:00",
+      "end": "23:59",
+      "title": "Mum’s birthday"
+    },
+    {
+      "id": "e-44",
+      "date": "2026-10-13",
+      "start": "08:30",
+      "end": "09:00",
+      "title": "Dentist"
+    },
+    {
+      "id": "e-45",
+      "date": "2026-10-14",
+      "start": "09:30",
+      "end": "10:00",
+      "title": "Team standup"
+    },
+    {
+      "id": "e-46",
+      "date": "2026-10-14",
+      "start": "14:00",
+      "end": "14:30",
+      "title": "1:1 with manager"
+    }
+  ],
+  "dayNotes": {
+    "2026-10-12": "Freeform notes for the day go here."
+  },
+  "monthNotes": {},
+  "settings": {
+    "capacityRules": [
+      {
+        "from": "0000-01-01",
+        "windows": [
+          {
+            "start": "18:00",
+            "end": "21:00"
+          },
+          {
+            "start": "18:00",
+            "end": "21:00"
+          },
+          {
+            "start": "18:00",
+            "end": "21:00"
+          },
+          {
+            "start": "18:00",
+            "end": "21:00"
+          },
+          {
+            "start": "18:00",
+            "end": "21:00"
+          },
+          {
+            "start": "10:00",
+            "end": "16:00"
+          },
+          {
+            "start": "10:00",
+            "end": "16:00"
+          }
+        ],
+        "adjustment": 0,
+        "reserved": [
+          [
+            {
+              "start": "23:00",
+              "end": "07:00",
+              "label": "Sleep"
+            }
+          ],
+          [],
+          [],
+          [],
+          [],
+          [],
+          []
+        ]
+      }
+    ],
+    "dayCapacity": {
+      "2026-10-13": {
+        "override": 2
+      }
+    },
+    "defaultEventMinutes": 60,
+    "defaultCalendarView": "3day",
+    "usos": {
+      "source": {
+        "kind": "ical",
+        "url": "https://usosweb.example/plan.ics"
+      },
+      "handled": ["a", "b"]
+    }
+  }
+}

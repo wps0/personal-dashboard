@@ -1,4 +1,14 @@
+import {
+  CalendarView,
+  ItemKind,
+  ItemStatus,
+  ProgressMode,
+} from '../gen/dashboard/v2/data_pb';
 import {defaultRules, type CapacityRule, type DayCapacity} from './capacity';
+
+// Stored enums are the schema's (proto/dashboard/v2/data.proto). Code must
+// cope with values it doesn't know: a newer version of the app may add some.
+export {CalendarView, ItemKind, ItemStatus, ProgressMode};
 
 /** ISO calendar date in local time, `YYYY-MM-DD`. */
 export type ISODate = string;
@@ -9,10 +19,22 @@ export interface Area {
   color: string;
 }
 
+/** The calendar's views, as the UI and the address bar name them. */
 export const CAL_VIEWS = ['day', '3day', 'week', 'month'] as const;
 export type CalView = (typeof CAL_VIEWS)[number];
 
-export type ProgressMode = 'checklist' | 'hours' | 'manual';
+const CAL_VIEW_OF: Record<CalendarView, CalView> = {
+  [CalendarView.UNSPECIFIED]: 'week',
+  [CalendarView.DAY]: 'day',
+  [CalendarView.THREE_DAY]: '3day',
+  [CalendarView.WEEK]: 'week',
+  [CalendarView.MONTH]: 'month',
+};
+
+/** The UI view for a stored calendar view; week for one this version doesn't know. */
+export function calViewOf(view: CalendarView): CalView {
+  return CAL_VIEW_OF[view] ?? 'week';
+}
 
 export interface LogEntry {
   id: string;
@@ -27,7 +49,7 @@ export interface Project {
   areaId: string;
   name: string;
   progressMode: ProgressMode;
-  /** 0–100, used when progressMode is 'manual'. */
+  /** 0–100, used when progressMode is MANUAL. */
   manualProgress: number;
   dueDate?: ISODate;
   /** Markdown: goals, links, decisions. */
@@ -43,11 +65,12 @@ export interface Project {
   coursePattern?: string;
 }
 
-/** 'class': a class meeting to attend or catch up on (lecture, lab, tutorial, seminar). */
-export type ItemKind = 'class' | 'assignment' | 'exam' | 'task';
-
-export const STATUSES = ['todo', 'doing', 'done'] as const;
-export type ItemStatus = (typeof STATUSES)[number];
+/** The statuses an item moves through, in order. */
+export const STATUSES = [
+  ItemStatus.TODO,
+  ItemStatus.DOING,
+  ItemStatus.DONE,
+] as const;
 
 export interface Item {
   id: string;
@@ -112,7 +135,7 @@ export interface Settings {
   /** Length of an event created by clicking the calendar. */
   defaultEventMinutes: number;
   /** View the calendar opens in when you navigate to it. */
-  defaultCalendarView: CalView;
+  defaultCalendarView: CalendarView;
   usos: UsosSettings;
 }
 
@@ -155,7 +178,7 @@ export function emptyData(): AppData {
       capacityRules: defaultRules(),
       dayCapacity: {},
       defaultEventMinutes: 60,
-      defaultCalendarView: 'week',
+      defaultCalendarView: CalendarView.WEEK,
       usos: {handled: []},
     },
   };

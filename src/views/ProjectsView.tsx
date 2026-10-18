@@ -13,7 +13,13 @@ import {
   urgency,
   type ProjectStats,
 } from '../model/selectors';
-import type {Area, Project} from '../model/types';
+import {ProgressMode, type Area, type Project} from '../model/types';
+
+/** Shown on a project's card when progress isn't counted from items. */
+const MODE_NAME: Partial<Record<ProgressMode, string>> = {
+  [ProgressMode.HOURS]: 'hours',
+  [ProgressMode.MANUAL]: 'manual',
+};
 import {href, navigate} from '../router';
 import {useStore} from '../store';
 import {ProjectPanel} from './ProjectPanel';
@@ -234,8 +240,11 @@ const ProjectCard = memo(function ProjectCard(props: {
         <div className="truncate font-medium text-strong">{project.name}</div>
         <div className="tabular-nums text-[11px] text-dim">
           {stats.total > 0 ? `${stats.done}/${stats.total} done` : 'no items'}
-          {project.progressMode !== 'checklist' && (
-            <span className="text-dim/60"> · {project.progressMode}</span>
+          {MODE_NAME[project.progressMode] && (
+            <span className="text-dim/60">
+              {' '}
+              · {MODE_NAME[project.progressMode]}
+            </span>
           )}
         </div>
         {stats.next && (

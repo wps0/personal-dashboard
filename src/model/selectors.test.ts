@@ -3,11 +3,18 @@ import {
   allocationsByItem,
   backlogItems,
   missedAllocations,
-  migrateStatus,
   projectStats,
 } from './selectors';
-import type {Allocation, AppData, Item, Project} from './types';
-import {emptyData} from './types';
+import {
+  ItemKind,
+  ItemStatus,
+  ProgressMode,
+  emptyData,
+  type Allocation,
+  type AppData,
+  type Item,
+  type Project,
+} from './types';
 
 const TODAY = '2026-10-10';
 
@@ -21,7 +28,7 @@ const project = (extra: Partial<Project> = {}): Project => ({
   id: 'p',
   areaId: 'a',
   name: 'OS',
-  progressMode: 'checklist',
+  progressMode: ProgressMode.CHECKLIST,
   manualProgress: 0,
   overviewDoc: '',
   log: [],
@@ -32,9 +39,9 @@ const project = (extra: Partial<Project> = {}): Project => ({
 const item = (id: string, extra: Partial<Item> = {}): Item => ({
   id,
   projectId: 'p',
-  kind: 'task',
+  kind: ItemKind.TASK,
   title: id,
-  status: 'todo',
+  status: ItemStatus.TODO,
   createdAt: '',
   ...extra,
 });
@@ -56,9 +63,9 @@ const alloc = (
 describe('projectStats', () => {
   it('computes checklist progress from done items', () => {
     const items = [
-      item('l1', {kind: 'class', status: 'done'}),
-      item('l2', {kind: 'class', status: 'doing'}),
-      item('t1', {status: 'done'}),
+      item('l1', {kind: ItemKind.CLASS, status: ItemStatus.DONE}),
+      item('l2', {kind: ItemKind.CLASS, status: ItemStatus.DOING}),
+      item('t1', {status: ItemStatus.DONE}),
       item('t2'),
     ];
     const s = projectStats(project(), items, new Map());
@@ -74,7 +81,7 @@ describe('projectStats', () => {
     ];
     const d = {...fixture(), items, allocations: allocs};
     const s = projectStats(
-      project({progressMode: 'hours'}),
+      project({progressMode: ProgressMode.HOURS}),
       items,
       allocationsByItem(d),
     );
@@ -85,11 +92,11 @@ describe('projectStats', () => {
     const items = [
       item('a', {dueDate: '2026-10-20'}),
       item('b', {dueDate: '2026-10-12'}),
-      item('c', {dueDate: '2026-10-11', status: 'done'}),
+      item('c', {dueDate: '2026-10-11', status: ItemStatus.DONE}),
     ];
     const s = projectStats(
       project({
-        progressMode: 'manual',
+        progressMode: ProgressMode.MANUAL,
         manualProgress: 140,
         dueDate: '2026-12-01',
       }),
@@ -121,7 +128,7 @@ describe('backlogItems', () => {
       item('planned'),
       item('missed'),
       item('free'),
-      item('finished', {status: 'done'}),
+      item('finished', {status: ItemStatus.DONE}),
     ];
     d.allocations = [
       alloc('1', 'planned', '2026-10-12', 1),
@@ -151,7 +158,7 @@ describe('missedAllocations', () => {
   it('returns unchecked past allocations of open items, oldest first', () => {
     const d = fixture();
     d.projects = [project()];
-    d.items = [item('x'), item('closed', {status: 'done'})];
+    d.items = [item('x'), item('closed', {status: ItemStatus.DONE})];
     d.allocations = [
       alloc('today', 'x', TODAY, 1),
       alloc('late', 'x', '2026-10-09', 1),
@@ -163,16 +170,5 @@ describe('missedAllocations', () => {
       'early',
       'late',
     ]);
-  });
-});
-
-describe('migrateStatus', () => {
-  it('maps old lecture stages onto todo / in progress / done', () => {
-    expect(migrateStatus('watched')).toBe('doing');
-    expect(migrateStatus('notes')).toBe('done');
-    expect(migrateStatus('revised')).toBe('done');
-    expect(migrateStatus('doing')).toBe('doing');
-    expect(migrateStatus('todo')).toBe('todo');
-    expect(migrateStatus('garbage')).toBe('todo');
   });
 });

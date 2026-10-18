@@ -8,35 +8,9 @@ import * as pb from '../gen/dashboard/v2/data_pb';
 import type {CapacityRule, DayCapacity} from '../model/capacity';
 import type * as v1 from '../model/types';
 
-const ITEM_KINDS: Record<v1.ItemKind, pb.ItemKind> = {
-  class: pb.ItemKind.CLASS,
-  assignment: pb.ItemKind.ASSIGNMENT,
-  exam: pb.ItemKind.EXAM,
-  task: pb.ItemKind.TASK,
-};
-
-const ITEM_STATUSES: Record<v1.ItemStatus, pb.ItemStatus> = {
-  todo: pb.ItemStatus.TODO,
-  doing: pb.ItemStatus.DOING,
-  done: pb.ItemStatus.DONE,
-};
-
-const PROGRESS_MODES: Record<v1.ProgressMode, pb.ProgressMode> = {
-  checklist: pb.ProgressMode.CHECKLIST,
-  hours: pb.ProgressMode.HOURS,
-  manual: pb.ProgressMode.MANUAL,
-};
-
-const CALENDAR_VIEWS: Record<v1.CalView, pb.CalendarView> = {
-  day: pb.CalendarView.DAY,
-  '3day': pb.CalendarView.THREE_DAY,
-  week: pb.CalendarView.WEEK,
-  month: pb.CalendarView.MONTH,
-};
-
 /**
- * The protobuf form of v1 data. Expects data already validated and migrated
- * by `parseAppData`; a value v1 never had becomes UNSPECIFIED.
+ * The protobuf form of the app's model, or of v1 data once validated and
+ * migrated by `parseAppData`.
  */
 export function fromV1(data: v1.AppData): pb.AppData {
   return create(pb.AppDataSchema, {
@@ -56,7 +30,6 @@ export function fromV1(data: v1.AppData): pb.AppData {
 function projectFromV1(p: v1.Project): pb.Project {
   return create(pb.ProjectSchema, {
     ...p,
-    progressMode: PROGRESS_MODES[p.progressMode] ?? pb.ProgressMode.UNSPECIFIED,
     log: p.log.map(entry => create(pb.LogEntrySchema, entry)),
   });
 }
@@ -64,8 +37,6 @@ function projectFromV1(p: v1.Project): pb.Project {
 function itemFromV1(i: v1.Item): pb.Item {
   return create(pb.ItemSchema, {
     ...i,
-    kind: ITEM_KINDS[i.kind] ?? pb.ItemKind.UNSPECIFIED,
-    status: ITEM_STATUSES[i.status] ?? pb.ItemStatus.UNSPECIFIED,
     source: i.source
       ? create(pb.ItemSourceSchema, {
           source: {case: 'usosMeeting', value: i.source.key},
@@ -85,8 +56,7 @@ function settingsFromV1(s: v1.Settings): pb.Settings {
       ]),
     ),
     defaultEventMinutes: s.defaultEventMinutes,
-    defaultCalendarView:
-      CALENDAR_VIEWS[s.defaultCalendarView] ?? pb.CalendarView.UNSPECIFIED,
+    defaultCalendarView: s.defaultCalendarView,
     usos: create(pb.UsosSettingsSchema, {
       source:
         source?.kind === 'google'

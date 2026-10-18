@@ -3,7 +3,7 @@ import {BufferedInput, BufferedTextarea} from './Buffered';
 import {DateField} from './DateField';
 import {StatusSelect} from './StatusSelect';
 import {TimeSelect} from './TimeSelect';
-import {Select, type Option} from './ui/Select';
+import {Select} from './ui/Select';
 import {Trash2, X} from 'lucide-react';
 import {HoursInput} from './HoursInput';
 import {Markdown} from './Markdown';
@@ -15,13 +15,8 @@ import {
   plannedHours,
   urgency,
 } from '../model/selectors';
-import type {Allocation, Item, ItemKind} from '../model/types';
-import {fmtH, KINDS, URGENCY_CLASS} from '../format';
-
-const KIND_OPTIONS = KINDS.map((k): Option<ItemKind> => ({
-  value: k,
-  label: k[0].toUpperCase() + k.slice(1),
-}));
+import {ItemKind, type Allocation, type Item} from '../model/types';
+import {fmtH, KIND_OPTIONS, URGENCY_CLASS} from '../format';
 import {navigate} from '../router';
 import {useStore} from '../store';
 import {useUi} from '../ui';
@@ -133,7 +128,7 @@ function ItemDetails({item, onClose}: {item: Item; onClose(): void}) {
             </span>
           )}
         </Field>
-        {(item.kind === 'class' || item.heldOn) && (
+        {(item.kind === ItemKind.CLASS || item.heldOn) && (
           <Field label="held on">
             <DateField
               optional

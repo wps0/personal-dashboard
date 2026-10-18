@@ -1,4 +1,5 @@
 import {describe, expect, it} from 'vitest';
+import {ItemKind} from '../model/types';
 import type {ApiEvent} from '../google/events';
 import {
   coursePattern,
@@ -293,7 +294,7 @@ describe('taskFromMeeting', () => {
         location: 'Banacha 2, sala 3180',
       }),
     ).toEqual({
-      kind: 'class',
+      kind: ItemKind.CLASS,
       title: 'WYK · Wed 14 Oct, 10:15',
       heldOn: '2026-10-14',
       notes: 'WYK 10:15–12:00 · Banacha 2, sala 3180',

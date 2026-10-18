@@ -1,5 +1,5 @@
 import type {Urgency} from './model/selectors';
-import type {ItemKind} from './model/types';
+import {ItemKind} from './model/types';
 
 /** 1.5 → "1.5", 0.25 → "0.25", 2 → "2". */
 export const fmtNum = (n: number) =>
@@ -13,13 +13,26 @@ export const URGENCY_CLASS: Record<Urgency, string> = {
   far: 'text-dim',
 };
 
-export const KINDS: ItemKind[] = ['class', 'assignment', 'exam', 'task'];
-export const KIND_BADGE: Record<ItemKind, string> = {
-  class: 'CLS',
-  assignment: 'ASG',
-  exam: 'EXM',
-  task: 'TSK',
+const KINDS: Record<ItemKind, {name: string; badge: string}> = {
+  [ItemKind.UNSPECIFIED]: {name: 'Other', badge: '?'},
+  [ItemKind.CLASS]: {name: 'Class', badge: 'CLS'},
+  [ItemKind.ASSIGNMENT]: {name: 'Assignment', badge: 'ASG'},
+  [ItemKind.EXAM]: {name: 'Exam', badge: 'EXM'},
+  [ItemKind.TASK]: {name: 'Task', badge: 'TSK'},
 };
+
+/** The short badge for an item kind; "?" for a kind this version doesn't know. */
+export function kindBadge(kind: ItemKind): string {
+  return KINDS[kind]?.badge ?? '?';
+}
+
+/** The kinds you can pick for an item, for a Select. */
+export const KIND_OPTIONS = [
+  ItemKind.CLASS,
+  ItemKind.ASSIGNMENT,
+  ItemKind.EXAM,
+  ItemKind.TASK,
+].map(kind => ({value: kind, label: KINDS[kind].name}));
 
 /**
  * Text color that stays readable on a solid background (dark on light colors,

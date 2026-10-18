@@ -5,15 +5,62 @@
  */
 
 import {defaultRules, rulesFromLegacyHours} from '../model/capacity';
-import {migrateStatus} from '../model/selectors';
-import type {AppData, UsosSettings, UsosSource} from '../model/types';
-import {CAL_VIEWS, emptyData} from '../model/types';
+import {
+  CalendarView,
+  ItemKind,
+  ItemStatus,
+  ProgressMode,
+  emptyData,
+  type AppData,
+  type UsosSettings,
+  type UsosSource,
+} from '../model/types';
+
+const ITEM_KINDS: Record<string, ItemKind> = {
+  // 'lecture' became 'class' (lectures, labs, tutorials, seminars).
+  lecture: ItemKind.CLASS,
+  class: ItemKind.CLASS,
+  assignment: ItemKind.ASSIGNMENT,
+  exam: ItemKind.EXAM,
+  task: ItemKind.TASK,
+};
+
+const ITEM_STATUSES: Record<string, ItemStatus> = {
+  todo: ItemStatus.TODO,
+  doing: ItemStatus.DOING,
+  done: ItemStatus.DONE,
+  // Older lecture stages.
+  watched: ItemStatus.DOING,
+  notes: ItemStatus.DONE,
+  revised: ItemStatus.DONE,
+};
+
+const PROGRESS_MODES: Record<string, ProgressMode> = {
+  checklist: ProgressMode.CHECKLIST,
+  hours: ProgressMode.HOURS,
+  manual: ProgressMode.MANUAL,
+};
+
+const CALENDAR_VIEWS: Record<string, CalendarView> = {
+  day: CalendarView.DAY,
+  '3day': CalendarView.THREE_DAY,
+  week: CalendarView.WEEK,
+  month: CalendarView.MONTH,
+};
+
+/** v1 JSON as stored: the enums are strings. */
+interface StoredV1 {
+  version?: unknown;
+  items?: Array<{kind?: string; status?: string}>;
+  projects?: Array<{progressMode?: string}>;
+  settings?: unknown;
+}
 
 /** Validates and normalizes data from storage or an imported file. Throws on garbage. */
 export function parseAppData(raw: unknown): AppData {
   if (typeof raw !== 'object' || raw === null)
     throw new Error('Not a dashboard data object');
-  const r = raw as Partial<AppData>;
+  const r = raw as StoredV1 & Partial<Omit<AppData, keyof StoredV1>>;
   if (r.version !== 1)
     throw new Error(`Unsupported data version: ${String(r.version)}`);
   for (const key of ['areas', 'projects', 'items', 'allocations'] as const) {
@@ -23,11 +70,15 @@ export function parseAppData(raw: unknown): AppData {
   return {
     ...base,
     ...r,
+    projects: r.projects!.map(p => ({
+      ...p,
+      progressMode:
+        PROGRESS_MODES[p.progressMode ?? ''] ?? ProgressMode.CHECKLIST,
+    })),
     items: r.items!.map(i => ({
       ...i,
-      // 'lecture' became 'class' (lectures, labs, tutorials, seminars).
-      kind: (i.kind as string) === 'lecture' ? 'class' : i.kind,
-      status: migrateStatus(i.status),
+      kind: ITEM_KINDS[i.kind ?? ''] ?? ItemKind.TASK,
+      status: ITEM_STATUSES[i.status ?? ''] ?? ItemStatus.TODO,
     })),
     events: Array.isArray(r.events) ? r.events : [],
     dayNotes: r.dayNotes ?? {},
@@ -37,7 +88,9 @@ export function parseAppData(raw: unknown): AppData {
 }
 
 function parseSettings(raw: unknown): AppData['settings'] {
-  const s = (raw ?? {}) as Partial<AppData['settings']> & {capacity?: number[]};
+  const s = (raw ?? {}) as Partial<
+    Omit<AppData['settings'], 'defaultCalendarView'>
+  > & {capacity?: number[]; defaultCalendarView?: string};
   const capacityRules =
     Array.isArray(s.capacityRules) && s.capacityRules.length
       ? s.capacityRules
@@ -49,11 +102,8 @@ function parseSettings(raw: unknown): AppData['settings'] {
     Number.isFinite(minutes) && minutes >= 15 && minutes <= 480
       ? Math.round(minutes / 15) * 15
       : 60;
-  const defaultCalendarView = (CAL_VIEWS as readonly string[]).includes(
-    s.defaultCalendarView as string,
-  )
-    ? s.defaultCalendarView!
-    : 'week';
+  const defaultCalendarView =
+    CALENDAR_VIEWS[String(s.defaultCalendarView)] ?? CalendarView.WEEK;
   return {
     capacityRules,
     dayCapacity: s.dayCapacity ?? {},
