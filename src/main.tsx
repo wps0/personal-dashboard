@@ -1,6 +1,7 @@
 import {StrictMode} from 'react';
 import {createRoot} from 'react-dom/client';
 import {App} from './app';
+import {LoadError} from './components/load_error';
 import './index.css';
 import {setUpPwa} from './pwa';
 import {IndexedDbStorage} from './storage/storage';
@@ -17,11 +18,7 @@ async function boot() {
     if (data) useStore.getState().replaceAll(data);
   } catch (e) {
     // Don't overwrite data we couldn't read: surface it and stop.
-    root.render(
-      <pre className="p-4 text-danger">
-        Failed to load saved data: {String(e)}
-      </pre>,
-    );
+    root.render(<LoadError error={e} storage={storage} />);
     return;
   }
 
