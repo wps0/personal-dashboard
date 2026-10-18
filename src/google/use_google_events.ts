@@ -26,10 +26,14 @@ export function clearGoogleCache() {
   useCache.setState({ranges: {}});
 }
 
-// Selection or account changes invalidate what we have.
+// Selection or account changes invalidate what we have. Expiry doesn't: what
+// was loaded still shows until a new token arrives.
 useGoogle.subscribe((s, prev) => {
-  if (s.selected !== prev.selected || s.token?.value !== prev.token?.value)
-    clearGoogleCache();
+  const newToken = !!s.token && s.token.value !== prev.token?.value;
+  const ended =
+    (s.status === 'signed-out' && prev.status !== 'signed-out') ||
+    (!s.calendar && prev.calendar);
+  if (s.selected !== prev.selected || newToken || ended) clearGoogleCache();
 });
 
 // Coming back to the tab: refetch anything older than a minute.
