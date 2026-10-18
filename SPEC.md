@@ -313,8 +313,9 @@ Google Drive sync.
   version to pick, and applying it never overwrites a value edited since (it
   can be undone). Until then a button in the header (and a line in
   Settings) shows how many are waiting and opens the review. An edit wins over a
-  deletion; records whose parent was deleted are dropped. Edits
-  made during a sync are merged in too.
+  deletion, also one that took its parent along (an edited task brings back
+  its deleted project, listed for review too); other records whose parent was
+  deleted are dropped. Edits made during a sync are merged in too.
 - **First sync on a device.** A blank device takes Drive's data. A device with
   different data asks: **Use Drive's data** or **Merge both** (with an export
   offered first). The same goes for a sync file the device hasn't synced with
