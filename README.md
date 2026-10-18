@@ -110,9 +110,15 @@ One-time setup (free, about 5 minutes):
    - Authorized JavaScript origins: every address you open the app from, e.g.
      `http://localhost:5173` and `https://<you>.github.io`.
    - No redirect URI is needed.
-4. In the app, go to **Settings → Google Calendar**, paste the Client ID (it
-   isn't a secret), and sign in. Alternatively, build with
-   `VITE_GOOGLE_CLIENT_ID=… npm run build`.
+4. Give the app the Client ID (it isn't a secret). Either:
+   - set the repository variable `GOOGLE_CLIENT_ID` (Settings → Secrets and
+     variables → Actions → Variables), and the deploy builds it in, so every
+     device has it; or
+   - paste it in **Settings → Google Calendar** on each device (this wins
+     over a built-in one; clear the field to go back to it).
+
+   Locally, `VITE_GOOGLE_CLIENT_ID=… npm run dev` does the same as the
+   variable.
 
 Google shows an "unverified app" warning for apps in testing mode. That's
 expected for a personal client.

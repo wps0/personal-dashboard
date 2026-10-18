@@ -23,6 +23,8 @@ export const DRIVE_SCOPE = 'https://www.googleapis.com/auth/drive.file';
 const PREFS_KEY = 'personal-dashboard/google';
 const TOKEN_KEY = 'personal-dashboard/google-token';
 const GIS_SRC = 'https://accounts.google.com/gsi/client';
+/** Built in by the deploy (a repository variable); one set in Settings wins. */
+const BUILT_IN_CLIENT_ID: string = import.meta.env.VITE_GOOGLE_CLIENT_ID ?? '';
 
 /** Minimal typings for Google Identity Services' token model. */
 interface TokenResponse {
@@ -103,15 +105,17 @@ export function hasDriveAccess(t: Token | undefined) {
 
 function loadPrefs(): Prefs {
   const fallback: Prefs = {
-    clientId: import.meta.env.VITE_GOOGLE_CLIENT_ID ?? '',
+    clientId: BUILT_IN_CLIENT_ID,
     selected: [],
     consented: false,
     driveSync: false,
   };
   try {
+    const stored = JSON.parse(localStorage.getItem(PREFS_KEY) ?? '{}');
     return {
       ...fallback,
-      ...JSON.parse(localStorage.getItem(PREFS_KEY) ?? '{}'),
+      ...stored,
+      clientId: stored.clientId || BUILT_IN_CLIENT_ID,
     };
   } catch {
     return fallback;
@@ -133,7 +137,8 @@ function savePrefs(p: Prefs) {
     localStorage.setItem(
       PREFS_KEY,
       JSON.stringify({
-        clientId: p.clientId,
+        // Only one set in Settings, so a new built-in one still applies.
+        clientId: p.clientId === BUILT_IN_CLIENT_ID ? '' : p.clientId,
         selected: p.selected,
         consented: p.consented,
         driveSync: p.driveSync,
@@ -178,7 +183,8 @@ export const useGoogle = create<GoogleState>()((set, get) => {
     token: initialToken,
     calendars: [],
 
-    setClientId: clientId => prefs({clientId: clientId.trim()}),
+    setClientId: clientId =>
+      prefs({clientId: clientId.trim() || BUILT_IN_CLIENT_ID}),
 
     setDriveSync: on => {
       prefs({driveSync: on});
