@@ -27,6 +27,8 @@ interface SyncState {
   status: SyncStatus;
   /** When the last sync finished (ms). */
   lastSynced?: number;
+  /** The Drive file it synced with. */
+  fileId?: string;
 }
 
 /** Sync status for the UI. */
@@ -84,7 +86,11 @@ export class SyncRunner {
     await this.running;
     this.base = null;
     await this.deps.clearBase();
-    useSync.setState({status: {kind: 'off'}, lastSynced: undefined});
+    useSync.setState({
+      status: {kind: 'off'},
+      lastSynced: undefined,
+      fileId: undefined,
+    });
   }
 
   private async loop(choice?: FirstSyncChoice) {
@@ -136,7 +142,11 @@ export class SyncRunner {
       if (data !== res.data) this.again = true; // upload those edits
       const conflicts = [...res.conflicts, ...(late?.conflicts ?? [])];
       if (conflicts.length) deps.onConflicts?.(conflicts);
-      useSync.setState({status: {kind: 'idle'}, lastSynced: Date.now()});
+      useSync.setState({
+        status: {kind: 'idle'},
+        lastSynced: Date.now(),
+        fileId: res.base.fileId,
+      });
       return true;
     } catch (e) {
       useSync.setState({status: statusOf(e)});

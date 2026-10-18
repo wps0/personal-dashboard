@@ -18,6 +18,7 @@ const {
   findFile,
   updateFile,
   writeCopy,
+  fileDetails,
 } = await import('./drive');
 const {retryPolicy} = await import('./request');
 retryPolicy.baseMs = 1;
@@ -154,6 +155,21 @@ describe('Drive client', () => {
     expect([init.method, init.body]).toEqual(['PATCH', '{}\n']);
     expect((init.headers as Record<string, string>)['Content-Type']).toBe(
       'application/json',
+    );
+  });
+
+  it('reads a file’s details for the settings', async () => {
+    const details = {
+      name: 'personal-dashboard.binpb',
+      size: '2048',
+      modifiedTime: '2026-10-13T10:00:00Z',
+      version: '7',
+      webViewLink: 'https://drive.google.com/file/d/f1/view',
+    };
+    fetchMock.mockResolvedValueOnce(ok(details));
+    expect(await fileDetails('f1')).toEqual(details);
+    expect(new URL(call().url).searchParams.get('fields')).toBe(
+      'name,size,modifiedTime,version,webViewLink',
     );
   });
 });
