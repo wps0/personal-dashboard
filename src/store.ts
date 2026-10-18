@@ -45,7 +45,8 @@ interface Actions {
   updateLog(projectId: string, logId: string, text: string): void;
   deleteLog(projectId: string, logId: string): void;
 
-  addItems(projectId: string, items: ItemInit[]): void;
+  /** Returns the new items' ids, in order. */
+  addItems(projectId: string, items: ItemInit[]): string[];
   updateItem(id: string, patch: Partial<Omit<Item, 'id'>>): void;
   deleteItem(id: string): void;
 
@@ -175,23 +176,26 @@ export const useStore = create<State>()((set, get) => {
       get().updateProject(projectId, {log: p.log.filter(l => l.id !== logId)});
     },
 
-    addItems: (projectId, items) =>
+    addItems: (projectId, items) => {
+      const ids = items.map(() => uid());
       update(d => ({
         items: [
           ...d.items,
-          ...items.map(i =>
+          ...items.map((i, k) =>
             createMessage(pb.ItemSchema, {
               kind: ItemKind.TASK,
               title: 'Untitled',
               status: ItemStatus.TODO,
               createdAt: now(),
               ...i,
-              id: uid(),
+              id: ids[k],
               projectId,
             }),
           ),
         ],
-      })),
+      }));
+      return ids;
+    },
     updateItem: (id, patch) =>
       update(d => ({items: patchById(d.items, id, patch)})),
     deleteItem: id => update(d => withoutItems(d, new Set([id]))),

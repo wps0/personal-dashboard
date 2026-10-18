@@ -35,14 +35,25 @@ describe('importClasses', () => {
   it('adds the chosen classes as tasks and remembers every class shown', () => {
     const all = shown.map(p => ({...p, projectId}));
     importClasses([all[1]], all);
-    const {items, settings} = useStore.getState().data;
+    const {items, allocations, settings} = useStore.getState().data;
     expect(items).toMatchObject([
       {
         projectId,
         kind: ItemKind.CLASS,
         title: 'WYK · Wed 21 Oct, 10:15',
         heldOn: '2026-10-21',
+        estimateHours: 1.75,
         source: {source: {case: 'usosMeeting', value: 'b'}},
+      },
+    ]);
+    // Planned like the class itself: its day, start and length.
+    expect(allocations).toMatchObject([
+      {
+        itemId: items[0].id,
+        date: '2026-10-21',
+        start: '10:15',
+        plannedHours: 1.75,
+        done: false,
       },
     ]);
     expect(settings.usos.handled).toEqual(['a', 'b']);
@@ -55,8 +66,10 @@ describe('importClasses', () => {
     const all = shown.map(p => ({...p, projectId}));
     importClasses(all, all);
     expect(useStore.getState().data.items).toHaveLength(2);
+    expect(useStore.getState().data.allocations).toHaveLength(2);
     undoLast();
     expect(useStore.getState().data.items).toHaveLength(0);
+    expect(useStore.getState().data.allocations).toHaveLength(0);
     expect(useStore.getState().data.settings.usos.handled).toEqual([]);
   });
 
