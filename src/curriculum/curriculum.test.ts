@@ -102,6 +102,19 @@ describe('validateResult / parseResponse', () => {
     ).toThrow(/valid JSON/);
     expect(() => parseResponse({candidates: []})).toThrow(/no answer/);
   });
+
+  it('explains answers stopped by a filter', () => {
+    const stopped = (finishReason: string, text = '') =>
+      parseResponse({
+        candidates: [{content: {parts: [{text}]}, finishReason}],
+      });
+    expect(() => stopped('RECITATION', '{"topics": [{"ti')).toThrow(
+      /recitation filter/,
+    );
+    expect(() => stopped('RECITATION')).toThrow(/recitation filter/);
+    expect(() => stopped('SAFETY')).toThrow(/safety filter/);
+    expect(() => stopped('PROHIBITED_CONTENT')).toThrow(/prohibited content/);
+  });
 });
 
 describe('verbatim check', () => {
@@ -263,6 +276,24 @@ describe('extractCurriculum', () => {
       throw new TypeError('Failed to fetch');
     });
     await expect(call()).rejects.toThrow(/offline/);
+  });
+
+  it('asks for a reload when the Gemini client can’t be loaded', async () => {
+    vi.resetModules();
+    vi.doMock('@google/genai', () => {
+      throw new TypeError(
+        'Failed to fetch dynamically imported module: https://x.example/assets/genai.js',
+      );
+    });
+    try {
+      const {extractCurriculum: extract} = await import('./curriculum');
+      await expect(
+        extract('x', {apiKey: 'k', model: 'gemini-flash-latest'}),
+      ).rejects.toThrow('the app was probably updated: reload the page');
+    } finally {
+      vi.doUnmock('@google/genai');
+      vi.resetModules();
+    }
   });
 });
 
