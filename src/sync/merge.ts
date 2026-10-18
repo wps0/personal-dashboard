@@ -2,7 +2,9 @@ import type {AppData} from '../model/types';
 
 type Json = unknown;
 type Obj = Record<string, Json>;
-type WithId = {id: string};
+interface WithId {
+  id: string;
+}
 
 /**
  * A value both sides changed differently since the last sync. `path` leads

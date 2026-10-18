@@ -72,7 +72,11 @@ interface Props {
 
 type Drag =
   {kind: 'alloc'; alloc: Allocation} | {kind: 'event'; event: CalendarEvent};
-type Span = {start: number; end: number; label?: string};
+interface Span {
+  start: number;
+  end: number;
+  label?: string;
+}
 
 const EMPTY: never[] = [];
 
@@ -229,12 +233,12 @@ export function TimeGrid({
   );
 }
 
-type DayData = {
+interface DayData {
   timed: Allocation[];
   untimed: Allocation[];
   events: CalendarEvent[];
   allDay: CalendarEvent[];
-};
+}
 
 type BodyProps = Required<Omit<Props, 'onDayClick'>> &
   Pick<Props, 'onDayClick'>;
@@ -906,7 +910,10 @@ function useResize(
   return {previewEnd, handleProps};
 }
 
-type Pos = {lane: number; lanes: number};
+interface Pos {
+  lane: number;
+  lanes: number;
+}
 
 /** Resize grip height: 6px on normal blocks, a thin edge on short ones so the rest stays clickable. */
 const handleHeight = (blockPx: number) => Math.max(3, Math.min(6, blockPx / 5));

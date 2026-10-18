@@ -75,7 +75,9 @@ interface Actions {
   ): void;
 }
 
-type State = {data: AppData} & Actions;
+interface State extends Actions {
+  data: AppData;
+}
 
 export const useStore = create<State>()((set, get) => {
   const update = (fn: (d: AppData) => Partial<AppData>) =>
