@@ -317,7 +317,9 @@ Google Drive sync.
   made during a sync are merged in too.
 - **First sync on a device.** A blank device takes Drive's data. A device with
   different data asks: **Use Drive's data** or **Merge both** (with an export
-  offered first).
+  offered first). The same goes for a sync file the device hasn't synced with
+  (another Google account's, or one remade on another device): it shares no
+  history with this device's data.
 - **Safety.** Data from Drive that this version can't read is never
   overwritten. Replacing all data (import, sample data, reset) warns that it
   reaches the other devices. Drive v3 has no conditional writes, so a write

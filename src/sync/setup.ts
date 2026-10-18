@@ -1,5 +1,6 @@
 import {hasDriveAccess, useGoogle} from '../google/auth';
 import * as drive from '../google/drive';
+import {navigate} from '../router';
 import type {IndexedDbStorage} from '../storage/storage';
 import {useStore} from '../store';
 import {toast} from '../toast';
@@ -60,6 +61,15 @@ export function setUpSync(storage: IndexedDbStorage) {
     if (!on() || s.data === prev.data || s.data === r.applied) return;
     window.clearTimeout(editTimer);
     editTimer = window.setTimeout(sync, AFTER_EDIT_MS);
+  });
+
+  useSync.subscribe((s, prev) => {
+    // Also asked by background syncs (e.g. after switching Google accounts).
+    if (s.status.kind === 'choose' && prev.status.kind !== 'choose')
+      toast('Sync is paused: Google Drive has different data.', {
+        label: 'Choose',
+        run: () => navigate({name: 'settings'}),
+      });
   });
 
   useGoogle.subscribe((s, prev) => {

@@ -1,7 +1,7 @@
 import {create, toBinary} from '@bufbuild/protobuf';
 import {beforeEach, describe, expect, it} from 'vitest';
 import * as pb from '../gen/dashboard/data_pb';
-import {SCHEMA_VERSION, toReadableJson} from '../storage/codec';
+import {encode, SCHEMA_VERSION, toReadableJson} from '../storage/codec';
 import {sampleData} from '../model/sample';
 import {emptyData, type AppData} from '../model/types';
 import {FakeDrive} from './fake_drive';
@@ -144,6 +144,50 @@ describe('syncOnce', () => {
     laptop.data = edit(laptop.data, d => (d.items[0].title = 'x'));
     expect((await laptop.sync()).kind).toBe('pushed');
     expect(drive.content().items[0].title).toBe('x');
+  });
+
+  it('treats another Google account’s file like a first sync', async () => {
+    const laptop = new Device(sample(), drive);
+    await laptop.sync();
+    // Signed in with another account, whose Drive has other data.
+    const other = new FakeDrive();
+    const theirs = edit(emptyData(), d => {
+      d.areas.push(
+        create(pb.AreaSchema, {id: 'a-theirs', name: 'Theirs', color: '#fff'}),
+      );
+    });
+    other.files.set('g1', {content: encode(theirs), version: 3});
+    const switched = new Device(laptop.data, other);
+    switched.base = laptop.base;
+    other.calls = [];
+    // Not taken as this account deleting everything else.
+    expect((await switched.sync()).kind).toBe('choose');
+    expect(other.calls).not.toContain('update');
+
+    expect((await switched.sync('merge')).kind).toBe('merged');
+    expect(switched.data.areas.map(a => a.id).sort()).toEqual(
+      [...sample().areas.map(a => a.id), 'a-theirs'].sort(),
+    );
+    expect(switched.data.items.length).toBe(sample().items.length);
+    expect(same(other.content(), switched.data)).toBe(true);
+  });
+
+  it('treats a file another device made anew like a first sync', async () => {
+    const laptop = new Device(sample(), drive);
+    await laptop.sync();
+    const phone = new Device(emptyData(), drive);
+    await phone.sync();
+    // The file is deleted; the phone, short of an event, makes a new one.
+    drive.files.clear();
+    phone.data = edit(phone.data, d => d.events.shift());
+    expect((await phone.sync()).kind).toBe('created');
+
+    laptop.data = edit(laptop.data, d => (d.items[0].title = 'Laptop'));
+    expect((await laptop.sync()).kind).toBe('choose');
+    expect((await laptop.sync('merge')).kind).toBe('merged');
+    expect(laptop.data.events.length).toBe(sample().events.length);
+    expect(laptop.data.items[0].title).toBe('Laptop');
+    expect(same(drive.content(), laptop.data)).toBe(true);
   });
 
   it('makes a new file if the old one was deleted', async () => {
