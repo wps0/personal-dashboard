@@ -62,6 +62,26 @@ export function reservedDays(rule: CapacityRule): ReservedDay[] {
   return rule.reserved.length ? rule.reserved : DEFAULT_RESERVED;
 }
 
+/**
+ * A rule's planning windows and reserved time with weekday `from`'s copied to
+ * the weekdays `to` (0 is Monday).
+ */
+export function copyDay(
+  rule: CapacityRule,
+  from: number,
+  to: number[],
+): Pick<CapacityRule, 'windows' | 'reserved'> {
+  const reserved = reservedDays(rule);
+  return {
+    windows: rule.windows.map((w, i) =>
+      to.includes(i) ? rule.windows[from] : w,
+    ),
+    reserved: reserved.map((d, i) =>
+      to.includes(i) ? reservedDay(...reserved[from].ranges) : d,
+    ),
+  };
+}
+
 export function defaultRules(): CapacityRule[] {
   return [
     create(pb.CapacityRuleSchema, {

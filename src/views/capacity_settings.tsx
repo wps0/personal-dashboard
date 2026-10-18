@@ -1,8 +1,15 @@
 import {Copy, Minus, Plus, Trash2} from 'lucide-react';
+import {useState} from 'react';
 import {BufferedInput} from '../components/buffered';
 import {TimeSelect} from '../components/time_select';
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from '../components/ui/popover';
 import {fmtH} from '../format';
 import {
+  copyDay,
   range,
   reservedDay,
   reservedDays,
@@ -112,26 +119,10 @@ export function CapacitySettings() {
                       <span className="ml-1 w-10 text-dim tabular-nums">
                         {fmtH(hours)}
                       </span>
-                      {i === 0 && (
-                        <button
-                          className="icon-btn"
-                          title="Copy Monday's window and reserved time to Tue–Fri"
-                          onClick={() =>
-                            change({
-                              windows: rule.windows.map((x, j) =>
-                                j > 0 && j < 5 ? rule.windows[0] : x,
-                              ),
-                              reserved: reserved.map((x, j) =>
-                                reservedDay(
-                                  ...(j > 0 && j < 5 ? reserved[0] : x),
-                                ),
-                              ),
-                            })
-                          }
-                        >
-                          <Copy size={14} />
-                        </button>
-                      )}
+                      <CopyDay
+                        day={i}
+                        onCopy={to => change(copyDay(rule, i, to))}
+                      />
                     </div>
                   </td>
                   <td className="px-2 py-1.5">
@@ -220,5 +211,82 @@ export function CapacitySettings() {
         over it. Ranges like 23:00–07:00 wrap past midnight.
       </p>
     </div>
+  );
+}
+
+/** Quick picks of the days to copy to. */
+const DAY_SETS: Array<{label: string; days: number[]}> = [
+  {label: 'Weekdays', days: [0, 1, 2, 3, 4]},
+  {label: 'Weekend', days: [5, 6]},
+  {label: 'All', days: [0, 1, 2, 3, 4, 5, 6]},
+];
+
+/** Copies a weekday's planning window and reserved time to the days picked. */
+function CopyDay({day, onCopy}: {day: number; onCopy(to: number[]): void}) {
+  const [open, setOpen] = useState(false);
+  const [to, setTo] = useState<number[]>([]);
+  const name = WEEKDAYS[day];
+  return (
+    <Popover
+      open={open}
+      onOpenChange={o => {
+        setOpen(o);
+        if (o) setTo([]);
+      }}
+    >
+      <PopoverTrigger
+        className="icon-btn"
+        title={`Copy ${name}’s window and reserved time to other days`}
+        aria-label={`Copy ${name} to other days`}
+      >
+        <Copy size={14} />
+      </PopoverTrigger>
+      <PopoverContent align="start" className="w-60 space-y-2 p-3">
+        <div className="text-[13px] font-medium text-strong">
+          Copy {name} to
+        </div>
+        <div className="flex gap-2 text-[12px]">
+          {DAY_SETS.map(set => (
+            <button
+              key={set.label}
+              className="text-accent hover:underline"
+              onClick={() => setTo(set.days.filter(d => d !== day))}
+            >
+              {set.label}
+            </button>
+          ))}
+        </div>
+        <div className="grid grid-cols-2 gap-1">
+          {WEEKDAYS.map((other, i) =>
+            i === day ? null : (
+              <label key={other} className="flex items-center gap-2">
+                <input
+                  type="checkbox"
+                  checked={to.includes(i)}
+                  onChange={e =>
+                    setTo(
+                      e.target.checked ? [...to, i] : to.filter(d => d !== i),
+                    )
+                  }
+                />
+                {other}
+              </label>
+            ),
+          )}
+        </div>
+        <button
+          className="btn-primary w-full"
+          disabled={!to.length}
+          onClick={() => {
+            onCopy(to);
+            setOpen(false);
+          }}
+        >
+          {to.length === 1
+            ? `Copy to ${WEEKDAYS[to[0]]}`
+            : `Copy to ${to.length} days`}
+        </button>
+      </PopoverContent>
+    </Popover>
   );
 }
