@@ -3,6 +3,7 @@ import {
   addDays,
   countdown,
   daysBetween,
+  isISODate,
   isoWeek,
   startOfWeek,
   weekdayIndex,
@@ -44,5 +45,32 @@ describe('isoWeek across DST', () => {
     // Thursday 2026-04-02 is in W14; a naive ms-based division gives W13 in Europe/Warsaw.
     expect(isoWeek('2026-03-30')).toBe(14);
     expect(isoWeek('2026-11-02')).toBe(45);
+  });
+});
+
+describe('isISODate', () => {
+  it('accepts real dates', () => {
+    expect(isISODate('2026-10-18')).toBe(true);
+    expect(isISODate('2026-12-31')).toBe(true);
+    expect(isISODate('2028-02-29')).toBe(true); // leap year
+    expect(isISODate('2000-02-29')).toBe(true); // divisible by 400
+  });
+
+  it('rejects impossible dates', () => {
+    expect(isISODate('2026-02-30')).toBe(false);
+    expect(isISODate('2026-02-29')).toBe(false); // not a leap year
+    expect(isISODate('1900-02-29')).toBe(false); // divisible by 100
+    expect(isISODate('2026-04-31')).toBe(false);
+    expect(isISODate('2026-13-01')).toBe(false);
+    expect(isISODate('2026-00-10')).toBe(false);
+    expect(isISODate('2026-10-00')).toBe(false);
+    expect(isISODate('0000-01-01')).toBe(false);
+  });
+
+  it('rejects other shapes', () => {
+    expect(isISODate('2026-1-05')).toBe(false);
+    expect(isISODate('2026-10-18T00:00')).toBe(false);
+    expect(isISODate('')).toBe(false);
+    expect(isISODate('soon')).toBe(false);
   });
 });

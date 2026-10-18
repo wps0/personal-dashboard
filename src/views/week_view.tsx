@@ -26,6 +26,7 @@ import {
   addDays,
   countdown,
   dayName,
+  isISODate,
   monthKey,
   monthName,
   shortDate,
@@ -66,9 +67,7 @@ const NO_ALLOCS: Allocation[] = [];
  */
 export function WeekView({week}: {week?: ISODate}) {
   const today = useToday();
-  const monday = startOfWeek(
-    week && /^\d{4}-\d{2}-\d{2}$/.test(week) ? week : today,
-  );
+  const monday = startOfWeek(week && isISODate(week) ? week : today);
   const [dragging, setDragging] = useState<DragData | null>(null);
   const thisWeek = startOfWeek(today);
   const goWeek = (d: ISODate) =>

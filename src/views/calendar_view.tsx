@@ -10,6 +10,7 @@ import {
   addMonths,
   firstOfMonth,
   formatMonthYear,
+  isISODate,
   monthGrid,
   startOfWeek,
 } from '../model/dates';
@@ -88,8 +89,7 @@ export function CalendarView({
   const view =
     routeView ?? (phone && defaultView === 'week' ? '3day' : defaultView);
   const today = useToday();
-  const date =
-    routeDate && /^\d{4}-\d{2}-\d{2}$/.test(routeDate) ? routeDate : today;
+  const date = routeDate && isISODate(routeDate) ? routeDate : today;
   const days = useMemo(
     () => visibleDays(view, view === 'month' ? firstOfMonth(date) : date),
     [view, date],
