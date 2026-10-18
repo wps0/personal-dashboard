@@ -68,6 +68,8 @@ interface Prefs {
   consented: boolean;
   /** Drive sync is on for this device. */
   driveSync: boolean;
+  /** Google Calendar is on for this device: only then are its scopes requested. */
+  calendar: boolean;
 }
 
 interface GoogleState extends Prefs {
@@ -77,6 +79,10 @@ interface GoogleState extends Prefs {
   email?: string;
   calendars: ApiCalendar[];
   setClientId(id: string): void;
+  /** Turns Google Calendar on, asking Google for its read-only access. */
+  connectCalendar(): Promise<void>;
+  /** Turns Google Calendar off; a token for Drive sync alone replaces the current one. */
+  disconnectCalendar(): void;
   /** Turns Drive sync on (asking Google for Drive access) or off. */
   setDriveSync(on: boolean): void;
   toggleCalendar(id: string): void;
@@ -94,6 +100,11 @@ interface Token {
   scope?: string;
 }
 
+/** Whether the calendar is on and connected, so its data can be fetched. */
+export function calendarConnected(s: {status: Status; calendar: boolean}) {
+  return s.status === 'signed-in' && s.calendar;
+}
+
 /** Whether the token can be used for Drive sync. */
 export function hasDriveAccess(t: Token | undefined) {
   return (
@@ -109,6 +120,7 @@ function loadPrefs(): Prefs {
     selected: [],
     consented: false,
     driveSync: false,
+    calendar: false,
   };
   try {
     const stored = JSON.parse(localStorage.getItem(PREFS_KEY) ?? '{}');
@@ -116,6 +128,8 @@ function loadPrefs(): Prefs {
       ...fallback,
       ...stored,
       clientId: stored.clientId || BUILT_IN_CLIENT_ID,
+      // Before this preference, signing in meant connecting the calendar.
+      calendar: stored.calendar ?? !!stored.consented,
     };
   } catch {
     return fallback;
@@ -142,6 +156,7 @@ function savePrefs(p: Prefs) {
         selected: p.selected,
         consented: p.consented,
         driveSync: p.driveSync,
+        calendar: p.calendar,
       }),
     );
   } catch {
@@ -186,10 +201,25 @@ export const useGoogle = create<GoogleState>()((set, get) => {
     setClientId: clientId =>
       prefs({clientId: clientId.trim() || BUILT_IN_CLIENT_ID}),
 
+    connectCalendar: () => {
+      prefs({calendar: true});
+      return get().signIn();
+    },
+
+    disconnectCalendar: () => {
+      prefs({calendar: false});
+      set({calendars: [], email: undefined});
+      // Sync still needs a token: get one without the calendar's scopes.
+      if (get().driveSync) void get().signIn();
+      else get().signOut();
+    },
+
     setDriveSync: on => {
       prefs({driveSync: on});
       // Ask for Drive access unless this token already has it.
       if (on && !hasDriveAccess(get().token)) void get().signIn();
+      // Nothing uses Google any more: give the access back.
+      else if (!on && !get().calendar && get().token) get().signOut();
     },
 
     toggleCalendar: id => {
@@ -202,7 +232,8 @@ export const useGoogle = create<GoogleState>()((set, get) => {
     },
 
     signIn: async () => {
-      const {clientId, consented, driveSync} = get();
+      const {clientId, consented, driveSync, calendar} = get();
+      if (!calendar && !driveSync) return;
       if (!clientId) {
         set({
           status: 'error',
@@ -213,7 +244,11 @@ export const useGoogle = create<GoogleState>()((set, get) => {
       set({status: 'signing-in', error: undefined});
       try {
         const gis = await loadGis();
-        const wanted = driveSync ? [...SCOPES, DRIVE_SCOPE] : [...SCOPES];
+        // Only what's in use: the calendar's scopes, Drive's, or both.
+        const wanted = [
+          ...(calendar ? SCOPES : []),
+          ...(driveSync ? [DRIVE_SCOPE] : []),
+        ];
         const scope = wanted.join(' ');
         const client = gis.accounts.oauth2.initTokenClient({
           client_id: clientId,
@@ -229,13 +264,30 @@ export const useGoogle = create<GoogleState>()((set, get) => {
               });
               return;
             }
-            // Google's consent screen lets people untick individual permissions.
-            if (!gis.accounts.oauth2.hasGrantedAllScopes(r, ...SCOPES)) {
-              set({
-                status: 'error',
-                error:
-                  'Both read permissions are needed (events and the calendar list). Sign in again and keep both ticked.',
-              });
+            // Google's consent screen lets people untick individual permissions:
+            // what wasn't allowed is turned off, the rest keeps working.
+            const noCalendar =
+              calendar &&
+              !gis.accounts.oauth2.hasGrantedAllScopes(r, ...SCOPES);
+            const noDrive =
+              driveSync &&
+              !gis.accounts.oauth2.hasGrantedAllScopes(r, DRIVE_SCOPE);
+            const error = [
+              noCalendar &&
+                'Both calendar permissions are needed (events and the calendar list), so the calendar stays off. Connect it again and keep both ticked.',
+              noDrive &&
+                'Drive access wasn’t allowed, so Drive sync stays off.',
+            ]
+              .filter(Boolean)
+              .join(' ');
+            prefs({
+              consented: true,
+              ...(noCalendar && {calendar: false}),
+              ...(noDrive && {driveSync: false}),
+            });
+            if ((!calendar || noCalendar) && (!driveSync || noDrive)) {
+              // Nothing usable was allowed.
+              set({status: 'error', error});
               return;
             }
             const token: Token = {
@@ -248,20 +300,7 @@ export const useGoogle = create<GoogleState>()((set, get) => {
             } catch {
               // Token lives in memory only.
             }
-            // Drive is optional: without it the calendar still works, sync stays off.
-            const noDrive =
-              driveSync &&
-              !gis.accounts.oauth2.hasGrantedAllScopes(r, DRIVE_SCOPE);
-            set({
-              token,
-              status: 'signed-in',
-              error: noDrive
-                ? 'Drive access wasn’t allowed, so Drive sync stays off.'
-                : undefined,
-            });
-            prefs(
-              noDrive ? {consented: true, driveSync: false} : {consented: true},
-            );
+            set({token, status: 'signed-in', error: error || undefined});
           },
           error_callback: e =>
             set({

@@ -1,5 +1,5 @@
 import {Lock, LogOut, RefreshCw} from 'lucide-react';
-import {useGoogle, SCOPES} from '../google/auth';
+import {calendarConnected, useGoogle, SCOPES} from '../google/auth';
 import {useGoogleCalendars} from '../google/calendars';
 import {clearGoogleCache} from '../google/use_google_events';
 import {BufferedInput} from './buffered';
@@ -11,7 +11,7 @@ const ORIGIN = typeof window !== 'undefined' ? window.location.origin : '';
 export function GoogleSettings() {
   useGoogleCalendars();
   const g = useGoogle();
-  const connected = g.status === 'signed-in';
+  const connected = calendarConnected(g);
 
   return (
     <div className="space-y-3">
@@ -92,26 +92,26 @@ export function GoogleSettings() {
             >
               <RefreshCw size={13} /> Refresh
             </button>
-            <button className="btn" onClick={g.signOut}>
-              <LogOut size={13} /> Sign out
+            <button className="btn" onClick={g.disconnectCalendar}>
+              <LogOut size={13} /> Disconnect
             </button>
           </>
         ) : (
           <button
             className="btn-primary"
             disabled={!g.clientId || g.status === 'signing-in'}
-            onClick={() => void g.signIn()}
+            onClick={() => void g.connectCalendar()}
           >
             {g.status === 'signing-in'
               ? 'Waiting for Google…'
-              : g.status === 'expired'
+              : g.calendar && g.status === 'expired'
                 ? g.driveSync
                   ? 'Reconnect Google'
                   : 'Reconnect Google Calendar'
-                : 'Sign in with Google'}
+                : 'Connect Google Calendar'}
           </button>
         )}
-        {g.status === 'expired' && (
+        {g.calendar && g.status === 'expired' && (
           <span className="text-[12px] text-warn">
             Session expired (tokens last an hour).
           </span>
