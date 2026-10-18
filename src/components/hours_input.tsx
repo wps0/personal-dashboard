@@ -29,14 +29,13 @@ function HoursInputImpl({
 
   const commit = () => {
     const t = text.trim().replace(',', '.');
+    const n = Math.round(Number(t) * 4) / 4;
     if (t === '') {
       if (optional) onChange(undefined);
-      else setText(value?.toString() ?? '');
-      return;
-    }
-    const n = Math.round(Number(t) * 4) / 4;
-    if (Number.isFinite(n) && n >= 0) onChange(n);
-    else setText(value?.toString() ?? '');
+    } else if (Number.isFinite(n) && n >= 0) onChange(n);
+    // Back to the stored value: typing 2.1 over 2 stores 2, and the parent may
+    // reject a value. A change that is stored arrives as the new `value`.
+    setText(value?.toString() ?? '');
   };
 
   return (
