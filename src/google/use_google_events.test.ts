@@ -71,4 +71,20 @@ describe('Google events cache', () => {
     expect(titles.sort()).toEqual(['a', 'b']);
     expect(useGoogleError.getState().error).toBeDefined();
   });
+
+  it('keeps what was loaded while the session is expired, not after signing out', async () => {
+    fetchMock.mockImplementation(async url => events(calendarOf(String(url))));
+    await fetchRange(FROM, TO);
+    useGoogle.getState().markExpired();
+    expect(cachedRanges()[`${FROM}|${TO}`].events).toHaveLength(2);
+    useGoogle.getState().signOut();
+    expect(cachedRanges()).toEqual({});
+  });
+
+  it('drops what was loaded when a new token arrives', async () => {
+    fetchMock.mockImplementation(async url => events(calendarOf(String(url))));
+    await fetchRange(FROM, TO);
+    useGoogle.setState({token: {value: 'new', expiresAt: Date.now() + 1}});
+    expect(cachedRanges()).toEqual({});
+  });
 });
