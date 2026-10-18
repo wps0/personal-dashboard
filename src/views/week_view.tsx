@@ -13,7 +13,13 @@ import {BufferedTextarea} from '../components/buffered';
 import {HoursInput} from '../components/hours_input';
 import {WeekNav} from '../components/week_nav';
 import {fmtH, URGENCY_CLASS} from '../format';
-import {useCapacities, useLookups, useSlide, type Lookups} from '../hooks';
+import {
+  useCapacities,
+  useLookups,
+  useSlide,
+  useWeekStart,
+  type Lookups,
+} from '../hooks';
 import {CapacityBadge} from '../components/capacity_badge';
 import type {CapacityInfo} from '../model/capacity';
 import {
@@ -61,19 +67,22 @@ const NO_ALLOCS: Allocation[] = [];
  */
 export function WeekView({week}: {week?: ISODate}) {
   const today = todayISO();
-  const monday = startOfWeek(
+  const weekStart = useWeekStart();
+  // The route holds the week's first day; any other day (e.g. a link from
+  // before the week start changed) shows the week containing it.
+  const start = startOfWeek(
     week && /^\d{4}-\d{2}-\d{2}$/.test(week) ? week : today,
+    weekStart,
   );
   const [dragging, setDragging] = useState<DragData | null>(null);
-  const thisWeek = startOfWeek(today);
-  const goWeek = (d: ISODate) =>
-    navigate({
-      name: 'week',
-      week: startOfWeek(d) === thisWeek ? undefined : startOfWeek(d),
-    });
+  const thisWeek = startOfWeek(today, weekStart);
+  const goWeek = (d: ISODate) => {
+    const target = startOfWeek(d, weekStart);
+    navigate({name: 'week', week: target === thisWeek ? undefined : target});
+  };
   useNavTarget({
-    next: () => goWeek(addDays(monday, 7)),
-    prev: () => goWeek(addDays(monday, -7)),
+    next: () => goWeek(addDays(start, 7)),
+    prev: () => goWeek(addDays(start, -7)),
     today: () => goWeek(today),
     goTo: goWeek,
   });
@@ -116,10 +125,10 @@ export function WeekView({week}: {week?: ISODate}) {
     >
       <div className="flex h-full flex-col">
         <div className="flex shrink-0 flex-wrap items-center gap-x-2 border-b border-line px-2 py-1 sm:px-3">
-          <WeekNav monday={monday} />
-          <WeekTotal monday={monday} />
+          <WeekNav start={start} />
+          <WeekTotal start={start} />
         </div>
-        <WeekGrid monday={monday} today={today} />
+        <WeekGrid start={start} today={today} />
       </div>
       <DragOverlay dropAnimation={null} modifiers={[ghostUnderPointer]}>
         {dragging && <DragPreview drag={dragging} />}
@@ -128,16 +137,16 @@ export function WeekView({week}: {week?: ISODate}) {
   );
 }
 
-function WeekTotal({monday}: {monday: ISODate}) {
+function WeekTotal({start}: {start: ISODate}) {
   const days = useMemo(
-    () => Array.from({length: 7}, (_, i) => addDays(monday, i)),
-    [monday],
+    () => Array.from({length: 7}, (_, i) => addDays(start, i)),
+    [start],
   );
   const planned = useStore(s => {
     const end = days[6];
     return s.data.allocations.reduce(
       (sum, a) =>
-        a.date >= monday && a.date <= end ? sum + a.plannedHours : sum,
+        a.date >= start && a.date <= end ? sum + a.plannedHours : sum,
       0,
     );
   });
@@ -161,15 +170,15 @@ function WeekTotal({monday}: {monday: ISODate}) {
   );
 }
 
-function WeekGrid({monday, today}: {monday: ISODate; today: ISODate}) {
+function WeekGrid({start, today}: {start: ISODate; today: ISODate}) {
   const allocations = useStore(s => s.data.allocations);
   const lookups = useLookups();
   const days = useMemo(
-    () => Array.from({length: 7}, (_, i) => addDays(monday, i)),
-    [monday],
+    () => Array.from({length: 7}, (_, i) => addDays(start, i)),
+    [start],
   );
   const capacities = useCapacities(days);
-  const slide = useSlide(monday);
+  const slide = useSlide(start);
 
   const byDate = useMemo(() => {
     const m = new Map<ISODate, Allocation[]>();
@@ -198,7 +207,7 @@ function WeekGrid({monday, today}: {monday: ISODate; today: ISODate}) {
   return (
     <div className="scroll-thin min-h-0 flex-1 overflow-y-auto overflow-x-hidden p-2 md:overflow-hidden">
       <div
-        key={monday}
+        key={start}
         className={`grid gap-2 md:h-full md:grid-rows-[minmax(0,1.35fr)_minmax(0,1fr)] ${slide}`}
       >
         <div className="grid gap-2 md:min-h-0 md:grid-cols-5">
@@ -211,7 +220,7 @@ function WeekGrid({monday, today}: {monday: ISODate; today: ISODate}) {
           <BacklogBox
             lookups={lookups}
             today={today}
-            month={monthKey(addDays(monday, 3))}
+            month={monthKey(addDays(start, 3))}
           />
         </div>
       </div>

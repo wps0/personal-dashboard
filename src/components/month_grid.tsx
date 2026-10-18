@@ -13,8 +13,8 @@ import {
   useDragSensors,
 } from '../dnd';
 import {memo, useMemo, useState} from 'react';
-import {useLookups, useSlide, type Lookups} from '../hooks';
-import {monthGrid, todayISO} from '../model/dates';
+import {useLookups, useSlide, useWeekStart, type Lookups} from '../hooks';
+import {monthGrid, todayISO, weekdayNames} from '../model/dates';
 import type {Allocation, CalendarEvent, ISODate} from '../model/types';
 import {useStore} from '../store';
 import {draftAt, useUi} from '../ui';
@@ -38,7 +38,6 @@ type Entry =
   | {kind: 'alloc'; alloc: Allocation}
   | {kind: 'google'; ev: GEvent};
 
-const WEEKDAYS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
 const MAX_ENTRIES = 3;
 
 /** Month view: 6×7 cells with events and planned sessions; drag entries between days. */
@@ -98,7 +97,8 @@ function MonthBody({
   const allocations = useStore(s => s.data.allocations);
   const hidden = useUi(s => s.hidden);
   const lookups = useLookups();
-  const days = useMemo(() => monthGrid(date), [date]);
+  const weekStart = useWeekStart();
+  const days = useMemo(() => monthGrid(date, weekStart), [date, weekStart]);
   const month = date.slice(0, 7);
   const today = todayISO();
   const slide = useSlide(date);
@@ -141,7 +141,7 @@ function MonthBody({
   return (
     <div className="flex h-full min-h-0 flex-col overflow-hidden select-none">
       <div className="grid shrink-0 grid-cols-7">
-        {WEEKDAYS.map(d => (
+        {weekdayNames(weekStart).map(d => (
           <div
             key={d}
             className="py-1 text-center text-[11px] font-medium text-dim uppercase"

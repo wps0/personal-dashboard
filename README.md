@@ -45,8 +45,9 @@ On first launch, choose **Load sample data** to explore, or create empty areas.
 - **Home** (`#/`): a 3-day calendar (‹ › to move a day at a time, or pick a
   date), the planned sessions for those days, and a project overview sorted by
   the nearest deadline.
-- **Week** (`#/week`): the bullet journal. Mon–Fri on top, then Sat, Sun and
-  the backlog.
+- **Week** (`#/week`): the bullet journal. The week's first five days on top,
+  then the last two and the backlog. Weeks start on Sunday by default (set in
+  Settings → Calendar, for the calendar and mini months too).
   - Drag a backlog item onto a day to plan time. Drag it onto another day too
     to split it (e.g. 1h today + 1h tomorrow).
   - Checking a session off logs its hours; click the number to correct them.
@@ -82,6 +83,7 @@ On first launch, choose **Load sample data** to explore, or create empty areas.
   (planning window − events + adjustments) and ± / fixed controls for that
   day.
 - **Settings**:
+  - The first day of the week, the default calendar view and event length.
   - Planning windows, the global adjustment and reserved time per weekday
     (changes apply from today; past days don't change).
   - Areas, export/import (protobuf's JSON form), reset.
