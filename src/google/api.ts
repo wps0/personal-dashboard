@@ -1,3 +1,4 @@
+import {isHexColor} from '../model/types';
 import type {ApiCalendar, ApiEvent} from './events';
 import {googleFetch} from './request';
 
@@ -29,11 +30,15 @@ async function paged<T>(
   return out;
 }
 
-export function listCalendars() {
-  return paged<ApiCalendar>('/users/me/calendarList', {
+/** Calendars you can read; a color other than "#rrggbb" is dropped (the default applies). */
+export async function listCalendars() {
+  const list = await paged<ApiCalendar>('/users/me/calendarList', {
     minAccessRole: 'reader',
     maxResults: '250',
   });
+  return list.map(c =>
+    isHexColor(c.backgroundColor) ? c : {...c, backgroundColor: undefined},
+  );
 }
 
 /** Expanded instances (recurring events become single events) between the bounds. */

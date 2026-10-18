@@ -80,7 +80,7 @@ describe('syncOnce', () => {
     await new Device(sample(), drive).sync();
     const own = edit(emptyData(), d => {
       d.areas.push(
-        create(pb.AreaSchema, {id: 'a-own', name: 'Own', color: '#fff'}),
+        create(pb.AreaSchema, {id: 'a-own', name: 'Own', color: '#ffffff'}),
       );
     });
     const other = new Device(own, drive);
