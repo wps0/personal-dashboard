@@ -52,4 +52,16 @@ describe('classify', () => {
       'Google Calendar error 400: Bad Request',
     ]);
   });
+
+  it('names the service the request went to', () => {
+    expect(classify(503, null).message).toMatch(/^Google Calendar /);
+    expect(classify(503, null, 'drive').message).toMatch(/^Google Drive /);
+    expect(classify(404, {}, 'drive').message).toMatch(/sync file/);
+    const e = classify(
+      403,
+      {error: {errors: [{reason: 'accessNotConfigured'}]}},
+      'drive',
+    );
+    expect(e.help).toContain('drive.googleapis.com');
+  });
 });
