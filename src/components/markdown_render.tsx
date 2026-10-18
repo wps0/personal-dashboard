@@ -1,11 +1,11 @@
-// Loaded on first use (with marked and DOMPurify), not with the app.
-import DOMPurify from 'dompurify';
+// Loaded on first use (with marked), not with the app.
 import {marked} from 'marked';
 import {useMemo} from 'react';
+import {sanitizeHtml} from '../sanitize';
 
 export function MarkdownRender({source}: {source: string}) {
   const html = useMemo(
-    () => DOMPurify.sanitize(marked.parse(source, {async: false})),
+    () => sanitizeHtml(marked.parse(source, {async: false})),
     [source],
   );
   return <div className="prose-md" dangerouslySetInnerHTML={{__html: html}} />;
