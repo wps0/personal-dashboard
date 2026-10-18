@@ -10,8 +10,15 @@ vi.stubGlobal('localStorage', storage);
 vi.stubGlobal('sessionStorage', storage);
 vi.stubGlobal('window', {addEventListener: () => {}, setTimeout: () => 0});
 
-const {DRIVE_SCOPE, createFile, download, fileInfo, findFile, updateFile} =
-  await import('./drive');
+const {
+  DRIVE_SCOPE,
+  createFile,
+  download,
+  fileInfo,
+  findFile,
+  updateFile,
+  writeCopy,
+} = await import('./drive');
 const {retryPolicy} = await import('./request');
 retryPolicy.baseMs = 1;
 const {SCOPES, useGoogle} = await import('./auth');
@@ -116,6 +123,35 @@ describe('Drive client', () => {
     expect([init.method, init.body]).toEqual(['PATCH', bytes]);
     expect((init.headers as Record<string, string>)['Content-Type']).toBe(
       'application/octet-stream',
+    );
+  });
+
+  it('writes the readable copy as its own file, kept apart from the sync file', async () => {
+    fetchMock
+      .mockResolvedValueOnce(ok({files: []}))
+      .mockResolvedValueOnce(ok({...file, id: 'c1'}));
+    await writeCopy('{"areas": []}\n');
+    expect(new URL(call(0).url).searchParams.get('q')).toBe(
+      "appProperties has { key='personalDashboard' and value='json-copy' } and trashed = false",
+    );
+    const body = await (call(1).init.body as Blob).text();
+    expect(body).toContain('"name":"personal-dashboard.json"');
+    expect(body).toContain('"description":"A read-only copy');
+    expect(body).toContain('"appProperties":{"personalDashboard":"json-copy"}');
+    expect(body).toContain(
+      'Content-Type: application/json\r\n\r\n{"areas": []}\n',
+    );
+
+    fetchMock.mockReset();
+    fetchMock
+      .mockResolvedValueOnce(ok({files: [{...file, id: 'c1'}]}))
+      .mockResolvedValueOnce(ok({...file, id: 'c1', version: '8'}));
+    await writeCopy('{}\n');
+    const {url, init} = call(1);
+    expect(url).toContain('/upload/drive/v3/files/c1?uploadType=media');
+    expect([init.method, init.body]).toEqual(['PATCH', '{}\n']);
+    expect((init.headers as Record<string, string>)['Content-Type']).toBe(
+      'application/json',
     );
   });
 });

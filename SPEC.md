@@ -261,6 +261,10 @@ Google Drive sync.
   its own copy in IndexedDB, so the app works offline; the sync base (the
   file's id and version, and the data at the last sync) is stored with it,
   in the same transaction as the data.
+- **Readable copy.** After every upload the app also writes
+  `personal-dashboard.json` (protobuf's JSON form, with its own app property),
+  for the user to read if the app breaks. The app never reads it; failing to
+  write it doesn't fail the sync.
 - **Permission.** `drive.file` only, requested when sync is turned on (the
   calendar sign-in alone never asks for it). If it's refused, the calendar
   keeps working and sync stays off.

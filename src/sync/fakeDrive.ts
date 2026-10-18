@@ -5,6 +5,8 @@ import type {Remote} from './sync';
 /** An in-memory Drive for tests: versions grow on every write, like Drive's. */
 export class FakeDrive implements Remote {
   files = new Map<string, {content: Uint8Array; version: number}>();
+  /** The readable copy, as last written. */
+  copy: string | null = null;
   calls: string[] = [];
   private next = 1;
 
@@ -41,6 +43,10 @@ export class FakeDrive implements Remote {
     const f = this.files.get(id)!;
     this.files.set(id, {content, version: f.version + 1});
     return this.info(id);
+  }
+  async writeCopy(text: string) {
+    this.calls.push('copy');
+    this.copy = text;
   }
   /** The data currently in the (only) file. */
   content() {
