@@ -5,6 +5,7 @@ import {
   allocationsByItem,
   backlogItems,
   dueByDay,
+  findTasks,
   groupIdOf,
   missedAllocations,
   projectStats,
@@ -230,5 +231,50 @@ describe('groupIdOf', () => {
     expect(groupIdOf(item(), groups)).toBe('');
     // Deleted on another device: shows as no group.
     expect(groupIdOf(item('gone'), groups)).toBe('');
+  });
+});
+
+describe('findTasks', () => {
+  function data(): AppData {
+    const d = fixture();
+    d.projects = [
+      project({name: 'Złożoność obliczeniowa'}),
+      project({id: 'old', name: 'Old', archived: true}),
+    ];
+    d.items = [
+      item('Lecture 10', {estimateHours: 2}),
+      item('Lecture 2', {estimateHours: 2}),
+      item('Planned', {estimateHours: 1}),
+      item('Done one', {status: ItemStatus.DONE}),
+      item('Archived', {projectId: 'old'}),
+    ];
+    d.allocations = [alloc('x', 'Planned', TODAY, 1)];
+    return d;
+  }
+
+  it('offers the backlog without a query', () => {
+    expect(findTasks(data(), ' ', TODAY).map(i => i.id)).toEqual([
+      'Lecture 2',
+      'Lecture 10',
+    ]);
+  });
+
+  it('searches open tasks by title or project, ignoring case and diacritics', () => {
+    expect(findTasks(data(), 'PLAN', TODAY).map(i => i.id)).toEqual([
+      'Planned',
+    ]);
+    expect(findTasks(data(), 'zlozonosc', TODAY).map(i => i.id)).toEqual([
+      'Lecture 2',
+      'Lecture 10',
+      'Planned',
+    ]);
+    expect(findTasks(data(), 'done', TODAY)).toEqual([]);
+    expect(findTasks(data(), 'archived', TODAY)).toEqual([]);
+  });
+
+  it('stops at the limit', () => {
+    expect(findTasks(data(), 'lecture', TODAY, 1).map(i => i.id)).toEqual([
+      'Lecture 2',
+    ]);
   });
 });
