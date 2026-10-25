@@ -70,7 +70,7 @@ export function SettingsView() {
       <div className="mx-auto max-w-4xl space-y-5 p-4">
         <Section
           title="Calendar"
-          hint="How weeks are laid out, and how events created by clicking the calendar start out."
+          hint="How the calendar lays out weeks, and how events created by clicking it start out."
         >
           <label className="flex flex-wrap items-center gap-x-3 gap-y-1">
             <span className="w-full sm:w-48">Default event length</span>
@@ -112,7 +112,8 @@ export function SettingsView() {
               ariaLabel="First day of the week"
             />
             <span className="text-[12px] text-dim">
-              For the calendar, the mini months and the week journal.
+              For the calendar and its mini months. The week journal always
+              starts on Monday.
             </span>
           </label>
         </Section>

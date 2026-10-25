@@ -13,19 +13,14 @@ import {BufferedTextarea} from '../components/buffered';
 import {HoursInput} from '../components/hours_input';
 import {WeekNav} from '../components/week_nav';
 import {fmtH, URGENCY_CLASS} from '../format';
-import {
-  useCapacities,
-  useLookups,
-  useSlide,
-  useWeekStart,
-  type Lookups,
-} from '../hooks';
+import {useCapacities, useLookups, useSlide, type Lookups} from '../hooks';
 import {CapacityBadge} from '../components/capacity_badge';
 import type {CapacityInfo} from '../model/capacity';
 import {
   addDays,
   countdown,
   dayName,
+  MONDAY,
   monthKey,
   monthName,
   shortDate,
@@ -67,17 +62,16 @@ const NO_ALLOCS: Allocation[] = [];
  */
 export function WeekView({week}: {week?: ISODate}) {
   const today = todayISO();
-  const weekStart = useWeekStart();
-  // The route holds the week's first day; any other day (e.g. a link from
-  // before the week start changed) shows the week containing it.
+  // Always Monday–Sunday: the week start setting is for the calendar. The
+  // route holds the Monday; any other day shows the week containing it.
   const start = startOfWeek(
     week && /^\d{4}-\d{2}-\d{2}$/.test(week) ? week : today,
-    weekStart,
+    MONDAY,
   );
   const [dragging, setDragging] = useState<DragData | null>(null);
-  const thisWeek = startOfWeek(today, weekStart);
+  const thisWeek = startOfWeek(today, MONDAY);
   const goWeek = (d: ISODate) => {
-    const target = startOfWeek(d, weekStart);
+    const target = startOfWeek(d, MONDAY);
     navigate({name: 'week', week: target === thisWeek ? undefined : target});
   };
   useNavTarget({

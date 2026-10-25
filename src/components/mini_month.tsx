@@ -9,6 +9,7 @@ import {
   startOfWeek,
   todayISO,
   weekdayNames,
+  type DayOfWeek,
 } from '../model/dates';
 import type {ISODate} from '../model/types';
 
@@ -20,12 +21,16 @@ interface Props {
   onSelect(date: ISODate): void;
   /** Tint the whole week under the pointer (for week pickers). */
   weekHover?: boolean;
+  /** The first day of its weeks, if not the one set in Settings. */
+  weekStart?: DayOfWeek;
 }
 
 /** Google-Calendar-style month picker. Weeks start on the day set in Settings. */
-export function MiniMonth({selected, range, onSelect, weekHover}: Props) {
+export function MiniMonth(props: Props) {
+  const {selected, range, onSelect, weekHover} = props;
   const today = todayISO();
-  const weekStart = useWeekStart();
+  const setting = useWeekStart();
+  const weekStart = props.weekStart ?? setting;
   const [month, setMonth] = useState(firstOfMonth(selected ?? today));
   const [hoverWeek, setHoverWeek] = useState<ISODate | null>(null);
   // Jump to a newly selected date's month (set during render, not in an effect).

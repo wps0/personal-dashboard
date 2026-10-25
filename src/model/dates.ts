@@ -27,6 +27,9 @@ export function addDays(s: ISODate, n: number): ISODate {
 /** A day of the week as `Date.getDay()` numbers it: Sunday=0 … Saturday=6. */
 export type DayOfWeek = number;
 
+/** The week journal's first day, whatever the setting. */
+export const MONDAY: DayOfWeek = 1;
+
 /** Monday=0 … Sunday=6 (capacity rules list weekdays Monday first). */
 export function weekdayIndex(s: ISODate): number {
   return (parseISODate(s).getDay() + 6) % 7;
