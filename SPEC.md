@@ -149,10 +149,11 @@ The project's items, overview doc and progress log, as tabs in the side panel.
   under the list adds to no group, so a new item shows up right above it.
   Collapsed groups are remembered per device.
 - **+ group** creates one. A row's folder button (on hover) or the Group
-  select in the task overlay moves an item. A group's ⋯ menu moves all items
-  of a kind (e.g. every class) into it in one step, moves the group up or
-  down, or deletes it: its items stay, in no group, and Undo brings it back.
-  An empty group offers the same one-step moves.
+  select in the task overlay moves an item. A group's ⋯ menu moves the
+  ungrouped items of a kind (e.g. every class not yet in a group) into it in
+  one step; items already in another group stay where they are. It also
+  moves the group up or down, or deletes it: its items stay, in no group,
+  and Undo brings it back. An empty group offers the same one-step moves.
 - An open group has its own add field, whose kind follows the group's last
   item; **+ bulk** can add into a group too.
 

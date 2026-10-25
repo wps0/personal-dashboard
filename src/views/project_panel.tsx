@@ -336,12 +336,14 @@ function ItemsTab({project}: {project: Project}) {
                 index={k}
                 last={k === groups.length - 1}
                 items={list}
-                all={items}
+                ungrouped={ungrouped}
                 open={open}
                 onToggle={() => toggle(g.id)}
               />
               {open && rows(list)}
-              {open && !list.length && <EmptyGroup group={g} all={items} />}
+              {open && !list.length && (
+                <EmptyGroup group={g} ungrouped={ungrouped} />
+              )}
               {open && (
                 <tr>
                   <td colSpan={6}>
@@ -361,7 +363,7 @@ function ItemsTab({project}: {project: Project}) {
             <GroupHeader
               projectId={project.id}
               items={ungrouped}
-              all={items}
+              ungrouped={ungrouped}
               open={noneOpen}
               onToggle={() => toggle(noneKey)}
             />
@@ -374,12 +376,15 @@ function ItemsTab({project}: {project: Project}) {
   );
 }
 
-/** For each kind, the items of that kind not in the group: what "all … items" moves there. */
-function movable(all: Item[], group: ItemGroup) {
+/**
+ * The ungrouped items by kind: what a group's "all … items" moves into it.
+ * Items already in another group stay there.
+ */
+function movable(ungrouped: Item[]) {
   return KIND_OPTIONS.map(o => ({
     kind: o.value,
     name: o.label.toLowerCase(),
-    items: all.filter(i => i.kind === o.value && i.groupId !== group.id),
+    items: ungrouped.filter(i => i.kind === o.value),
   })).filter(k => k.items.length > 0);
 }
 
@@ -390,7 +395,7 @@ function GroupHeader({
   index = 0,
   last = true,
   items,
-  all,
+  ungrouped,
   open,
   onToggle,
 }: {
@@ -399,7 +404,8 @@ function GroupHeader({
   index?: number;
   last?: boolean;
   items: Item[];
-  all: Item[];
+  /** The project's items in no group, which the group's menu can move in. */
+  ungrouped: Item[];
   open: boolean;
   onToggle(): void;
 }) {
@@ -448,7 +454,7 @@ function GroupHeader({
               group={group}
               index={index}
               last={last}
-              all={all}
+              ungrouped={ungrouped}
             />
           )}
         </div>
@@ -462,20 +468,20 @@ function GroupMenu({
   group,
   index,
   last,
-  all,
+  ungrouped,
 }: {
   projectId: string;
   group: ItemGroup;
   index: number;
   last: boolean;
-  all: Item[];
+  ungrouped: Item[];
 }) {
   const [open, setOpen] = useState(false);
   const run = (f: () => void) => () => {
     setOpen(false);
     f();
   };
-  const kinds = movable(all, group);
+  const kinds = movable(ungrouped);
   const entry =
     'flex w-full items-center gap-2 rounded-md px-2.5 py-1.5 text-left hover:bg-raised';
   return (
@@ -489,7 +495,9 @@ function GroupMenu({
       </PopoverTrigger>
       <PopoverContent align="end" className="w-60 p-1 text-[12px]">
         {kinds.length > 0 && (
-          <div className="label px-2.5 pt-1.5 pb-1">Move here</div>
+          <div className="label px-2.5 pt-1.5 pb-1">
+            Move here from “No group”
+          </div>
         )}
         {kinds.map(k => (
           <button
@@ -533,9 +541,9 @@ function GroupMenu({
   );
 }
 
-/** An empty group's hint, with one-click moves of all items of a kind. */
-function EmptyGroup({group, all}: {group: ItemGroup; all: Item[]}) {
-  const kinds = movable(all, group);
+/** An empty group's hint, with one-click moves of the ungrouped items of a kind. */
+function EmptyGroup({group, ungrouped}: {group: ItemGroup; ungrouped: Item[]}) {
+  const kinds = movable(ungrouped);
   return (
     <tr>
       <td
