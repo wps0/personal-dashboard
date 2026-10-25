@@ -53,6 +53,8 @@ message Project {
   // For a university course: a case-insensitive regular expression on the
   // course title of USOS classes; matching classes become its tasks.
   optional string course_pattern = 11;
+  // Folders for its items, e.g. Classes, in display order.
+  repeated ItemGroup groups = 12;
 }
 
 enum ProgressMode {
@@ -70,6 +72,12 @@ message LogEntry {
   optional string edited_at = 4;
 }
 
+// A named folder of a project's items.
+message ItemGroup {
+  string id = 1;
+  string name = 2;
+}
+
 message Item {
   string id = 1;
   string project_id = 2;
@@ -85,6 +93,8 @@ message Item {
   string created_at = 10;
   // Where the item was imported from, if it was.
   ItemSource source = 11;
+  // The project's group it is in; none if unset or the group is gone.
+  optional string group_id = 12;
 }
 
 enum ItemKind {

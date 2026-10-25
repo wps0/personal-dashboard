@@ -30,13 +30,21 @@ Area            e.g. University, Work, Personal, Side projects
      ├─ overviewDoc   markdown: goals, links, decisions (one living doc)
      ├─ log[]         timestamped progress entries ("2026-10-10: finished part 2")
      ├─ progressMode  'checklist' | 'hours' | 'manual'
+     ├─ groups[]      { id, name }   folders for its items, e.g. "Classes", in display order
      └─ Item          class | assignment | exam | task   (class: a lecture, lab, tutorial or seminar)
          ├─ title, dueDate?, heldOn? (class date), estimateHours?, status, notes (markdown)
          ├─ source?   { kind: 'usos', eventId }  (for auto-created items)
+         ├─ groupId?  one of its project's groups
          └─ Allocation[]   { date, start?, plannedHours, done, actualHours }
 
 CalendarEvent   { date, start, end, title, notes }   local in v1; Google Calendar in v2
 ```
+
+- **Groups.** A project's items can be put in named groups, one level deep
+  (no groups inside groups). Deleting a group keeps its items, in no group;
+  an item whose group is gone (e.g. deleted on another device) is in no group
+  too. Groups only arrange the project panel: progress, the backlog and the
+  calendar ignore them.
 
 - **Time blocks.** An allocation with a `start` time is a time block on the
   calendar. Without one, it sits in the day's "todo" strip.

@@ -3,6 +3,7 @@ import {
   type Allocation,
   type CalendarEvent,
   type Item,
+  type ItemGroup,
 } from './model/types';
 import {useStore} from './store';
 import {withUndo} from './toast';
@@ -59,6 +60,55 @@ export function completeItem(item: Item) {
 
 export function deleteItem(item: Item) {
   withUndo(`Deleted “${item.title}”`, () => s().deleteItem(item.id));
+}
+
+/** Adds a group at the end of the project's groups; returns its id. */
+export function addGroup(projectId: string, name: string): string {
+  let id = '';
+  const add = () => {
+    id = s().addGroup(projectId, name);
+  };
+  withUndo(`Added group “${name}”`, add, {quiet: true});
+  return id;
+}
+
+export function renameGroup(projectId: string, groupId: string, name: string) {
+  withUndo('Group renamed', () => s().renameGroup(projectId, groupId, name), {
+    quiet: true,
+  });
+}
+
+export function moveGroup(projectId: string, groupId: string, index: number) {
+  withUndo('Group moved', () => s().moveGroup(projectId, groupId, index), {
+    quiet: true,
+  });
+}
+
+/** Deletes a group; its items stay in the project, in no group. */
+export function deleteGroup(projectId: string, group: ItemGroup) {
+  withUndo(`Deleted group “${group.name}”`, () =>
+    s().deleteGroup(projectId, group.id),
+  );
+}
+
+/**
+ * Moves items into a group, or out of any (`undefined`). Moving one item is
+ * quiet, since the row moves; moving several shows a toast with Undo.
+ */
+export function moveToGroup(items: Item[], group: ItemGroup | undefined) {
+  const where = group ? `“${group.name}”` : 'no group';
+  const n = items.length;
+  withUndo(
+    n === 1
+      ? `Moved “${items[0].title}” to ${where}`
+      : `Moved ${n} items to ${where}`,
+    () =>
+      s().moveToGroup(
+        items.map(i => i.id),
+        group?.id,
+      ),
+    {quiet: n === 1},
+  );
 }
 
 /**
