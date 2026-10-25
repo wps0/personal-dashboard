@@ -1,3 +1,4 @@
+import {eventColorHex} from '../event_colors';
 import {addDays, toISODate} from '../model/dates';
 import type {ISODate} from '../model/types';
 
@@ -64,24 +65,6 @@ export interface GEvent {
   description?: string;
 }
 
-/**
- * Event colors as Google Calendar shows them (Lavender … Tomato). The API's own
- * /colors palette is an older, paler set that doesn't match what you see in the app.
- */
-const EVENT_COLORS: Record<string, string> = {
-  '1': '#7986cb', // Lavender
-  '2': '#33b679', // Sage
-  '3': '#8e24aa', // Grape
-  '4': '#e67c73', // Flamingo
-  '5': '#f6bf26', // Banana
-  '6': '#f4511e', // Tangerine
-  '7': '#039be5', // Peacock
-  '8': '#616161', // Graphite
-  '9': '#3f51b5', // Blueberry
-  '10': '#0b8043', // Basil
-  '11': '#d50000', // Tomato
-};
-
 function minutesOf(d: Date) {
   return d.getHours() * 60 + d.getMinutes();
 }
@@ -135,7 +118,7 @@ export function expandEvent(
     calendarId: cal.id,
     calendarName: cal.summaryOverride ?? cal.summary,
     title: ev.summary?.trim() || '(No title)',
-    color: (ev.colorId && EVENT_COLORS[ev.colorId]) || calendarColor,
+    color: (ev.colorId && eventColorHex(Number(ev.colorId))) || calendarColor,
     calendarColor,
     htmlLink: ev.htmlLink,
     location: ev.location,

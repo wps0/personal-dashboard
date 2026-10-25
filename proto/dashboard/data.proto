@@ -210,6 +210,24 @@ enum Weekday {
   WEEKDAY_SUNDAY = 7;
 }
 
+// An event's colour from Google Calendar's palette. The numbers are Google's
+// own event colorId, so a colour maps to Google as is. Unset means the
+// calendar's colour.
+enum EventColor {
+  EVENT_COLOR_UNSPECIFIED = 0;
+  EVENT_COLOR_LAVENDER = 1;
+  EVENT_COLOR_SAGE = 2;
+  EVENT_COLOR_GRAPE = 3;
+  EVENT_COLOR_FLAMINGO = 4;
+  EVENT_COLOR_BANANA = 5;
+  EVENT_COLOR_TANGERINE = 6;
+  EVENT_COLOR_PEACOCK = 7;
+  EVENT_COLOR_GRAPHITE = 8;
+  EVENT_COLOR_BLUEBERRY = 9;
+  EVENT_COLOR_BASIL = 10;
+  EVENT_COLOR_TOMATO = 11;
+}
+
 message UsosSettings {
   // Where the timetable comes from; unset when the import is off.
   oneof source {

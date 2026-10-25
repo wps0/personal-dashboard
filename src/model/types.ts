@@ -18,6 +18,7 @@ import type {DayOfWeek} from './dates';
 
 export {
   CalendarView,
+  EventColor,
   ItemKind,
   ItemStatus,
   ProgressMode,
