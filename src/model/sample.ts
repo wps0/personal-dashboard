@@ -16,7 +16,8 @@ import {
 /** Demo data placed relative to today, so the week view has something in it. */
 export function sampleData(today = todayISO()): AppData {
   const d = emptyData();
-  const monday = startOfWeek(today);
+  // The sample timetable is laid out on weekdays, whatever the week start.
+  const monday = startOfWeek(today, 1);
   let n = 0;
   const id = (p: string) => `${p}-${++n}`;
   const created = new Date().toISOString();

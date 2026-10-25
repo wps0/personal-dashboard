@@ -3,25 +3,28 @@ import {useState} from 'react';
 import {
   addDays,
   formatMonthYear,
-  isoWeek,
+  MONDAY,
   shortDate,
   startOfWeek,
   todayISO,
+  weekNumber,
 } from '../model/dates';
 import type {ISODate} from '../model/types';
 import {href, navigate} from '../router';
 import {MiniMonth} from './mini_month';
 import {Popover, PopoverContent, PopoverTrigger} from './ui/popover';
 
-/** Today / prev / next, plus a mini-month popover to jump to any week. */
-export function WeekNav({monday}: {monday: ISODate}) {
+/**
+ * The week journal's today / prev / next, plus a mini-month popover to jump to
+ * any week. Its weeks always start on Monday.
+ */
+export function WeekNav({start}: {start: ISODate}) {
   const [open, setOpen] = useState(false);
-  const thisWeek = startOfWeek(todayISO());
-  const go = (date: ISODate) =>
-    navigate({
-      name: 'week',
-      week: startOfWeek(date) === thisWeek ? undefined : startOfWeek(date),
-    });
+  const thisWeek = startOfWeek(todayISO(), MONDAY);
+  const go = (date: ISODate) => {
+    const week = startOfWeek(date, MONDAY);
+    navigate({name: 'week', week: week === thisWeek ? undefined : week});
+  };
 
   return (
     <div className="flex items-center gap-1">
@@ -34,7 +37,7 @@ export function WeekNav({monday}: {monday: ISODate}) {
       </a>
       <a
         className="icon-btn"
-        href={href({name: 'week', week: addDays(monday, -7)})}
+        href={href({name: 'week', week: addDays(start, -7)})}
         aria-label="Previous week"
         title="Previous week (k)"
       >
@@ -42,7 +45,7 @@ export function WeekNav({monday}: {monday: ISODate}) {
       </a>
       <a
         className="icon-btn"
-        href={href({name: 'week', week: addDays(monday, 7)})}
+        href={href({name: 'week', week: addDays(start, 7)})}
         aria-label="Next week"
         title="Next week (j)"
       >
@@ -54,22 +57,23 @@ export function WeekNav({monday}: {monday: ISODate}) {
           title="Pick a week (g)"
         >
           <span className="text-base whitespace-nowrap text-strong sm:text-lg">
-            {formatMonthYear(addDays(monday, 3))}
+            {formatMonthYear(addDays(start, 3))}
           </span>
           <span className="whitespace-nowrap text-dim tabular-nums">
-            W{isoWeek(monday)}
+            W{weekNumber(start)}
             {/* The dates don't fit next to the month on a phone. */}
             <span className="hidden sm:inline">
               {' '}
-              · {shortDate(monday)} – {shortDate(addDays(monday, 6))}
+              · {shortDate(start)} – {shortDate(addDays(start, 6))}
             </span>
           </span>
           <ChevronDown size={16} className="text-dim" />
         </PopoverTrigger>
         <PopoverContent align="start" className="p-3">
           <MiniMonth
-            selected={monday}
-            range={[monday, addDays(monday, 6)]}
+            selected={start}
+            range={[start, addDays(start, 6)]}
+            weekStart={MONDAY}
             weekHover
             onSelect={d => {
               go(d);

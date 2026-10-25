@@ -1,5 +1,5 @@
 import {beforeEach, describe, expect, it} from 'vitest';
-import {emptyData} from './model/types';
+import {emptyData, Weekday} from './model/types';
 import {useStore} from './store';
 
 describe('USOS settings in the store', () => {
@@ -18,5 +18,16 @@ describe('USOS settings in the store', () => {
     useStore.getState().markUsosHandled(['a', 'b']);
     useStore.getState().markUsosHandled(['b', 'c']);
     expect(usos().handled).toEqual(['a', 'b', 'c']);
+  });
+});
+
+describe('week start in the store', () => {
+  beforeEach(() => useStore.getState().replaceAll(emptyData()));
+
+  it('starts unset (Sunday) and can be changed', () => {
+    const weekStart = () => useStore.getState().data.settings.weekStart;
+    expect(weekStart()).toBe(Weekday.UNSPECIFIED);
+    useStore.getState().setWeekStart(Weekday.MONDAY);
+    expect(weekStart()).toBe(Weekday.MONDAY);
   });
 });

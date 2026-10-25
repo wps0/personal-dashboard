@@ -1,7 +1,7 @@
 import {useRef, useState, type ReactNode} from 'react';
 import {InlineText} from '../components/inline_text';
 import {sampleData} from '../model/sample';
-import {AREA_COLORS, CalendarView, emptyData} from '../model/types';
+import {AREA_COLORS, CalendarView, emptyData, Weekday} from '../model/types';
 import {downloadJson, importJson} from '../storage/storage';
 import {useData, useStore} from '../store';
 import {useGoogle} from '../google/auth';
@@ -18,6 +18,16 @@ const CAL_VIEW_OPTIONS = [
   {value: CalendarView.THREE_DAY, label: '3 days'},
   {value: CalendarView.WEEK, label: 'Week'},
   {value: CalendarView.MONTH, label: 'Month'},
+];
+
+const WEEK_STARTS = [
+  {value: Weekday.MONDAY, label: 'Monday'},
+  {value: Weekday.TUESDAY, label: 'Tuesday'},
+  {value: Weekday.WEDNESDAY, label: 'Wednesday'},
+  {value: Weekday.THURSDAY, label: 'Thursday'},
+  {value: Weekday.FRIDAY, label: 'Friday'},
+  {value: Weekday.SATURDAY, label: 'Saturday'},
+  {value: Weekday.SUNDAY, label: 'Sunday'},
 ];
 
 const EVENT_LENGTHS = [15, 30, 45, 60, 90, 120].map(m => ({
@@ -60,7 +70,7 @@ export function SettingsView() {
       <div className="mx-auto max-w-4xl space-y-5 p-4">
         <Section
           title="Calendar"
-          hint="How events created by clicking the calendar start out."
+          hint="How the calendar lays out weeks, and how events created by clicking it start out."
         >
           <label className="flex flex-wrap items-center gap-x-3 gap-y-1">
             <span className="w-full sm:w-48">Default event length</span>
@@ -89,6 +99,21 @@ export function SettingsView() {
             <span className="text-[12px] text-dim">
               The calendar opens in this view whenever you come to it from
               another page.
+            </span>
+          </label>
+          <label className="mt-3 flex flex-wrap items-center gap-x-3 gap-y-1 sm:mt-2">
+            <span className="w-full sm:w-48">Week starts on</span>
+            {/* Unset means Sunday. */}
+            <Select<Weekday>
+              value={data.settings.weekStart || Weekday.SUNDAY}
+              onChange={v => useStore.getState().setWeekStart(v)}
+              options={WEEK_STARTS}
+              className="w-36"
+              ariaLabel="First day of the week"
+            />
+            <span className="text-[12px] text-dim">
+              For the calendar and its mini months. The week journal always
+              starts on Monday.
             </span>
           </label>
         </Section>

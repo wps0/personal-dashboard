@@ -77,7 +77,8 @@ details in a panel on the right (`#/projects/<id>`); Esc closes it. Each card sh
 More card content will be decided by iterating on the UI.
 
 ### 3.2 Week view (bullet journal)
-A single screen with no page scroll:
+A single screen with no page scroll. It always runs Monday–Sunday (the week
+start in Settings is for the calendar):
 
 ```
 ┌─────┬─────┬─────┬─────┬─────┐
@@ -120,7 +121,8 @@ Each day box is a hybrid of three parts:
   - *Month notes*: freeform text for the month.
 
 - **Week picker.** Click the "W41 5 Oct – 11 Oct" label and pick any date to
-  jump to its week (`#/week/<monday>`).
+  jump to its week (`#/week/<monday>`). A link to any other day opens the week
+  containing it.
 
 ### 3.3 Project panel
 The project's items, overview doc and progress log, as tabs in the side panel.
@@ -133,6 +135,12 @@ The project's items, overview doc and progress log, as tabs in the side panel.
   (Day / 3 days / Week / Month). Routes look like `#/calendar/<view>/<date>`.
   Coming to the calendar from another page always opens the **default view**
   (Settings → Calendar, Week by default) at today.
+- **Week start.** The Week and Month views, and the mini months (sidebar,
+  date fields), start their weeks on the day set in Settings → Calendar
+  (Sunday by default). The week number is the ISO week of the week's middle
+  day, i.e. the ISO week holding most of its days: exactly the ISO week for a
+  Monday start, the Wednesday's for a Sunday start. The week journal ignores
+  the setting: it always runs Monday–Sunday.
 - **Time grid:**
   - Click a slot for an event of the default length (Settings → Calendar,
     1 h by default), starting on the half hour, or on the quarter hour for
@@ -195,7 +203,10 @@ today's date) is dark navy in the dark theme and white in the light theme.
 
 ### 3.8 Settings
 Sections (Calendar, Google Calendar, Capacity & reserved time, Areas, Data)
-are cards with a heading and a one-line hint.
+are cards with a heading and a one-line hint. Calendar holds the default event
+length, the default view and the first day of the week (Monday … Sunday;
+Sunday by default), which is part of the synced data. Capacity rules stay per
+weekday and are listed Monday first whatever the week start.
 
 ### 3.9 How many actions things take (UX review, October 2026)
 Counted in a browser for 37 everyday tasks, from a fresh Home page with the
