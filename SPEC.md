@@ -200,6 +200,11 @@ The project's items, overview doc and progress log, as tabs in the side panel.
   red once an open task is overdue; done tasks are struck through). Clicking
   it opens the task overlay. Tasks of archived projects and hidden areas are
   left out.
+- **Event colours:** a local event can take one of Google Calendar's 11
+  event colours (Tomato … Graphite), picked from the colour dot in the
+  card's "Events" row, like Google's calendar row; unset is the default event
+  colour. The stored values are Google's own colorId, so a colour carries
+  over as is once events sync with Google.
 - **Google calendars** (read-only, 4.1) appear in all views in their own
   colours, with a sidebar section to show or hide each one and refresh. An
   event with its own colour is drawn in it; all-day chips start with a strip
