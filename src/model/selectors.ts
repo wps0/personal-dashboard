@@ -17,12 +17,9 @@ export function isItemDone(item: Item): boolean {
   return item.status === ItemStatus.DONE;
 }
 
-/** The item's group among its project's `groups`; none also when its group is gone. */
-export function groupOf(
-  item: Item,
-  groups: ItemGroup[],
-): ItemGroup | undefined {
-  return groups.find(g => g.id === item.groupId);
+/** The id of the item's group among its project's `groups`; '' for none, also when its group is gone. */
+export function groupIdOf(item: Item, groups: ItemGroup[]): string {
+  return groups.find(g => g.id === item.groupId)?.id ?? '';
 }
 
 /** The group a project's imports go into by default: the last one used, if it still exists. */

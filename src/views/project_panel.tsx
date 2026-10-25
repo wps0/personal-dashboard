@@ -2,6 +2,7 @@ import {memo, useMemo, useState} from 'react';
 import {withUndo} from '../toast';
 import {BufferedTextarea} from '../components/buffered';
 import {DateField} from '../components/date_field';
+import {GroupSelect} from '../components/group_select';
 import {StatusSelect} from '../components/status_select';
 import {Select} from '../components/ui/select';
 import {
@@ -36,7 +37,7 @@ import {countdown, shortDate, todayISO} from '../model/dates';
 import {
   actualHours,
   compareItems,
-  groupOf,
+  groupIdOf,
   isItemDone,
   plannedHours,
   urgency,
@@ -230,7 +231,7 @@ function ItemsTab({project}: {project: Project}) {
   const byGroup = useMemo(() => {
     const m = new Map<string, Item[]>();
     for (const i of items) {
-      const key = groupOf(i, groups)?.id ?? '';
+      const key = groupIdOf(i, groups);
       m.set(key, [...(m.get(key) ?? []), i]);
     }
     return m;
@@ -617,7 +618,19 @@ const ItemRow = memo(function ItemRow({
               </span>
             )}
           </button>
-          {groups.length > 0 && <MoveToGroup item={item} groups={groups} />}
+          {groups.length > 0 && (
+            // Shown on hover or focus, and while open.
+            <span className="hidden shrink-0 group-focus-within:inline-flex group-hover:inline-flex has-[[aria-expanded=true]]:inline-flex">
+              <GroupSelect
+                item={item}
+                groups={groups}
+                variant="ghost"
+                display={<FolderInput size={13} />}
+                className="h-6 gap-0.5 px-1 text-dim"
+                ariaLabel={`Move “${item.title}” to a group`}
+              />
+            </span>
+          )}
         </div>
       </td>
       <td className="px-1 py-0.5 tabular-nums text-[11px] whitespace-nowrap">
@@ -658,29 +671,6 @@ const ItemRow = memo(function ItemRow({
     </tr>
   );
 });
-
-/** A row's "move to group" picker; shown on hover or focus, and while open. */
-function MoveToGroup({item, groups}: {item: Item; groups: ItemGroup[]}) {
-  const options = useMemo(() => groupOptions(groups), [groups]);
-  return (
-    <span className="hidden shrink-0 group-focus-within:inline-flex group-hover:inline-flex has-[[aria-expanded=true]]:inline-flex">
-      <Select
-        variant="ghost"
-        value={groupOf(item, groups)?.id ?? ''}
-        onChange={id =>
-          moveToGroup(
-            [item],
-            groups.find(g => g.id === id),
-          )
-        }
-        options={options}
-        display={<FolderInput size={13} />}
-        className="h-6 gap-0.5 px-1 text-dim"
-        ariaLabel={`Move “${item.title}” to a group`}
-      />
-    </span>
-  );
-}
 
 function AddGroup({projectId, onDone}: {projectId: string; onDone(): void}) {
   const [name, setName] = useState('');

@@ -7,24 +7,23 @@ import {Select} from './ui/select';
 import {Trash2, X} from 'lucide-react';
 import {HoursInput} from './hours_input';
 import {Markdown} from './markdown';
+import {GroupSelect} from './group_select';
 import {Modal} from './modal';
 import {countdown, todayISO} from '../model/dates';
 import {
   actualHours,
-  groupOf,
   isItemDone,
   plannedHours,
   urgency,
 } from '../model/selectors';
 import {ItemKind, type Allocation, type Item} from '../model/types';
-import {fmtH, groupOptions, KIND_OPTIONS, URGENCY_CLASS} from '../format';
+import {fmtH, KIND_OPTIONS, URGENCY_CLASS} from '../format';
 import {navigate} from '../router';
 import {useStore} from '../store';
 import {useUi} from '../ui';
 import {
   completeItem,
   deleteItem as deleteItemAction,
-  moveToGroup,
   removeSession,
   toggleSession,
 } from '../actions';
@@ -94,15 +93,9 @@ function ItemDetails({item, onClose}: {item: Item; onClose(): void}) {
               ariaLabel="Project"
             />
             {!!project?.groups.length && (
-              <Select
-                value={groupOf(item, project.groups)?.id ?? ''}
-                onChange={id =>
-                  moveToGroup(
-                    [item],
-                    project.groups.find(g => g.id === id),
-                  )
-                }
-                options={groupOptions(project.groups)}
+              <GroupSelect
+                item={item}
+                groups={project.groups}
                 className="w-36"
                 ariaLabel="Group"
               />
