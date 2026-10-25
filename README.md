@@ -66,11 +66,12 @@ On first launch, choose **Load sample data** to explore, or create empty areas.
     time-block them.
   - Hatched areas are reserved time (sleep, work), set in Settings.
 - **Projects** (`#/projects`): cards with progress rings. Click one to open its
-  items, description (Markdown) and progress log in a side panel. Drag the
-  divider to resize the panel; double-click a log entry (or use ✎) to edit it.
-  **+ bulk** creates "Lecture 1…13" in one go. **+ group** makes a folder for
-  items (e.g. all classes); its ⋯ menu moves every ungrouped item of a kind
-  into it.
+  items, description (Markdown) and progress log in a side panel; the
+  description also shows beside the items (above them on narrow screens).
+  Drag the divider to resize the panel; double-click a log entry (or use ✎)
+  to edit it. **+ bulk** creates "Lecture 1…13" in one go. **+ group** makes
+  a folder for items (e.g. all classes); its ⋯ menu moves every ungrouped
+  item of a kind into it.
 - **Task overlay**: click any task, anywhere, for its details, sessions and
   notes.
 - **Undo**: deleting or completing something shows a toast with **Undo**

@@ -140,6 +140,14 @@ Each day box is a hybrid of three parts:
 The project's items, description (its overview doc, Markdown) and progress
 log, as tabs in the side panel.
 
+- **Description next to the items.** On a wide panel (56rem and up) the
+  rendered description is a column to the right of the task list; on a
+  narrower one (phones, the default split on a small laptop) it is a
+  collapsible block above the list, showing its first line when collapsed
+  (remembered per device). Edit switches it to a textarea, saved as you
+  type; double-click works too. An empty description is only a small
+  "+ Add a description" link. The description tab keeps the full-height
+  editor.
 - On narrow panels (phones, or a wide project list) the items table drops
   its estimate and spent/plan columns, which the task overlay shows, and
   long titles are cut short, so the table never scrolls sideways.

@@ -18,6 +18,7 @@ export interface Draft {
 const HIDDEN_KEY = 'personal-dashboard/hidden-calendars';
 const ALL_DAY_KEY = 'personal-dashboard/all-day-collapsed';
 const GROUPS_KEY = 'personal-dashboard/collapsed-groups';
+const DESCRIPTION_KEY = 'personal-dashboard/description-collapsed';
 
 function loadList(key: string): string[] {
   try {
@@ -50,6 +51,8 @@ interface UiState {
   allDayCollapsed: boolean;
   /** Item groups shown collapsed in the project panel, by id. Per device. */
   collapsedGroups: string[];
+  /** The project description above the items is collapsed (narrow panels). Per device. */
+  descriptionCollapsed: boolean;
   /** Dialogs: shortcut help, go-to-date, reviewing new USOS classes, importing a curriculum, or reviewing sync conflicts. */
   dialog: 'help' | 'goto' | 'usos' | 'curriculum' | 'conflicts' | null;
   setDialog(d: UiState['dialog']): void;
@@ -67,6 +70,7 @@ interface UiState {
   toggleHidden(key: string): void;
   setAllDayCollapsed(collapsed: boolean): void;
   toggleGroup(key: string): void;
+  setDescriptionCollapsed(collapsed: boolean): void;
 }
 
 export const useUi = create<UiState>()((set, get) => ({
@@ -76,6 +80,13 @@ export const useUi = create<UiState>()((set, get) => ({
   draft: null,
   hidden: loadList(HIDDEN_KEY),
   collapsedGroups: loadList(GROUPS_KEY),
+  descriptionCollapsed: (() => {
+    try {
+      return localStorage.getItem(DESCRIPTION_KEY) === 'true';
+    } catch {
+      return false;
+    }
+  })(),
   allDayCollapsed: (() => {
     try {
       return localStorage.getItem(ALL_DAY_KEY) === 'true';
@@ -120,6 +131,10 @@ export const useUi = create<UiState>()((set, get) => ({
       : [...get().collapsedGroups, key];
     set({collapsedGroups});
     save(GROUPS_KEY, collapsedGroups);
+  },
+  setDescriptionCollapsed: descriptionCollapsed => {
+    set({descriptionCollapsed});
+    save(DESCRIPTION_KEY, descriptionCollapsed);
   },
 }));
 
