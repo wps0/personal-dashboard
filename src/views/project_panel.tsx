@@ -251,7 +251,7 @@ function ItemsTab({project}: {project: Project}) {
   const noneOpen = !groups.length || !collapsed.includes(noneKey);
 
   return (
-    <div className="scroll-thin h-full overflow-y-auto p-3">
+    <div className="scroll-thin @container h-full overflow-y-auto p-3">
       <div className="mb-2 flex flex-wrap items-center gap-x-3 gap-y-1">
         <span className="tabular-nums text-[11px] text-dim">
           {items.filter(isItemDone).length}/{items.length} done
@@ -295,19 +295,34 @@ function ItemsTab({project}: {project: Project}) {
           onDone={() => setForm(null)}
         />
       )}
-      <table className="w-full border-collapse">
+      <table className="w-full table-fixed border-collapse">
+        <colgroup>
+          <col className="w-28 @md:w-32" />
+          <col />
+          <col className="w-20" />
+          {/* Estimate and spent/plan: none on narrow panels (phones). */}
+          <col className="w-12 @max-md:w-0" />
+          <col className="w-16 @max-md:w-0" />
+          <col className="w-5" />
+        </colgroup>
         <thead>
           <tr className="label border-b border-line text-left [&>th]:px-1 [&>th]:py-1 [&>th]:font-normal">
-            <th className="w-24">status</th>
+            <th>status</th>
             <th>title</th>
-            <th className="w-20">date</th>
-            <th className="w-12 text-right" title="Estimated hours">
+            <th>date</th>
+            <th
+              className="text-right @max-md:invisible @max-md:overflow-hidden @max-md:!px-0"
+              title="Estimated hours"
+            >
               est
             </th>
-            <th className="w-16 text-right" title="Hours spent / planned">
+            <th
+              className="text-right @max-md:invisible @max-md:overflow-hidden @max-md:!px-0"
+              title="Hours spent / planned"
+            >
               spent/plan
             </th>
-            <th className="w-5" />
+            <th />
           </tr>
         </thead>
         {groups.map((g, k) => {
@@ -611,14 +626,14 @@ const ItemRow = memo(function ItemRow({
           </span>
         ) : null}
       </td>
-      <td className="px-1 py-0.5 text-right">
+      <td className="px-1 py-0.5 text-right @max-md:invisible @max-md:overflow-hidden @max-md:px-0">
         <HoursInput
           optional
           value={item.estimateHours}
           onChange={estimateHours => updateItem(item.id, {estimateHours})}
         />
       </td>
-      <td className="px-1 py-0.5 text-right tabular-nums text-[11px] text-dim">
+      <td className="px-1 py-0.5 text-right tabular-nums text-[11px] text-dim @max-md:invisible @max-md:overflow-hidden @max-md:px-0">
         {planned > 0
           ? `${fmtNum(actualHours(allocs))}/${fmtNum(planned)}`
           : '–'}
@@ -636,11 +651,11 @@ const ItemRow = memo(function ItemRow({
   );
 });
 
-/** A row's "move to group" picker; shown on hover or focus. */
+/** A row's "move to group" picker; shown on hover or focus, and while open. */
 function MoveToGroup({item, groups}: {item: Item; groups: ItemGroup[]}) {
   const options = useMemo(() => groupOptions(groups), [groups]);
   return (
-    <span className="invisible shrink-0 group-focus-within:visible group-hover:visible">
+    <span className="hidden shrink-0 group-focus-within:inline-flex group-hover:inline-flex has-[[aria-expanded=true]]:inline-flex">
       <Select
         variant="ghost"
         value={groupOf(item, groups)?.id ?? ''}

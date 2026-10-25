@@ -139,6 +139,9 @@ Each day box is a hybrid of three parts:
 ### 3.3 Project panel
 The project's items, overview doc and progress log, as tabs in the side panel.
 
+- On narrow panels (phones, or a wide project list) the items table drops
+  its estimate and spent/plan columns, which the task overlay shows, and
+  long titles are cut short, so the table never scrolls sideways.
 - **Groups** (folders for items, e.g. all classes of a course). Each group is
   a collapsible header with its name (click to rename), item count and
   done/total, in the project's group order. Items in no group come last,
