@@ -84,7 +84,7 @@ function ItemDetails({item, onClose}: {item: Item; onClose(): void}) {
           <div className="mt-1.5 flex flex-wrap items-center gap-2 px-1">
             <Select
               value={item.projectId}
-              onChange={projectId => set({projectId, groupId: undefined})}
+              onChange={projectId => set({projectId})}
               options={projects.map(p => ({
                 value: p.id,
                 label: p.name,

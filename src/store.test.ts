@@ -102,4 +102,16 @@ describe('item groups in the store', () => {
     expect(s().data.items.map(i => i.title)).toEqual(['L1', 'Lab 1']);
     expect([x, y].map(groupOf)).toEqual([undefined, keep]);
   });
+
+  it('takes an item out of its group when it moves to another project', () => {
+    const g = s().addGroup(projectId, 'Lectures');
+    const [a, b] = s().addItems(projectId, [
+      {title: 'L1', groupId: g},
+      {title: 'L2', groupId: g},
+    ]);
+    s().updateItem(a, {projectId: otherId});
+    s().updateItem(b, {projectId, title: 'Lecture 2'});
+    expect(groupOf(a)).toBeUndefined();
+    expect(groupOf(b)).toBe(g);
+  });
 });

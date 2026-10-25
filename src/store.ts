@@ -58,6 +58,7 @@ interface Actions {
 
   /** Returns the new items' ids, in order. */
   addItems(projectId: string, items: ItemInit[]): string[];
+  /** Moving an item to another project takes it out of its group. */
   updateItem(id: string, patch: Partial<Omit<Item, 'id'>>): void;
   deleteItem(id: string): void;
 
@@ -271,7 +272,15 @@ export const useStore = create<State>()((set, get) => {
       return ids;
     },
     updateItem: (id, patch) =>
-      update(d => ({items: patchById(d.items, id, patch)})),
+      update(d => ({
+        items: d.items.map(i =>
+          i.id !== id
+            ? i
+            : patch.projectId && patch.projectId !== i.projectId
+              ? {...i, groupId: undefined, ...patch}
+              : {...i, ...patch},
+        ),
+      })),
     deleteItem: id => update(d => withoutItems(d, new Set([id]))),
 
     addAllocation: (itemId, date, plannedHours, start) => {
