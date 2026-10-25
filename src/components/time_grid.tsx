@@ -40,7 +40,14 @@ import {
   snap,
   toMinutes,
 } from '../model/time';
-import type {Allocation, CalendarEvent, ISODate, Item} from '../model/types';
+import {
+  EventColor,
+  type Allocation,
+  type CalendarEvent,
+  type ISODate,
+  type Item,
+} from '../model/types';
+import {eventStyle} from '../event_colors';
 import {useStore} from '../store';
 import {draftAt, useUi} from '../ui';
 import {CapacityBadge} from './capacity_badge';
@@ -601,10 +608,7 @@ const AllDayChip = memo(function AllDayChip({event}: {event: CalendarEvent}) {
             !clicksSuppressed() && useUi.getState().openEvent(event.id)
           }
           className={`block-interactive cursor-pointer touch-none truncate rounded px-1.5 py-px text-[11px] font-medium ${isDragging ? 'opacity-30' : ''}`}
-          style={{
-            background: 'var(--color-event)',
-            color: 'var(--color-on-block)',
-          }}
+          style={eventStyle(event.color)}
         >
           {event.title}
         </div>
@@ -663,15 +667,13 @@ const StripChip = memo(function StripChip({
 
 function DraftChip() {
   const title = useUi(s => s.draft?.title);
+  const color = useUi(s => s.draft?.color ?? EventColor.UNSPECIFIED);
   return (
     <Popover open onOpenChange={o => !o && useUi.getState().setDraft(null)}>
       <PopoverAnchor asChild>
         <div
           className="animate-pop-in truncate rounded px-1.5 py-px text-[11px] font-medium shadow-md"
-          style={{
-            background: 'var(--color-event)',
-            color: 'var(--color-on-block)',
-          }}
+          style={eventStyle(color)}
         >
           {title || '(No title)'}
         </div>
@@ -871,8 +873,7 @@ function DraftBlock({hourHeight}: {hourHeight: number}) {
           style={{
             top: (start / 60) * hourHeight,
             height,
-            background: 'var(--color-event)',
-            color: 'var(--color-on-block)',
+            ...eventStyle(draft.color),
           }}
         >
           <BlockLabel
@@ -1005,8 +1006,7 @@ const EventBlock = memo(function EventBlock({
           } ${open ? 'shadow-lg ring-2 ring-bg' : ''} ${previewEnd != null ? 'resizing' : ''}`}
           style={{
             ...blockStyle(start, end, pos, hourHeight),
-            background: 'var(--color-event)',
-            color: 'var(--color-on-block)',
+            ...eventStyle(event.color),
           }}
         >
           <BlockLabel
@@ -1141,10 +1141,7 @@ function DropPreview({
               background: `color-mix(in srgb, ${lookups.color(item ?? undefined)} 55%, var(--color-panel))`,
               borderLeftColor: lookups.color(item ?? undefined),
             }
-          : {
-              background: 'var(--color-event)',
-              color: 'var(--color-on-block)',
-            }),
+          : eventStyle(drag.event.color)),
       }}
     >
       <BlockLabel
@@ -1169,13 +1166,14 @@ function DragGhost({drag}: {drag: Drag}) {
   return (
     <div
       className="w-40 animate-lift cursor-grabbing truncate rounded-md px-1.5 py-0.5 text-[11px] font-medium shadow-xl"
-      style={{
-        background:
-          drag.kind === 'event'
-            ? 'var(--color-event)'
-            : lookups.color(lookups.item(drag.alloc.itemId)),
-        color: 'var(--color-on-block)',
-      }}
+      style={
+        drag.kind === 'event'
+          ? eventStyle(drag.event.color)
+          : {
+              background: lookups.color(lookups.item(drag.alloc.itemId)),
+              color: 'var(--color-on-block)',
+            }
+      }
     >
       {title}
     </div>

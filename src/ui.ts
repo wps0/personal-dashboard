@@ -1,7 +1,7 @@
 import {create} from 'zustand';
 import {todayISO} from './model/dates';
 import {fromMinutes} from './model/time';
-import type {ISODate} from './model/types';
+import {EventColor, type ISODate} from './model/types';
 import {useStore} from './store';
 
 /** An event being created: shown as a ghost block with a floating editor. */
@@ -12,6 +12,7 @@ export interface Draft {
   allDay: boolean;
   title: string;
   notes: string;
+  color: EventColor;
 }
 
 const HIDDEN_KEY = 'personal-dashboard/hidden-calendars';
@@ -136,6 +137,7 @@ export function draftAt(
     allDay,
     title: '',
     notes: '',
+    color: EventColor.UNSPECIFIED,
   };
 }
 

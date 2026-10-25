@@ -1,5 +1,6 @@
 import {memo, useCallback} from 'react';
 import {AlignLeft, Clock, Trash2, X} from 'lucide-react';
+import {eventStyle} from '../event_colors';
 import {withUndo} from '../toast';
 import {formatLong} from '../model/dates';
 import {fromMinutes, toMinutes} from '../model/time';
@@ -170,7 +171,7 @@ export function EventEditor({eventId}: {eventId: string}) {
       <div className="mb-3 flex items-start gap-3">
         <span
           className="mt-2.5 h-3 w-3 shrink-0 rounded"
-          style={{background: 'var(--color-event)'}}
+          style={{background: eventStyle(event.color).background}}
         />
         <BufferedInput
           value={event.title}

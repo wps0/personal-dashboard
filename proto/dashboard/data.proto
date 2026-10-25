@@ -145,6 +145,8 @@ message CalendarEvent {
   string start = 5;
   string end = 6;
   optional string notes = 7;
+  // Unset: the default event colour.
+  EventColor color = 8;
 }
 
 message Settings {

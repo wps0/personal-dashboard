@@ -1,3 +1,4 @@
+import {readableOn} from './format';
 import {EventColor} from './model/types';
 
 /**
@@ -28,4 +29,15 @@ const HEX = new Map(EVENT_COLORS.map(c => [c.color, c.hex]));
 /** A palette colour's hex (EventColor values are Google's colorId); undefined if unset or unknown. */
 export function eventColorHex(color: EventColor): string | undefined {
   return HEX.get(color);
+}
+
+/** Background and text colour for a local event: its own colour, or the default one. */
+export function eventStyle(color: EventColor): {
+  background: string;
+  color: string;
+} {
+  const hex = HEX.get(color);
+  return hex
+    ? {background: hex, color: readableOn(hex)}
+    : {background: 'var(--color-event)', color: 'var(--color-on-block)'};
 }
