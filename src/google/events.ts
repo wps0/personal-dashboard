@@ -49,7 +49,10 @@ export interface GEvent {
   /** Minutes since midnight on `date`; 0–1440. */
   startMin: number;
   endMin: number;
+  /** The event's own colour, or its calendar's. */
   color: string;
+  /** The calendar's colour, shown as a strip on all-day chips. */
+  calendarColor: string;
   /** Blocks time for capacity (not marked "free" or declined, not an all-day or working-location entry). */
   busy: boolean;
   /** You declined this invitation: shown differently, never busy. */
@@ -125,16 +128,15 @@ export function expandEvent(
   if (ev.status === 'cancelled') return [];
   const declined =
     ev.attendees?.some(a => a.self && a.responseStatus === 'declined') ?? false;
+  const calendarColor = cal.backgroundColor || '#8ab4f8';
   const base = {
     declined,
     id: ev.id,
     calendarId: cal.id,
     calendarName: cal.summaryOverride ?? cal.summary,
     title: ev.summary?.trim() || '(No title)',
-    color:
-      (ev.colorId && EVENT_COLORS[ev.colorId]) ||
-      cal.backgroundColor ||
-      '#8ab4f8',
+    color: (ev.colorId && EVENT_COLORS[ev.colorId]) || calendarColor,
+    calendarColor,
     htmlLink: ev.htmlLink,
     location: ev.location,
     description: ev.description,

@@ -233,6 +233,15 @@ describe('event colors', () => {
       '#7986cb',
     ); // unknown id
   });
+
+  it("keeps the calendar's color for the strip", () => {
+    const [e] = expandEvent({id: 'a', colorId: '11', ...slot}, cal);
+    expect(e.calendarColor).toBe('#7986cb');
+    expect(
+      expandEvent({id: 'b', ...slot}, {...cal, backgroundColor: undefined})[0]
+        .calendarColor,
+    ).toBe('#8ab4f8');
+  });
 });
 
 describe('declined invitations', () => {

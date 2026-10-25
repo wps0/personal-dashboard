@@ -166,7 +166,10 @@ The project's items, overview doc and progress log, as tabs in the side panel.
   stack in lanes. A chevron collapses the row to 2 rows plus "N more"
   (remembered per device).
 - **Google calendars** (read-only, 4.1) appear in all views in their own
-  colours, with a sidebar section to show or hide each one and refresh.
+  colours, with a sidebar section to show or hide each one and refresh. An
+  event with its own colour is drawn in it; all-day chips start with a strip
+  in their calendar's colour, like Google Calendar (not on a bar's pointed
+  end continuing from before the view).
 - **Month view:** click an empty cell for an all-day event. Drag entries
   between days. "N more" and day numbers open the day view.
 
