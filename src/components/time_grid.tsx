@@ -30,7 +30,7 @@ import {
 } from 'react';
 import {fmtH} from '../format';
 import {useCapacities, useLookups, useSlide, type Lookups} from '../hooks';
-import {reservedFor} from '../model/capacity';
+import {plannedInWindow, reservedFor} from '../model/capacity';
 import {dayName, todayISO} from '../model/dates';
 import {dueByDay, isItemDone} from '../model/selectors';
 import {
@@ -333,9 +333,9 @@ function GridBody({days, hourHeight, scrollToHour, onDayClick}: BodyProps) {
         <div />
         {days.map(d => {
           const day = byDay.get(d)!;
-          const planned = [...day.timed, ...day.untimed].reduce(
-            (s, a) => s + a.plannedHours,
-            0,
+          const planned = plannedInWindow(
+            [...day.timed, ...day.untimed],
+            capacities.get(d)!.window,
           );
           const isToday = d === today;
           return (
