@@ -56,7 +56,8 @@ describe('importClasses', () => {
         done: false,
       },
     ]);
-    expect(settings.usos.handled).toEqual(['a', 'b']);
+    // Only the skipped class: the imported one is known by its task.
+    expect(settings.usos.handled).toEqual(['a']);
     expect(useToasts.getState().toasts[0].message).toBe(
       'Imported 1 class from USOS',
     );
@@ -70,6 +71,22 @@ describe('importClasses', () => {
     undoLast();
     expect(useStore.getState().data.items).toHaveLength(0);
     expect(useStore.getState().data.allocations).toHaveLength(0);
+    expect(useStore.getState().data.settings.usos.handled).toEqual([]);
+  });
+
+  it('frees a class whose project was deleted, to import it elsewhere', () => {
+    const all = shown.map(p => ({...p, projectId}));
+    importClasses(all, all);
+    useStore.getState().deleteProject(projectId);
+    const {items, settings} = useStore.getState().data;
+    expect(items).toEqual([]);
+    expect(settings.usos.handled).toEqual([]);
+  });
+
+  it('can offer skipped classes again', () => {
+    const all = shown.map(p => ({...p, projectId}));
+    importClasses([], all);
+    useStore.getState().clearUsosHandled();
     expect(useStore.getState().data.settings.usos.handled).toEqual([]);
   });
 

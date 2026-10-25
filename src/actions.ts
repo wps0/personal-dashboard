@@ -63,8 +63,9 @@ export function deleteItem(item: Item) {
 
 /**
  * Imports the chosen USOS classes as tasks, each planned as a session at the
- * class's own day, time and length; every class that was shown is remembered
- * (imported or skipped) so it isn't offered again. One undo step.
+ * class's own day, time and length. The classes shown but not chosen are
+ * remembered as skipped; the imported ones are known by their tasks, so
+ * deleting a task (or its project) offers its class again. One undo step.
  */
 export function importClasses(chosen: Proposal[], shown: Proposal[]) {
   const n = chosen.length;
@@ -85,6 +86,9 @@ export function importClasses(chosen: Proposal[], shown: Proposal[]) {
         if (hours > 0) s().addAllocation(ids[k], m.date, hours, m.start);
       });
     }
-    s().markUsosHandled(shown.map(p => p.meeting.key));
+    const keys = new Set(chosen.map(p => p.meeting.key));
+    s().markUsosHandled(
+      shown.map(p => p.meeting.key).filter(k => !keys.has(k)),
+    );
   });
 }

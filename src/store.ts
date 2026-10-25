@@ -73,6 +73,8 @@ interface Actions {
   setUsosSource(source: UsosSource): void;
   /** Remembers class meetings as imported or skipped, so they aren't offered again. */
   markUsosHandled(keys: string[]): void;
+  /** Offers the skipped classes again. */
+  clearUsosHandled(): void;
   /** Per-day tweak; ignored for past days. `null` resets the day. */
   setDayCapacity(
     date: ISODate,
@@ -280,6 +282,10 @@ export const useStore = create<State>()((set, get) => {
           },
         };
       }),
+    clearUsosHandled: () =>
+      update(d => ({
+        settings: {...d.settings, usos: {...d.settings.usos, handled: []}},
+      })),
     setDayCapacity: (date, patch) => {
       if (date < todayISO()) return;
       update(d => {
