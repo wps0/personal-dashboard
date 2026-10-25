@@ -25,6 +25,11 @@ export function groupOf(
   return groups.find(g => g.id === item.groupId);
 }
 
+/** The group a project's imports go into by default: the last one used, if it still exists. */
+export function importGroup(project: Project): ItemGroup | undefined {
+  return project.groups.find(g => g.id === project.importGroupId);
+}
+
 export function plannedHours(allocs: Allocation[]): number {
   return allocs.reduce((s, a) => s + a.plannedHours, 0);
 }

@@ -1,5 +1,5 @@
 import {monthName, shortDate} from '../model/dates';
-import type {AppData} from '../model/types';
+import type {AppData, ItemGroup} from '../model/types';
 import {same, withoutOrphans, type Conflict} from './merge';
 
 export type Side = 'local' | 'remote';
@@ -45,6 +45,7 @@ const FIELDS: Record<string, string> = {
   areaId: 'area',
   itemId: 'task',
   groupId: 'group',
+  importGroupId: 'import group',
   text: 'text',
 };
 
@@ -86,18 +87,17 @@ export function describe(c: Conflict, data: AppData): ConflictView {
         what += ` · group ${label(group, 'name')}`;
         fieldPath = rest.slice(2);
       }
+      if (rest.length === 1 && rest[0] === 'importGroupId')
+        named = groupName(data.projects.find(p => p.id === id)?.groups ?? []);
       break;
     }
     case 'items': {
       const item = find(data.items);
       what = `Task ${label(item, 'title')}`;
       if (rest.length === 1 && rest[0] === 'groupId') {
-        const groups =
-          data.projects.find(p => p.id === item?.projectId)?.groups ?? [];
-        named = v =>
-          v === undefined
-            ? 'No group'
-            : (groups.find(g => g.id === v)?.name ?? 'A deleted group');
+        named = groupName(
+          data.projects.find(p => p.id === item?.projectId)?.groups ?? [],
+        );
       }
       break;
     }
@@ -133,6 +133,14 @@ export function describe(c: Conflict, data: AppData): ConflictView {
     local: named ? named(c.local) : show(c.local, record),
     remote: named ? named(c.remote) : show(c.remote, record),
   };
+}
+
+/** A group id as its name among `groups`. */
+function groupName(groups: ItemGroup[]) {
+  return (v: unknown) =>
+    v === undefined
+      ? 'No group'
+      : (groups.find(g => g.id === v)?.name ?? 'A deleted group');
 }
 
 /** A value as short text: a whole record shows as edited or deleted. */

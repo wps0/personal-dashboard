@@ -55,6 +55,9 @@ message Project {
   optional string course_pattern = 11;
   // Folders for its items, e.g. Classes, in display order.
   repeated ItemGroup groups = 12;
+  // The group USOS classes and curricula were last imported into; offered
+  // first next time. None if unset or the group is gone.
+  optional string import_group_id = 13;
 }
 
 enum ProgressMode {

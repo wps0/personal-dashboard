@@ -3,6 +3,7 @@ import {
   addGroup,
   deleteGroup,
   importClasses,
+  importCurriculum,
   moveToGroup,
   renameGroup,
 } from './actions';
@@ -96,6 +97,33 @@ describe('importClasses', () => {
     expect(useStore.getState().data.settings.usos.handled).toEqual([]);
   });
 
+  it('imports into the picked group and remembers it for next time', () => {
+    const [a, b] = shown.map(p => ({...p, projectId}));
+    const g = useStore.getState().addGroup(projectId, 'Classes');
+    const data = () => useStore.getState().data;
+    importClasses([a], [a], new Map([[projectId, g]]));
+    expect(data().items.map(i => i.groupId)).toEqual([g]);
+    expect(data().projects[0].importGroupId).toBe(g);
+    // Not picked this time: the remembered group.
+    importClasses([b], [b]);
+    expect(data().items.map(i => i.groupId)).toEqual([g, g]);
+    undoLast();
+    undoLast();
+    expect(data().items).toEqual([]);
+    expect(data().projects[0].importGroupId).toBeUndefined();
+  });
+
+  it('imports into no group when picked, or when the remembered one is gone', () => {
+    const [a, b] = shown.map(p => ({...p, projectId}));
+    const g = useStore.getState().addGroup(projectId, 'Classes');
+    const data = () => useStore.getState().data;
+    importClasses([a], [a], new Map([[projectId, g]]));
+    useStore.getState().deleteGroup(projectId, g);
+    importClasses([b], [b]);
+    expect(data().items.map(i => i.groupId)).toEqual([undefined, undefined]);
+    expect(data().projects[0].importGroupId).toBeUndefined();
+  });
+
   it('skipping everything only remembers the classes', () => {
     const all = shown.map(p => ({...p, projectId}));
     importClasses([], all);
@@ -170,5 +198,47 @@ describe('item groups', () => {
     moveToGroup(data().items, data().projects[0].groups[0]);
     expect(useToasts.getState().toasts).toEqual([]);
     expect(data().items[0].groupId).toBe(data().projects[0].groups[0].id);
+  });
+});
+
+describe('importCurriculum', () => {
+  let projectId: string;
+  beforeEach(() => {
+    vi.stubGlobal('window', {setTimeout: () => 0});
+    useStore.getState().replaceAll(emptyData());
+    useToasts.setState({toasts: []});
+    clearHistory();
+    const area = useStore.getState().addArea('University');
+    projectId = useStore.getState().addProject(area, 'Analiza');
+    useStore.getState().updateProject(projectId, {overviewDoc: '## Goals'});
+  });
+  const data = () => useStore.getState().data;
+  const items = [
+    {kind: ItemKind.CLASS, title: '1. Granice'},
+    {kind: ItemKind.CLASS, title: '2. Pochodne'},
+  ];
+
+  it('creates the items in the group, remembers it and adds the notes', () => {
+    const g = useStore.getState().addGroup(projectId, 'Lectures');
+    importCurriculum(projectId, items, g, 'Odd weeks only.');
+    expect(data().items).toMatchObject([
+      {title: '1. Granice', groupId: g},
+      {title: '2. Pochodne', groupId: g},
+    ]);
+    expect(data().projects[0]).toMatchObject({
+      importGroupId: g,
+      overviewDoc: '## Goals\n\n## Course notes\n\nOdd weeks only.\n',
+    });
+    expect(useToasts.getState().toasts[0].message).toBe(
+      'Imported 2 classes from the curriculum',
+    );
+  });
+
+  it('is one undo step, and can import into no group', () => {
+    importCurriculum(projectId, items, '');
+    expect(data().items.map(i => i.groupId)).toEqual([undefined, undefined]);
+    expect(data().projects[0].overviewDoc).toBe('## Goals');
+    undoLast();
+    expect(data().items).toEqual([]);
   });
 });

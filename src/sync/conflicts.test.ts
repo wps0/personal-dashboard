@@ -130,6 +130,16 @@ group('describe', () => {
         data,
       ),
     ).toMatchObject({local: 'No group', remote: 'A deleted group'});
+    expect(
+      describe(
+        {
+          path: ['projects', project.id, 'importGroupId'],
+          local: 'h',
+          remote: undefined,
+        },
+        data,
+      ),
+    ).toMatchObject({field: 'import group', local: 'Labs', remote: 'No group'});
   });
 });
 

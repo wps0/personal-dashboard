@@ -31,6 +31,7 @@ Area            e.g. University, Work, Personal, Side projects
      ├─ log[]         timestamped progress entries ("2026-10-10: finished part 2")
      ├─ progressMode  'checklist' | 'hours' | 'manual'
      ├─ groups[]      { id, name }   folders for its items, e.g. "Classes", in display order
+     ├─ importGroupId?  the group USOS classes and curricula were last imported into
      └─ Item          class | assignment | exam | task   (class: a lecture, lab, tutorial or seminar)
          ├─ title, dueDate?, heldOn? (class date), estimateHours?, status, notes (markdown)
          ├─ source?   { kind: 'usos', eventId }  (for auto-created items)
@@ -326,7 +327,10 @@ asking for write access.
   are considered.
 - **Reviewed, never silent:** "N new classes from USOS · Review" on Home and
   in the course's project panel opens a list, all ticked. Ticked classes
-  become tasks; unticked ones are skipped. Skipped classes are remembered (by
+  become tasks; unticked ones are skipped. A project with groups gets a
+  group picker in its section of the list: its classes go into that group,
+  and the choice is remembered for its next import (also by the curriculum
+  import), starting at "No group". Skipped classes are remembered (by
   iCal UID + start, the same from either source) and not offered again, until
   "Show skipped classes again" in Settings. Imported ones are known by their
   task: deleting it, or its project, offers the class again (e.g. to import it
@@ -509,7 +513,9 @@ Sample inputs and the output we expect from them live in
      ("8. Pisanie prac naukowych / Etyka"). This is the default when every
      topic has lecture numbers.
 5. The import creates `kind: 'class'` items with the title above, notes =
-   description, and an estimate (1.5 h by default, editable).
+   description, and an estimate (1.5 h by default, editable), in the group
+   picked on the review screen when the project has groups (the one last
+   imported into by default, as for USOS).
    It can be undone in one step. `courseNotes`, if ticked, is appended to the
    project's overview doc under "Course notes".
 
