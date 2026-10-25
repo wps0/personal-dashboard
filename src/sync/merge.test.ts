@@ -192,3 +192,67 @@ describe('merge3', () => {
     expect(conflicts).toEqual([]);
   });
 });
+
+describe('item groups', () => {
+  const group = (id: string, name: string) =>
+    create(pb.ItemGroupSchema, {id, name});
+  /** The sample data with a "Classes" group holding the first project's first item. */
+  function grouped() {
+    return edit(base(), d => {
+      d.projects[0].groups.push(group('g', 'Classes'));
+      d.items.find(i => i.projectId === d.projects[0].id)!.groupId = 'g';
+    });
+  }
+  function addItem(d: AppData, id: string, groupId: string) {
+    const first = d.items.find(i => i.projectId === d.projects[0].id)!;
+    d.items.push({...first, id, title: id, groupId});
+  }
+
+  it('keeps a rename on one device and an item added to the group on the other', () => {
+    const b = grouped();
+    const local = edit(b, d => (d.projects[0].groups[0].name = 'Lectures'));
+    const remote = edit(b, d => addItem(d, 'new', 'g'));
+    for (const [l, r] of [
+      [local, remote],
+      [remote, local],
+    ]) {
+      const {data, conflicts} = mergeData(b, l, r);
+      expect(conflicts).toEqual([]);
+      expect(data.projects[0].groups).toEqual([group('g', 'Lectures')]);
+      expect(data.items.find(i => i.id === 'new')?.groupId).toBe('g');
+    }
+  });
+
+  it('keeps an item added to a group deleted on the other device, in no group', () => {
+    const b = grouped();
+    const old = b.items.find(i => i.groupId === 'g')!;
+    // Deleted as the app does: its items move to no group.
+    const local = edit(b, d => {
+      d.projects[0].groups = [];
+      for (const i of d.items) if (i.groupId === 'g') i.groupId = undefined;
+    });
+    const remote = edit(b, d => addItem(d, 'new', 'g'));
+    const {data, conflicts} = mergeData(b, local, remote);
+    expect(conflicts).toEqual([]);
+    expect(data.projects[0].groups).toEqual([]);
+    expect(data.items.find(i => i.id === old.id)?.groupId).toBeUndefined();
+    // Kept; its group id points nowhere, which shows as no group.
+    expect(data.items.find(i => i.id === 'new')?.groupId).toBe('g');
+  });
+
+  it('keeps groups added on both devices', () => {
+    const b = grouped();
+    const local = edit(b, d => d.projects[0].groups.push(group('mine', 'A')));
+    const remote = edit(b, d =>
+      d.projects[0].groups.push(group('theirs', 'B')),
+    );
+    const {data, conflicts} = mergeData(b, local, remote);
+    expect(conflicts).toEqual([]);
+    // Theirs goes right after the group it follows there.
+    expect(data.projects[0].groups.map(g => g.id)).toEqual([
+      'g',
+      'theirs',
+      'mine',
+    ]);
+  });
+});

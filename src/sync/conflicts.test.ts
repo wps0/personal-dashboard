@@ -1,4 +1,6 @@
+import {create} from '@bufbuild/protobuf';
 import {describe as group, expect, it} from 'vitest';
+import * as pb from '../gen/dashboard/data_pb';
 import {sampleData} from '../model/sample';
 import type {AppData} from '../model/types';
 import {applyChoices, describe, keptSide} from './conflicts';
@@ -89,6 +91,45 @@ group('describe', () => {
       local: 'Yes',
       remote: 'No',
     });
+  });
+
+  it('names a project’s group, and an item’s group by its name', () => {
+    const groups = [
+      create(pb.ItemGroupSchema, {id: 'g', name: 'Classes'}),
+      create(pb.ItemGroupSchema, {id: 'h', name: 'Labs'}),
+    ];
+    const b = edit(base(), d => d.projects[0].groups.push(...groups));
+    const project = b.projects[0];
+    const item = b.items.find(i => i.projectId === project.id)!;
+    const local = edit(b, d => {
+      d.projects[0].groups[0].name = 'Lectures';
+      d.items.find(i => i.id === item.id)!.groupId = 'g';
+    });
+    const remote = edit(b, d => {
+      d.projects[0].groups[0].name = 'Wykłady';
+      d.items.find(i => i.id === item.id)!.groupId = 'h';
+    });
+    const {data, conflicts} = mergeData(b, local, remote);
+    expect(conflicts.map(c => describe(c, data))).toEqual([
+      {
+        what: `Project “${project.name}” · group “Lectures”`,
+        field: 'name',
+        local: 'Lectures',
+        remote: 'Wykłady',
+      },
+      {
+        what: `Task “${item.title}”`,
+        field: 'group',
+        local: 'Lectures',
+        remote: 'Labs',
+      },
+    ]);
+    expect(
+      describe(
+        {path: ['items', item.id, 'groupId'], local: undefined, remote: 'x'},
+        data,
+      ),
+    ).toMatchObject({local: 'No group', remote: 'A deleted group'});
   });
 });
 
