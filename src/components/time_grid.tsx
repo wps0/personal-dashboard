@@ -32,7 +32,7 @@ import {fmtH} from '../format';
 import {useCapacities, useLookups, useSlide, type Lookups} from '../hooks';
 import {reservedFor} from '../model/capacity';
 import {dayName, todayISO} from '../model/dates';
-import {isItemDone} from '../model/selectors';
+import {dueByDay, isItemDone} from '../model/selectors';
 import {
   fromMinutes,
   layoutSpans,
@@ -40,10 +40,11 @@ import {
   snap,
   toMinutes,
 } from '../model/time';
-import type {Allocation, CalendarEvent, ISODate} from '../model/types';
+import type {Allocation, CalendarEvent, ISODate, Item} from '../model/types';
 import {useStore} from '../store';
 import {draftAt, useUi} from '../ui';
 import {CapacityBadge} from './capacity_badge';
+import {DueChip} from './due_chip';
 import {GoogleChip, GoogleTimedBlock} from './google_event';
 import {noGoogleEvents, useGoogleEvents} from '../google/use_google_events';
 import {layoutAllDay} from '../google/spans';
@@ -246,6 +247,8 @@ type BodyProps = Required<Omit<Props, 'onDayClick'>> &
 function GridBody({days, hourHeight, scrollToHour, onDayClick}: BodyProps) {
   const allocations = useStore(s => s.data.allocations);
   const events = useStore(s => s.data.events);
+  const items = useStore(s => s.data.items);
+  const projects = useStore(s => s.data.projects);
   const rules = useStore(s => s.data.settings.capacityRules);
   const hidden = useUi(s => s.hidden);
   const draftElsewhere = useUi(s => !!s.draft && !days.includes(s.draft.date));
@@ -311,6 +314,10 @@ function GridBody({days, hourHeight, scrollToHour, onDayClick}: BodyProps) {
           (e.allDay ? m.get(e.date)!.allDay : m.get(e.date)!.events).push(e);
     return m;
   }, [allocations, events, days, hidden, lookups]);
+  const due = useMemo(
+    () => dueByDay(days, {items, projects}, hidden),
+    [days, items, projects, hidden],
+  );
 
   const cols = `3.5rem repeat(${days.length}, minmax(0, 1fr))`;
   const slide = useSlide(days[0]);
@@ -407,6 +414,8 @@ function GridBody({days, hourHeight, scrollToHour, onDayClick}: BodyProps) {
             allocs={byDay.get(d)!.untimed}
             events={byDay.get(d)!.allDay}
             google={allDay.singles.get(d)!}
+            due={due.get(d)!}
+            today={today}
             lookups={lookups}
           />
         ))}
@@ -476,16 +485,38 @@ const Strip = memo(function Strip(props: {
   allocs: Allocation[];
   events: CalendarEvent[];
   google: GEvent[];
+  /** Tasks due this day. */
+  due: Item[];
+  today: ISODate;
   lookups: Lookups;
 }) {
-  const {date, row, spanRows, hiddenSpans, allocs, events, google, lookups} =
-    props;
+  const {
+    date,
+    row,
+    spanRows,
+    hiddenSpans,
+    allocs,
+    events,
+    google,
+    due,
+    today,
+    lookups,
+  } = props;
   const {setNodeRef, isOver} = useDroppable({id: `strip|${date}`});
   const hasDraft = useUi(s => !!s.draft?.allDay && s.draft.date === date);
   const collapsed = useUi(s => s.allDayCollapsed);
   const chips = [
     ...events.map(e => <AllDayChip key={e.id} event={e} />),
     ...google.map(e => <GoogleChip key={e.key} ev={e} variant="strip" />),
+    ...due.map(i => (
+      <DueChip
+        key={`due:${i.id}`}
+        item={i}
+        lookups={lookups}
+        today={today}
+        variant="strip"
+      />
+    )),
     ...allocs.map(a => <StripChip key={a.id} alloc={a} lookups={lookups} />),
   ];
   const shown = collapsed

@@ -4,6 +4,7 @@ import * as pb from '../gen/dashboard/data_pb';
 import {
   allocationsByItem,
   backlogItems,
+  dueByDay,
   missedAllocations,
   projectStats,
 } from './selectors';
@@ -172,5 +173,48 @@ describe('missedAllocations', () => {
       'early',
       'late',
     ]);
+  });
+});
+
+describe('dueByDay', () => {
+  const days = ['2026-10-10', '2026-10-11'];
+
+  it('lists the tasks due on each day, done ones too, in planning order', () => {
+    const d = fixture();
+    d.projects = [project()];
+    d.items = [
+      item('Lecture 10', {dueDate: '2026-10-10'}),
+      item('Lecture 2', {dueDate: '2026-10-10'}),
+      item('done', {dueDate: '2026-10-11', status: ItemStatus.DONE}),
+      item('later', {dueDate: '2026-10-12'}),
+      item('undated'),
+    ];
+    const m = dueByDay(days, d);
+    expect([...m.keys()]).toEqual(days);
+    expect(m.get('2026-10-10')!.map(i => i.id)).toEqual([
+      'Lecture 2',
+      'Lecture 10',
+    ]);
+    expect(m.get('2026-10-11')!.map(i => i.id)).toEqual(['done']);
+  });
+
+  it('leaves out archived projects and hidden areas', () => {
+    const d = fixture();
+    d.projects = [
+      project(),
+      project({id: 'old', archived: true}),
+      project({id: 'work', areaId: 'w'}),
+    ];
+    d.items = [
+      item('shown', {dueDate: '2026-10-10'}),
+      item('archived', {projectId: 'old', dueDate: '2026-10-10'}),
+      item('hidden', {projectId: 'work', dueDate: '2026-10-10'}),
+      item('orphan', {projectId: 'gone', dueDate: '2026-10-10'}),
+    ];
+    expect(
+      dueByDay(days, d, ['w'])
+        .get('2026-10-10')!
+        .map(i => i.id),
+    ).toEqual(['shown']);
   });
 });

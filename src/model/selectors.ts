@@ -152,6 +152,29 @@ export function missedAllocations(
     .sort((a, b) => (a.date < b.date ? -1 : 1));
 }
 
+/**
+ * Tasks due on each of `days`, for the calendar, sorted by
+ * {@link compareItems}. Done tasks stay (a past day still shows what was
+ * due); tasks of archived projects and of hidden areas are left out.
+ */
+export function dueByDay(
+  days: ISODate[],
+  data: Pick<AppData, 'items' | 'projects'>,
+  hiddenAreas: readonly string[] = [],
+): Map<ISODate, Item[]> {
+  const m = new Map<ISODate, Item[]>(days.map(d => [d, []]));
+  const shown = new Set(
+    data.projects
+      .filter(p => !p.archived && !hiddenAreas.includes(p.areaId))
+      .map(p => p.id),
+  );
+  for (const item of data.items)
+    if (item.dueDate && shown.has(item.projectId))
+      m.get(item.dueDate)?.push(item);
+  for (const list of m.values()) list.sort(compareItems);
+  return m;
+}
+
 /** Default hours for a new allocation dropped from the backlog. */
 export function defaultAllocationHours(remaining: number | undefined): number {
   if (remaining == null) return 1;
