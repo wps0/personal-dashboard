@@ -6,6 +6,7 @@ import {
   type AppData,
   type ISODate,
   type Item,
+  type ItemGroup,
   type Project,
 } from './types';
 
@@ -14,6 +15,16 @@ type PlanData = Pick<AppData, 'items' | 'allocations' | 'projects'>;
 
 export function isItemDone(item: Item): boolean {
   return item.status === ItemStatus.DONE;
+}
+
+/** The id of the item's group among its project's `groups`; '' for none, also when its group is gone. */
+export function groupIdOf(item: Item, groups: ItemGroup[]): string {
+  return groups.find(g => g.id === item.groupId)?.id ?? '';
+}
+
+/** The group a project's imports go into by default: the last one used, if it still exists. */
+export function importGroup(project: Project): ItemGroup | undefined {
+  return project.groups.find(g => g.id === project.importGroupId);
 }
 
 export function plannedHours(allocs: Allocation[]): number {

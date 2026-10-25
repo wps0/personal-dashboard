@@ -27,6 +27,7 @@ export {
 export type Area = pb.Area;
 export type Project = pb.Project;
 export type LogEntry = pb.LogEntry;
+export type ItemGroup = pb.ItemGroup;
 export type Item = pb.Item;
 export type ItemSource = pb.ItemSource;
 export type Allocation = pb.Allocation;

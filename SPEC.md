@@ -30,13 +30,22 @@ Area            e.g. University, Work, Personal, Side projects
      ├─ overviewDoc   markdown: goals, links, decisions (one living doc)
      ├─ log[]         timestamped progress entries ("2026-10-10: finished part 2")
      ├─ progressMode  'checklist' | 'hours' | 'manual'
+     ├─ groups[]      { id, name }   folders for its items, e.g. "Classes", in display order
+     ├─ importGroupId?  the group USOS classes and curricula were last imported into
      └─ Item          class | assignment | exam | task   (class: a lecture, lab, tutorial or seminar)
          ├─ title, dueDate?, heldOn? (class date), estimateHours?, status, notes (markdown)
          ├─ source?   { kind: 'usos', eventId }  (for auto-created items)
+         ├─ groupId?  one of its project's groups
          └─ Allocation[]   { date, start?, plannedHours, done, actualHours }
 
 CalendarEvent   { date, start, end, title, notes }   local in v1; Google Calendar in v2
 ```
+
+- **Groups.** A project's items can be put in named groups, one level deep
+  (no groups inside groups). Deleting a group keeps its items, in no group;
+  an item whose group is gone (e.g. deleted on another device) is in no group
+  too. Groups only arrange the project panel: progress, the backlog and the
+  calendar ignore them.
 
 - **Time blocks.** An allocation with a `start` time is a time block on the
   calendar. Without one, it sits in the day's "todo" strip.
@@ -129,6 +138,24 @@ Each day box is a hybrid of three parts:
 
 ### 3.3 Project panel
 The project's items, overview doc and progress log, as tabs in the side panel.
+
+- On narrow panels (phones, or a wide project list) the items table drops
+  its estimate and spent/plan columns, which the task overlay shows, and
+  long titles are cut short, so the table never scrolls sideways.
+- **Groups** (folders for items, e.g. all classes of a course). Each group is
+  a collapsible header with its name (click to rename), item count and
+  done/total, in the project's group order. Items in no group come last,
+  under "No group": folders first, as in a file manager, and the add field
+  under the list adds to no group, so a new item shows up right above it.
+  Collapsed groups are remembered per device.
+- **+ group** creates one. A row's folder button (on hover) or the Group
+  select in the task overlay moves an item. A group's ⋯ menu moves the
+  ungrouped items of a kind (e.g. every class not yet in a group) into it in
+  one step; items already in another group stay where they are. It also
+  moves the group up or down, or deletes it: its items stay, in no group,
+  and Undo brings it back. An empty group offers the same one-step moves.
+- An open group has its own add field, whose kind follows the group's last
+  item; **+ bulk** can add into a group too.
 
 ### 3.4 Calendar (Google-Calendar-like)
 - **Sidebar:** a Create button, a mini month (click a day to jump to it; the
@@ -304,7 +331,10 @@ asking for write access.
   are considered.
 - **Reviewed, never silent:** "N new classes from USOS · Review" on Home and
   in the course's project panel opens a list, all ticked. Ticked classes
-  become tasks; unticked ones are skipped. Skipped classes are remembered (by
+  become tasks; unticked ones are skipped. A project with groups gets a
+  group picker in its section of the list: its classes go into that group,
+  and the choice is remembered for its next import (also by the curriculum
+  import), starting at "No group". Skipped classes are remembered (by
   iCal UID + start, the same from either source) and not offered again, until
   "Show skipped classes again" in Settings. Imported ones are known by their
   task: deleting it, or its project, offers the class again (e.g. to import it
@@ -487,7 +517,9 @@ Sample inputs and the output we expect from them live in
      ("8. Pisanie prac naukowych / Etyka"). This is the default when every
      topic has lecture numbers.
 5. The import creates `kind: 'class'` items with the title above, notes =
-   description, and an estimate (1.5 h by default, editable).
+   description, and an estimate (1.5 h by default, editable), in the group
+   picked on the review screen when the project has groups (the one last
+   imported into by default, as for USOS).
    It can be undone in one step. `courseNotes`, if ticked, is appended to the
    project's overview doc under "Course notes".
 

@@ -16,10 +16,11 @@ export interface Draft {
 
 const HIDDEN_KEY = 'personal-dashboard/hidden-calendars';
 const ALL_DAY_KEY = 'personal-dashboard/all-day-collapsed';
+const GROUPS_KEY = 'personal-dashboard/collapsed-groups';
 
-function loadHidden(): string[] {
+function loadList(key: string): string[] {
   try {
-    return JSON.parse(localStorage.getItem(HIDDEN_KEY) ?? '[]');
+    return JSON.parse(localStorage.getItem(key) ?? '[]');
   } catch {
     return [];
   }
@@ -46,6 +47,8 @@ interface UiState {
   hidden: string[];
   /** The calendar's all-day row shows only a couple of items per day. Per device. */
   allDayCollapsed: boolean;
+  /** Item groups shown collapsed in the project panel, by id. Per device. */
+  collapsedGroups: string[];
   /** Dialogs: shortcut help, go-to-date, reviewing new USOS classes, importing a curriculum, or reviewing sync conflicts. */
   dialog: 'help' | 'goto' | 'usos' | 'curriculum' | 'conflicts' | null;
   setDialog(d: UiState['dialog']): void;
@@ -62,6 +65,7 @@ interface UiState {
   patchDraft(p: Partial<Draft>): void;
   toggleHidden(key: string): void;
   setAllDayCollapsed(collapsed: boolean): void;
+  toggleGroup(key: string): void;
 }
 
 export const useUi = create<UiState>()((set, get) => ({
@@ -69,7 +73,8 @@ export const useUi = create<UiState>()((set, get) => ({
   openEventId: null,
   openGoogleKey: null,
   draft: null,
-  hidden: loadHidden(),
+  hidden: loadList(HIDDEN_KEY),
+  collapsedGroups: loadList(GROUPS_KEY),
   allDayCollapsed: (() => {
     try {
       return localStorage.getItem(ALL_DAY_KEY) === 'true';
@@ -107,6 +112,13 @@ export const useUi = create<UiState>()((set, get) => ({
   setAllDayCollapsed: allDayCollapsed => {
     set({allDayCollapsed});
     save(ALL_DAY_KEY, allDayCollapsed);
+  },
+  toggleGroup: key => {
+    const collapsedGroups = get().collapsedGroups.includes(key)
+      ? get().collapsedGroups.filter(k => k !== key)
+      : [...get().collapsedGroups, key];
+    set({collapsedGroups});
+    save(GROUPS_KEY, collapsedGroups);
   },
 }));
 

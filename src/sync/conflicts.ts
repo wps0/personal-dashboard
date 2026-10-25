@@ -1,5 +1,5 @@
 import {monthName, shortDate} from '../model/dates';
-import type {AppData} from '../model/types';
+import type {AppData, ItemGroup} from '../model/types';
 import {same, withoutOrphans, type Conflict} from './merge';
 
 export type Side = 'local' | 'remote';
@@ -44,6 +44,8 @@ const FIELDS: Record<string, string> = {
   projectId: 'project',
   areaId: 'area',
   itemId: 'task',
+  groupId: 'group',
+  importGroupId: 'import group',
   text: 'text',
 };
 
@@ -64,6 +66,8 @@ export function describe(c: Conflict, data: AppData): ConflictView {
     r && typeof r[key] === 'string' && r[key] ? `“${r[key] as string}”` : '';
   let what: string;
   let fieldPath = rest;
+  // Values that are ids, in words.
+  let named: ((v: unknown) => string) | undefined;
   switch (section) {
     case 'areas':
       what = `Area ${label(find(data.areas), 'name')}`;
@@ -74,11 +78,29 @@ export function describe(c: Conflict, data: AppData): ConflictView {
         what += ' · log entry';
         fieldPath = rest.slice(2);
       }
+      if (rest[0] === 'groups') {
+        const groups = data.projects.find(p => p.id === id)?.groups ?? [];
+        const group = [...groups, c.local, c.remote].find(
+          (v): v is Rec =>
+            !!v && typeof v === 'object' && (v as Rec).id === rest[1],
+        );
+        what += ` · group ${label(group, 'name')}`;
+        fieldPath = rest.slice(2);
+      }
+      if (rest.length === 1 && rest[0] === 'importGroupId')
+        named = groupName(data.projects.find(p => p.id === id)?.groups ?? []);
       break;
     }
-    case 'items':
-      what = `Task ${label(find(data.items), 'title')}`;
+    case 'items': {
+      const item = find(data.items);
+      what = `Task ${label(item, 'title')}`;
+      if (rest.length === 1 && rest[0] === 'groupId') {
+        named = groupName(
+          data.projects.find(p => p.id === item?.projectId)?.groups ?? [],
+        );
+      }
       break;
+    }
     case 'allocations': {
       const a = find(data.allocations);
       const item = data.items.find(i => i.id === a?.itemId);
@@ -108,9 +130,17 @@ export function describe(c: Conflict, data: AppData): ConflictView {
   return {
     what: what.trim(),
     field: fieldPath.map(f => FIELDS[f] ?? f).join(' › '),
-    local: show(c.local, record),
-    remote: show(c.remote, record),
+    local: named ? named(c.local) : show(c.local, record),
+    remote: named ? named(c.remote) : show(c.remote, record),
   };
+}
+
+/** A group id as its name among `groups`. */
+function groupName(groups: ItemGroup[]) {
+  return (v: unknown) =>
+    v === undefined
+      ? 'No group'
+      : (groups.find(g => g.id === v)?.name ?? 'A deleted group');
 }
 
 /** A value as short text: a whole record shows as edited or deleted. */

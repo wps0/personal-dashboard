@@ -10,12 +10,15 @@ import {
   type Topic,
 } from '../curriculum/curriculum';
 import {useGemini} from '../curriculum/gemini';
+import {importCurriculum} from '../actions';
+import {groupOptions} from '../format';
+import {importGroup} from '../model/selectors';
 import {href} from '../router';
 import {useStore} from '../store';
-import {withUndo} from '../toast';
 import {useUi} from '../ui';
 import {HoursInput} from './hours_input';
 import {Modal} from './modal';
+import {Select} from './ui/select';
 
 type Step =
   | {kind: 'paste'; error?: string}
@@ -149,6 +152,11 @@ function Review({
     numbered ? 'lecture' : 'topic',
   );
   const [estimate, setEstimate] = useState<number | undefined>(1.5);
+  const project = useStore(s => s.data.projects.find(p => p.id === projectId));
+  const groups = project?.groups ?? [];
+  const [groupId, setGroupId] = useState(
+    () => (project && importGroup(project)?.id) ?? '',
+  );
   const flags = useMemo(
     () =>
       notVerbatim(
@@ -168,22 +176,7 @@ function Review({
     (flags.courseNotes ? 1 : 0);
 
   const doImport = () => {
-    const n = items.length;
-    withUndo(
-      `Imported ${plural(n, 'class', 'classes')} from the curriculum`,
-      () => {
-        const s = useStore.getState();
-        s.addItems(projectId, items);
-        if (addNotes && notes.trim()) {
-          const p = s.data.projects.find(x => x.id === projectId);
-          if (p)
-            s.updateProject(projectId, {
-              overviewDoc:
-                `${p.overviewDoc.trimEnd()}\n\n## Course notes\n\n${notes.trim()}\n`.trimStart(),
-            });
-        }
-      },
-    );
+    importCurriculum(projectId, items, groupId, addNotes ? notes : '');
     onDone();
   };
 
@@ -340,6 +333,18 @@ function Review({
           />
           h each
         </label>
+        {groups.length > 0 && (
+          <label className="flex items-center gap-1.5">
+            Group
+            <Select
+              value={groupId}
+              onChange={setGroupId}
+              options={groupOptions(groups)}
+              className="w-36"
+              ariaLabel="Group"
+            />
+          </label>
+        )}
         <span className="ml-auto flex gap-2">
           <button className="btn" onClick={onBack}>
             Back

@@ -10,6 +10,7 @@ import type {
   EventInit,
   ISODate,
   Item,
+  ItemGroup,
   ItemInit,
   Project,
   UsosSource,
@@ -45,9 +46,19 @@ interface Actions {
   addLog(projectId: string, text: string): void;
   updateLog(projectId: string, logId: string, text: string): void;
   deleteLog(projectId: string, logId: string): void;
+  /** Returns the new group's id; it goes last. */
+  addGroup(projectId: string, name: string): string;
+  renameGroup(projectId: string, groupId: string, name: string): void;
+  /** Moves a group to `index` in its project's order. */
+  moveGroup(projectId: string, groupId: string, index: number): void;
+  /** Deletes a group; its items stay, in no group. */
+  deleteGroup(projectId: string, groupId: string): void;
+  /** Puts items in a group of their project, or in none (`undefined`). */
+  moveToGroup(itemIds: string[], groupId: string | undefined): void;
 
   /** Returns the new items' ids, in order. */
   addItems(projectId: string, items: ItemInit[]): string[];
+  /** Moving an item to another project takes it out of its group. */
   updateItem(id: string, patch: Partial<Omit<Item, 'id'>>): void;
   deleteItem(id: string): void;
 
@@ -96,6 +107,16 @@ export const useStore = create<State>()((set, get) => {
     id: string,
     patch: Partial<NoInfer<T>>,
   ) => list.map(x => (x.id === id ? {...x, ...patch} : x));
+
+  const patchGroups = (
+    d: AppData,
+    projectId: string,
+    fn: (groups: ItemGroup[]) => ItemGroup[],
+  ) => ({
+    projects: d.projects.map(p =>
+      p.id === projectId ? {...p, groups: fn(p.groups)} : p,
+    ),
+  });
 
   // Cascading deletes: area → projects → items → allocations.
   const withoutItems = (d: AppData, itemIds: Set<string>) => ({
@@ -179,6 +200,56 @@ export const useStore = create<State>()((set, get) => {
       if (!p) return;
       get().updateProject(projectId, {log: p.log.filter(l => l.id !== logId)});
     },
+    addGroup: (projectId, name) => {
+      const id = uid();
+      update(d =>
+        patchGroups(d, projectId, gs => [
+          ...gs,
+          createMessage(pb.ItemGroupSchema, {id, name}),
+        ]),
+      );
+      return id;
+    },
+    renameGroup: (projectId, groupId, name) =>
+      update(d =>
+        patchGroups(d, projectId, gs => patchById(gs, groupId, {name})),
+      ),
+    moveGroup: (projectId, groupId, index) =>
+      update(d =>
+        patchGroups(d, projectId, gs => {
+          const g = gs.find(x => x.id === groupId);
+          if (!g) return gs;
+          const rest = gs.filter(x => x !== g);
+          rest.splice(Math.max(0, Math.min(index, rest.length)), 0, g);
+          return rest;
+        }),
+      ),
+    deleteGroup: (projectId, groupId) =>
+      update(d => ({
+        ...patchGroups(d, projectId, gs => gs.filter(g => g.id !== groupId)),
+        items: d.items.map(i =>
+          i.projectId === projectId && i.groupId === groupId
+            ? {...i, groupId: undefined}
+            : i,
+        ),
+      })),
+    moveToGroup: (itemIds, groupId) =>
+      update(d => {
+        const ids = new Set(itemIds);
+        // Only into a group of the item's own project.
+        const owner = d.projects.find(p =>
+          p.groups.some(g => g.id === groupId),
+        );
+        const fits = (i: Item) =>
+          groupId === undefined || i.projectId === owner?.id;
+        return {
+          items: d.items.map(i =>
+            ids.has(i.id) && i.groupId !== groupId && fits(i)
+              ? {...i, groupId}
+              : i,
+          ),
+        };
+      }),
 
     addItems: (projectId, items) => {
       const ids = items.map(() => uid());
@@ -201,7 +272,15 @@ export const useStore = create<State>()((set, get) => {
       return ids;
     },
     updateItem: (id, patch) =>
-      update(d => ({items: patchById(d.items, id, patch)})),
+      update(d => ({
+        items: d.items.map(i =>
+          i.id !== id
+            ? i
+            : patch.projectId && patch.projectId !== i.projectId
+              ? {...i, groupId: undefined, ...patch}
+              : {...i, ...patch},
+        ),
+      })),
     deleteItem: id => update(d => withoutItems(d, new Set([id]))),
 
     addAllocation: (itemId, date, plannedHours, start) => {

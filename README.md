@@ -68,7 +68,9 @@ On first launch, choose **Load sample data** to explore, or create empty areas.
 - **Projects** (`#/projects`): cards with progress rings. Click one to open its
   items, overview doc and progress log in a side panel. Drag the divider to
   resize the panel; double-click a log entry (or use ✎) to edit it. **+ bulk**
-  creates "Lecture 1…13" in one go.
+  creates "Lecture 1…13" in one go. **+ group** makes a folder for items
+  (e.g. all classes); its ⋯ menu moves every ungrouped item of a kind into
+  it.
 - **Task overlay**: click any task, anywhere, for its details, sessions and
   notes.
 - **Undo**: deleting or completing something shows a toast with **Undo**

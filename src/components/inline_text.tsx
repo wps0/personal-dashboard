@@ -5,6 +5,7 @@ interface Props {
   onChange(v: string): void;
   className?: string;
   placeholder?: string;
+  ariaLabel?: string;
 }
 
 /** Text that looks like a label and edits in place; commits on blur/Enter, Esc reverts. */
@@ -13,6 +14,7 @@ export function InlineText({
   onChange,
   className = '',
   placeholder,
+  ariaLabel,
 }: Props) {
   const [text, setText] = useState(value);
   // Show outside changes to the value (set during render, not in an effect).
@@ -25,6 +27,7 @@ export function InlineText({
     <input
       value={text}
       placeholder={placeholder}
+      aria-label={ariaLabel}
       onChange={e => setText(e.target.value)}
       onBlur={() =>
         text.trim() ? text !== value && onChange(text.trim()) : setText(value)

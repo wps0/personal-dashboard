@@ -1,11 +1,14 @@
 import {GraduationCap, X} from 'lucide-react';
 import {useState} from 'react';
 import {importClasses} from '../actions';
+import {groupOptions} from '../format';
+import {importGroup} from '../model/selectors';
 import {useStore} from '../store';
 import {useUi} from '../ui';
 import {useUsosProposals} from '../usos/proposals';
 import {meetingTitle, type Proposal} from '../usos/usos';
 import {Modal} from './modal';
+import {Select} from './ui/select';
 
 function plural(n: number, one: string, many: string) {
   return `${n} ${n === 1 ? one : many}`;
@@ -40,6 +43,10 @@ export function UsosReview() {
   const [off, setOff] = useState<ReadonlySet<string>>(new Set());
   const projects = useStore(s => s.data.projects);
   const name = (id: string) => projects.find(p => p.id === id)?.name ?? '';
+  // Groups picked per project; the rest go into their project's import group.
+  const [targets, setTargets] = useState<ReadonlyMap<string, string>>(
+    new Map(),
+  );
 
   const groups = new Map<string, Proposal[]>();
   for (const p of proposals)
@@ -67,8 +74,9 @@ export function UsosReview() {
           </button>
         </div>
         <p className="mb-4 text-[12px] text-dim">
-          Each ticked class becomes a task in its course’s project. Unticked
-          classes are skipped and won’t be offered again.
+          Each ticked class becomes a task in its course’s project (in the group
+          picked there, if it has groups). Unticked classes are skipped and
+          won’t be offered again.
         </p>
         {!proposals.length && (
           <p className="text-dim">Nothing new to review.</p>
@@ -77,20 +85,34 @@ export function UsosReview() {
           {[...groups].map(([pid, list]) => {
             const keys = list.map(p => p.meeting.key);
             const allOn = keys.every(k => !off.has(k));
+            const project = projects.find(p => p.id === pid);
             return (
               <section key={pid} aria-label={name(pid)}>
-                <label className="mb-1 flex cursor-pointer items-center gap-2 border-b border-line pb-1 font-medium text-strong">
-                  <input
-                    type="checkbox"
-                    className="accent-accent"
-                    checked={allOn}
-                    onChange={e => toggle(keys, e.target.checked)}
-                  />
-                  {name(pid)}
-                  <span className="text-[12px] font-normal text-dim">
-                    {plural(list.length, 'class', 'classes')}
-                  </span>
-                </label>
+                <div className="mb-1 flex items-center gap-2 border-b border-line pb-1">
+                  <label className="flex min-w-0 flex-1 cursor-pointer items-center gap-2 font-medium text-strong">
+                    <input
+                      type="checkbox"
+                      className="accent-accent"
+                      checked={allOn}
+                      onChange={e => toggle(keys, e.target.checked)}
+                    />
+                    {name(pid)}
+                    <span className="text-[12px] font-normal text-dim">
+                      {plural(list.length, 'class', 'classes')}
+                    </span>
+                  </label>
+                  {!!project?.groups.length && (
+                    <Select
+                      value={targets.get(pid) ?? importGroup(project)?.id ?? ''}
+                      onChange={id =>
+                        setTargets(prev => new Map(prev).set(pid, id))
+                      }
+                      options={groupOptions(project.groups)}
+                      className="h-6 w-36 text-[12px]"
+                      ariaLabel={`Group in ${name(pid)}`}
+                    />
+                  )}
+                </div>
                 <ul className="space-y-0.5">
                   {list.map(({meeting: m}) => (
                     <li key={m.key}>
@@ -122,7 +144,7 @@ export function UsosReview() {
             className="btn-primary"
             disabled={!proposals.length}
             onClick={() => {
-              importClasses(chosen, proposals);
+              importClasses(chosen, proposals, targets);
               close();
             }}
           >

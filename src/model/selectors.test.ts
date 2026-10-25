@@ -5,6 +5,7 @@ import {
   allocationsByItem,
   backlogItems,
   dueByDay,
+  groupIdOf,
   missedAllocations,
   projectStats,
 } from './selectors';
@@ -216,5 +217,18 @@ describe('dueByDay', () => {
         .get('2026-10-10')!
         .map(i => i.id),
     ).toEqual(['shown']);
+  });
+});
+
+describe('groupIdOf', () => {
+  const groups = [create(pb.ItemGroupSchema, {id: 'g', name: 'Classes'})];
+  const item = (groupId?: string) =>
+    create(pb.ItemSchema, {id: 'i', title: 'L1', groupId});
+
+  it('finds the item’s group; none when unset or gone', () => {
+    expect(groupIdOf(item('g'), groups)).toBe('g');
+    expect(groupIdOf(item(), groups)).toBe('');
+    // Deleted on another device: shows as no group.
+    expect(groupIdOf(item('gone'), groups)).toBe('');
   });
 });

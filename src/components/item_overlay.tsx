@@ -7,6 +7,7 @@ import {Select} from './ui/select';
 import {Trash2, X} from 'lucide-react';
 import {HoursInput} from './hours_input';
 import {Markdown} from './markdown';
+import {GroupSelect} from './group_select';
 import {Modal} from './modal';
 import {countdown, todayISO} from '../model/dates';
 import {
@@ -91,6 +92,14 @@ function ItemDetails({item, onClose}: {item: Item; onClose(): void}) {
               className="w-48"
               ariaLabel="Project"
             />
+            {!!project?.groups.length && (
+              <GroupSelect
+                item={item}
+                groups={project.groups}
+                className="w-36"
+                ariaLabel="Group"
+              />
+            )}
             <Select
               value={item.kind}
               onChange={kind => set({kind})}
