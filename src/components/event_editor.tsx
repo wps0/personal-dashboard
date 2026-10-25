@@ -1,5 +1,6 @@
 import {memo, useCallback} from 'react';
 import {AlignLeft, Clock, Trash2, X} from 'lucide-react';
+import {eventStyle} from '../event_colors';
 import {withUndo} from '../toast';
 import {formatLong} from '../model/dates';
 import {fromMinutes, toMinutes} from '../model/time';
@@ -8,6 +9,7 @@ import {useStore} from '../store';
 import {useUi, type Draft} from '../ui';
 import {BufferedInput, BufferedTextarea} from './buffered';
 import {DateField} from './date_field';
+import {EventColorRow} from './event_color_picker';
 import {TimeSelect} from './time_select';
 import {MoveBar} from './ui/move_bar';
 
@@ -129,6 +131,10 @@ export function DraftEditor() {
             className="min-w-0 flex-1 resize-none rounded-md bg-raised px-2 py-1.5 placeholder:text-dim"
           />
         </div>
+        <EventColorRow
+          value={draft.color}
+          onChange={color => patchDraft({color})}
+        />
       </div>
       <div className="mt-3 flex justify-end">
         <button className="btn-primary" onClick={save}>
@@ -170,7 +176,7 @@ export function EventEditor({eventId}: {eventId: string}) {
       <div className="mb-3 flex items-start gap-3">
         <span
           className="mt-2.5 h-3 w-3 shrink-0 rounded"
-          style={{background: 'var(--color-event)'}}
+          style={{background: eventStyle(event.color).background}}
         />
         <BufferedInput
           value={event.title}
@@ -195,6 +201,14 @@ export function EventEditor({eventId}: {eventId: string}) {
             className="min-w-0 flex-1 resize-none rounded-md bg-raised px-2 py-1.5 placeholder:text-dim"
           />
         </div>
+        <EventColorRow
+          value={event.color}
+          onChange={color =>
+            withUndo('Colour changed', () => updateEvent(event.id, {color}), {
+              quiet: true,
+            })
+          }
+        />
       </div>
       <p className="mt-3 pl-7 text-[11px] text-dim">
         Local event · syncs with Google Calendar in v2

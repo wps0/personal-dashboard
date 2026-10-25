@@ -16,7 +16,14 @@ import {memo, useMemo, useState} from 'react';
 import {useLookups, useSlide, useWeekStart, type Lookups} from '../hooks';
 import {monthGrid, todayISO, weekdayNames} from '../model/dates';
 import {dueByDay} from '../model/selectors';
-import type {Allocation, CalendarEvent, ISODate, Item} from '../model/types';
+import {
+  EventColor,
+  type Allocation,
+  type CalendarEvent,
+  type ISODate,
+  type Item,
+} from '../model/types';
+import {eventStyle} from '../event_colors';
 import {useStore} from '../store';
 import {draftAt, useUi} from '../ui';
 import {DueChip} from './due_chip';
@@ -289,20 +296,13 @@ const EventChip = memo(function EventChip({event}: {event: CalendarEvent}) {
           className={`block-interactive flex shrink-0 cursor-pointer touch-none items-center gap-1 truncate rounded px-1 text-[11px] ${isDragging ? 'opacity-30' : ''} ${
             event.allDay ? 'font-medium' : 'hover:bg-raised'
           }`}
-          style={
-            event.allDay
-              ? {
-                  background: 'var(--color-event)',
-                  color: 'var(--color-on-block)',
-                }
-              : undefined
-          }
+          style={event.allDay ? eventStyle(event.color) : undefined}
         >
           {!event.allDay && (
             <>
               <span
                 className="h-2 w-2 shrink-0 rounded-full"
-                style={{background: 'var(--color-event)'}}
+                style={{background: eventStyle(event.color).background}}
               />
               <span className="text-dim tabular-nums">{event.start}</span>
             </>
@@ -363,15 +363,13 @@ const AllocChip = memo(function AllocChip({
 
 function DraftChip() {
   const title = useUi(s => s.draft?.title);
+  const color = useUi(s => s.draft?.color ?? EventColor.UNSPECIFIED);
   return (
     <Popover open onOpenChange={o => !o && useUi.getState().setDraft(null)}>
       <PopoverAnchor asChild>
         <div
           className="shrink-0 animate-pop-in truncate rounded px-1 text-[11px] font-medium shadow-md"
-          style={{
-            background: 'var(--color-event)',
-            color: 'var(--color-on-block)',
-          }}
+          style={eventStyle(color)}
         >
           {title || '(No title)'}
         </div>
