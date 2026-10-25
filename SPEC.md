@@ -105,6 +105,9 @@ Each day box is a hybrid of three parts:
     per-day tweaks are locked.
   - Click a day's "planned/capacity" badge for the breakdown and the per-day
     controls. A day turns red when it is over capacity.
+  - The planned hours set against capacity are the untimed sessions plus the
+    part of timed ones inside the planning window: a class at noon doesn't
+    use evening planning time.
 - **Reserved time** per weekday (e.g. sleep 23:00–07:00, work 09:00–17:00) is
   drawn with diagonal hatching on the calendar. It's informational only: events
   can still go there. It's versioned with the capacity rules. In Settings, each

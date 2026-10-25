@@ -5,6 +5,7 @@ import {
   busyMinutes,
   capacityFor,
   copyDay,
+  plannedInWindow,
   defaultRules,
   range,
   reservedFor,
@@ -127,5 +128,25 @@ describe('copyDay', () => {
     expect(labels(5)).toEqual(['Sleep']);
     // The copies are separate records, not the source's.
     expect(out.reserved[6]).not.toBe(out.reserved[2]);
+  });
+});
+
+describe('plannedInWindow', () => {
+  const session = (plannedHours: number, start?: string) =>
+    create(pb.AllocationSchema, {plannedHours, start});
+  const evening = range('18:00', '21:00');
+
+  it('counts untimed sessions in full and timed ones only inside the window', () => {
+    expect(
+      plannedInWindow(
+        [
+          session(2), // untimed: meant for the window
+          session(1.5, '12:15'), // a class at noon: outside
+          session(1, '20:30'), // half inside
+          session(1, '18:30'), // inside
+        ],
+        evening,
+      ),
+    ).toBe(3.5);
   });
 });

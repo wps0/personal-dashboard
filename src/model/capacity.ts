@@ -2,7 +2,7 @@ import {create} from '@bufbuild/protobuf';
 import * as pb from '../gen/dashboard/data_pb';
 import {weekdayIndex} from './dates';
 import {toMinutes} from './time';
-import type {CalendarEvent, ISODate} from './types';
+import type {Allocation, CalendarEvent, ISODate} from './types';
 
 /** A time range; `end` before `start` wraps past midnight (e.g. sleep 23:00–07:00). */
 export type TimeRange = pb.TimeRange;
@@ -172,6 +172,25 @@ export function capacityFor(
     override: day.override,
     total,
   };
+}
+
+/**
+ * The planned hours that use a day's capacity: untimed sessions in full,
+ * timed ones only for their part inside the planning window (a class at noon
+ * doesn't take evening planning time).
+ */
+export function plannedInWindow(
+  allocs: Allocation[],
+  window: PlanningWindow,
+): number {
+  const from = toMinutes(window.start);
+  const to = toMinutes(window.end);
+  return allocs.reduce((sum, a) => {
+    if (!a.start) return sum + a.plannedHours;
+    const start = toMinutes(a.start);
+    const end = start + a.plannedHours * 60;
+    return sum + Math.max(0, Math.min(end, to) - Math.max(start, from)) / 60;
+  }, 0);
 }
 
 /** Applies a settings change from `today` on: edits today's rule or appends one. */

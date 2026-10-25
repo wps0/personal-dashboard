@@ -15,7 +15,7 @@ import {WeekNav} from '../components/week_nav';
 import {fmtH, URGENCY_CLASS} from '../format';
 import {useCapacities, useLookups, useSlide, type Lookups} from '../hooks';
 import {CapacityBadge} from '../components/capacity_badge';
-import type {CapacityInfo} from '../model/capacity';
+import {plannedInWindow, type CapacityInfo} from '../model/capacity';
 import {
   addDays,
   countdown,
@@ -32,7 +32,6 @@ import {
   defaultAllocationHours,
   isItemDone,
   missedAllocations,
-  plannedHours,
   urgency,
 } from '../model/selectors';
 import type {Allocation, ISODate, Item} from '../model/types';
@@ -136,15 +135,17 @@ function WeekTotal({start}: {start: ISODate}) {
     () => Array.from({length: 7}, (_, i) => addDays(start, i)),
     [start],
   );
-  const planned = useStore(s => {
-    const end = days[6];
-    return s.data.allocations.reduce(
-      (sum, a) =>
-        a.date >= start && a.date <= end ? sum + a.plannedHours : sum,
-      0,
-    );
-  });
+  const allocations = useStore(s => s.data.allocations);
   const capacities = useCapacities(days);
+  const planned = days.reduce(
+    (sum, d) =>
+      sum +
+      plannedInWindow(
+        allocations.filter(a => a.date === d),
+        capacities.get(d)!.window,
+      ),
+    0,
+  );
   const capacity = [...capacities.values()].reduce(
     (sum, c) => sum + c.total,
     0,
@@ -262,7 +263,7 @@ const DayContent = memo(function DayContent({
   capacity,
   lookups,
 }: DayBoxProps) {
-  const planned = plannedHours(allocs);
+  const planned = plannedInWindow(allocs, capacity.window);
   return (
     <>
       <header className="flex items-center gap-1.5 border-b border-line px-2 py-1">
