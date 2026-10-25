@@ -4,8 +4,12 @@ import {fromMinutes} from './model/time';
 import {EventColor, type ISODate} from './model/types';
 import {useStore} from './store';
 
-/** An event being created: shown as a ghost block with a floating editor. */
+/**
+ * An event being created, or a task's time block ('task' mode): shown as a
+ * ghost block with a floating editor.
+ */
 export interface Draft {
+  mode: 'event' | 'task';
   date: ISODate;
   start: string;
   end: string;
@@ -13,6 +17,8 @@ export interface Draft {
   title: string;
   notes: string;
   color: EventColor;
+  /** The task to plan, in 'task' mode. */
+  itemId?: string;
 }
 
 const HIDDEN_KEY = 'personal-dashboard/hidden-calendars';
@@ -146,6 +152,7 @@ export function draftAt(
   allDay = false,
 ): Draft {
   return {
+    mode: 'event',
     date,
     start: fromMinutes(start),
     end: fromMinutes(end ?? start + 60),

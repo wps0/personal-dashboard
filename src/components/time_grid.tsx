@@ -60,7 +60,7 @@ import {
 import {noGoogleEvents, useGoogleEvents} from '../google/use_google_events';
 import {layoutAllDay} from '../google/spans';
 import type {GEvent} from '../google/events';
-import {DraftEditor, EventEditor} from './event_editor';
+import {DraftEditor, EventEditor, useDraftLook} from './event_editor';
 import {BlockLabel, blockTextClass} from './block_label';
 import {Popover, PopoverAnchor, PopoverContent, useBeside} from './ui/popover';
 import {
@@ -884,6 +884,7 @@ function SelectionGhost({
 /** The event being created, anchored to its quick-create card. */
 function DraftBlock({hourHeight}: {hourHeight: number}) {
   const draft = useUi(s => s.draft)!;
+  const look = useDraftLook();
   const start = toMinutes(draft.start);
   const end = Math.max(start + 15, toMinutes(draft.end));
   const height = Math.max(((end - start) / 60) * hourHeight, 14);
@@ -892,16 +893,16 @@ function DraftBlock({hourHeight}: {hourHeight: number}) {
     <Popover open onOpenChange={o => !o && useUi.getState().setDraft(null)}>
       <PopoverAnchor asChild ref={anchor}>
         <div
-          className={`absolute right-1 left-0.5 z-20 animate-pop-in overflow-hidden rounded-md px-1.5 text-[11px] shadow-lg transition-[top,height] duration-150 ${blockTextClass(height)}`}
+          className={`absolute right-1 left-0.5 z-20 animate-pop-in overflow-hidden rounded-md px-1.5 text-[11px] shadow-lg transition-[top,height] duration-150 ${blockTextClass(height)} ${look.className}`}
           style={{
             top: (start / 60) * hourHeight,
             height,
-            ...eventStyle(draft.color),
+            ...look.style,
           }}
         >
           <BlockLabel
             height={height}
-            title={draft.title || '(No title)'}
+            title={look.title}
             start={draft.start}
             details={`${draft.start} – ${draft.end}`}
           />
