@@ -8,7 +8,13 @@ import {
   X,
   XCircle,
 } from 'lucide-react';
-import {memo, useMemo, type ReactElement, type ReactNode} from 'react';
+import {
+  memo,
+  useMemo,
+  type CSSProperties,
+  type ReactElement,
+  type ReactNode,
+} from 'react';
 import type {GEvent} from '../google/events';
 import {blockKeys} from '../keyboard';
 import {fromMinutes} from '../model/time';
@@ -203,6 +209,11 @@ export const GoogleChip = memo(function GoogleChip({
   after?: boolean;
 }) {
   const timedInMonth = variant === 'month' && !ev.allDay;
+  // Like Google Calendar: an all-day chip starts with a strip in its calendar's colour.
+  const strip = !timedInMonth && !before;
+  const chipStyle: CSSProperties = ev.declined
+    ? declinedStyle(ev.color)
+    : {background: ev.color, color: readableOn(ev.color)};
   return (
     <WithCard ev={ev}>
       <div
@@ -213,15 +224,21 @@ export const GoogleChip = memo(function GoogleChip({
         onClick={openCard(ev)}
         className={`block-interactive flex shrink-0 cursor-pointer items-center gap-1 truncate rounded py-px text-[11px] ${
           timedInMonth ? 'hover:bg-raised' : 'font-medium'
-        } ${before ? 'pl-3' : 'pl-1.5'} ${after ? 'pr-3' : 'pr-1.5'}`}
+        } ${before ? 'pl-3' : strip ? 'pl-2.5' : 'pl-1.5'} ${after ? 'pr-3' : 'pr-1.5'}`}
         style={{
           ...(timedInMonth
             ? ev.declined
               ? {opacity: 0.6}
               : undefined
-            : ev.declined
-              ? declinedStyle(ev.color)
-              : {background: ev.color, color: readableOn(ev.color)}),
+            : chipStyle),
+          ...(strip && {
+            boxShadow: [
+              `inset 4px 0 0 ${ev.calendarColor}`,
+              chipStyle.boxShadow,
+            ]
+              .filter(Boolean)
+              .join(', '),
+          }),
           clipPath: variant === 'span' ? spanClip(before, after) : undefined,
         }}
         title={tooltip(ev)}

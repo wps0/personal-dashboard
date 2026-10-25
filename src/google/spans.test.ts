@@ -26,6 +26,7 @@ function event(id: string, first: string, last: string): GEvent[] {
       startMin: 0,
       endMin: 1440,
       color: '#000',
+      calendarColor: '#000',
       busy: false,
       declined: false,
       when: '',
