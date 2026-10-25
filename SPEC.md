@@ -165,6 +165,11 @@ The project's items, overview doc and progress log, as tabs in the side panel.
   pointed ends where it continues past the visible days; overlapping bars
   stack in lanes. A chevron collapses the row to 2 rows plus "N more"
   (remembered per device).
+- **Deadlines:** a task with a due date shows on that day, in the all-day
+  row and in month cells, as a flag chip in its area's colour (the flag turns
+  red once an open task is overdue; done tasks are struck through). Clicking
+  it opens the task overlay. Tasks of archived projects and hidden areas are
+  left out.
 - **Google calendars** (read-only, 4.1) appear in all views in their own
   colours, with a sidebar section to show or hide each one and refresh.
 - **Month view:** click an empty cell for an all-day event. Drag entries

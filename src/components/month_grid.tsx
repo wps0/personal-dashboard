@@ -15,9 +15,11 @@ import {
 import {memo, useMemo, useState} from 'react';
 import {useLookups, useSlide, useWeekStart, type Lookups} from '../hooks';
 import {monthGrid, todayISO, weekdayNames} from '../model/dates';
-import type {Allocation, CalendarEvent, ISODate} from '../model/types';
+import {dueByDay} from '../model/selectors';
+import type {Allocation, CalendarEvent, ISODate, Item} from '../model/types';
 import {useStore} from '../store';
 import {draftAt, useUi} from '../ui';
+import {DueChip} from './due_chip';
 import {DraftEditor, EventEditor} from './event_editor';
 import {GoogleChip} from './google_event';
 import {useGoogleEvents} from '../google/use_google_events';
@@ -37,6 +39,8 @@ type Entry =
   | {kind: 'event'; event: CalendarEvent}
   | {kind: 'alloc'; alloc: Allocation}
   | {kind: 'google'; ev: GEvent};
+/** What a cell lists: draggable entries, and tasks due that day. */
+type CellEntry = Entry | {kind: 'due'; item: Item};
 
 const MAX_ENTRIES = 3;
 
@@ -95,6 +99,8 @@ function MonthBody({
 }) {
   const events = useStore(s => s.data.events);
   const allocations = useStore(s => s.data.allocations);
+  const items = useStore(s => s.data.items);
+  const projects = useStore(s => s.data.projects);
   const hidden = useUi(s => s.hidden);
   const lookups = useLookups();
   const weekStart = useWeekStart();
@@ -106,7 +112,7 @@ function MonthBody({
   const google = useGoogleEvents(days);
   const byDay = useMemo(() => {
     const want = new Set(days);
-    const m = new Map<ISODate, Entry[]>(days.map(d => [d, []]));
+    const m = new Map<ISODate, CellEntry[]>(days.map(d => [d, []]));
     for (const [d, list] of google)
       if (want.has(d))
         for (const ev of list) m.get(d)!.push({kind: 'google', ev});
@@ -120,23 +126,27 @@ function MonthBody({
       if (area && hidden.includes(area)) continue;
       m.get(a.date)!.push({kind: 'alloc', alloc: a});
     }
-    // All-day first, then by time, then untimed sessions.
-    const key = (x: Entry) =>
-      x.kind === 'google'
-        ? x.ev.allDay
-          ? '0'
-          : `1${fromMinutes(x.ev.startMin)}`
-        : x.kind === 'event'
-          ? x.event.allDay
+    for (const [d, due] of dueByDay(days, {items, projects}, hidden))
+      for (const item of due) m.get(d)!.push({kind: 'due', item});
+    // All-day first, then deadlines, then by time, then untimed sessions.
+    const key = (x: CellEntry) =>
+      x.kind === 'due'
+        ? '01'
+        : x.kind === 'google'
+          ? x.ev.allDay
             ? '0'
-            : `1${x.event.start}`
-          : x.alloc.start
-            ? `1${x.alloc.start}`
-            : '2';
+            : `1${fromMinutes(x.ev.startMin)}`
+          : x.kind === 'event'
+            ? x.event.allDay
+              ? '0'
+              : `1${x.event.start}`
+            : x.alloc.start
+              ? `1${x.alloc.start}`
+              : '2';
     for (const list of m.values())
       list.sort((a, b) => key(a).localeCompare(key(b)));
     return m;
-  }, [days, events, allocations, hidden, lookups, google]);
+  }, [days, events, allocations, items, projects, hidden, lookups, google]);
 
   return (
     <div className="flex h-full min-h-0 flex-col overflow-hidden select-none">
@@ -161,6 +171,7 @@ function MonthBody({
             entries={byDay.get(d)!}
             outside={d.slice(0, 7) !== month}
             isToday={d === today}
+            today={today}
             lookups={lookups}
             onDayClick={onDayClick}
           />
@@ -172,9 +183,10 @@ function MonthBody({
 
 interface CellProps {
   date: ISODate;
-  entries: Entry[];
+  entries: CellEntry[];
   outside: boolean;
   isToday: boolean;
+  today: ISODate;
   lookups: Lookups;
   onDayClick(d: ISODate): void;
 }
@@ -184,6 +196,7 @@ const Cell = memo(function Cell({
   entries,
   outside,
   isToday,
+  today,
   lookups,
   onDayClick,
 }: CellProps) {
@@ -220,7 +233,15 @@ const Cell = memo(function Cell({
           : Number(date.slice(8))}
       </button>
       {shown.map(x =>
-        x.kind === 'google' ? (
+        x.kind === 'due' ? (
+          <DueChip
+            key={`due:${x.item.id}`}
+            item={x.item}
+            lookups={lookups}
+            today={today}
+            variant="month"
+          />
+        ) : x.kind === 'google' ? (
           <GoogleChip key={x.ev.key} ev={x.ev} variant="month" />
         ) : x.kind === 'event' ? (
           <EventChip key={x.event.id} event={x.event} />
