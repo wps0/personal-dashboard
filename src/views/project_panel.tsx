@@ -63,7 +63,7 @@ import {
 } from '../actions';
 import {blockKeys} from '../keyboard';
 
-type Tab = 'items' | 'overview' | 'log';
+type Tab = 'items' | 'description' | 'log';
 
 /** Project details shown beside the project cards. */
 export function ProjectPanel({
@@ -81,7 +81,7 @@ export function ProjectPanel({
     <div className="flex h-full flex-col">
       <Header project={project} percent={percent} color={color} />
       <div className="flex shrink-0 gap-1 border-b border-line px-3 py-1">
-        {(['items', 'overview', 'log'] as const).map(t => (
+        {(['items', 'description', 'log'] as const).map(t => (
           <button
             key={t}
             className={`label rounded px-1.5 py-0.5 transition-colors duration-150 ${tab === t ? 'bg-raised !text-fg' : 'hover:!text-fg'}`}
@@ -93,7 +93,7 @@ export function ProjectPanel({
       </div>
       <div key={tab} className="min-h-0 flex-1 animate-fade-in">
         {tab === 'items' && <ItemsTab project={project} />}
-        {tab === 'overview' && <Overview project={project} />}
+        {tab === 'description' && <Description project={project} />}
         {tab === 'log' && <Log project={project} />}
       </div>
     </div>
@@ -878,7 +878,8 @@ function BulkAdd({
   );
 }
 
-function Overview({project}: {project: Project}) {
+/** The project's description: its Markdown overview doc, full height. */
+function Description({project}: {project: Project}) {
   const [editing, setEditing] = useState(project.overviewDoc === '');
   return (
     <div className="flex h-full flex-col p-3">

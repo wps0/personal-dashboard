@@ -27,7 +27,7 @@ See README.md for running and deploying it.
 ```
 Area            e.g. University, Work, Personal, Side projects
  └─ Project     e.g. "Operating Systems (course)", "Homelab migration"
-     ├─ overviewDoc   markdown: goals, links, decisions (one living doc)
+     ├─ overviewDoc   markdown description: goals, links, decisions (one living doc)
      ├─ log[]         timestamped progress entries ("2026-10-10: finished part 2")
      ├─ progressMode  'checklist' | 'hours' | 'manual'
      ├─ groups[]      { id, name }   folders for its items, e.g. "Classes", in display order
@@ -137,7 +137,8 @@ Each day box is a hybrid of three parts:
   containing it.
 
 ### 3.3 Project panel
-The project's items, overview doc and progress log, as tabs in the side panel.
+The project's items, description (its overview doc, Markdown) and progress
+log, as tabs in the side panel.
 
 - On narrow panels (phones, or a wide project list) the items table drops
   its estimate and spent/plan columns, which the task overlay shows, and
@@ -526,7 +527,7 @@ Sample inputs and the output we expect from them live in
    picked on the review screen when the project has groups (the one last
    imported into by default, as for USOS).
    It can be undone in one step. `courseNotes`, if ticked, is appended to the
-   project's overview doc under "Course notes".
+   project's description under "Course notes".
 
 **Gemini call**
 - Endpoint: `models/<model>:generateContent`, with a current Gemini Flash

@@ -36,7 +36,7 @@ const FIELDS: Record<string, string> = {
   end: 'end',
   allDay: 'all day',
   color: 'colour',
-  overviewDoc: 'overview',
+  overviewDoc: 'description',
   progressMode: 'progress mode',
   manualProgress: 'progress',
   archived: 'archived',
