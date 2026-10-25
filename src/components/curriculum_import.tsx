@@ -282,7 +282,7 @@ function Review({
               checked={addNotes}
               onChange={e => setAddNotes(e.target.checked)}
             />
-            Add the course notes to the project’s overview
+            Add the course notes to the project’s description
           </label>
           {addNotes && (
             <Flagged on={flags.courseNotes}>

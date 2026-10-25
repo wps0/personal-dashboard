@@ -45,7 +45,7 @@ message Project {
   // 0–100, used when progress_mode is MANUAL.
   double manual_progress = 5;
   optional string due_date = 6;
-  // Markdown: goals, links, decisions.
+  // Markdown: the project's description (goals, links, decisions).
   string overview_doc = 7;
   repeated LogEntry log = 8;
   bool archived = 9;

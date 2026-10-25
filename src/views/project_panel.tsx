@@ -63,7 +63,7 @@ import {
 } from '../actions';
 import {blockKeys} from '../keyboard';
 
-type Tab = 'items' | 'overview' | 'log';
+type Tab = 'items' | 'description' | 'log';
 
 /** Project details shown beside the project cards. */
 export function ProjectPanel({
@@ -81,7 +81,7 @@ export function ProjectPanel({
     <div className="flex h-full flex-col">
       <Header project={project} percent={percent} color={color} />
       <div className="flex shrink-0 gap-1 border-b border-line px-3 py-1">
-        {(['items', 'overview', 'log'] as const).map(t => (
+        {(['items', 'description', 'log'] as const).map(t => (
           <button
             key={t}
             className={`label rounded px-1.5 py-0.5 transition-colors duration-150 ${tab === t ? 'bg-raised !text-fg' : 'hover:!text-fg'}`}
@@ -93,7 +93,7 @@ export function ProjectPanel({
       </div>
       <div key={tab} className="min-h-0 flex-1 animate-fade-in">
         {tab === 'items' && <ItemsTab project={project} />}
-        {tab === 'overview' && <Overview project={project} />}
+        {tab === 'description' && <Description project={project} />}
         {tab === 'log' && <Log project={project} />}
       </div>
     </div>
@@ -250,129 +250,153 @@ function ItemsTab({project}: {project: Project}) {
   const ungrouped = byGroup.get('') ?? [];
   const noneKey = `${project.id}:none`;
   const noneOpen = !groups.length || !collapsed.includes(noneKey);
+  const [editingDescription, setEditingDescription] = useState(false);
+  const description = {
+    project,
+    editing: editingDescription,
+    setEditing: setEditingDescription,
+  };
+  const hasDescription =
+    project.overviewDoc.trim() !== '' || editingDescription;
 
   return (
-    <div className="scroll-thin @container h-full overflow-y-auto p-3">
-      <div className="mb-2 flex flex-wrap items-center gap-x-3 gap-y-1">
-        <span className="tabular-nums text-[11px] text-dim">
-          {items.filter(isItemDone).length}/{items.length} done
-        </span>
-        <label className="ml-auto flex items-center gap-1.5 text-dim">
-          <input
-            type="checkbox"
-            checked={hideDone}
-            onChange={e => setHideDone(e.target.checked)}
+    <div className="@container/panel flex h-full">
+      <div className="scroll-thin @container h-full min-w-0 flex-1 overflow-y-auto p-3">
+        {hasDescription ? (
+          <DescriptionBlock {...description} />
+        ) : (
+          <button
+            className="btn-ghost mb-1 -ml-1.5 text-[12px]"
+            onClick={() => {
+              useUi.getState().setDescriptionCollapsed(false);
+              setEditingDescription(true);
+            }}
+          >
+            + Add a description
+          </button>
+        )}
+        <div className="mb-2 flex flex-wrap items-center gap-x-3 gap-y-1">
+          <span className="tabular-nums text-[11px] text-dim">
+            {items.filter(isItemDone).length}/{items.length} done
+          </span>
+          <label className="ml-auto flex items-center gap-1.5 text-dim">
+            <input
+              type="checkbox"
+              checked={hideDone}
+              onChange={e => setHideDone(e.target.checked)}
+            />
+            hide done
+          </label>
+          <button
+            className="btn-ghost"
+            onClick={() => useUi.getState().importCurriculum(project.id)}
+            title="Turn a course description into class items, with Gemini"
+          >
+            import curriculum…
+          </button>
+          <button
+            className="btn-ghost"
+            onClick={() => setForm(f => (f === 'group' ? null : 'group'))}
+            title="A folder for items, e.g. all classes"
+          >
+            {form === 'group' ? 'cancel group' : '+ group'}
+          </button>
+          <button
+            className="btn-ghost"
+            onClick={() => setForm(f => (f === 'bulk' ? null : 'bulk'))}
+          >
+            {form === 'bulk' ? 'cancel bulk' : '+ bulk'}
+          </button>
+        </div>
+        {form === 'group' && (
+          <AddGroup projectId={project.id} onDone={() => setForm(null)} />
+        )}
+        {form === 'bulk' && (
+          <BulkAdd
+            projectId={project.id}
+            groups={groups}
+            onDone={() => setForm(null)}
           />
-          hide done
-        </label>
-        <button
-          className="btn-ghost"
-          onClick={() => useUi.getState().importCurriculum(project.id)}
-          title="Turn a course description into class items, with Gemini"
-        >
-          import curriculum…
-        </button>
-        <button
-          className="btn-ghost"
-          onClick={() => setForm(f => (f === 'group' ? null : 'group'))}
-          title="A folder for items, e.g. all classes"
-        >
-          {form === 'group' ? 'cancel group' : '+ group'}
-        </button>
-        <button
-          className="btn-ghost"
-          onClick={() => setForm(f => (f === 'bulk' ? null : 'bulk'))}
-        >
-          {form === 'bulk' ? 'cancel bulk' : '+ bulk'}
-        </button>
-      </div>
-      {form === 'group' && (
-        <AddGroup projectId={project.id} onDone={() => setForm(null)} />
-      )}
-      {form === 'bulk' && (
-        <BulkAdd
-          projectId={project.id}
-          groups={groups}
-          onDone={() => setForm(null)}
-        />
-      )}
-      <table className="w-full table-fixed border-collapse">
-        <colgroup>
-          <col className="w-28 @md:w-32" />
-          <col />
-          <col className="w-20" />
-          {/* Estimate and spent/plan: none on narrow panels (phones). */}
-          <col className="w-12 @max-md:w-0" />
-          <col className="w-16 @max-md:w-0" />
-          <col className="w-5" />
-        </colgroup>
-        <thead>
-          <tr className="label border-b border-line text-left [&>th]:px-1 [&>th]:py-1 [&>th]:font-normal">
-            <th>status</th>
-            <th>title</th>
-            <th>date</th>
-            <th
-              className="text-right @max-md:invisible @max-md:overflow-hidden @max-md:!px-0"
-              title="Estimated hours"
-            >
-              est
-            </th>
-            <th
-              className="text-right @max-md:invisible @max-md:overflow-hidden @max-md:!px-0"
-              title="Hours spent / planned"
-            >
-              spent/plan
-            </th>
-            <th />
-          </tr>
-        </thead>
-        {groups.map((g, k) => {
-          const list = byGroup.get(g.id) ?? [];
-          const open = !collapsed.includes(g.id);
-          return (
-            <tbody key={g.id}>
+        )}
+        <table className="w-full table-fixed border-collapse">
+          <colgroup>
+            <col className="w-28 @md:w-32" />
+            <col />
+            <col className="w-20" />
+            {/* Estimate and spent/plan: none on narrow panels (phones). */}
+            <col className="w-12 @max-md:w-0" />
+            <col className="w-16 @max-md:w-0" />
+            <col className="w-5" />
+          </colgroup>
+          <thead>
+            <tr className="label border-b border-line text-left [&>th]:px-1 [&>th]:py-1 [&>th]:font-normal">
+              <th>status</th>
+              <th>title</th>
+              <th>date</th>
+              <th
+                className="text-right @max-md:invisible @max-md:overflow-hidden @max-md:!px-0"
+                title="Estimated hours"
+              >
+                est
+              </th>
+              <th
+                className="text-right @max-md:invisible @max-md:overflow-hidden @max-md:!px-0"
+                title="Hours spent / planned"
+              >
+                spent/plan
+              </th>
+              <th />
+            </tr>
+          </thead>
+          {groups.map((g, k) => {
+            const list = byGroup.get(g.id) ?? [];
+            const open = !collapsed.includes(g.id);
+            return (
+              <tbody key={g.id}>
+                <GroupHeader
+                  projectId={project.id}
+                  group={g}
+                  index={k}
+                  last={k === groups.length - 1}
+                  items={list}
+                  ungrouped={ungrouped}
+                  open={open}
+                  onToggle={() => toggle(g.id)}
+                />
+                {open && rows(list)}
+                {open && !list.length && (
+                  <EmptyGroup group={g} ungrouped={ungrouped} />
+                )}
+                {open && (
+                  <tr>
+                    <td colSpan={6}>
+                      <AddItem
+                        projectId={project.id}
+                        group={g}
+                        defaultKind={list.at(-1)?.kind}
+                      />
+                    </td>
+                  </tr>
+                )}
+              </tbody>
+            );
+          })}
+          <tbody>
+            {groups.length > 0 && ungrouped.length > 0 && (
               <GroupHeader
                 projectId={project.id}
-                group={g}
-                index={k}
-                last={k === groups.length - 1}
-                items={list}
+                items={ungrouped}
                 ungrouped={ungrouped}
-                open={open}
-                onToggle={() => toggle(g.id)}
+                open={noneOpen}
+                onToggle={() => toggle(noneKey)}
               />
-              {open && rows(list)}
-              {open && !list.length && (
-                <EmptyGroup group={g} ungrouped={ungrouped} />
-              )}
-              {open && (
-                <tr>
-                  <td colSpan={6}>
-                    <AddItem
-                      projectId={project.id}
-                      group={g}
-                      defaultKind={list.at(-1)?.kind}
-                    />
-                  </td>
-                </tr>
-              )}
-            </tbody>
-          );
-        })}
-        <tbody>
-          {groups.length > 0 && ungrouped.length > 0 && (
-            <GroupHeader
-              projectId={project.id}
-              items={ungrouped}
-              ungrouped={ungrouped}
-              open={noneOpen}
-              onToggle={() => toggle(noneKey)}
-            />
-          )}
-          {noneOpen && rows(ungrouped)}
-        </tbody>
-      </table>
-      <AddItem projectId={project.id} />
+            )}
+            {noneOpen && rows(ungrouped)}
+          </tbody>
+        </table>
+        <AddItem projectId={project.id} />
+      </div>
+      {hasDescription && <DescriptionColumn {...description} />}
     </div>
   );
 }
@@ -878,7 +902,8 @@ function BulkAdd({
   );
 }
 
-function Overview({project}: {project: Project}) {
+/** The project's description: its Markdown overview doc, full height. */
+function Description({project}: {project: Project}) {
   const [editing, setEditing] = useState(project.overviewDoc === '');
   return (
     <div className="flex h-full flex-col p-3">
@@ -891,14 +916,10 @@ function Overview({project}: {project: Project}) {
         </button>
       </div>
       {editing ? (
-        <BufferedTextarea
+        <DescriptionEditor
+          project={project}
           autoFocus={project.overviewDoc !== ''}
-          className="field scroll-thin min-h-0 flex-1 resize-none tabular-nums text-[12px]"
-          placeholder={'## Goals\n- …\n\n## Links\n- …\n\n## Decisions\n- …'}
-          value={project.overviewDoc}
-          onCommit={overviewDoc =>
-            useStore.getState().updateProject(project.id, {overviewDoc})
-          }
+          className="min-h-0 flex-1"
         />
       ) : (
         <div
@@ -909,6 +930,137 @@ function Overview({project}: {project: Project}) {
         </div>
       )}
     </div>
+  );
+}
+
+/** A textarea for the description; writes after a pause, like other long text. */
+function DescriptionEditor({
+  project,
+  autoFocus,
+  className,
+}: {
+  project: Project;
+  autoFocus?: boolean;
+  className: string;
+}) {
+  return (
+    <BufferedTextarea
+      autoFocus={autoFocus}
+      aria-label="Description"
+      className={`field scroll-thin resize-none tabular-nums text-[12px] ${className}`}
+      placeholder={'## Goals\n- …\n\n## Links\n- …\n\n## Decisions\n- …'}
+      value={project.overviewDoc}
+      onCommit={overviewDoc =>
+        useStore.getState().updateProject(project.id, {overviewDoc})
+      }
+    />
+  );
+}
+
+interface DescriptionProps {
+  project: Project;
+  editing: boolean;
+  setEditing(editing: boolean): void;
+}
+
+/** The description beside the items, on wide panels. */
+function DescriptionColumn({project, editing, setEditing}: DescriptionProps) {
+  return (
+    <aside
+      aria-label="Description"
+      className="hidden w-72 shrink-0 flex-col border-l border-line p-3 @4xl/panel:flex"
+    >
+      <div className="mb-1 flex items-center">
+        <span className="label flex-1">description</span>
+        <button
+          className="btn-ghost text-[11px]"
+          onClick={() => setEditing(!editing)}
+        >
+          {editing ? 'preview' : 'edit'}
+        </button>
+      </div>
+      {editing ? (
+        <DescriptionEditor
+          project={project}
+          autoFocus
+          className="min-h-0 flex-1"
+        />
+      ) : (
+        <div
+          className="scroll-thin min-h-0 flex-1 overflow-y-auto"
+          onDoubleClick={() => setEditing(true)}
+          title="Double-click to edit"
+        >
+          <Markdown source={project.overviewDoc} />
+        </div>
+      )}
+    </aside>
+  );
+}
+
+/** The description above the items, collapsible (per device), on narrow panels. */
+function DescriptionBlock({project, editing, setEditing}: DescriptionProps) {
+  const collapsed = useUi(s => s.descriptionCollapsed);
+  const open = !collapsed;
+  // The first line, as a preview while collapsed.
+  const preview =
+    project.overviewDoc
+      .split('\n')
+      .map(l => l.replace(/^[\s#>*-]+/, '').trim())
+      .find(Boolean) ?? '';
+  return (
+    <section
+      aria-label="Description"
+      className="mb-3 rounded-md border border-line @4xl/panel:hidden"
+    >
+      <div className="flex items-center gap-1 px-1 py-0.5">
+        <button
+          className="flex min-w-0 flex-1 items-center gap-1 rounded py-0.5 text-left"
+          aria-expanded={open}
+          onClick={() => {
+            useUi.getState().setDescriptionCollapsed(open);
+            if (open) setEditing(false);
+          }}
+        >
+          <ChevronRight
+            size={14}
+            className={`shrink-0 text-dim transition-transform duration-150 ${open ? 'rotate-90' : ''}`}
+          />
+          <span className="label">description</span>
+          {!open && (
+            <span className="min-w-0 flex-1 truncate pl-1 text-[12px] text-dim">
+              {preview}
+            </span>
+          )}
+        </button>
+        {open && (
+          <button
+            className="btn-ghost text-[11px]"
+            onClick={() => setEditing(!editing)}
+          >
+            {editing ? 'preview' : 'edit'}
+          </button>
+        )}
+      </div>
+      {open &&
+        (editing ? (
+          <div className="px-2 pb-2">
+            <DescriptionEditor
+              project={project}
+              autoFocus
+              className="block h-40 w-full resize-y"
+            />
+          </div>
+        ) : (
+          <div
+            className="scroll-thin max-h-48 overflow-y-auto px-3 pb-2"
+            onDoubleClick={() => setEditing(true)}
+            title="Double-click to edit"
+          >
+            <Markdown source={project.overviewDoc} />
+          </div>
+        ))}
+    </section>
   );
 }
 
