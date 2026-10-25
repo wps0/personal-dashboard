@@ -11,18 +11,20 @@ import {Modal} from './modal';
 import {countdown, todayISO} from '../model/dates';
 import {
   actualHours,
+  groupOf,
   isItemDone,
   plannedHours,
   urgency,
 } from '../model/selectors';
 import {ItemKind, type Allocation, type Item} from '../model/types';
-import {fmtH, KIND_OPTIONS, URGENCY_CLASS} from '../format';
+import {fmtH, groupOptions, KIND_OPTIONS, URGENCY_CLASS} from '../format';
 import {navigate} from '../router';
 import {useStore} from '../store';
 import {useUi} from '../ui';
 import {
   completeItem,
   deleteItem as deleteItemAction,
+  moveToGroup,
   removeSession,
   toggleSession,
 } from '../actions';
@@ -82,7 +84,7 @@ function ItemDetails({item, onClose}: {item: Item; onClose(): void}) {
           <div className="mt-1.5 flex flex-wrap items-center gap-2 px-1">
             <Select
               value={item.projectId}
-              onChange={projectId => set({projectId})}
+              onChange={projectId => set({projectId, groupId: undefined})}
               options={projects.map(p => ({
                 value: p.id,
                 label: p.name,
@@ -91,6 +93,20 @@ function ItemDetails({item, onClose}: {item: Item; onClose(): void}) {
               className="w-48"
               ariaLabel="Project"
             />
+            {!!project?.groups.length && (
+              <Select
+                value={groupOf(item, project.groups)?.id ?? ''}
+                onChange={id =>
+                  moveToGroup(
+                    [item],
+                    project.groups.find(g => g.id === id),
+                  )
+                }
+                options={groupOptions(project.groups)}
+                className="w-36"
+                ariaLabel="Group"
+              />
+            )}
             <Select
               value={item.kind}
               onChange={kind => set({kind})}

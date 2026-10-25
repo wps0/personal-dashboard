@@ -4,18 +4,39 @@ import {BufferedTextarea} from '../components/buffered';
 import {DateField} from '../components/date_field';
 import {StatusSelect} from '../components/status_select';
 import {Select} from '../components/ui/select';
-import {Pencil, Trash2, X} from 'lucide-react';
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from '../components/ui/popover';
+import {
+  ArrowDown,
+  ArrowUp,
+  ChevronRight,
+  FolderInput,
+  MoreHorizontal,
+  Pencil,
+  Trash2,
+  X,
+} from 'lucide-react';
 import {HoursInput} from '../components/hours_input';
 import {InlineText} from '../components/inline_text';
 import {CoursePattern} from '../components/course_pattern';
 import {UsosBanner} from '../components/usos_review';
 import {Markdown} from '../components/markdown';
 import {ProgressRing} from '../components/progress_ring';
-import {fmtNum, kindBadge, KIND_OPTIONS, URGENCY_CLASS} from '../format';
+import {
+  fmtNum,
+  groupOptions,
+  kindBadge,
+  KIND_OPTIONS,
+  URGENCY_CLASS,
+} from '../format';
 import {countdown, shortDate, todayISO} from '../model/dates';
 import {
   actualHours,
   compareItems,
+  groupOf,
   isItemDone,
   plannedHours,
   urgency,
@@ -25,12 +46,20 @@ import {
   ProgressMode,
   type Allocation,
   type Item,
+  type ItemGroup,
   type Project,
 } from '../model/types';
 import {href, navigate} from '../router';
 import {useStore} from '../store';
 import {useUi} from '../ui';
-import {deleteItem as deleteItemAction} from '../actions';
+import {
+  addGroup,
+  deleteGroup,
+  deleteItem as deleteItemAction,
+  moveGroup,
+  moveToGroup,
+  renameGroup,
+} from '../actions';
 import {blockKeys} from '../keyboard';
 
 type Tab = 'items' | 'overview' | 'log';
@@ -180,9 +209,11 @@ const PROGRESS_OPTIONS = [
 function ItemsTab({project}: {project: Project}) {
   const allItems = useStore(s => s.data.items);
   const allocations = useStore(s => s.data.allocations);
+  const collapsed = useUi(s => s.collapsedGroups);
   const [hideDone, setHideDone] = useState(false);
-  const [bulk, setBulk] = useState(false);
+  const [form, setForm] = useState<'bulk' | 'group' | null>(null);
   const today = todayISO();
+  const {groups} = project;
 
   const items = useMemo(
     () => allItems.filter(i => i.projectId === project.id).sort(compareItems),
@@ -195,11 +226,33 @@ function ItemsTab({project}: {project: Project}) {
       if (ids.has(a.itemId)) m.set(a.itemId, [...(m.get(a.itemId) ?? []), a]);
     return m;
   }, [items, allocations]);
-  const visible = hideDone ? items.filter(i => !isItemDone(i)) : items;
+  // Items by group id; '' for no group, which includes a group that's gone.
+  const byGroup = useMemo(() => {
+    const m = new Map<string, Item[]>();
+    for (const i of items) {
+      const key = groupOf(i, groups)?.id ?? '';
+      m.set(key, [...(m.get(key) ?? []), i]);
+    }
+    return m;
+  }, [items, groups]);
+  const rows = (list: Item[]) =>
+    (hideDone ? list.filter(i => !isItemDone(i)) : list).map(item => (
+      <ItemRow
+        key={item.id}
+        item={item}
+        groups={groups}
+        allocs={allocs.get(item.id) ?? NO_ALLOCS}
+        today={today}
+      />
+    ));
+  const toggle = (key: string) => useUi.getState().toggleGroup(key);
+  const ungrouped = byGroup.get('') ?? [];
+  const noneKey = `${project.id}:none`;
+  const noneOpen = !groups.length || !collapsed.includes(noneKey);
 
   return (
     <div className="scroll-thin h-full overflow-y-auto p-3">
-      <div className="mb-2 flex items-center gap-3">
+      <div className="mb-2 flex flex-wrap items-center gap-x-3 gap-y-1">
         <span className="tabular-nums text-[11px] text-dim">
           {items.filter(isItemDone).length}/{items.length} done
         </span>
@@ -218,11 +271,30 @@ function ItemsTab({project}: {project: Project}) {
         >
           import curriculum…
         </button>
-        <button className="btn-ghost" onClick={() => setBulk(b => !b)}>
-          {bulk ? 'cancel bulk' : '+ bulk'}
+        <button
+          className="btn-ghost"
+          onClick={() => setForm(f => (f === 'group' ? null : 'group'))}
+          title="A folder for items, e.g. all classes"
+        >
+          {form === 'group' ? 'cancel group' : '+ group'}
+        </button>
+        <button
+          className="btn-ghost"
+          onClick={() => setForm(f => (f === 'bulk' ? null : 'bulk'))}
+        >
+          {form === 'bulk' ? 'cancel bulk' : '+ bulk'}
         </button>
       </div>
-      {bulk && <BulkAdd projectId={project.id} onDone={() => setBulk(false)} />}
+      {form === 'group' && (
+        <AddGroup projectId={project.id} onDone={() => setForm(null)} />
+      )}
+      {form === 'bulk' && (
+        <BulkAdd
+          projectId={project.id}
+          groups={groups}
+          onDone={() => setForm(null)}
+        />
+      )}
       <table className="w-full border-collapse">
         <thead>
           <tr className="label border-b border-line text-left [&>th]:px-1 [&>th]:py-1 [&>th]:font-normal">
@@ -238,15 +310,48 @@ function ItemsTab({project}: {project: Project}) {
             <th className="w-5" />
           </tr>
         </thead>
+        {groups.map((g, k) => {
+          const list = byGroup.get(g.id) ?? [];
+          const open = !collapsed.includes(g.id);
+          return (
+            <tbody key={g.id}>
+              <GroupHeader
+                projectId={project.id}
+                group={g}
+                index={k}
+                last={k === groups.length - 1}
+                items={list}
+                all={items}
+                open={open}
+                onToggle={() => toggle(g.id)}
+              />
+              {open && rows(list)}
+              {open && !list.length && <EmptyGroup group={g} all={items} />}
+              {open && (
+                <tr>
+                  <td colSpan={6}>
+                    <AddItem
+                      projectId={project.id}
+                      group={g}
+                      defaultKind={list.at(-1)?.kind}
+                    />
+                  </td>
+                </tr>
+              )}
+            </tbody>
+          );
+        })}
         <tbody>
-          {visible.map(item => (
-            <ItemRow
-              key={item.id}
-              item={item}
-              allocs={allocs.get(item.id) ?? NO_ALLOCS}
-              today={today}
+          {groups.length > 0 && ungrouped.length > 0 && (
+            <GroupHeader
+              projectId={project.id}
+              items={ungrouped}
+              all={items}
+              open={noneOpen}
+              onToggle={() => toggle(noneKey)}
             />
-          ))}
+          )}
+          {noneOpen && rows(ungrouped)}
         </tbody>
       </table>
       <AddItem projectId={project.id} />
@@ -254,12 +359,199 @@ function ItemsTab({project}: {project: Project}) {
   );
 }
 
+/** For each kind, the items of that kind not in the group: what "all … items" moves there. */
+function movable(all: Item[], group: ItemGroup) {
+  return KIND_OPTIONS.map(o => ({
+    kind: o.value,
+    name: o.label.toLowerCase(),
+    items: all.filter(i => i.kind === o.value && i.groupId !== group.id),
+  })).filter(k => k.items.length > 0);
+}
+
+/** A group's name, item count and done/total, collapsible; "No group" without `group`. */
+function GroupHeader({
+  projectId,
+  group,
+  index = 0,
+  last = true,
+  items,
+  all,
+  open,
+  onToggle,
+}: {
+  projectId: string;
+  group?: ItemGroup;
+  index?: number;
+  last?: boolean;
+  items: Item[];
+  all: Item[];
+  open: boolean;
+  onToggle(): void;
+}) {
+  const name = group?.name ?? 'No group';
+  const done = items.filter(isItemDone).length;
+  return (
+    <tr className="border-b border-line">
+      <td colSpan={6} className="pt-3 pb-0.5">
+        <div className="flex min-w-0 items-center gap-1">
+          <button
+            className="icon-btn h-6 w-6 shrink-0"
+            aria-expanded={open}
+            aria-label={`${open ? 'Collapse' : 'Expand'} ${name}`}
+            onClick={onToggle}
+          >
+            <ChevronRight
+              size={14}
+              className={`transition-transform duration-150 ${open ? 'rotate-90' : ''}`}
+            />
+          </button>
+          {group ? (
+            <InlineText
+              value={group.name}
+              onChange={n => renameGroup(projectId, group.id, n)}
+              ariaLabel="Group name"
+              className="flex-1 font-medium text-strong"
+            />
+          ) : (
+            <button
+              className="min-w-0 flex-1 truncate px-1 text-left text-dim"
+              onClick={onToggle}
+            >
+              No group
+            </button>
+          )}
+          <button
+            className="shrink-0 px-1 tabular-nums text-[11px] text-dim"
+            onClick={onToggle}
+          >
+            {items.length} {items.length === 1 ? 'item' : 'items'} · {done}/
+            {items.length} done
+          </button>
+          {group && (
+            <GroupMenu
+              projectId={projectId}
+              group={group}
+              index={index}
+              last={last}
+              all={all}
+            />
+          )}
+        </div>
+      </td>
+    </tr>
+  );
+}
+
+function GroupMenu({
+  projectId,
+  group,
+  index,
+  last,
+  all,
+}: {
+  projectId: string;
+  group: ItemGroup;
+  index: number;
+  last: boolean;
+  all: Item[];
+}) {
+  const [open, setOpen] = useState(false);
+  const run = (f: () => void) => () => {
+    setOpen(false);
+    f();
+  };
+  const kinds = movable(all, group);
+  const entry =
+    'flex w-full items-center gap-2 rounded-md px-2.5 py-1.5 text-left hover:bg-raised';
+  return (
+    <Popover open={open} onOpenChange={setOpen}>
+      <PopoverTrigger
+        className="icon-btn h-6 w-6 shrink-0"
+        aria-label={`Actions for ${group.name}`}
+        title="Group actions"
+      >
+        <MoreHorizontal size={14} />
+      </PopoverTrigger>
+      <PopoverContent align="end" className="w-60 p-1 text-[12px]">
+        {kinds.length > 0 && (
+          <div className="label px-2.5 pt-1.5 pb-1">Move here</div>
+        )}
+        {kinds.map(k => (
+          <button
+            key={k.kind}
+            className={entry}
+            onClick={run(() => moveToGroup(k.items, group))}
+          >
+            <span className="w-7 tabular-nums text-[10px] text-dim">
+              {kindBadge(k.kind)}
+            </span>
+            <span className="flex-1">All {k.name} items</span>
+            <span className="tabular-nums text-dim">{k.items.length}</span>
+          </button>
+        ))}
+        {kinds.length > 0 && <div className="my-1 border-t border-line" />}
+        {index > 0 && (
+          <button
+            className={entry}
+            onClick={run(() => moveGroup(projectId, group.id, index - 1))}
+          >
+            <ArrowUp size={13} className="text-dim" /> Move up
+          </button>
+        )}
+        {!last && (
+          <button
+            className={entry}
+            onClick={run(() => moveGroup(projectId, group.id, index + 1))}
+          >
+            <ArrowDown size={13} className="text-dim" /> Move down
+          </button>
+        )}
+        <button
+          className={`${entry} hover:text-danger`}
+          onClick={run(() => deleteGroup(projectId, group))}
+        >
+          <Trash2 size={13} className="text-dim" /> Delete group
+          <span className="ml-auto text-[11px] text-dim">keeps items</span>
+        </button>
+      </PopoverContent>
+    </Popover>
+  );
+}
+
+/** An empty group's hint, with one-click moves of all items of a kind. */
+function EmptyGroup({group, all}: {group: ItemGroup; all: Item[]}) {
+  const kinds = movable(all, group);
+  return (
+    <tr>
+      <td
+        colSpan={6}
+        className="py-1 pl-7 text-[12px] text-dim [&_button]:ml-1"
+      >
+        Empty. Move items here with{' '}
+        <FolderInput size={12} className="inline align-[-2px]" /> on a row
+        {kinds.length ? ', or move' : '.'}
+        {kinds.map(k => (
+          <button
+            key={k.kind}
+            className="btn-ghost"
+            onClick={() => moveToGroup(k.items, group)}
+          >
+            all {kindBadge(k.kind)} ({k.items.length})
+          </button>
+        ))}
+      </td>
+    </tr>
+  );
+}
+
 const ItemRow = memo(function ItemRow({
   item,
+  groups,
   allocs,
   today,
 }: {
   item: Item;
+  groups: ItemGroup[];
   allocs: Allocation[];
   today: string;
 }) {
@@ -280,27 +572,30 @@ const ItemRow = memo(function ItemRow({
         />
       </td>
       <td className="px-1 py-0.5">
-        <button
-          data-block
-          onKeyDown={blockKeys({remove: () => deleteItemAction(item)})}
-          className="flex w-full min-w-0 items-center gap-1.5 rounded px-1 text-left hover:bg-raised"
-          onClick={() => openItem(item.id)}
-          title="Open task details"
-        >
-          <span className="tabular-nums text-[10px] text-dim">
-            {kindBadge(item.kind)}
-          </span>
-          <span className="truncate">
-            <span className={`strike ${done ? 'is-struck' : ''}`}>
-              {item.title}
+        <div className="flex min-w-0 items-center">
+          <button
+            data-block
+            onKeyDown={blockKeys({remove: () => deleteItemAction(item)})}
+            className="flex min-w-0 flex-1 items-center gap-1.5 rounded px-1 text-left hover:bg-raised"
+            onClick={() => openItem(item.id)}
+            title="Open task details"
+          >
+            <span className="tabular-nums text-[10px] text-dim">
+              {kindBadge(item.kind)}
             </span>
-          </span>
-          {item.notes && (
-            <span className="text-[10px] text-dim" title="Has notes">
-              ✎
+            <span className="truncate">
+              <span className={`strike ${done ? 'is-struck' : ''}`}>
+                {item.title}
+              </span>
             </span>
-          )}
-        </button>
+            {item.notes && (
+              <span className="text-[10px] text-dim" title="Has notes">
+                ✎
+              </span>
+            )}
+          </button>
+          {groups.length > 0 && <MoveToGroup item={item} groups={groups} />}
+        </div>
       </td>
       <td className="px-1 py-0.5 tabular-nums text-[11px] whitespace-nowrap">
         {item.dueDate ? (
@@ -341,22 +636,112 @@ const ItemRow = memo(function ItemRow({
   );
 });
 
-function AddItem({projectId}: {projectId: string}) {
-  const [kind, setKind] = useState(ItemKind.TASK);
+/** A row's "move to group" picker; shown on hover or focus. */
+function MoveToGroup({item, groups}: {item: Item; groups: ItemGroup[]}) {
+  const options = useMemo(() => groupOptions(groups), [groups]);
+  return (
+    <span className="invisible shrink-0 group-focus-within:visible group-hover:visible">
+      <Select
+        variant="ghost"
+        value={groupOf(item, groups)?.id ?? ''}
+        onChange={id =>
+          moveToGroup(
+            [item],
+            groups.find(g => g.id === id),
+          )
+        }
+        options={options}
+        display={<FolderInput size={13} />}
+        className="h-6 gap-0.5 px-1 text-dim"
+        ariaLabel={`Move “${item.title}” to a group`}
+      />
+    </span>
+  );
+}
+
+function AddGroup({projectId, onDone}: {projectId: string; onDone(): void}) {
+  const [name, setName] = useState('');
+  const submit = () => {
+    if (!name.trim()) return;
+    addGroup(projectId, name.trim());
+    onDone();
+  };
+  return (
+    <div className="mb-3 flex flex-wrap items-center gap-1.5 rounded-md border border-line bg-panel p-2">
+      <input
+        autoFocus
+        className="field min-w-40 flex-1"
+        placeholder="Group name, e.g. Classes (Enter)"
+        aria-label="Group name"
+        value={name}
+        onChange={e => setName(e.target.value)}
+        onKeyDown={e => {
+          if (e.key === 'Enter') submit();
+          if (e.key === 'Escape') {
+            e.stopPropagation();
+            onDone();
+          }
+        }}
+      />
+      <button className="btn" disabled={!name.trim()} onClick={submit}>
+        add group
+      </button>
+    </div>
+  );
+}
+
+/** The add field under the list (no group), or a compact one inside a group. */
+function AddItem({
+  projectId,
+  group,
+  defaultKind = ItemKind.TASK,
+}: {
+  projectId: string;
+  group?: ItemGroup;
+  defaultKind?: ItemKind;
+}) {
+  // Follows the default (a group's last item's kind) until picked.
+  const [picked, setKind] = useState<ItemKind>();
+  const kind = picked ?? defaultKind;
   const [title, setTitle] = useState('');
   const [dueDate, setDueDate] = useState<string | undefined>();
   const [estimate, setEstimate] = useState<number | undefined>();
 
   const submit = () => {
     if (!title.trim()) return;
-    useStore
-      .getState()
-      .addItems(projectId, [
-        {kind, title: title.trim(), dueDate, estimateHours: estimate},
-      ]);
+    useStore.getState().addItems(projectId, [
+      {
+        kind,
+        title: title.trim(),
+        dueDate,
+        estimateHours: estimate,
+        groupId: group?.id,
+      },
+    ]);
     setTitle('');
   };
 
+  if (group)
+    return (
+      <div className="flex items-center gap-1 py-0.5 pl-6">
+        <Select
+          variant="ghost"
+          value={kind}
+          onChange={setKind}
+          options={KIND_OPTIONS}
+          className="h-6 w-28 shrink-0 text-[12px] text-dim"
+          ariaLabel={`Kind of a new item in ${group.name}`}
+        />
+        <input
+          className="h-6 min-w-0 flex-1 rounded px-1 placeholder:text-dim hover:bg-raised focus:bg-raised"
+          placeholder={`Add to ${group.name}… (Enter)`}
+          aria-label={`New item in ${group.name}`}
+          value={title}
+          onChange={e => setTitle(e.target.value)}
+          onKeyDown={e => e.key === 'Enter' && submit()}
+        />
+      </div>
+    );
   return (
     <div className="mt-2 flex flex-wrap items-center gap-1.5">
       <Select
@@ -397,8 +782,17 @@ function AddItem({projectId}: {projectId: string}) {
   );
 }
 
-function BulkAdd({projectId, onDone}: {projectId: string; onDone(): void}) {
+function BulkAdd({
+  projectId,
+  groups,
+  onDone,
+}: {
+  projectId: string;
+  groups: ItemGroup[];
+  onDone(): void;
+}) {
   const [kind, setKind] = useState(ItemKind.CLASS);
+  const [groupId, setGroupId] = useState('');
   const [prefix, setPrefix] = useState('Lecture');
   const [from, setFrom] = useState(1);
   const [to, setTo] = useState(13);
@@ -440,6 +834,15 @@ function BulkAdd({projectId, onDone}: {projectId: string; onDone(): void}) {
         className="field w-14"
       />
       <span className="text-dim">h each</span>
+      {groups.length > 0 && (
+        <Select
+          value={groupId}
+          onChange={setGroupId}
+          options={groupOptions(groups)}
+          className="w-32"
+          ariaLabel="Group"
+        />
+      )}
       <button
         className="btn"
         disabled={count === 0 || count > 200}
@@ -450,6 +853,7 @@ function BulkAdd({projectId, onDone}: {projectId: string; onDone(): void}) {
               kind,
               title: `${prefix} ${from + k}`.trim(),
               estimateHours: estimate,
+              groupId: groupId || undefined,
             })),
           );
           onDone();

@@ -6,6 +6,7 @@ import {
   type AppData,
   type ISODate,
   type Item,
+  type ItemGroup,
   type Project,
 } from './types';
 
@@ -14,6 +15,14 @@ type PlanData = Pick<AppData, 'items' | 'allocations' | 'projects'>;
 
 export function isItemDone(item: Item): boolean {
   return item.status === ItemStatus.DONE;
+}
+
+/** The item's group among its project's `groups`; none also when its group is gone. */
+export function groupOf(
+  item: Item,
+  groups: ItemGroup[],
+): ItemGroup | undefined {
+  return groups.find(g => g.id === item.groupId);
 }
 
 export function plannedHours(allocs: Allocation[]): number {

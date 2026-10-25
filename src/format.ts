@@ -1,5 +1,5 @@
 import type {Urgency} from './model/selectors';
-import {ItemKind} from './model/types';
+import {ItemKind, type ItemGroup} from './model/types';
 
 /** 1.5 → "1.5", 0.25 → "0.25", 2 → "2". */
 export function fmtNum(n: number) {
@@ -36,6 +36,14 @@ export const KIND_OPTIONS = [
   ItemKind.EXAM,
   ItemKind.TASK,
 ].map(kind => ({value: kind, label: KINDS[kind].name}));
+
+/** "No group" ('') and a project's groups, for a Select. */
+export function groupOptions(groups: ItemGroup[]) {
+  return [
+    {value: '', label: 'No group'},
+    ...groups.map(g => ({value: g.id, label: g.name})),
+  ];
+}
 
 /**
  * Text color that stays readable on a solid background (dark on light colors,
