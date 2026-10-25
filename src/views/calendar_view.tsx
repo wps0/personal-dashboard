@@ -109,14 +109,20 @@ export function CalendarView({
   const go = (v: CalView, d: ISODate) =>
     navigate({name: 'calendar', view: v, date: d === today ? undefined : d});
 
-  // If the draft's date is changed to one outside the view, follow it.
+  // If the draft's or the open event's date is changed to one outside the
+  // view, follow it, like Google Calendar.
   const draftDate = useUi(s => s.draft?.date);
-  const followDraft = useEffectEvent((d: ISODate) => {
+  const openEventId = useUi(s => s.openEventId);
+  const openEventDate = useStore(
+    s => s.data.events.find(e => e.id === openEventId)?.date,
+  );
+  const followed = draftDate ?? openEventDate;
+  const follow = useEffectEvent((d: ISODate) => {
     if (!days.includes(d)) go(view, d);
   });
   useEffect(() => {
-    if (draftDate) followDraft(draftDate);
-  }, [draftDate]);
+    if (followed) follow(followed);
+  }, [followed]);
 
   useNavTarget({
     next: () => go(view, step(view, date, 1)),
