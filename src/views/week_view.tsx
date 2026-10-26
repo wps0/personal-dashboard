@@ -26,6 +26,7 @@ import {
   addDays,
   countdown,
   dayName,
+  isISODate,
   MONDAY,
   monthKey,
   monthName,
@@ -68,10 +69,7 @@ export function WeekView({week}: {week?: ISODate}) {
   const today = useToday();
   // Always Monday–Sunday: the week start setting is for the calendar. The
   // route holds the Monday; any other day shows the week containing it.
-  const start = startOfWeek(
-    week && /^\d{4}-\d{2}-\d{2}$/.test(week) ? week : today,
-    MONDAY,
-  );
+  const start = startOfWeek(week && isISODate(week) ? week : today, MONDAY);
   const [dragging, setDragging] = useState<DragData | null>(null);
   const thisWeek = startOfWeek(today, MONDAY);
   const goWeek = (d: ISODate) => {
