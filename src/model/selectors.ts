@@ -246,6 +246,11 @@ export function compareItems(a: Item, b: Item): number {
   return a.title.localeCompare(b.title, undefined, {numeric: true});
 }
 
+/** Open items first and done ones last, each in {@link compareItems} order. */
+export function compareOpenFirst(a: Item, b: Item): number {
+  return Number(isItemDone(a)) - Number(isItemDone(b)) || compareItems(a, b);
+}
+
 const STATUS_LABEL: Record<ItemStatus, string> = {
   [ItemStatus.UNSPECIFIED]: 'Unknown',
   [ItemStatus.TODO]: 'To do',
