@@ -3,7 +3,7 @@ import {AlignLeft, Clock, Trash2, X} from 'lucide-react';
 import {eventStyle} from '../event_colors';
 import {withUndo} from '../toast';
 import {formatLong} from '../model/dates';
-import {moveStart} from '../model/time';
+import {moveStart, toMinutes} from '../model/time';
 import type {CalendarEvent} from '../model/types';
 import {useLookups} from '../hooks';
 import {EventColor} from '../model/types';
