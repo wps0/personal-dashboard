@@ -75,6 +75,8 @@ WorkSpan        { date, start, end, note? }   the work log: time actually worked
   Tomorrow where that fits), with checkboxes and a link to the missed ones.
 - A compact project overview (ring, X/Y done, next deadline), sorted by the
   nearest deadline.
+- A small work card under it: today's logged work (or the planned work with
+  **Log as planned**) and the week's hours against its target (SPEC 3.10).
 
 ### 3.1 Projects pane view
 A grid of project cards, grouped by area. Clicking a card opens the project's
@@ -332,6 +334,9 @@ log). The work log records what was actually worked: stretches of time
   the week has its own: typing one on the page sets it for that week only,
   and "Use the default" removes it. 0 means no target. The month totals of
   the months the week touches are shown too.
+- **On Home**, a small card at the bottom right shows today (logged, or
+  planned with Log as planned) and the week against its target; "edit ↗"
+  opens the Work page.
 - Everything is undoable.
 
 ## 4. Integrations (v2)

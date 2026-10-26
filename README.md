@@ -70,7 +70,8 @@ On first launch, choose **Load sample data** to explore, or create empty areas.
 - **Work** (`#/work`): the work log, a week at a time. Log the stretches you
   actually worked each day (or **Log as planned**, from the day's reserved
   Work time) and see the week's hours against its target (default in
-  Settings → Work log, or one of the week's own).
+  Settings → Work log, or one of the week's own). A small card on Home shows
+  today and the week at a glance.
 - **Projects** (`#/projects`): cards with progress rings. Click one to open its
   items, description (Markdown) and progress log in a side panel; the
   description also shows beside the items (above them on narrow screens).
