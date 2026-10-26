@@ -147,6 +147,33 @@ export function DraftEditor() {
     }
     setDraft(null);
   };
+  const tabs = (
+    <div role="tablist" aria-label="What to create" className="mb-3 flex gap-1">
+      {(
+        [
+          ['event', 'Event'],
+          ['task', 'Time block'],
+        ] as const
+      ).map(([mode, label]) => (
+        <button
+          key={mode}
+          role="tab"
+          aria-selected={draft.mode === mode}
+          onClick={() =>
+            // A time block always has a time.
+            patchDraft(mode === 'task' ? {mode, allDay: false} : {mode})
+          }
+          className={`rounded-md px-3 py-1 text-[13px] font-medium transition-colors ${
+            draft.mode === mode
+              ? 'bg-accent/20 text-accent'
+              : 'text-fg hover:bg-raised'
+          }`}
+        >
+          {label}
+        </button>
+      ))}
+    </div>
+  );
   return (
     <div className="w-[448px] max-w-[calc(100vw-24px)] p-3">
       <MoveBar onClose={() => setDraft(null)} />
@@ -155,47 +182,23 @@ export function DraftEditor() {
           itemId={draft.itemId}
           onPick={itemId => patchDraft({itemId})}
           onSave={save}
-        />
+        >
+          {tabs}
+        </TaskPicker>
       ) : (
-        <input
-          data-autofocus
-          value={draft.title}
-          placeholder="Add title"
-          aria-label="Title"
-          onChange={e => patchDraft({title: e.target.value})}
-          onKeyDown={e => e.key === 'Enter' && save()}
-          className="mb-3 ml-7 w-[calc(100%-1.75rem)] border-b-2 border-x-0 border-t-0 border-line pb-1 text-lg text-strong placeholder:text-dim focus:border-accent"
-        />
+        <>
+          <input
+            data-autofocus
+            value={draft.title}
+            placeholder="Add title"
+            aria-label="Title"
+            onChange={e => patchDraft({title: e.target.value})}
+            onKeyDown={e => e.key === 'Enter' && save()}
+            className="mb-3 ml-7 w-[calc(100%-1.75rem)] border-b-2 border-x-0 border-t-0 border-line pb-1 text-lg text-strong placeholder:text-dim focus:border-accent"
+          />
+          <div className="ml-7">{tabs}</div>
+        </>
       )}
-      <div
-        role="tablist"
-        aria-label="What to create"
-        className="mb-3 ml-7 flex gap-1"
-      >
-        {(
-          [
-            ['event', 'Event'],
-            ['task', 'Task'],
-          ] as const
-        ).map(([mode, label]) => (
-          <button
-            key={mode}
-            role="tab"
-            aria-selected={draft.mode === mode}
-            onClick={() =>
-              // A time block always has a time.
-              patchDraft(mode === 'task' ? {mode, allDay: false} : {mode})
-            }
-            className={`rounded-md px-3 py-1 text-[13px] font-medium transition-colors ${
-              draft.mode === mode
-                ? 'bg-accent/20 text-accent'
-                : 'text-fg hover:bg-raised'
-            }`}
-          >
-            {label}
-          </button>
-        ))}
-      </div>
       <div className="space-y-3">
         <WhenFields value={draft} onChange={patchWhen} allDayOption={!isTask} />
         {!isTask && (
