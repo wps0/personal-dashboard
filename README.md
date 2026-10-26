@@ -64,7 +64,9 @@ On first launch, choose **Load sample data** to explore, or create empty areas.
   - Drag blocks to move them; drag a block's bottom edge to resize it.
   - Sessions without a time sit in the all-day row; drag them onto the grid to
     time-block them.
-  - Hatched areas are reserved time (sleep, work), set in Settings.
+  - Hatched areas are reserved time (sleep, work), set per weekday in
+    Settings. Drag a block's label (top right) to move it, or its edges to
+    resize it, for that day only; click the label to rename or delete it.
 - **Projects** (`#/projects`): cards with progress rings. Click one to open its
   items, description (Markdown) and progress log in a side panel; the
   description also shows beside the items (above them on narrow screens).

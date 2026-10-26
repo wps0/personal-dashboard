@@ -36,7 +36,11 @@ import {
   useToday,
   type Lookups,
 } from '../hooks';
-import {plannedInWindow, reservedFor} from '../model/capacity';
+import {
+  plannedInWindow,
+  reservedFor,
+  type ReservedSpan,
+} from '../model/capacity';
 import {dayName} from '../model/dates';
 import {dueByDay, isItemDone} from '../model/selectors';
 import {
@@ -71,11 +75,15 @@ import {BlockLabel, blockTextClass} from './block_label';
 import {Popover, PopoverAnchor, PopoverContent, useBeside} from './ui/popover';
 import {
   deleteEvent,
+  deleteReserved,
+  moveReserved,
   removeSession,
   toggleSession,
   updateEvent,
+  updateReserved,
   updateSession,
 } from '../actions';
+import {ReservedEditor} from './reserved_editor';
 import {blockKeys} from '../keyboard';
 
 interface Props {
@@ -89,12 +97,9 @@ interface Props {
 }
 
 type Drag =
-  {kind: 'alloc'; alloc: Allocation} | {kind: 'event'; event: CalendarEvent};
-interface Span {
-  start: number;
-  end: number;
-  label?: string;
-}
+  | {kind: 'alloc'; alloc: Allocation}
+  | {kind: 'event'; event: CalendarEvent}
+  | {kind: 'reserved'; date: ISODate; index: number; span: ReservedSpan};
 
 const EMPTY: never[] = [];
 
@@ -116,6 +121,10 @@ const DAY_MIN = 24 * 60;
  */
 function dragLength(drag: Drag): number {
   if (drag.kind === 'alloc') return Math.round(drag.alloc.plannedHours * 60);
+  if (drag.kind === 'reserved') {
+    const {start, end} = drag.span;
+    return (end === DAY_MIN - 1 ? DAY_MIN : end) - start;
+  }
   const {allDay, start, end} = drag.event;
   if (allDay) return 60;
   return (end === '23:59' ? DAY_MIN : toMinutes(end)) - toMinutes(start);
@@ -197,9 +206,11 @@ export function TimeGrid({
     window.addEventListener('touchmove', trackPointer);
     // The grid auto-scrolls near its edges; keep the preview under the pointer.
     window.addEventListener('scroll', updatePreview, true);
-    const node = (e.activatorEvent?.target as Element | null)?.closest(
+    const handle = (e.activatorEvent?.target as Element | null)?.closest(
       '[aria-roledescription="draggable"]',
     );
+    // A reserved block is dragged by its label: measure from the block's top.
+    const node = drag.kind === 'reserved' ? handle?.parentElement : handle;
     grab.current = node
       ? pointerY.current - node.getBoundingClientRect().top
       : 0;
@@ -214,6 +225,8 @@ export function TimeGrid({
     if (!drag || typeof target !== 'string') return;
     const [zone, date] = target.split('|');
     if (zone === 'strip') {
+      // Reserved time always has a time.
+      if (drag.kind === 'reserved') return;
       if (drag.kind === 'alloc')
         updateSession(drag.alloc.id, {date, start: undefined});
       else updateEvent(drag.event.id, {date, allDay: true});
@@ -224,6 +237,8 @@ export function TimeGrid({
     if (start === null) return;
     if (drag.kind === 'alloc') {
       updateSession(drag.alloc.id, {date, start: fromMinutes(start)});
+    } else if (drag.kind === 'reserved') {
+      moveReserved(drag.date, drag.index, date, start);
     } else {
       // Ending at midnight is stored as 23:59.
       updateEvent(drag.event.id, {
@@ -282,6 +297,7 @@ function GridBody({days, hourHeight, scrollToHour, onDayClick}: BodyProps) {
   const items = useStore(s => s.data.items);
   const projects = useStore(s => s.data.projects);
   const rules = useStore(s => s.data.settings.capacityRules);
+  const dayCapacity = useStore(s => s.data.settings.dayCapacity);
   const hidden = useUi(s => s.hidden);
   const draftElsewhere = useUi(s => !!s.draft && !days.includes(s.draft.date));
   const openEventId = useUi(s => s.openEventId);
@@ -299,8 +315,8 @@ function GridBody({days, hourHeight, scrollToHour, onDayClick}: BodyProps) {
   }, [scrollToHour, hourHeight]);
 
   const reserved = useMemo(
-    () => new Map(days.map(d => [d, reservedFor(rules, d)])),
-    [days, rules],
+    () => new Map(days.map(d => [d, reservedFor(rules, d, dayCapacity)])),
+    [days, rules, dayCapacity],
   );
 
   const google = useGoogleEvents(days);
@@ -734,7 +750,7 @@ interface ColumnProps {
   isToday: boolean;
   timed: Allocation[];
   events: CalendarEvent[];
-  reserved: Span[];
+  reserved: ReservedSpan[];
   /** Read-only Google events for this day. */
   google: GEvent[];
   hourHeight: number;
@@ -830,21 +846,13 @@ const Column = memo(function Column({
         backgroundImage: `repeating-linear-gradient(to bottom, var(--color-line) 0 1px, transparent 1px ${hourHeight}px)`,
       }}
     >
-      {reserved.map((r, i) => (
-        <div
-          key={i}
-          className="reserved pointer-events-none absolute right-0 left-0"
-          style={{
-            top: (r.start / 60) * hourHeight,
-            height: ((r.end - r.start) / 60) * hourHeight,
-          }}
-        >
-          {r.label && r.end - r.start >= 45 && (
-            <span className="absolute top-0.5 left-1 text-[10px] text-dim/80">
-              {r.label}
-            </span>
-          )}
-        </div>
+      {reserved.map(r => (
+        <ReservedBlock
+          key={`${r.index}@${r.start}`}
+          date={date}
+          span={r}
+          hourHeight={hourHeight}
+        />
       ))}
       {events.map(e => (
         <EventBlock
@@ -880,6 +888,155 @@ const Column = memo(function Column({
     </div>
   );
 }, sameProps);
+
+/**
+ * Reserved time (e.g. Work): hatched and see-through, so clicks on it still
+ * create events. Its label is the handle: drag it to move the block (to
+ * another day too), click it to edit; its top and bottom edges resize it.
+ * Ranges past midnight (sleep) can only be edited in the card.
+ */
+const ReservedBlock = memo(function ReservedBlock({
+  date,
+  span,
+  hourHeight,
+}: {
+  date: ISODate;
+  span: ReservedSpan;
+  hourHeight: number;
+}) {
+  const [open, setOpen] = useState(false);
+  const movable = !span.wraps;
+  const {attributes, listeners, setNodeRef, isDragging} = useDraggable({
+    id: `reserved:${date}:${span.index}:${span.start}`,
+    data: {kind: 'reserved', date, index: span.index, span} satisfies Drag,
+    disabled: !movable,
+  });
+  const {preview, top, bottom} = useEdges(span, hourHeight, (start, end) =>
+    updateReserved(
+      date,
+      span.index,
+      {start: fromMinutes(start), end: fromMinutes(end)},
+      'Reserved time resized',
+    ),
+  );
+  const start = preview?.start ?? span.start;
+  const end = preview?.end ?? span.end;
+  const label = span.label || 'Reserved';
+  return (
+    <div
+      className={`reserved pointer-events-none absolute right-0 left-0 ${isDragging ? 'opacity-40' : ''}`}
+      style={{
+        top: (start / 60) * hourHeight,
+        height: ((end - start) / 60) * hourHeight,
+      }}
+    >
+      {movable && (
+        <div
+          {...top}
+          aria-hidden
+          className="pointer-events-auto absolute inset-x-0 top-0 h-1.5 cursor-ns-resize"
+        />
+      )}
+      <Popover open={open} onOpenChange={setOpen}>
+        <PopoverAnchor asChild>
+          <button
+            // Only movable blocks are draggables: a disabled draggable would
+            // announce this working button as disabled.
+            ref={movable ? setNodeRef : undefined}
+            {...(movable && {...attributes, ...listeners})}
+            data-block
+            aria-label={`${label}, reserved ${fromMinutes(start)} – ${fromMinutes(end)}`}
+            title={
+              movable
+                ? 'Reserved time: drag to move, drag its edges to resize, click to edit'
+                : 'Reserved time: click to edit'
+            }
+            onClick={() => !clicksSuppressed() && setOpen(true)}
+            onKeyDown={blockKeys({
+              open: () => setOpen(true),
+              remove: () => deleteReserved(date, span.index),
+            })}
+            // Above events (which start at the left), so a meeting at the
+            // start of the block doesn't cover it.
+            className={`block-interactive pointer-events-auto absolute top-1.5 right-1.5 z-[15] max-w-[calc(100%-0.75rem)] touch-none truncate rounded bg-panel/80 px-1 text-[10px] text-dim hover:bg-raised hover:text-fg ${movable ? 'cursor-grab' : 'cursor-pointer'}`}
+          >
+            {label}
+            {preview && ` · ${fromMinutes(start)} – ${fromMinutes(end)}`}
+          </button>
+        </PopoverAnchor>
+        {open && (
+          <PopoverContent side="right" align="start">
+            <ReservedEditor
+              date={date}
+              index={span.index}
+              onClose={() => setOpen(false)}
+            />
+          </PopoverContent>
+        )}
+      </Popover>
+      {movable && (
+        <div
+          {...bottom}
+          aria-hidden
+          className="pointer-events-auto absolute inset-x-0 bottom-0 h-1.5 cursor-ns-resize"
+        />
+      )}
+    </div>
+  );
+}, sameProps);
+
+/**
+ * Dragging a reserved block's top or bottom edge, in 15-minute steps: the
+ * new span while dragging, committed on release (if it changed).
+ */
+function useEdges(
+  span: {start: number; end: number},
+  hourHeight: number,
+  commit: (start: number, end: number) => void,
+) {
+  const [preview, setPreview] = useState<{start: number; end: number} | null>(
+    null,
+  );
+  const handle = (edge: 'start' | 'end') => ({
+    onPointerDown: (e: ReactPointerEvent<HTMLElement>) => {
+      if (e.button !== 0) return;
+      e.stopPropagation(); // not a slot selection on the column
+      const target = e.currentTarget;
+      target.setPointerCapture(e.pointerId);
+      const col = target.closest('[data-col]')!.getBoundingClientRect();
+      const at = (y: number) => {
+        const m = snap(((y - col.top) / hourHeight) * 60);
+        return edge === 'start'
+          ? {start: Math.max(0, Math.min(span.end - 15, m)), end: span.end}
+          : {
+              start: span.start,
+              end: Math.min(DAY_MIN - 1, Math.max(span.start + 15, m)),
+            };
+      };
+      const move = (ev: PointerEvent) => setPreview(at(ev.clientY));
+      const finish = (ev: PointerEvent | null) => {
+        target.removeEventListener('pointermove', move);
+        target.removeEventListener('pointerup', up);
+        target.removeEventListener('pointercancel', cancel);
+        target.removeEventListener('lostpointercapture', cancel);
+        setPreview(null);
+        suppressClicks();
+        if (!ev) return; // cancelled: keep the old span
+        const next = at(ev.clientY);
+        if (next.start !== span.start || next.end !== span.end)
+          commit(next.start, next.end);
+      };
+      const up = (ev: PointerEvent) => finish(ev);
+      const cancel = () => finish(null);
+      target.addEventListener('pointermove', move);
+      target.addEventListener('pointerup', up);
+      target.addEventListener('pointercancel', cancel);
+      target.addEventListener('lostpointercapture', cancel);
+    },
+    onClick: (e: ReactMouseEvent) => e.stopPropagation(),
+  });
+  return {preview, top: handle('start'), bottom: handle('end')};
+}
 
 function SelectionGhost({
   from,
@@ -1178,6 +1335,17 @@ function DropPreview({
   if (start === null || !drag) return null;
   const end = Math.min(start + dragLength(drag), DAY_MIN - 1);
   const height = Math.max(((end - start) / 60) * hourHeight - 1, 14);
+  if (drag.kind === 'reserved')
+    return (
+      <div
+        data-drop-preview
+        className="reserved pointer-events-none absolute right-0 left-0 z-30 rounded-md px-1 pt-1.5 text-[10px] text-dim ring-2 ring-accent/60"
+        style={{top: (start / 60) * hourHeight, height}}
+      >
+        {drag.span.label || 'Reserved'} · {fromMinutes(start)} –{' '}
+        {fromMinutes(end)}
+      </div>
+    );
   const item = drag.kind === 'alloc' ? lookups.item(drag.alloc.itemId) : null;
   const title = drag.kind === 'alloc' ? (item?.title ?? '') : drag.event.title;
   return (
@@ -1212,6 +1380,12 @@ function DragGhost({drag}: {drag: Drag}) {
   const overColumn = useDropPreview(s => s.date !== null);
   const lookups = useLookups();
   if (overColumn) return null;
+  if (drag.kind === 'reserved')
+    return (
+      <div className="reserved w-40 animate-lift cursor-grabbing truncate rounded-md border border-line px-1.5 py-0.5 text-[11px] text-dim shadow-xl">
+        {drag.span.label || 'Reserved'}
+      </div>
+    );
   const title =
     drag.kind === 'event'
       ? drag.event.title
