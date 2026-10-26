@@ -154,8 +154,8 @@ log, as tabs in the side panel.
 - **Groups** (folders for items, e.g. all classes of a course). Each group is
   a collapsible header with its name (click to rename), item count and
   done/total, in the project's group order. Items in no group come last,
-  under "No group": folders first, as in a file manager, and the add field
-  under the list adds to no group, so a new item shows up right above it.
+  under "No group": folders first, as in a file manager. The add field sits
+  at the top of the list, above the groups; it adds to no group.
   Collapsed groups are remembered per device.
 - **+ group** creates one. A row's folder button (on hover) or the Group
   select in the task overlay moves an item. A group's ⋯ menu moves the
