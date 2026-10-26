@@ -670,6 +670,21 @@ compares Gemini's output against the `*.expected.json` files.
   to be updated. `buf lint` checks the schema's style. The app's records are
   the generated messages: new ones are made with `create()`, which also
   checks that nested records are messages.
+- **Changing the data model:** every build must read what the released app
+  (`main`) wrote, with the same meaning. Adding optional fields is the easy
+  case. The model can also be reshaped when needed, in steps:
+  1. Add the new field and migrate old data into it where all data is read
+     (`checked()` in `storage/codec.ts`: IndexedDB, Drive and imports). Mark
+     the old field `[deprecated = true]`; the app reads it but no longer
+     writes it. The migration must be idempotent, since a device still on an
+     older version can keep writing the old field through sync.
+  2. Later, once no data or device should still use it, a separate change
+     deletes the field from the code and marks its number and name
+     `reserved`. Old exports may still contain it, and the JSON import
+     rejects keys it doesn't know, so that change keeps such files
+     importable.
+
+  Raise `SCHEMA_VERSION` only when older versions can't read the result.
 - **Checks:** `npm run lint`, `format:check`, `proto:lint`, `typecheck`,
   `test`, `build`.
   The **Checks** workflow runs them on every pull request with a read-only
