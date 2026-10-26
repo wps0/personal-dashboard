@@ -57,6 +57,12 @@ interface Actions {
   renameGroup(projectId: string, groupId: string, name: string): void;
   /** Moves a group to `index` in its project's order. */
   moveGroup(projectId: string, groupId: string, index: number): void;
+  /** Folds a group away in the item list, or unfolds it; `null` is "No group". */
+  setGroupCollapsed(
+    projectId: string,
+    groupId: string | null,
+    collapsed: boolean,
+  ): void;
   /** Deletes a group; its items stay, in no group. */
   deleteGroup(projectId: string, groupId: string): void;
   /** Puts items in a group of their project, or in none (`undefined`). */
@@ -264,6 +270,14 @@ export const useStore = create<State>()((set, get) => {
           return rest;
         }),
       ),
+    setGroupCollapsed: (projectId, groupId, collapsed) => {
+      if (groupId === null)
+        get().updateProject(projectId, {ungroupedCollapsed: collapsed});
+      else
+        update(d =>
+          patchGroups(d, projectId, gs => patchById(gs, groupId, {collapsed})),
+        );
+    },
     deleteGroup: (projectId, groupId) =>
       update(d => ({
         ...patchGroups(d, projectId, gs => gs.filter(g => g.id !== groupId)),

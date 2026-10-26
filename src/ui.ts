@@ -56,8 +56,6 @@ interface UiState {
   hidden: string[];
   /** The calendar's all-day row shows only a couple of items per day. Per device. */
   allDayCollapsed: boolean;
-  /** Item groups shown collapsed in the project panel, by id. Per device. */
-  collapsedGroups: string[];
   /** The project description above the items is collapsed (narrow panels). Per device. */
   descriptionCollapsed: boolean;
   /** Dialogs: shortcut help, go-to-date, reviewing new USOS classes, importing a curriculum, or reviewing sync conflicts. */
@@ -76,7 +74,6 @@ interface UiState {
   patchDraft(p: Partial<Draft>): void;
   toggleHidden(key: string): void;
   setAllDayCollapsed(collapsed: boolean): void;
-  toggleGroup(key: string): void;
   setDescriptionCollapsed(collapsed: boolean): void;
 }
 
@@ -86,7 +83,6 @@ export const useUi = create<UiState>()((set, get) => ({
   openGoogleKey: null,
   draft: null,
   hidden: loadList(HIDDEN_KEY),
-  collapsedGroups: loadList(GROUPS_KEY),
   descriptionCollapsed: (() => {
     try {
       return localStorage.getItem(DESCRIPTION_KEY) === 'true';
@@ -132,13 +128,6 @@ export const useUi = create<UiState>()((set, get) => ({
     set({allDayCollapsed});
     save(ALL_DAY_KEY, allDayCollapsed);
   },
-  toggleGroup: key => {
-    const collapsedGroups = get().collapsedGroups.includes(key)
-      ? get().collapsedGroups.filter(k => k !== key)
-      : [...get().collapsedGroups, key];
-    set({collapsedGroups});
-    save(GROUPS_KEY, collapsedGroups);
-  },
   setDescriptionCollapsed: descriptionCollapsed => {
     set({descriptionCollapsed});
     save(DESCRIPTION_KEY, descriptionCollapsed);
@@ -175,4 +164,25 @@ export function nextHourDraft(date: ISODate = todayISO()): Draft {
       24 * 60 - 1,
     ),
   );
+}
+
+/**
+ * Folded groups used to be kept per device, by group id (and
+ * `<project id>:none` for "No group"). They're in the data now, so they sync:
+ * this moves them there once.
+ */
+export function adoptFoldedGroups() {
+  const keys = new Set(loadList(GROUPS_KEY));
+  if (!keys.size) return;
+  const {data, setGroupCollapsed} = useStore.getState();
+  for (const p of data.projects) {
+    if (keys.has(`${p.id}:none`)) setGroupCollapsed(p.id, null, true);
+    for (const g of p.groups)
+      if (keys.has(g.id)) setGroupCollapsed(p.id, g.id, true);
+  }
+  try {
+    localStorage.removeItem(GROUPS_KEY);
+  } catch {
+    // Tried again next time.
+  }
 }
