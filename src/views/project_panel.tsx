@@ -837,7 +837,9 @@ function BulkAdd({
   const [from, setFrom] = useState(1);
   const [to, setTo] = useState(13);
   const [estimate, setEstimate] = useState<number | undefined>(1.5);
-  const count = Math.max(0, to - from + 1);
+  // Whole numbers from 1 (not "Lecture 1.5" or "Lecture -1"); otherwise nothing to add.
+  const whole = Number.isInteger(from) && Number.isInteger(to) && from >= 1;
+  const count = whole ? Math.max(0, to - from + 1) : 0;
 
   return (
     <div className="mb-3 flex flex-wrap items-center gap-1.5 rounded-md border border-line bg-panel p-2">
@@ -856,6 +858,8 @@ function BulkAdd({
       <input
         type="number"
         className="field w-14 tabular-nums"
+        min={1}
+        step={1}
         value={from}
         onChange={e => setFrom(Number(e.target.value))}
       />
@@ -863,6 +867,8 @@ function BulkAdd({
       <input
         type="number"
         className="field w-14 tabular-nums"
+        min={1}
+        step={1}
         value={to}
         onChange={e => setTo(Number(e.target.value))}
       />

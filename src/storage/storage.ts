@@ -5,6 +5,7 @@
  */
 
 import {del, delMany, get, set, setMany} from 'idb-keyval';
+import {todayISO} from '../model/dates';
 import {withDefaults, type AppData} from '../model/types';
 import type {SyncBase} from '../sync/sync';
 import {decode, encode, fromReadableJson, toReadableJson} from './codec';
@@ -94,7 +95,8 @@ export function downloadJson(data: AppData) {
   const blob = new Blob([toReadableJson(data)], {type: 'application/json'});
   const a = document.createElement('a');
   a.href = URL.createObjectURL(blob);
-  a.download = `dashboard-${new Date().toISOString().slice(0, 10)}.json`;
+  // Today's local date: the UTC one is still yesterday just after midnight.
+  a.download = `dashboard-${todayISO()}.json`;
   a.click();
   URL.revokeObjectURL(a.href);
 }
