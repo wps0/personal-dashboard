@@ -129,20 +129,33 @@ function useSplitWidth(): [
     document.body.style.cursor = 'col-resize';
     const clamp = (x: number) =>
       Math.max(260, Math.min(container.width - 380, x - container.left));
+    const from = width;
     let last = width;
     const move = (ev: PointerEvent) => setWidth((last = clamp(ev.clientX)));
-    const up = () => {
+    const stop = () => {
       handle.removeEventListener('pointermove', move);
       handle.removeEventListener('pointerup', up);
+      handle.removeEventListener('pointercancel', cancel);
+      handle.removeEventListener('lostpointercapture', cancel);
       document.body.style.cursor = '';
+    };
+    const up = () => {
+      stop();
       try {
         localStorage.setItem(WIDTH_KEY, String(Math.round(last)));
       } catch {
         // Not remembered; fine.
       }
     };
+    // Cancelled (e.g. the browser took the touch over): back to where it was.
+    const cancel = () => {
+      stop();
+      setWidth(from);
+    };
     handle.addEventListener('pointermove', move);
     handle.addEventListener('pointerup', up);
+    handle.addEventListener('pointercancel', cancel);
+    handle.addEventListener('lostpointercapture', cancel);
   };
   return [width, start];
 }
