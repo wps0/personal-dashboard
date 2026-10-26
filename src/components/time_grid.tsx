@@ -110,6 +110,17 @@ const useDropPreview = create<{
 const NO_PREVIEW = {drag: null, date: null, start: 0};
 const DAY_MIN = 24 * 60;
 
+/**
+ * A dragged block's length in minutes; an all-day event becomes an hour. An
+ * event's end of 23:59 means midnight, so moving it keeps whole quarter hours.
+ */
+function dragLength(drag: Drag): number {
+  if (drag.kind === 'alloc') return Math.round(drag.alloc.plannedHours * 60);
+  const {allDay, start, end} = drag.event;
+  if (allDay) return 60;
+  return (end === '23:59' ? DAY_MIN : toMinutes(end)) - toMinutes(start);
+}
+
 function clientY(e: Event | null): number {
   if (!e) return 0;
   if ('touches' in e) return (e as TouchEvent).touches[0]?.clientY ?? 0;
@@ -136,17 +147,22 @@ export function TimeGrid({
 
   const sensors = useDragSensors();
 
-  /** Start minute for a drop on `date`'s column at the current pointer, or null. */
-  const dropStart = (date: string): number | null => {
+  /**
+   * Start minute for a drop of `drag` on `date`'s column at the current
+   * pointer, or null. Late enough to keep its length within the day.
+   */
+  const dropStart = (date: string, drag: Drag): number | null => {
     const col = document.querySelector(`[data-col="${date}"]`);
     if (!col) return null;
     const top =
       pointerY.current - grab.current - col.getBoundingClientRect().top;
-    return Math.max(0, Math.min(DAY_MIN - 15, snap((top / hourHeight) * 60)));
+    const latest = Math.floor((DAY_MIN - dragLength(drag)) / 15) * 15;
+    return Math.max(0, Math.min(latest, snap((top / hourHeight) * 60)));
   };
   const updatePreview = () => {
     const [zone, date] = over.current?.split('|') ?? [];
-    const start = zone === 'col' ? dropStart(date) : null;
+    const drag = useDropPreview.getState().drag;
+    const start = zone === 'col' && drag ? dropStart(date, drag) : null;
     useDropPreview.setState(
       start === null ? {date: null, start: 0} : {date, start},
     );
@@ -204,18 +220,17 @@ export function TimeGrid({
       return;
     }
     // Lands where the preview showed it: same pointer position, same math.
-    const start = dropStart(date);
+    const start = dropStart(date, drag);
     if (start === null) return;
     if (drag.kind === 'alloc') {
       updateSession(drag.alloc.id, {date, start: fromMinutes(start)});
     } else {
-      const ev = drag.event;
-      const len = ev.allDay ? 60 : toMinutes(ev.end) - toMinutes(ev.start);
-      updateEvent(ev.id, {
+      // Ending at midnight is stored as 23:59.
+      updateEvent(drag.event.id, {
         date,
         allDay: false,
         start: fromMinutes(start),
-        end: fromMinutes(Math.min(start + len, DAY_MIN - 1)),
+        end: fromMinutes(Math.min(start + dragLength(drag), DAY_MIN - 1)),
       });
     }
   };
@@ -951,10 +966,12 @@ function useResize(
       const target = e.currentTarget;
       target.setPointerCapture(e.pointerId);
       const col = target.closest('[data-col]')!.getBoundingClientRect();
+      // Up to midnight: a session then lasts whole quarter hours, and an
+      // event's end is stored as 23:59.
       const toEnd = (y: number) =>
         Math.max(
           startMin + 15,
-          Math.min(DAY_MIN - 1, snap(((y - col.top) / hourHeight) * 60)),
+          Math.min(DAY_MIN, snap(((y - col.top) / hourHeight) * 60)),
         );
       const move = (ev: PointerEvent) => setPreviewEnd(toEnd(ev.clientY));
       const up = (ev: PointerEvent) => {
@@ -1147,13 +1164,7 @@ function DropPreview({
   const start = useDropPreview(s => (s.date === date ? s.start : null));
   const drag = useDropPreview(s => s.drag);
   if (start === null || !drag) return null;
-  const len =
-    drag.kind === 'alloc'
-      ? Math.round(drag.alloc.plannedHours * 60)
-      : drag.event.allDay
-        ? 60
-        : toMinutes(drag.event.end) - toMinutes(drag.event.start);
-  const end = Math.min(start + len, DAY_MIN - 1);
+  const end = Math.min(start + dragLength(drag), DAY_MIN - 1);
   const height = Math.max(((end - start) / 60) * hourHeight - 1, 14);
   const item = drag.kind === 'alloc' ? lookups.item(drag.alloc.itemId) : null;
   const title = drag.kind === 'alloc' ? (item?.title ?? '') : drag.event.title;
