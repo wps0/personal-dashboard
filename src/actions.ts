@@ -135,16 +135,18 @@ function targetOf(projectId: string, targets: ReadonlyMap<string, string>) {
 }
 
 /**
- * Imports the chosen USOS classes as tasks, each planned as a session at the
- * class's own day, time and length, into the group picked for its project in
- * `targets` (by project id; '' for no group, missing for the project's
- * import group). The classes shown but not chosen are remembered as skipped;
- * the imported ones are known by their tasks, so deleting a task (or its
- * project) offers its class again. One undo step.
+ * Imports the chosen USOS classes as tasks, into the group picked for their
+ * project in `targets` (by project id; '' for no group, missing for the
+ * project's import group). Those in `onCalendar` (by key) are also planned as
+ * a session at the class's own day, time and length. The classes shown but
+ * not chosen are remembered as skipped; the imported ones are known by their
+ * tasks, so deleting a task (or its project) offers its class again. One
+ * undo step.
  */
 export function importClasses(
   chosen: Proposal[],
   shown: Proposal[],
+  onCalendar: ReadonlySet<string>,
   targets: ReadonlyMap<string, string> = new Map(),
 ) {
   const n = chosen.length;
@@ -163,7 +165,8 @@ export function importClasses(
       );
       list.forEach(({meeting: m}, k) => {
         const hours = meetingHours(m);
-        if (hours > 0) s().addAllocation(ids[k], m.date, hours, m.start);
+        if (hours > 0 && onCalendar.has(m.key))
+          s().addAllocation(ids[k], m.date, hours, m.start);
       });
     }
     const keys = new Set(chosen.map(p => p.meeting.key));

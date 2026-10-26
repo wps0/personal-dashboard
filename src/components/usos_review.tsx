@@ -1,4 +1,4 @@
-import {GraduationCap, X} from 'lucide-react';
+import {CalendarDays, GraduationCap, X} from 'lucide-react';
 import {useState} from 'react';
 import {importClasses} from '../actions';
 import {groupOptions} from '../format';
@@ -12,6 +12,20 @@ import {Select} from './ui/select';
 
 function plural(n: number, one: string, many: string) {
   return `${n} ${n === 1 ? one : many}`;
+}
+
+/** The set of keys turned off, after turning `keys` on or off. */
+function switched(
+  off: ReadonlySet<string>,
+  keys: string[],
+  on: boolean,
+): ReadonlySet<string> {
+  const next = new Set(off);
+  for (const k of keys) {
+    if (on) next.delete(k);
+    else next.add(k);
+  }
+  return next;
 }
 
 /** "3 new classes from USOS · Review", on Home (all courses) and in a course's project panel. */
@@ -41,26 +55,26 @@ export function UsosReview() {
   const close = () => useUi.getState().setDialog(null);
   // Unticked classes, by key; everything starts ticked.
   const [off, setOff] = useState<ReadonlySet<string>>(new Set());
+  // Classes imported without a session on the calendar, by key.
+  const [offCalendar, setOffCalendar] = useState<ReadonlySet<string>>(
+    new Set(),
+  );
   const projects = useStore(s => s.data.projects);
   const name = (id: string) => projects.find(p => p.id === id)?.name ?? '';
   // Groups picked per project; the rest go into their project's import group.
   const [targets, setTargets] = useState<ReadonlyMap<string, string>>(
     new Map(),
   );
+  const types = [...new Set(proposals.map(p => p.meeting.type))].sort();
 
   const groups = new Map<string, Proposal[]>();
   for (const p of proposals)
     groups.set(p.projectId, [...(groups.get(p.projectId) ?? []), p]);
   const chosen = proposals.filter(p => !off.has(p.meeting.key));
   const toggle = (keys: string[], on: boolean) =>
-    setOff(prev => {
-      const next = new Set(prev);
-      for (const k of keys) {
-        if (on) next.delete(k);
-        else next.add(k);
-      }
-      return next;
-    });
+    setOff(prev => switched(prev, keys, on));
+  const toggleCalendar = (keys: string[], on: boolean) =>
+    setOffCalendar(prev => switched(prev, keys, on));
 
   return (
     <Modal onClose={close} width="max-w-2xl">
@@ -75,11 +89,45 @@ export function UsosReview() {
         </div>
         <p className="mb-4 text-[12px] text-dim">
           Each ticked class becomes a task in its course’s project (in the group
-          picked there, if it has groups). Unticked classes are skipped and
-          won’t be offered again.
+          picked there, if it has groups); with{' '}
+          <CalendarDays size={12} className="inline align-[-1px]" /> ticked, it
+          also goes on the calendar at the class’s time. Unticked classes are
+          skipped and won’t be offered again.
         </p>
         {!proposals.length && (
           <p className="text-dim">Nothing new to review.</p>
+        )}
+        {types.length > 0 && (
+          <div
+            role="group"
+            aria-label="Add to calendar"
+            className="mb-4 flex flex-wrap items-center gap-x-3 gap-y-1 text-[12px]"
+          >
+            <span className="text-dim">Add to calendar:</span>
+            {types.map(t => {
+              const keys = proposals
+                .filter(p => p.meeting.type === t)
+                .map(p => p.meeting.key);
+              const on = keys.filter(k => !offCalendar.has(k)).length;
+              return (
+                <label
+                  key={t}
+                  className="flex cursor-pointer items-center gap-1"
+                >
+                  <input
+                    type="checkbox"
+                    className="accent-accent"
+                    checked={on === keys.length}
+                    ref={el => {
+                      if (el) el.indeterminate = on > 0 && on < keys.length;
+                    }}
+                    onChange={e => toggleCalendar(keys, e.target.checked)}
+                  />
+                  {t}
+                </label>
+              );
+            })}
+          </div>
         )}
         <div className="space-y-4">
           {[...groups].map(([pid, list]) => {
@@ -115,8 +163,11 @@ export function UsosReview() {
                 </div>
                 <ul className="space-y-0.5">
                   {list.map(({meeting: m}) => (
-                    <li key={m.key}>
-                      <label className="flex cursor-pointer items-center gap-2 rounded px-1 py-0.5 hover:bg-raised">
+                    <li
+                      key={m.key}
+                      className="flex items-center gap-2 rounded px-1 py-0.5 hover:bg-raised"
+                    >
+                      <label className="flex min-w-0 flex-1 cursor-pointer items-center gap-2">
                         <input
                           type="checkbox"
                           className="accent-accent"
@@ -128,6 +179,22 @@ export function UsosReview() {
                           {m.course}
                           {m.location && ` · ${m.location}`}
                         </span>
+                      </label>
+                      <label
+                        className={`flex shrink-0 cursor-pointer items-center gap-1 text-dim ${off.has(m.key) ? 'opacity-40' : ''}`}
+                        title="Also plan it on the calendar at the class’s time"
+                      >
+                        <input
+                          type="checkbox"
+                          className="accent-accent"
+                          aria-label={`${meetingTitle(m)} on the calendar`}
+                          checked={!offCalendar.has(m.key)}
+                          disabled={off.has(m.key)}
+                          onChange={e =>
+                            toggleCalendar([m.key], e.target.checked)
+                          }
+                        />
+                        <CalendarDays size={14} />
                       </label>
                     </li>
                   ))}
@@ -144,7 +211,10 @@ export function UsosReview() {
             className="btn-primary"
             disabled={!proposals.length}
             onClick={() => {
-              importClasses(chosen, proposals, targets);
+              const keys = chosen
+                .map(p => p.meeting.key)
+                .filter(k => !offCalendar.has(k));
+              importClasses(chosen, proposals, new Set(keys), targets);
               close();
             }}
           >

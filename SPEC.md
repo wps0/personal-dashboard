@@ -341,14 +341,17 @@ asking for write access.
   "WYK · Wed 14 Oct, 10:15", with `heldOn` = the class date and the time and
   room in its notes. Its estimate is the class's length, and it is planned
   like the class itself: a session on the class's day, at its start time,
-  for its length. Classes from about a semester back to half a year ahead
-  are considered.
+  for its length, unless it's left off the calendar in the review. Classes
+  from about a semester back to half a year ahead are considered.
 - **Reviewed, never silent:** "N new classes from USOS · Review" on Home and
   in the course's project panel opens a list, all ticked. Ticked classes
-  become tasks; unticked ones are skipped. A project with groups gets a
-  group picker in its section of the list: its classes go into that group,
-  and the choice is remembered for its next import (also by the curriculum
-  import), starting at "No group". Skipped classes are remembered (by
+  become tasks; unticked ones are skipped. Each class also has an "on
+  calendar" tick (all on by default), and the class types above the list
+  (e.g. WYK, CW) set it for every class of that type in this review; this
+  choice isn't remembered. A project with groups gets a group picker in its
+  section of the list: its classes go into that group, and the choice is
+  remembered for its next import (also by the curriculum import), starting
+  at "No group". Skipped classes are remembered (by
   iCal UID + start, the same from either source) and not offered again, until
   "Show skipped classes again" in Settings. Imported ones are known by their
   task: deleting it, or its project, offers the class again (e.g. to import it

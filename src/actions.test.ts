@@ -41,7 +41,7 @@ describe('importClasses', () => {
 
   it('adds the chosen classes as tasks and remembers every class shown', () => {
     const all = shown.map(p => ({...p, projectId}));
-    importClasses([all[1]], all);
+    importClasses([all[1]], all, new Set(['b']));
     const {items, allocations, settings} = useStore.getState().data;
     expect(items).toMatchObject([
       {
@@ -72,7 +72,7 @@ describe('importClasses', () => {
 
   it('is one undo step', () => {
     const all = shown.map(p => ({...p, projectId}));
-    importClasses(all, all);
+    importClasses(all, all, new Set(['a', 'b']));
     expect(useStore.getState().data.items).toHaveLength(2);
     expect(useStore.getState().data.allocations).toHaveLength(2);
     undoLast();
@@ -83,16 +83,25 @@ describe('importClasses', () => {
 
   it('frees a class whose project was deleted, to import it elsewhere', () => {
     const all = shown.map(p => ({...p, projectId}));
-    importClasses(all, all);
+    importClasses(all, all, new Set(['a', 'b']));
     useStore.getState().deleteProject(projectId);
     const {items, settings} = useStore.getState().data;
     expect(items).toEqual([]);
     expect(settings.usos.handled).toEqual([]);
   });
 
+  it('plans only the classes chosen for the calendar', () => {
+    const all = shown.map(p => ({...p, projectId}));
+    importClasses(all, all, new Set(['b']));
+    const {items, allocations} = useStore.getState().data;
+    expect(items).toHaveLength(2);
+    expect(items[0].estimateHours).toBe(1.75);
+    expect(allocations).toMatchObject([{itemId: items[1].id}]);
+  });
+
   it('can offer skipped classes again', () => {
     const all = shown.map(p => ({...p, projectId}));
-    importClasses([], all);
+    importClasses([], all, new Set());
     useStore.getState().clearUsosHandled();
     expect(useStore.getState().data.settings.usos.handled).toEqual([]);
   });
@@ -101,11 +110,11 @@ describe('importClasses', () => {
     const [a, b] = shown.map(p => ({...p, projectId}));
     const g = useStore.getState().addGroup(projectId, 'Classes');
     const data = () => useStore.getState().data;
-    importClasses([a], [a], new Map([[projectId, g]]));
+    importClasses([a], [a], new Set(['a']), new Map([[projectId, g]]));
     expect(data().items.map(i => i.groupId)).toEqual([g]);
     expect(data().projects[0].importGroupId).toBe(g);
     // Not picked this time: the remembered group.
-    importClasses([b], [b]);
+    importClasses([b], [b], new Set(['b']));
     expect(data().items.map(i => i.groupId)).toEqual([g, g]);
     undoLast();
     undoLast();
@@ -113,20 +122,29 @@ describe('importClasses', () => {
     expect(data().projects[0].importGroupId).toBeUndefined();
   });
 
+  it('imports into a group and plans only the classes chosen for the calendar', () => {
+    const all = shown.map(p => ({...p, projectId}));
+    const g = useStore.getState().addGroup(projectId, 'Classes');
+    importClasses(all, all, new Set(['b']), new Map([[projectId, g]]));
+    const {items, allocations} = useStore.getState().data;
+    expect(items.map(i => i.groupId)).toEqual([g, g]);
+    expect(allocations).toMatchObject([{itemId: items[1].id}]);
+  });
+
   it('imports into no group when picked, or when the remembered one is gone', () => {
     const [a, b] = shown.map(p => ({...p, projectId}));
     const g = useStore.getState().addGroup(projectId, 'Classes');
     const data = () => useStore.getState().data;
-    importClasses([a], [a], new Map([[projectId, g]]));
+    importClasses([a], [a], new Set(['a']), new Map([[projectId, g]]));
     useStore.getState().deleteGroup(projectId, g);
-    importClasses([b], [b]);
+    importClasses([b], [b], new Set(['b']));
     expect(data().items.map(i => i.groupId)).toEqual([undefined, undefined]);
     expect(data().projects[0].importGroupId).toBeUndefined();
   });
 
   it('skipping everything only remembers the classes', () => {
     const all = shown.map(p => ({...p, projectId}));
-    importClasses([], all);
+    importClasses([], all, new Set());
     expect(useStore.getState().data.items).toHaveLength(0);
     expect(useStore.getState().data.settings.usos.handled).toEqual(['a', 'b']);
     expect(useToasts.getState().toasts[0].message).toBe('Skipped 2 classes');
