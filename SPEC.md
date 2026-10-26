@@ -167,6 +167,10 @@ log, as tabs in the side panel.
   one step; items already in another group stay where they are. It also
   moves the group up or down, or deletes it: its items stay, in no group,
   and Undo brings it back. An empty group offers the same one-step moves.
+- **Reordering:** drag a group by the grip left of its name (it shows on
+  hover; always on touch screens, where a press starts the drag). A line
+  shows where it lands, above or below the group under the pointer; Esc
+  cancels. "No group" stays last. Undoable, without a toast.
 - An open group has its own add field, whose kind follows the group's last
   item; **+ bulk** can add into a group too.
 - **Done items sink to the bottom** of their group (or of "No group"), so

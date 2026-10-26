@@ -1,4 +1,12 @@
-import {memo, useMemo, useState} from 'react';
+import {
+  DndContext,
+  DragOverlay,
+  pointerWithin,
+  useDraggable,
+  useDroppable,
+} from '@dnd-kit/core';
+import {memo, useEffect, useMemo, useState, type ReactNode} from 'react';
+import {createPortal} from 'react-dom';
 import {withUndo} from '../toast';
 import {BufferedTextarea} from '../components/buffered';
 import {DateField} from '../components/date_field';
@@ -15,6 +23,7 @@ import {
   ArrowUp,
   ChevronRight,
   FolderInput,
+  GripVertical,
   MoreHorizontal,
   Pencil,
   Trash2,
@@ -63,6 +72,7 @@ import {
   moveToGroup,
   renameGroup,
 } from '../actions';
+import {ghostUnderPointer, useDragSensors} from '../dnd';
 import {blockKeys} from '../keyboard';
 
 type Tab = 'items' | 'description' | 'log';
@@ -216,6 +226,22 @@ function ItemsTab({project}: {project: Project}) {
   const [form, setForm] = useState<'bulk' | 'group' | null>(null);
   const today = useToday();
   const {groups} = project;
+  const sensors = useDragSensors();
+  // A group being dragged to another place in the order: from and to index.
+  const [order, setOrder] = useState<{from: number; to?: number} | null>(null);
+  const dragged = order ? groups[order.from] : undefined;
+  const indexOf = (x: {data: {current?: unknown}} | null) =>
+    (x?.data.current as {index: number} | undefined)?.index;
+  const dragging = order !== null;
+  useEffect(() => {
+    if (!dragging) return;
+    // Esc cancels the drag; marked handled so it doesn't close the panel too.
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') e.preventDefault();
+    };
+    document.addEventListener('keydown', onKey, true);
+    return () => document.removeEventListener('keydown', onKey, true);
+  }, [dragging]);
 
   const items = useMemo(
     // Done items sink to the bottom of each list, out of the way.
@@ -320,82 +346,120 @@ function ItemsTab({project}: {project: Project}) {
           />
         )}
         <AddItem projectId={project.id} />
-        <table className="w-full table-fixed border-collapse">
-          <colgroup>
-            <col className="w-28 @md:w-32" />
-            <col />
-            <col className="w-20" />
-            {/* Estimate and spent/plan: none on narrow panels (phones). */}
-            <col className="w-12 @max-md:w-0" />
-            <col className="w-16 @max-md:w-0" />
-            <col className="w-5" />
-          </colgroup>
-          <thead>
-            <tr className="label border-b border-line text-left [&>th]:px-1 [&>th]:py-1 [&>th]:font-normal">
-              <th>status</th>
-              <th>title</th>
-              <th>date</th>
-              <th
-                className="text-right @max-md:invisible @max-md:overflow-hidden @max-md:!px-0"
-                title="Estimated hours"
-              >
-                est
-              </th>
-              <th
-                className="text-right @max-md:invisible @max-md:overflow-hidden @max-md:!px-0"
-                title="Hours spent / planned"
-              >
-                spent/plan
-              </th>
-              <th />
-            </tr>
-          </thead>
-          {groups.map((g, k) => {
-            const list = byGroup.get(g.id) ?? [];
-            const open = !g.collapsed;
-            return (
-              <tbody key={g.id}>
-                <GroupHeader
-                  projectId={project.id}
+        <DndContext
+          sensors={sensors}
+          collisionDetection={pointerWithin}
+          onDragStart={e => setOrder({from: indexOf(e.active) ?? 0})}
+          onDragOver={e => setOrder(o => o && {...o, to: indexOf(e.over)})}
+          onDragEnd={e => {
+            setOrder(null);
+            const to = indexOf(e.over);
+            if (dragged && to !== undefined && to !== order?.from)
+              moveGroup(project.id, dragged.id, to);
+          }}
+          onDragCancel={() => setOrder(null)}
+        >
+          <table className="w-full table-fixed border-collapse">
+            <colgroup>
+              <col className="w-28 @md:w-32" />
+              <col />
+              <col className="w-20" />
+              {/* Estimate and spent/plan: none on narrow panels (phones). */}
+              <col className="w-12 @max-md:w-0" />
+              <col className="w-16 @max-md:w-0" />
+              <col className="w-5" />
+            </colgroup>
+            <thead>
+              <tr className="label border-b border-line text-left [&>th]:px-1 [&>th]:py-1 [&>th]:font-normal">
+                <th>status</th>
+                <th>title</th>
+                <th>date</th>
+                <th
+                  className="text-right @max-md:invisible @max-md:overflow-hidden @max-md:!px-0"
+                  title="Estimated hours"
+                >
+                  est
+                </th>
+                <th
+                  className="text-right @max-md:invisible @max-md:overflow-hidden @max-md:!px-0"
+                  title="Hours spent / planned"
+                >
+                  spent/plan
+                </th>
+                <th />
+              </tr>
+            </thead>
+            {groups.map((g, k) => {
+              const list = byGroup.get(g.id) ?? [];
+              const open = !g.collapsed;
+              const lands =
+                order?.to === k && k !== order.from
+                  ? k < order.from
+                    ? 'before'
+                    : 'after'
+                  : null;
+              return (
+                <GroupBody
+                  key={g.id}
                   group={g}
                   index={k}
-                  last={k === groups.length - 1}
-                  items={list}
+                  lands={lands}
+                  lifted={dragged === g}
+                >
+                  <GroupHeader
+                    projectId={project.id}
+                    group={g}
+                    index={k}
+                    last={k === groups.length - 1}
+                    items={list}
+                    ungrouped={ungrouped}
+                    open={open}
+                    onToggle={() => foldGroup(project.id, g.id, open)}
+                  />
+                  {open && rows(list)}
+                  {open && !list.length && (
+                    <EmptyGroup group={g} ungrouped={ungrouped} />
+                  )}
+                  {open && (
+                    <tr>
+                      <td colSpan={6}>
+                        <AddItem
+                          projectId={project.id}
+                          group={g}
+                          defaultKind={list.at(-1)?.kind}
+                        />
+                      </td>
+                    </tr>
+                  )}
+                </GroupBody>
+              );
+            })}
+            <tbody>
+              {groups.length > 0 && ungrouped.length > 0 && (
+                <GroupHeader
+                  projectId={project.id}
+                  items={ungrouped}
                   ungrouped={ungrouped}
-                  open={open}
-                  onToggle={() => foldGroup(project.id, g.id, open)}
+                  open={noneOpen}
+                  onToggle={() => foldGroup(project.id, null, noneOpen)}
                 />
-                {open && rows(list)}
-                {open && !list.length && (
-                  <EmptyGroup group={g} ungrouped={ungrouped} />
-                )}
-                {open && (
-                  <tr>
-                    <td colSpan={6}>
-                      <AddItem
-                        projectId={project.id}
-                        group={g}
-                        defaultKind={list.at(-1)?.kind}
-                      />
-                    </td>
-                  </tr>
-                )}
-              </tbody>
-            );
-          })}
-          <tbody>
-            {groups.length > 0 && ungrouped.length > 0 && (
-              <GroupHeader
-                projectId={project.id}
-                items={ungrouped}
-                ungrouped={ungrouped}
-                open={noneOpen}
-                onToggle={() => foldGroup(project.id, null, noneOpen)}
-              />
-            )}
-            {noneOpen && rows(ungrouped)}
-          </tbody>
-        </table>
+              )}
+              {noneOpen && rows(ungrouped)}
+            </tbody>
+          </table>
+          {/* In the body: the panel's transform would offset a fixed ghost. */}
+          {createPortal(
+            <DragOverlay dropAnimation={null} modifiers={[ghostUnderPointer]}>
+              {dragged && (
+                <div className="flex items-center gap-1 rounded-md border border-line bg-panel px-2 py-1 text-[12px] font-medium text-strong shadow-lg">
+                  <GripVertical size={13} className="text-dim" />
+                  {dragged.name}
+                </div>
+              )}
+            </DragOverlay>,
+            document.body,
+          )}
+        </DndContext>
       </div>
       {hasDescription && <DescriptionColumn {...description} />}
     </div>
@@ -412,6 +476,57 @@ function movable(ungrouped: Item[]) {
     name: o.label.toLowerCase(),
     items: ungrouped.filter(i => i.kind === o.value),
   })).filter(k => k.items.length > 0);
+}
+
+/**
+ * A group's rows. While a group is dragged, each is a place to drop it, and a
+ * line shows where it lands: above this group or below it.
+ */
+function GroupBody({
+  group,
+  index,
+  lands,
+  lifted,
+  children,
+}: {
+  group: ItemGroup;
+  index: number;
+  lands: 'before' | 'after' | null;
+  lifted: boolean;
+  children: ReactNode;
+}) {
+  const {setNodeRef} = useDroppable({id: group.id, data: {index}});
+  const line =
+    lands === 'before'
+      ? '[&>tr:first-child>td]:shadow-[inset_0_2px_0_var(--color-accent)]'
+      : lands === 'after'
+        ? '[&>tr:last-child>td]:shadow-[inset_0_-2px_0_var(--color-accent)]'
+        : '';
+  return (
+    <tbody ref={setNodeRef} className={`${line} ${lifted ? 'opacity-50' : ''}`}>
+      {children}
+    </tbody>
+  );
+}
+
+/**
+ * Drags a group to another place in the order, with the mouse or a finger.
+ * Hidden from the keyboard and screen readers: the group's menu moves it up
+ * or down.
+ */
+function GroupGrip({group, index}: {group: ItemGroup; index: number}) {
+  const {setNodeRef, listeners} = useDraggable({id: group.id, data: {index}});
+  return (
+    <span
+      ref={setNodeRef}
+      {...listeners}
+      aria-hidden
+      title="Drag to reorder"
+      className="flex h-6 w-4 shrink-0 cursor-grab touch-none items-center justify-center text-dim opacity-0 group-hover/head:opacity-100 pointer-coarse:opacity-100 active:cursor-grabbing"
+    >
+      <GripVertical size={13} />
+    </span>
+  );
 }
 
 /** A group's name, item count and done/total, collapsible; "No group" without `group`. */
@@ -438,9 +553,14 @@ function GroupHeader({
   const name = group?.name ?? 'No group';
   const done = items.filter(isItemDone).length;
   return (
-    <tr className="border-b border-line">
+    <tr className="group/head border-b border-line">
       <td colSpan={6} className="pt-3 pb-0.5">
         <div className="flex min-w-0 items-center gap-1">
+          {group ? (
+            <GroupGrip group={group} index={index} />
+          ) : (
+            <span className="w-4 shrink-0" />
+          )}
           <button
             className="icon-btn h-6 w-6 shrink-0"
             aria-expanded={open}
