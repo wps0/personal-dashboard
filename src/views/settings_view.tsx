@@ -1,5 +1,8 @@
 import {useRef, useState, type ReactNode} from 'react';
+import {BufferedInput} from '../components/buffered';
+import {HoursInput} from '../components/hours_input';
 import {InlineText} from '../components/inline_text';
+import {DEFAULT_WORK_LABEL} from '../model/work';
 import {sampleData} from '../model/sample';
 import {AREA_COLORS, CalendarView, emptyData, Weekday} from '../model/types';
 import {downloadJson, importJson} from '../storage/storage';
@@ -154,6 +157,13 @@ export function SettingsView() {
         </Section>
 
         <Section
+          title="Work log"
+          hint="The Work page logs the time you actually worked, next to the planned work: reserved time with the label below."
+        >
+          <WorkSettings />
+        </Section>
+
+        <Section
           title="Areas"
           hint="Top-level groups for projects. Deleting an area deletes its projects."
         >
@@ -276,6 +286,37 @@ export function SettingsView() {
           {message && <p className="mt-2 text-dim">{message}</p>}
         </Section>
       </div>
+    </div>
+  );
+}
+
+function WorkSettings() {
+  const target = useStore(s => s.data.settings.workTarget);
+  const label = useStore(s => s.data.settings.workLabel);
+  const {setWorkSettings} = useStore.getState();
+  return (
+    <div className="space-y-2">
+      <label className="flex items-center gap-2">
+        <span className="w-44 text-dim">Weekly target</span>
+        <HoursInput
+          value={target || undefined}
+          optional
+          placeholder="none"
+          onChange={h => setWorkSettings({workTarget: h ?? 0})}
+          className="field w-16"
+        />
+        <span className="text-dim">h, for weeks without their own</span>
+      </label>
+      <label className="flex items-center gap-2">
+        <span className="w-44 text-dim">Planned work is labelled</span>
+        <BufferedInput
+          value={label}
+          placeholder={DEFAULT_WORK_LABEL}
+          aria-label="Planned work label"
+          onCommit={v => setWorkSettings({workLabel: v.trim()})}
+          className="field w-40"
+        />
+      </label>
     </div>
   );
 }

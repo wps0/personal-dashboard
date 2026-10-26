@@ -1,5 +1,5 @@
 /**
- * The work log (SPEC 3.7): stretches of time actually worked, the planned
+ * The work log (SPEC 3.10): stretches of time actually worked, the planned
  * work they're compared with (reserved time labelled as work), and weekly
  * targets.
  */

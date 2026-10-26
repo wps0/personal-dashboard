@@ -25,15 +25,20 @@ function loadProjects() {
 function loadSettings() {
   return import('./views/settings_view');
 }
+function loadWork() {
+  return import('./views/work_view');
+}
 const ProjectsView = lazy(() =>
   loadProjects().then(m => ({default: m.ProjectsView})),
 );
 const SettingsView = lazy(() =>
   loadSettings().then(m => ({default: m.SettingsView})),
 );
+const WorkView = lazy(() => loadWork().then(m => ({default: m.WorkView})));
 function preload() {
   void loadProjects();
   void loadSettings();
+  void loadWork();
   void preloadMarkdown();
 }
 
@@ -42,6 +47,7 @@ const NAV: {route: Route; label: string}[] = [
   {route: {name: 'week'}, label: 'Week'},
   {route: {name: 'calendar'}, label: 'Calendar'},
   {route: {name: 'projects'}, label: 'Projects'},
+  {route: {name: 'work'}, label: 'Work'},
   {route: {name: 'settings'}, label: 'Settings'},
 ];
 
@@ -138,6 +144,8 @@ function Page({route}: {route: Route}) {
       return <CalendarView view={route.view} date={route.date} />;
     case 'projects':
       return <ProjectsView selectedId={route.id} />;
+    case 'work':
+      return <WorkView week={route.week} />;
     case 'settings':
       return <SettingsView />;
     default:

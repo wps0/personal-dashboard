@@ -9,6 +9,7 @@ export type Route =
   | {name: 'week'; week?: string}
   | {name: 'calendar'; view?: CalView; date?: string}
   | {name: 'projects'; id?: string}
+  | {name: 'work'; week?: string}
   | {name: 'settings'};
 
 function parseHash(hash: string): Route {
@@ -25,6 +26,8 @@ function parseHash(hash: string): Route {
     case 'projects':
     case 'project': // old links
       return {name: 'projects', id: parts[1]};
+    case 'work':
+      return {name: 'work', week: parts[1]};
     case 'settings':
       return {name: 'settings'};
     case 'home':
@@ -46,6 +49,8 @@ export function href(route: Route): string {
         : '#/calendar';
     case 'projects':
       return route.id ? `#/projects/${route.id}` : '#/projects';
+    case 'work':
+      return route.week ? `#/work/${route.week}` : '#/work';
     case 'settings':
       return '#/settings';
     default:

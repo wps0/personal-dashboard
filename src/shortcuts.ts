@@ -22,7 +22,14 @@ interface KeyLike {
   shiftKey?: boolean;
 }
 
-const PAGES = ['home', 'week', 'calendar', 'projects', 'settings'] as const;
+const PAGES = [
+  'home',
+  'week',
+  'calendar',
+  'projects',
+  'work',
+  'settings',
+] as const;
 type Page = (typeof PAGES)[number];
 
 /** The tab before or after `current` in the nav bar, wrapping around (vim's gT / gt). */
@@ -76,7 +83,7 @@ export function actionFor(e: KeyLike): Action | null {
     case 'ArrowRight':
       return {type: 'move', dir: 'right'};
     default:
-      if (/^[1-5]$/.test(e.key))
+      if (/^[1-6]$/.test(e.key))
         return {type: 'page', page: PAGES[Number(e.key) - 1]};
       return null;
   }
@@ -92,7 +99,7 @@ export const SHORTCUT_HELP: {group: string; keys: [string, string][]}[] = [
       ['t', 'Today'],
       ['g', 'Go to date'],
       ['h / l', 'Previous / next tab'],
-      ['1 – 5', 'Home · Week · Calendar · Projects · Settings'],
+      ['1 – 6', 'Home · Week · Calendar · Projects · Work · Settings'],
     ],
   },
   {
