@@ -120,12 +120,28 @@ function Listbox<T extends string | number>({
   );
   const typed = useRef({text: '', at: 0});
 
-  // Focus the list and show the selected option in the middle, like a native select.
+  // Focus the list and show the selected option in the middle, like a native
+  // select. The list's height is only capped once the popover is positioned,
+  // after this first layout, so until then there's nothing to scroll: wait
+  // for it to start scrolling.
   useLayoutEffect(() => {
-    ref.current?.focus({preventScroll: true});
-    ref.current
-      ?.querySelector('[aria-selected="true"]')
-      ?.scrollIntoView({block: 'center'});
+    const list = ref.current;
+    if (!list) return;
+    list.focus({preventScroll: true});
+    const center = () => {
+      const option = list.querySelector<HTMLElement>('[aria-selected="true"]');
+      if (!option || list.scrollHeight <= list.clientHeight) return false;
+      // Offsets, not client rects: the popover's open animation scales it.
+      list.scrollTop =
+        option.offsetTop - (list.clientHeight - option.offsetHeight) / 2;
+      return true;
+    };
+    if (center()) return;
+    const observer = new ResizeObserver(() => {
+      if (center()) observer.disconnect();
+    });
+    observer.observe(list);
+    return () => observer.disconnect();
   }, []);
   useEffect(() => {
     ref.current
@@ -173,7 +189,7 @@ function Listbox<T extends string | number>({
       role="listbox"
       tabIndex={-1}
       onKeyDown={onKeyDown}
-      className="scroll-thin max-h-[min(320px,var(--radix-popover-content-available-height))] overflow-y-auto outline-none"
+      className="scroll-thin relative max-h-[min(320px,var(--radix-popover-content-available-height))] overflow-y-auto outline-none"
     >
       {options.map((o, i) => {
         const selected = o.value === value;
