@@ -6,12 +6,14 @@ import {
   type Item,
   type ItemGroup,
   type ItemInit,
+  type WorkSpan,
 } from './model/types';
 import {create as createMessage} from '@bufbuild/protobuf';
 import * as pb from './gen/dashboard/data_pb';
 import {reservedRanges, type Reserved} from './model/capacity';
 import {importGroup} from './model/selectors';
 import {fromMinutes, toMinutes} from './model/time';
+import {plannedWork} from './model/work';
 import {useStore} from './store';
 import {withUndo} from './toast';
 import {meetingHours, taskFromMeeting, type Proposal} from './usos/usos';
@@ -145,6 +147,55 @@ export function deleteReserved(date: ISODate, index: number) {
 export function resetReserved(date: ISODate) {
   withUndo('Back to the weekly reserved time', () =>
     s().setDayReserved(date, null),
+  );
+}
+
+/** Logs a stretch of work on `date`. */
+export function logWork(date: ISODate, start: string, end: string) {
+  withUndo(
+    `Logged ${start} – ${end}`,
+    () => void s().addWorkSpan(date, start, end),
+    {quiet: true},
+  );
+}
+
+/**
+ * Logs `date`'s planned work (its reserved time labelled as work) as worked,
+ * in one step. Returns how many stretches were logged.
+ */
+export function logAsPlanned(date: ISODate): number {
+  const {capacityRules, dayCapacity, workLabel} = s().data.settings;
+  const planned = plannedWork(capacityRules, dayCapacity, date, workLabel);
+  if (planned.length)
+    withUndo('Logged as planned', () => {
+      for (const p of planned) s().addWorkSpan(date, p.start, p.end);
+    });
+  return planned.length;
+}
+
+export function updateWorkSpan(
+  id: string,
+  patch: Partial<Pick<WorkSpan, 'start' | 'end' | 'note'>>,
+) {
+  withUndo('Work log changed', () => s().updateWorkSpan(id, patch), {
+    quiet: true,
+  });
+}
+
+export function deleteWorkSpan(span: WorkSpan) {
+  withUndo(`Removed ${span.start} – ${span.end} from the work log`, () =>
+    s().deleteWorkSpan(span.id),
+  );
+}
+
+/** One week's own target (by its Monday), or `null` for the default. */
+export function setWeekTarget(monday: ISODate, hours: number | null) {
+  withUndo(
+    'Weekly target changed',
+    () => s().setWeekWorkTarget(monday, hours),
+    {
+      quiet: true,
+    },
   );
 }
 
