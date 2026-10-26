@@ -1,13 +1,12 @@
 import {ChevronLeft, ChevronRight} from 'lucide-react';
 import {useState} from 'react';
-import {useSlide, useWeekStart} from '../hooks';
+import {useSlide, useToday, useWeekStart} from '../hooks';
 import {
   addMonths,
   firstOfMonth,
   formatMonthYear,
   monthGrid,
   startOfWeek,
-  todayISO,
   weekdayNames,
   type DayOfWeek,
 } from '../model/dates';
@@ -28,7 +27,7 @@ interface Props {
 /** Google-Calendar-style month picker. Weeks start on the day set in Settings. */
 export function MiniMonth(props: Props) {
   const {selected, range, onSelect, weekHover} = props;
-  const today = todayISO();
+  const today = useToday();
   const setting = useWeekStart();
   const weekStart = props.weekStart ?? setting;
   const [month, setMonth] = useState(firstOfMonth(selected ?? today));

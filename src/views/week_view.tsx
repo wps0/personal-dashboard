@@ -13,7 +13,13 @@ import {BufferedTextarea} from '../components/buffered';
 import {HoursInput} from '../components/hours_input';
 import {WeekNav} from '../components/week_nav';
 import {fmtH, URGENCY_CLASS} from '../format';
-import {useCapacities, useLookups, useSlide, type Lookups} from '../hooks';
+import {
+  useCapacities,
+  useLookups,
+  useSlide,
+  useToday,
+  type Lookups,
+} from '../hooks';
 import {CapacityBadge} from '../components/capacity_badge';
 import {plannedInWindow, type CapacityInfo} from '../model/capacity';
 import {
@@ -25,7 +31,6 @@ import {
   monthName,
   shortDate,
   startOfWeek,
-  todayISO,
 } from '../model/dates';
 import {
   backlogItems,
@@ -60,7 +65,7 @@ const NO_ALLOCS: Allocation[] = [];
  * the children (WeekGrid, WeekTotal) instead.
  */
 export function WeekView({week}: {week?: ISODate}) {
-  const today = todayISO();
+  const today = useToday();
   // Always Monday–Sunday: the week start setting is for the calendar. The
   // route holds the Monday; any other day shows the week containing it.
   const start = startOfWeek(

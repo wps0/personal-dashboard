@@ -6,9 +6,9 @@ import {
   MONDAY,
   shortDate,
   startOfWeek,
-  todayISO,
   weekNumber,
 } from '../model/dates';
+import {useToday} from '../hooks';
 import type {ISODate} from '../model/types';
 import {href, navigate} from '../router';
 import {MiniMonth} from './mini_month';
@@ -20,7 +20,7 @@ import {Popover, PopoverContent, PopoverTrigger} from './ui/popover';
  */
 export function WeekNav({start}: {start: ISODate}) {
   const [open, setOpen] = useState(false);
-  const thisWeek = startOfWeek(todayISO(), MONDAY);
+  const thisWeek = startOfWeek(useToday(), MONDAY);
   const go = (date: ISODate) => {
     const week = startOfWeek(date, MONDAY);
     navigate({name: 'week', week: week === thisWeek ? undefined : week});

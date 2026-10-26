@@ -33,7 +33,8 @@ import {
   KIND_OPTIONS,
   URGENCY_CLASS,
 } from '../format';
-import {countdown, shortDate, todayISO} from '../model/dates';
+import {countdown, shortDate} from '../model/dates';
+import {useToday} from '../hooks';
 import {
   actualHours,
   compareItems,
@@ -213,7 +214,7 @@ function ItemsTab({project}: {project: Project}) {
   const collapsed = useUi(s => s.collapsedGroups);
   const [hideDone, setHideDone] = useState(false);
   const [form, setForm] = useState<'bulk' | 'group' | null>(null);
-  const today = todayISO();
+  const today = useToday();
   const {groups} = project;
 
   const items = useMemo(
