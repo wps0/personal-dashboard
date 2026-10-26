@@ -22,18 +22,12 @@ import {
 } from '../hooks';
 import {monthGrid, weekdayNames} from '../model/dates';
 import {dueByDay} from '../model/selectors';
-import {
-  EventColor,
-  type Allocation,
-  type CalendarEvent,
-  type ISODate,
-  type Item,
-} from '../model/types';
+import type {Allocation, CalendarEvent, ISODate, Item} from '../model/types';
 import {eventStyle} from '../event_colors';
 import {useStore} from '../store';
 import {draftAt, useUi} from '../ui';
 import {DueChip} from './due_chip';
-import {DraftEditor, EventEditor} from './event_editor';
+import {DraftEditor, EventEditor, useDraftLook} from './event_editor';
 import {GoogleChip, useCloseMissingCard} from './google_event';
 import {useGoogleEvents} from '../google/use_google_events';
 import type {GEvent} from '../google/events';
@@ -369,16 +363,15 @@ const AllocChip = memo(function AllocChip({
 });
 
 function DraftChip() {
-  const title = useUi(s => s.draft?.title);
-  const color = useUi(s => s.draft?.color ?? EventColor.UNSPECIFIED);
+  const look = useDraftLook();
   return (
     <Popover open onOpenChange={o => !o && useUi.getState().setDraft(null)}>
       <PopoverAnchor asChild>
         <div
-          className="shrink-0 animate-pop-in truncate rounded px-1 text-[11px] font-medium shadow-md"
-          style={eventStyle(color)}
+          className={`shrink-0 animate-pop-in truncate rounded px-1 text-[11px] font-medium shadow-md ${look.className}`}
+          style={look.style}
         >
-          {title || '(No title)'}
+          {look.title}
         </div>
       </PopoverAnchor>
       <PopoverContent side="right" align="start">

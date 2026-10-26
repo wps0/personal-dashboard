@@ -187,6 +187,12 @@ log, as tabs in the side panel.
     tiny drag gives a 15-minute event. Either opens a floating quick-create card next to the
     selection, not a modal.
   - Click the all-day row for an all-day event.
+  - The quick-create card has **Event | Task** tabs, like Google Calendar's.
+    Task plans time for one of your tasks instead: search open tasks by
+    title or project (without a query it lists the ones that still need
+    time, with the hours left), and Save adds a session at the chosen time.
+    The block is that session, so moving, resizing or deleting it changes
+    the task's plan; there's no separate event to keep in sync.
   - Drag blocks to move them, and drag a block's bottom edge to resize it.
   - Click an event for its floating editor; click a session for the task
     overlay.

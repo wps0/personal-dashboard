@@ -186,6 +186,49 @@ export function dueByDay(
   return m;
 }
 
+/** Lower case without diacritics, so "zlozonosc" finds "Złożoność". */
+function fold(s: string): string {
+  return s
+    .normalize('NFD')
+    .replace(/\p{M}/gu, '')
+    .replace(/ł/g, 'l')
+    .replace(/Ł/g, 'L')
+    .toLowerCase();
+}
+
+/**
+ * Open tasks of active projects to plan time for. Without a query, the
+ * backlog (tasks that still need time, see {@link backlogItems}); with one,
+ * every open task whose title or project name contains it, ignoring case and
+ * diacritics, sorted by {@link compareItems}.
+ */
+export function findTasks(
+  data: PlanData,
+  query: string,
+  today: ISODate,
+  limit = 50,
+): Item[] {
+  const q = fold(query.trim());
+  if (!q)
+    return backlogItems(data, today)
+      .slice(0, limit)
+      .map(b => b.item);
+  const projects = new Map(
+    data.projects.filter(p => !p.archived).map(p => [p.id, p]),
+  );
+  return data.items
+    .filter(i => {
+      const p = projects.get(i.projectId);
+      return (
+        p &&
+        !isItemDone(i) &&
+        (fold(i.title).includes(q) || fold(p.name).includes(q))
+      );
+    })
+    .sort(compareItems)
+    .slice(0, limit);
+}
+
 /** Default hours for a new allocation dropped from the backlog. */
 export function defaultAllocationHours(remaining: number | undefined): number {
   if (remaining == null) return 1;
