@@ -37,7 +37,9 @@ export function decode(bytes: Uint8Array): pb.AppData {
   try {
     data = fromBinary(pb.AppDataSchema, bytes);
   } catch (e) {
-    throw new Error(`The data can’t be read: ${(e as Error).message}`);
+    throw new Error(`The data can’t be read: ${(e as Error).message}`, {
+      cause: e,
+    });
   }
   return checked(data);
 }
@@ -59,6 +61,7 @@ export function fromReadableJson(text: string): pb.AppData {
   } catch (e) {
     throw new Error(
       `This isn’t dashboard data, or it’s from a newer version of the app: ${(e as Error).message}`,
+      {cause: e},
     );
   }
   return checked(data);

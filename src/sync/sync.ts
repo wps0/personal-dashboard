@@ -208,6 +208,7 @@ async function read(drive: Remote, id: string): Promise<AppData> {
     // Never overwrite what we can't read (e.g. saved by a newer version of the app).
     throw new Error(
       `The data in Google Drive can’t be read, so sync is paused: ${(e as Error).message}`,
+      {cause: e},
     );
   }
 }
