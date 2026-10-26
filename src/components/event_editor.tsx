@@ -12,6 +12,7 @@ import {useUi, type Draft} from '../ui';
 import {BufferedInput, BufferedTextarea} from './buffered';
 import {DateField} from './date_field';
 import {EventColorRow} from './event_color_picker';
+import {addReserved} from '../actions';
 import {TaskPicker} from './task_picker';
 import {TimeSelect} from './time_select';
 import {MoveBar} from './ui/move_bar';
@@ -99,6 +100,12 @@ export function useDraftLook(): {
 } {
   const draft = useUi(s => s.draft);
   const lookups = useLookups();
+  if (draft?.mode === 'reserved')
+    return {
+      title: draft.title || 'Reserved',
+      style: {},
+      className: 'reserved border border-line text-dim',
+    };
   if (draft?.mode !== 'task')
     return {
       title: draft?.title || '(No title)',
@@ -127,9 +134,12 @@ export function DraftEditor() {
   const {patchDraft, setDraft} = useUi.getState();
   if (!draft) return null;
   const isTask = draft.mode === 'task';
+  const isReserved = draft.mode === 'reserved';
   const save = () => {
     const {date, start, end, allDay, color, itemId} = draft;
-    if (isTask) {
+    if (isReserved) {
+      addReserved(date, {start, end, label: draft.title.trim() || undefined});
+    } else if (isTask) {
       const item = useStore.getState().data.items.find(i => i.id === itemId);
       if (!item) return;
       const hours = (toMinutes(end) - toMinutes(start)) / 60;
@@ -153,6 +163,7 @@ export function DraftEditor() {
         [
           ['event', 'Event'],
           ['task', 'Time block'],
+          ['reserved', 'Reserved'],
         ] as const
       ).map(([mode, label]) => (
         <button
@@ -160,8 +171,8 @@ export function DraftEditor() {
           role="tab"
           aria-selected={draft.mode === mode}
           onClick={() =>
-            // A time block always has a time.
-            patchDraft(mode === 'task' ? {mode, allDay: false} : {mode})
+            // Time blocks and reserved time always have a time.
+            patchDraft(mode === 'event' ? {mode} : {mode, allDay: false})
           }
           className={`rounded-md px-3 py-1 text-[13px] font-medium transition-colors ${
             draft.mode === mode
@@ -190,8 +201,8 @@ export function DraftEditor() {
           <input
             data-autofocus
             value={draft.title}
-            placeholder="Add title"
-            aria-label="Title"
+            placeholder={isReserved ? 'Label, e.g. Work' : 'Add title'}
+            aria-label={isReserved ? 'Label' : 'Title'}
             onChange={e => patchDraft({title: e.target.value})}
             onKeyDown={e => e.key === 'Enter' && save()}
             className="mb-3 ml-7 w-[calc(100%-1.75rem)] border-b-2 border-x-0 border-t-0 border-line pb-1 text-lg text-strong placeholder:text-dim focus:border-accent"
@@ -200,8 +211,18 @@ export function DraftEditor() {
         </>
       )}
       <div className="space-y-3">
-        <WhenFields value={draft} onChange={patchWhen} allDayOption={!isTask} />
-        {!isTask && (
+        <WhenFields
+          value={draft}
+          onChange={patchWhen}
+          allDayOption={draft.mode === 'event'}
+        />
+        {isReserved && (
+          <p className="pl-7 text-[12px] text-dim">
+            Hatched on the calendar, for this day only; it doesn’t change
+            capacity. Weekly reserved time is in Settings.
+          </p>
+        )}
+        {draft.mode === 'event' && (
           <>
             <div className="flex gap-3">
               <AlignLeft size={16} className="mt-1.5 shrink-0 text-dim" />

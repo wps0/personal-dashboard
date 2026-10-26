@@ -130,7 +130,8 @@ Each day box is a hybrid of three parts:
   reserved time to that day, which keeps it from then on; other days keep
   the weekday's. The block itself stays see-through, so clicking it still
   creates an event. Ranges past midnight (sleep) are edited in the card only.
-  All of it is undoable.
+  All of it is undoable. The quick-create card's **Reserved** tab adds
+  reserved time to that day: a label (e.g. Gym) and times, no all-day.
 - **Overdue tray.** Unfinished allocations from past days move to a "missed"
   tray that is visible on today, so you reschedule them deliberately. They are
   never moved automatically.
@@ -199,7 +200,7 @@ log, as tabs in the side panel.
     tiny drag gives a 15-minute event. Either opens a floating quick-create card next to the
     selection, not a modal.
   - Click the all-day row for an all-day event.
-  - The quick-create card has **Event | Time block** tabs, like Google
+  - The quick-create card has **Event | Time block | Reserved** tabs, like Google
     Calendar's, between the title (or task search) and the rest of the card.
     (Not "Task", which is something else in Google Calendar.) Time block
     plans time for one of your tasks instead: search open tasks by

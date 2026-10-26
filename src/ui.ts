@@ -5,11 +5,12 @@ import {EventColor, type ISODate} from './model/types';
 import {useStore} from './store';
 
 /**
- * An event being created, or a task's time block ('task' mode): shown as a
- * ghost block with a floating editor.
+ * An event being created, a task's time block ('task' mode) or reserved
+ * time for that day ('reserved' mode, labelled by `title`): shown as a ghost
+ * block with a floating editor.
  */
 export interface Draft {
-  mode: 'event' | 'task';
+  mode: 'event' | 'task' | 'reserved';
   date: ISODate;
   start: string;
   end: string;
