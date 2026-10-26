@@ -527,7 +527,7 @@ open. Ctrl/Cmd combinations are left to the browser, except Ctrl/Cmd+Z. Press
 | `j` / `n`, `k` / `p` | Next / previous period: a day on Home, a week in the journal, the current view's period in the calendar |
 | `t` | Today |
 | `g` | Go to date (mini-month dialog) |
-| `1`–`5` | Home / Week (journal) / Calendar / Projects / Settings |
+| `1`–`6` | Home / Week (journal) / Calendar / Projects / Work / Settings |
 | `h` / `l` | Previous / next tab, wrapping around (like vim's `gT` / `gt`) |
 | `d` / `x` / `w` / `m` | Calendar Day / 3 days / Week / Month (opens the calendar from other pages) |
 | `c` | Create an event at the next full hour. With a project open, focus its "new item" field instead. From the journal or settings, open the calendar with the draft. |
