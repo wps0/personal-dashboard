@@ -208,15 +208,20 @@ export async function extractCurriculum(
         e instanceof TypeError
           ? 'Couldn’t reach Gemini. Are you offline?'
           : `Gemini: ${(e as Error).message}`,
+        {cause: e},
       );
     const why = apiErrorMessage(e.message);
     if (e.status === 400 && /API key/i.test(why))
-      throw new Error('Gemini rejected the API key. Check it in Settings.');
+      throw new Error('Gemini rejected the API key. Check it in Settings.', {
+        cause: e,
+      });
     if (e.status === 404)
-      throw new Error(`Gemini doesn’t know the model “${model}”.`);
+      throw new Error(`Gemini doesn’t know the model “${model}”.`, {cause: e});
     if (e.status === 429)
-      throw new Error('Gemini’s quota or rate limit is reached; try later.');
-    throw new Error(`Gemini: ${why}`);
+      throw new Error('Gemini’s quota or rate limit is reached; try later.', {
+        cause: e,
+      });
+    throw new Error(`Gemini: ${why}`, {cause: e});
   }
   return parseResponse(res);
 }
