@@ -321,6 +321,7 @@ function ItemsTab({project}: {project: Project}) {
             onDone={() => setForm(null)}
           />
         )}
+        <AddItem projectId={project.id} />
         <table className="w-full table-fixed border-collapse">
           <colgroup>
             <col className="w-28 @md:w-32" />
@@ -397,7 +398,6 @@ function ItemsTab({project}: {project: Project}) {
             {noneOpen && rows(ungrouped)}
           </tbody>
         </table>
-        <AddItem projectId={project.id} />
       </div>
       {hasDescription && <DescriptionColumn {...description} />}
     </div>
@@ -730,7 +730,7 @@ function AddGroup({projectId, onDone}: {projectId: string; onDone(): void}) {
   );
 }
 
-/** The add field under the list (no group), or a compact one inside a group. */
+/** The add field above the list (no group), or a compact one inside a group. */
 function AddItem({
   projectId,
   group,
@@ -783,7 +783,7 @@ function AddItem({
       </div>
     );
   return (
-    <div className="mt-2 flex flex-wrap items-center gap-1.5">
+    <div className="mb-2 flex flex-wrap items-center gap-1.5">
       <Select
         value={kind}
         onChange={setKind}
