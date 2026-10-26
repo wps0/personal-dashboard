@@ -30,8 +30,9 @@ Area            e.g. University, Work, Personal, Side projects
      ├─ overviewDoc   markdown description: goals, links, decisions (one living doc)
      ├─ log[]         timestamped progress entries ("2026-10-10: finished part 2")
      ├─ progressMode  'checklist' | 'hours' | 'manual'
-     ├─ groups[]      { id, name }   folders for its items, e.g. "Classes", in display order
+     ├─ groups[]      { id, name, collapsed }   folders for its items, e.g. "Classes", in display order
      ├─ importGroupId?  the group USOS classes and curricula were last imported into
+     ├─ ungroupedCollapsed  "No group" is folded
      └─ Item          class | assignment | exam | task   (class: a lecture, lab, tutorial or seminar)
          ├─ title, dueDate?, heldOn? (class date), estimateHours?, status, notes (markdown)
          ├─ source?   { kind: 'usos', eventId }  (for auto-created items)
@@ -156,7 +157,10 @@ log, as tabs in the side panel.
   done/total, in the project's group order. Items in no group come last,
   under "No group": folders first, as in a file manager. The add field sits
   at the top of the list, above the groups; it adds to no group.
-  Collapsed groups are remembered per device.
+  Folded groups (and a folded "No group") are kept in the data, so they stay
+  folded after a reload and sync to other devices. Folding is a quiet undo
+  step. Folds that earlier versions kept per device are moved into the data
+  once.
 - **+ group** creates one. A row's folder button (on hover) or the Group
   select in the task overlay moves an item. A group's ⋯ menu moves the
   ungrouped items of a kind (e.g. every class not yet in a group) into it in

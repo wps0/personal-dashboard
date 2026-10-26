@@ -61,6 +61,20 @@ describe('item groups in the store', () => {
     expect(project(otherId).groups).toEqual([]);
   });
 
+  it('folds a group, or "No group", in that project only', () => {
+    const a = s().addGroup(projectId, 'Lectures');
+    const b = s().addGroup(projectId, 'Labs');
+    expect(project().groups.map(g => g.collapsed)).toEqual([false, false]);
+    s().setGroupCollapsed(projectId, b, true);
+    expect(project().groups.map(g => g.collapsed)).toEqual([false, true]);
+    s().setGroupCollapsed(projectId, null, true);
+    expect(project().ungroupedCollapsed).toBe(true);
+    expect(project(otherId).ungroupedCollapsed).toBe(false);
+    s().setGroupCollapsed(projectId, b, false);
+    expect(project().groups.find(g => g.id === a)?.collapsed).toBe(false);
+    expect(project().groups.find(g => g.id === b)?.collapsed).toBe(false);
+  });
+
   it('moves one or many items into a group and out of it', () => {
     const g = s().addGroup(projectId, 'Classes');
     const [x, y, z] = s().addItems(projectId, [

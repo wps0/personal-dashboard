@@ -86,6 +86,23 @@ export function moveGroup(projectId: string, groupId: string, index: number) {
   });
 }
 
+/**
+ * Folds a group away, or unfolds it; `null` is "No group". Kept in the data,
+ * so it syncs. Undoable like any change, since undo needs every change of the
+ * data in its history.
+ */
+export function foldGroup(
+  projectId: string,
+  groupId: string | null,
+  collapsed: boolean,
+) {
+  withUndo(
+    collapsed ? 'Group folded' : 'Group unfolded',
+    () => s().setGroupCollapsed(projectId, groupId, collapsed),
+    {quiet: true},
+  );
+}
+
 /** Deletes a group; its items stay in the project, in no group. */
 export function deleteGroup(projectId: string, group: ItemGroup) {
   withUndo(`Deleted group “${group.name}”`, () =>

@@ -58,6 +58,7 @@ import {
   addGroup,
   deleteGroup,
   deleteItem as deleteItemAction,
+  foldGroup,
   moveGroup,
   moveToGroup,
   renameGroup,
@@ -211,7 +212,6 @@ const PROGRESS_OPTIONS = [
 function ItemsTab({project}: {project: Project}) {
   const allItems = useStore(s => s.data.items);
   const allocations = useStore(s => s.data.allocations);
-  const collapsed = useUi(s => s.collapsedGroups);
   const [hideDone, setHideDone] = useState(false);
   const [form, setForm] = useState<'bulk' | 'group' | null>(null);
   const today = useToday();
@@ -249,10 +249,8 @@ function ItemsTab({project}: {project: Project}) {
         today={today}
       />
     ));
-  const toggle = (key: string) => useUi.getState().toggleGroup(key);
   const ungrouped = byGroup.get('') ?? [];
-  const noneKey = `${project.id}:none`;
-  const noneOpen = !groups.length || !collapsed.includes(noneKey);
+  const noneOpen = !groups.length || !project.ungroupedCollapsed;
   const [editingDescription, setEditingDescription] = useState(false);
   const description = {
     project,
@@ -354,7 +352,7 @@ function ItemsTab({project}: {project: Project}) {
           </thead>
           {groups.map((g, k) => {
             const list = byGroup.get(g.id) ?? [];
-            const open = !collapsed.includes(g.id);
+            const open = !g.collapsed;
             return (
               <tbody key={g.id}>
                 <GroupHeader
@@ -365,7 +363,7 @@ function ItemsTab({project}: {project: Project}) {
                   items={list}
                   ungrouped={ungrouped}
                   open={open}
-                  onToggle={() => toggle(g.id)}
+                  onToggle={() => foldGroup(project.id, g.id, open)}
                 />
                 {open && rows(list)}
                 {open && !list.length && (
@@ -392,7 +390,7 @@ function ItemsTab({project}: {project: Project}) {
                 items={ungrouped}
                 ungrouped={ungrouped}
                 open={noneOpen}
-                onToggle={() => toggle(noneKey)}
+                onToggle={() => foldGroup(project.id, null, noneOpen)}
               />
             )}
             {noneOpen && rows(ungrouped)}

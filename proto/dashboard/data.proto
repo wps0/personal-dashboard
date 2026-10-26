@@ -58,6 +58,8 @@ message Project {
   // The group USOS classes and curricula were last imported into; offered
   // first next time. None if unset or the group is gone.
   optional string import_group_id = 13;
+  // The "No group" items are folded away in the project's item list.
+  bool ungrouped_collapsed = 14;
 }
 
 enum ProgressMode {
@@ -79,6 +81,8 @@ message LogEntry {
 message ItemGroup {
   string id = 1;
   string name = 2;
+  // Folded away in the project's item list.
+  bool collapsed = 3;
 }
 
 message Item {
