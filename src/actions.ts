@@ -2,11 +2,14 @@ import {
   ItemStatus,
   type Allocation,
   type CalendarEvent,
+  type ISODate,
   type Item,
   type ItemGroup,
   type ItemInit,
 } from './model/types';
+import {reservedRanges, type Reserved} from './model/capacity';
 import {importGroup} from './model/selectors';
+import {fromMinutes, toMinutes} from './model/time';
 import {useStore} from './store';
 import {withUndo} from './toast';
 import {meetingHours, taskFromMeeting, type Proposal} from './usos/usos';
@@ -52,6 +55,82 @@ export function updateEvent(
 
 export function deleteEvent(e: CalendarEvent) {
   withUndo(`Deleted “${e.title}”`, () => s().deleteEvent(e.id));
+}
+
+/**
+ * Sets a day's reserved time to `edit` of a copy of its ranges (its weekday's,
+ * until the day has its own). Other days keep the weekday's.
+ */
+function editReserved(date: ISODate, edit: (ranges: Reserved[]) => Reserved[]) {
+  const {capacityRules, dayCapacity} = s().data.settings;
+  s().setDayReserved(
+    date,
+    edit([...reservedRanges(capacityRules, dayCapacity, date)]),
+  );
+}
+
+/** Changes one of a day's reserved ranges (by its index in the day's). */
+export function updateReserved(
+  date: ISODate,
+  index: number,
+  patch: Partial<Pick<Reserved, 'start' | 'end' | 'label'>>,
+  message = 'Reserved time changed',
+) {
+  withUndo(
+    message,
+    () =>
+      editReserved(date, ranges =>
+        ranges.map((r, i) => (i === index ? {...r, ...patch} : r)),
+      ),
+    {quiet: true},
+  );
+}
+
+/** Moves a reserved range to `start` minutes on `to`, keeping its length. */
+export function moveReserved(
+  from: ISODate,
+  index: number,
+  to: ISODate,
+  start: number,
+) {
+  const {capacityRules, dayCapacity} = s().data.settings;
+  const r = reservedRanges(capacityRules, dayCapacity, from)[index];
+  // Dropped where it was: leave the day on its weekday's reserved time.
+  if (!r || (to === from && fromMinutes(start) === r.start)) return;
+  const len = toMinutes(r.end) - toMinutes(r.start);
+  const moved = {
+    ...r,
+    start: fromMinutes(start),
+    end: fromMinutes(Math.min(start + len, 24 * 60 - 1)),
+  };
+  withUndo(
+    'Reserved time moved',
+    () => {
+      if (to === from) {
+        editReserved(from, ranges =>
+          ranges.map((x, i) => (i === index ? moved : x)),
+        );
+        return;
+      }
+      editReserved(from, ranges => ranges.filter((_, i) => i !== index));
+      editReserved(to, ranges => [...ranges, moved]);
+    },
+    {quiet: true},
+  );
+}
+
+/** Removes one of a day's reserved ranges; the weekday's other days keep it. */
+export function deleteReserved(date: ISODate, index: number) {
+  withUndo('Removed reserved time', () =>
+    editReserved(date, ranges => ranges.filter((_, i) => i !== index)),
+  );
+}
+
+/** Gives a day its weekday's reserved time back. */
+export function resetReserved(date: ISODate) {
+  withUndo('Back to the weekly reserved time', () =>
+    s().setDayReserved(date, null),
+  );
 }
 
 export function completeItem(item: Item) {

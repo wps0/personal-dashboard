@@ -2,11 +2,16 @@ import {beforeEach, describe, expect, it, vi} from 'vitest';
 import {
   addGroup,
   deleteGroup,
+  deleteReserved,
   importClasses,
   importCurriculum,
+  moveReserved,
   moveToGroup,
   renameGroup,
+  resetReserved,
+  updateReserved,
 } from './actions';
+import {reservedRanges} from './model/capacity';
 import {ItemKind, emptyData} from './model/types';
 import {useStore} from './store';
 import {clearHistory, undoLast, useToasts} from './toast';
@@ -258,5 +263,59 @@ describe('importCurriculum', () => {
     expect(data().projects[0].overviewDoc).toBe('## Goals');
     undoLast();
     expect(data().items).toEqual([]);
+  });
+});
+
+describe('editing a day’s reserved time', () => {
+  beforeEach(() => {
+    vi.stubGlobal('window', {setTimeout: () => 0});
+    useStore.getState().replaceAll(emptyData());
+    clearHistory();
+  });
+  // Mondays get Sleep 23:00–07:00 (index 0) and Work 09:00–17:00 (index 1).
+  const mon = '2026-10-12';
+  const tue = '2026-10-13';
+  const ranges = (date: string) => {
+    const {capacityRules, dayCapacity} = useStore.getState().data.settings;
+    return reservedRanges(capacityRules, dayCapacity, date).map(
+      r => `${r.label} ${r.start}–${r.end}`,
+    );
+  };
+
+  it('changes only that day, starting from its weekday’s ranges', () => {
+    updateReserved(mon, 1, {start: '10:00', label: 'Office'});
+    expect(ranges(mon)).toEqual(['Sleep 23:00–07:00', 'Office 10:00–17:00']);
+    expect(ranges('2026-10-19')).toEqual([
+      'Sleep 23:00–07:00',
+      'Work 09:00–17:00',
+    ]);
+  });
+
+  it('moves a range within a day, or to another day in one undo step', () => {
+    moveReserved(mon, 1, mon, 8 * 60);
+    expect(ranges(mon)[1]).toBe('Work 08:00–16:00');
+    moveReserved(mon, 1, tue, 13 * 60);
+    expect(ranges(mon)).toEqual(['Sleep 23:00–07:00']);
+    expect(ranges(tue)).toEqual([
+      'Sleep 23:00–07:00',
+      'Work 09:00–17:00',
+      'Work 13:00–21:00',
+    ]);
+    undoLast();
+    expect(ranges(mon)[1]).toBe('Work 08:00–16:00');
+    expect(ranges(tue)).toHaveLength(2);
+  });
+
+  it('deletes with undo, and resets to the weekday’s', () => {
+    deleteReserved(mon, 1);
+    expect(ranges(mon)).toEqual(['Sleep 23:00–07:00']);
+    expect(useToasts.getState().toasts.at(-1)?.message).toBe(
+      'Removed reserved time',
+    );
+    deleteReserved(mon, 0);
+    expect(ranges(mon)).toEqual([]);
+    resetReserved(mon);
+    expect(ranges(mon)).toHaveLength(2);
+    expect(useStore.getState().data.settings.dayCapacity[mon]).toBeUndefined();
   });
 });

@@ -190,6 +190,9 @@ message TimeRange {
 message DayCapacity {
   optional double delta = 1;
   optional double override = 2;
+  // This day's own reserved time, once it's edited on the calendar; unset
+  // means its weekday's reserved time from the capacity rules.
+  ReservedDay reserved = 3;
 }
 
 enum CalendarView {

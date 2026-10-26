@@ -23,7 +23,12 @@ import {
   ProgressMode,
   emptyData,
 } from './model/types';
-import {withRuleChange, type CapacityRule} from './model/capacity';
+import {
+  withRuleChange,
+  type CapacityRule,
+  type DayCapacity,
+  type Reserved,
+} from './model/capacity';
 import {todayISO} from './model/dates';
 
 function uid() {
@@ -88,15 +93,37 @@ interface Actions {
   markUsosHandled(keys: string[]): void;
   /** Offers the skipped classes again. */
   clearUsosHandled(): void;
-  /** Per-day tweak; ignored for past days. `null` resets the day. */
+  /** Per-day tweak; ignored for past days. `null` resets it (not the day's reserved time). */
   setDayCapacity(
     date: ISODate,
     patch: {delta?: number; override?: number} | null,
   ): void;
+  /** A day's own reserved time; `null` goes back to its weekday's. */
+  setDayReserved(date: ISODate, ranges: Reserved[] | null): void;
 }
 
 interface State extends Actions {
   data: AppData;
+}
+
+/** `days` with `date`'s entry patched; an entry left with nothing set is dropped. */
+function withDay(
+  days: Record<ISODate, DayCapacity>,
+  date: ISODate,
+  patch: Partial<Pick<DayCapacity, 'delta' | 'override' | 'reserved'>>,
+): Record<ISODate, DayCapacity> {
+  const old = days[date];
+  const day = createMessage(pb.DayCapacitySchema, {
+    delta: old?.delta,
+    override: old?.override,
+    reserved: old?.reserved,
+    ...patch,
+  });
+  const next = {...days};
+  if (day.delta === undefined && day.override === undefined && !day.reserved)
+    delete next[date];
+  else next[date] = day;
+  return next;
 }
 
 export const useStore = create<State>()((set, get) => {
@@ -371,18 +398,28 @@ export const useStore = create<State>()((set, get) => {
       })),
     setDayCapacity: (date, patch) => {
       if (date < todayISO()) return;
-      update(d => {
-        const dayCapacity = {...d.settings.dayCapacity};
-        if (patch === null) delete dayCapacity[date];
-        else
-          dayCapacity[date] = createMessage(pb.DayCapacitySchema, {
-            delta: dayCapacity[date]?.delta,
-            override: dayCapacity[date]?.override,
-            ...patch,
-          });
-        return {settings: {...d.settings, dayCapacity}};
-      });
+      update(d => ({
+        settings: {
+          ...d.settings,
+          dayCapacity: withDay(
+            d.settings.dayCapacity,
+            date,
+            patch ?? {delta: undefined, override: undefined},
+          ),
+        },
+      }));
     },
+    setDayReserved: (date, ranges) =>
+      update(d => ({
+        settings: {
+          ...d.settings,
+          dayCapacity: withDay(d.settings.dayCapacity, date, {
+            reserved: ranges
+              ? createMessage(pb.ReservedDaySchema, {ranges})
+              : undefined,
+          }),
+        },
+      })),
   };
 });
 
