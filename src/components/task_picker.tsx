@@ -1,5 +1,5 @@
 import {X} from 'lucide-react';
-import {useCallback, useId, useMemo, useState} from 'react';
+import {useCallback, useId, useMemo, useState, type ReactNode} from 'react';
 import {fmtH} from '../format';
 import {useLookups} from '../hooks';
 import {todayISO} from '../model/dates';
@@ -9,16 +9,19 @@ import {useStore} from '../store';
 /**
  * Chooses the task a time block is for: a search field over open tasks
  * (without a query, the ones that still need time), or the chosen task.
+ * `children` (the card's tabs) go between the field and the list.
  */
 export function TaskPicker({
   itemId,
   onPick,
   onSave,
+  children,
 }: {
   itemId?: string;
   onPick(itemId: string | undefined): void;
   /** Enter on the chosen task. */
   onSave(): void;
+  children?: ReactNode;
 }) {
   const items = useStore(s => s.data.items);
   const projects = useStore(s => s.data.projects);
@@ -51,34 +54,37 @@ export function TaskPicker({
   if (picked) {
     const left = remaining.get(picked.id);
     return (
-      <div className="mb-3 ml-7 flex items-center gap-2 border-b-2 border-line pb-1">
-        <span
-          className="h-3 w-3 shrink-0 rounded"
-          style={{background: lookups.color(picked)}}
-        />
-        <div className="min-w-0 flex-1">
-          <div
-            ref={focusOnMount}
-            data-autofocus
-            tabIndex={0}
-            onKeyDown={e => e.key === 'Enter' && onSave()}
-            className="truncate text-lg text-strong outline-none"
+      <div className="mb-3 ml-7">
+        <div className="mb-3 flex items-center gap-2 border-b-2 border-line pb-1">
+          <span
+            className="h-3 w-3 shrink-0 rounded"
+            style={{background: lookups.color(picked)}}
+          />
+          <div className="min-w-0 flex-1">
+            <div
+              ref={focusOnMount}
+              data-autofocus
+              tabIndex={0}
+              onKeyDown={e => e.key === 'Enter' && onSave()}
+              className="truncate text-lg text-strong outline-none"
+            >
+              {picked.title}
+            </div>
+            <div className="truncate text-[12px] text-dim">
+              {lookups.project(picked.projectId)?.name}
+              {left != null && ` · ${fmtH(left)} left to plan`}
+            </div>
+          </div>
+          <button
+            className="icon-btn"
+            aria-label="Choose another task"
+            title="Choose another task"
+            onClick={() => onPick(undefined)}
           >
-            {picked.title}
-          </div>
-          <div className="truncate text-[12px] text-dim">
-            {lookups.project(picked.projectId)?.name}
-            {left != null && ` · ${fmtH(left)} left to plan`}
-          </div>
+            <X size={16} />
+          </button>
         </div>
-        <button
-          className="icon-btn"
-          aria-label="Choose another task"
-          title="Choose another task"
-          onClick={() => onPick(undefined)}
-        >
-          <X size={16} />
-        </button>
+        {children}
       </div>
     );
   }
@@ -117,13 +123,14 @@ export function TaskPicker({
             pick(active);
           }
         }}
-        className="w-full border-b-2 border-x-0 border-t-0 border-line pb-1 text-lg text-strong placeholder:text-dim focus:border-accent"
+        className="mb-3 w-full border-b-2 border-x-0 border-t-0 border-line pb-1 text-lg text-strong placeholder:text-dim focus:border-accent"
       />
+      {children}
       <div
         id={listId}
         role="listbox"
         aria-label="Tasks"
-        className="scroll-thin mt-1 max-h-48 overflow-y-auto"
+        className="scroll-thin max-h-48 overflow-y-auto"
       >
         {matches.map((item, i) => (
           <div
