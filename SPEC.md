@@ -165,6 +165,9 @@ log, as tabs in the side panel.
   and Undo brings it back. An empty group offers the same one-step moves.
 - An open group has its own add field, whose kind follows the group's last
   item; **+ bulk** can add into a group too.
+- **Done items sink to the bottom** of their group (or of "No group"), so
+  they don't mix with open ones; both parts keep the planning order (due
+  date, then class date, then title).
 
 ### 3.4 Calendar (Google-Calendar-like)
 - **Sidebar:** a Create button, a mini month (click a day to jump to it; the

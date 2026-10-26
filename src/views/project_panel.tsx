@@ -37,7 +37,7 @@ import {countdown, shortDate} from '../model/dates';
 import {useToday} from '../hooks';
 import {
   actualHours,
-  compareItems,
+  compareOpenFirst,
   groupIdOf,
   isItemDone,
   plannedHours,
@@ -218,7 +218,9 @@ function ItemsTab({project}: {project: Project}) {
   const {groups} = project;
 
   const items = useMemo(
-    () => allItems.filter(i => i.projectId === project.id).sort(compareItems),
+    // Done items sink to the bottom of each list, out of the way.
+    () =>
+      allItems.filter(i => i.projectId === project.id).sort(compareOpenFirst),
     [allItems, project.id],
   );
   const allocs = useMemo(() => {

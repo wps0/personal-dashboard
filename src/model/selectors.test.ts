@@ -4,6 +4,7 @@ import * as pb from '../gen/dashboard/data_pb';
 import {
   allocationsByItem,
   backlogItems,
+  compareOpenFirst,
   dueByDay,
   findTasks,
   groupIdOf,
@@ -275,6 +276,25 @@ describe('findTasks', () => {
   it('stops at the limit', () => {
     expect(findTasks(data(), 'lecture', TODAY, 1).map(i => i.id)).toEqual([
       'Lecture 2',
+    ]);
+  });
+});
+
+describe('compareOpenFirst', () => {
+  it('puts done items last, keeping the planning order in both parts', () => {
+    const items = [
+      item('done early', {dueDate: '2026-10-01', status: ItemStatus.DONE}),
+      item('Lecture 10'),
+      item('due', {dueDate: '2026-10-20', status: ItemStatus.DOING}),
+      item('done late', {dueDate: '2026-11-01', status: ItemStatus.DONE}),
+      item('Lecture 2'),
+    ];
+    expect(items.sort(compareOpenFirst).map(i => i.id)).toEqual([
+      'due',
+      'Lecture 2',
+      'Lecture 10',
+      'done early',
+      'done late',
     ]);
   });
 });
