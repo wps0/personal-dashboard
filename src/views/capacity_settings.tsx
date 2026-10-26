@@ -19,7 +19,7 @@ import {
 } from '../model/capacity';
 import {formatMedium} from '../model/dates';
 import {useToday} from '../hooks';
-import {toMinutes} from '../model/time';
+import {moveStart, toMinutes} from '../model/time';
 import {useStore} from '../store';
 
 const WEEKDAYS = [
@@ -105,7 +105,7 @@ export function CapacitySettings() {
                     <div className="flex items-center gap-1">
                       <TimeSelect
                         value={w.start}
-                        onChange={start => setWindow(i, {start})}
+                        onChange={start => setWindow(i, moveStart(w, start))}
                         className="w-20"
                         ariaLabel={`${name} window start`}
                       />
