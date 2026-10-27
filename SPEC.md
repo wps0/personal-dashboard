@@ -514,6 +514,27 @@ Google Drive sync.
   - RSS feed client: a reader pane for course, blog and release feeds.
     Fetching feeds needs a CORS proxy or a small backend, which this
     serverless app avoids today, so it needs a design decision first.
+- **Ideas (saved, not designed yet).**
+  - **Tasks from a prompt.** A general form of the curriculum import (5.2):
+    say what you want ("one task per lecture below, 2h each, due the day
+    before the next one", "the problem sets in this list, due Fridays") and
+    paste any material: a curriculum, a list of lectures, an assignment
+    schedule. The LLM returns tasks as structured JSON (title, kind, due
+    date, estimate, group, notes), shown in the review dialog the
+    curriculum import already has. There you edit or untick rows, or ask
+    for changes in words ("estimates 1h", "drop the labs") and get a revised
+    list. Confirming adds them as tasks in one undoable step; nothing is
+    added before that. Same Gemini key, model and privacy note as 5.2.
+  - **Class photos.** Photos of the board or slides, linked to a class:
+    taken with the camera in class, or picked from the gallery afterwards
+    and matched to classes by when they were taken. Small records in the
+    data (an added field). The images live in IndexedDB and, with Drive sync
+    on, as files in a visible "Dashboard photos/<course>/<date class>"
+    folder (`drive.file`, no new permission), shrunk to about 2560 px with
+    the location removed. Shown in the task overlay and a course Photos tab;
+    exported as a ZIP (per course or with all data) or printed to PDF. Open
+    questions: Drive or local only first, what photos can attach to, full
+    quality or not, and whether other files (PDF slides) count too.
 
 ### 5.1 Keyboard shortcuts ✅
 
