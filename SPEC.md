@@ -652,6 +652,8 @@ compares Gemini's output against the `*.expected.json` files.
 
 ### 5.3 Class photos (planned)
 
+Agreed design; not built yet.
+
 Photos of the board or slides, attached to a course (any project). Android
 only: in Chrome and the installed app. iPhone isn't supported.
 
@@ -673,7 +675,9 @@ only: in Chrome and the installed app. iPhone isn't supported.
 - **Per-photo details** (when it was taken, the caption, the transcript)
   live on the Drive file itself (app properties and description), not in
   the app data. The data model doesn't change: a course's photos are the
-  files in its folder.
+  files in its folder. (Agreed.) So everything about photos, even a
+  course's photo count, needs a connection; offline, the Photos tab says
+  so.
 
 **Adding photos:** only photos already taken, picked from the phone's
 gallery. The app doesn't take photos itself.
@@ -722,6 +726,8 @@ location, a copy on the device, iPhone, attaching photos to tasks, PDF export. O
 PDF slides) maybe later.
 
 ### 5.4 Tasks from a prompt (planned)
+
+Agreed design; not built yet.
 
 A general form of the curriculum import (5.2).
 
