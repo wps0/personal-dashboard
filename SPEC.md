@@ -532,6 +532,9 @@ Google Drive sync.
     probably through Moodle's web-service API or its calendar export.
   - ✅ Curriculum import: turn a course description pasted from USOS into
     class items, with Google Gemini doing the extraction (see 5.2).
+  - Phone app (React Native, Expo), alongside the PWA: a home-screen widget,
+    reminders and longer Google sessions, sharing the model, store and sync
+    with the web app. Design and open questions in `docs/phone_app.md`.
   - RSS feed client: a reader pane for course, blog and release feeds.
     Fetching feeds needs a CORS proxy or a small backend, which this
     serverless app avoids today, so it needs a design decision first.
