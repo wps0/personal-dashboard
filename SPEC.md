@@ -39,6 +39,7 @@ Area            e.g. University, Work, Personal, Side projects
          └─ Allocation[]   { date, start?, plannedHours, done, actualHours }
 
 CalendarEvent   { date, start, end, title, notes }   local in v1; Google Calendar in v2
+WorkSpan        { date, start, end, note? }   the work log: time actually worked
 ```
 
 - **Groups.** A project's items can be put in named groups, one level deep
@@ -275,7 +276,7 @@ choice is stored per device. Text on the accent colour (primary buttons,
 today's date) is dark navy in the dark theme and white in the light theme.
 
 ### 3.8 Settings
-Sections (Calendar, Google Calendar, Capacity & reserved time, Areas, Data)
+Sections (Calendar, Google Calendar, Capacity & reserved time, Work log, Areas, Data)
 are cards with a heading and a one-line hint. Calendar holds the default event
 length, the default view and the first day of the week (Monday … Sunday;
 Sunday by default), which is part of the synced data. Capacity rules stay per
@@ -311,6 +312,27 @@ sidebar is hidden), and a tap on a short event may hit its resize grip
 **The pattern:** Home answers "what's today", but nearly every change happens
 somewhere else (backlog and day notes on Week, the log in the panel, status
 behind a dropdown, Google reconnect in Calendar or Settings).
+
+### 3.10 Work log (`#/work`)
+The plan is reserved time labelled as work (Work by default; Settings → Work
+log). The work log records what was actually worked: stretches of time
+(start – end) per day, synced like everything else.
+
+- **The Work page**, a tab of its own (key 5), shows a week at a time,
+  Monday to Sunday, like the week journal; ‹ › and `j` / `k` move by a week,
+  `t` comes back to this one.
+- **Each day** lists its planned work ("Planned 09:00–17:00", from the
+  day's reserved time, including a day's own), its logged stretches with
+  editable start and end and a remove button, and the day's total. A day
+  with nothing logged offers **Log as planned** (its planned work, in one
+  step); **+ add** adds a stretch after the last one, or the planned work,
+  or 09:00–17:00.
+- **The week** shows the hours logged against its target, with a bar and
+  "N h to go" or "N h over". The target is the default from Settings unless
+  the week has its own: typing one on the page sets it for that week only,
+  and "Use the default" removes it. 0 means no target. The month totals of
+  the months the week touches are shown too.
+- Everything is undoable.
 
 ## 4. Integrations (v2)
 
@@ -505,7 +527,7 @@ open. Ctrl/Cmd combinations are left to the browser, except Ctrl/Cmd+Z. Press
 | `j` / `n`, `k` / `p` | Next / previous period: a day on Home, a week in the journal, the current view's period in the calendar |
 | `t` | Today |
 | `g` | Go to date (mini-month dialog) |
-| `1`–`5` | Home / Week (journal) / Calendar / Projects / Settings |
+| `1`–`6` | Home / Week (journal) / Calendar / Projects / Work / Settings |
 | `h` / `l` | Previous / next tab, wrapping around (like vim's `gT` / `gt`) |
 | `d` / `x` / `w` / `m` | Calendar Day / 3 days / Week / Month (opens the calendar from other pages) |
 | `c` | Create an event at the next full hour. With a project open, focus its "new item" field instead. From the journal or settings, open the calendar with the draft. |

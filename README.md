@@ -67,6 +67,10 @@ On first launch, choose **Load sample data** to explore, or create empty areas.
   - Hatched areas are reserved time (sleep, work), set per weekday in
     Settings. Drag a block's label (top right) to move it, or its edges to
     resize it, for that day only; click the label to rename or delete it.
+- **Work** (`#/work`): the work log, a week at a time. Log the stretches you
+  actually worked each day (or **Log as planned**, from the day's reserved
+  Work time) and see the week's hours against its target (default in
+  Settings → Work log, or one of the week's own).
 - **Projects** (`#/projects`): cards with progress rings. Click one to open its
   items, description (Markdown) and progress log in a side panel; the
   description also shows beside the items (above them on narrow screens).

@@ -12,6 +12,7 @@ import type {
   Item,
   ItemGroup,
   ItemInit,
+  WorkSpan,
   Project,
   UsosSource,
   Weekday,
@@ -100,6 +101,18 @@ interface Actions {
   ): void;
   /** A day's own reserved time; `null` goes back to its weekday's. */
   setDayReserved(date: ISODate, ranges: Reserved[] | null): void;
+
+  /** Logs a stretch of work; returns its id. */
+  addWorkSpan(date: ISODate, start: string, end: string): string;
+  updateWorkSpan(
+    id: string,
+    patch: Partial<Pick<WorkSpan, 'start' | 'end' | 'note'>>,
+  ): void;
+  deleteWorkSpan(id: string): void;
+  /** The default weekly target (0: none) and the label of planned work. */
+  setWorkSettings(patch: {workTarget?: number; workLabel?: string}): void;
+  /** One week's own target (by its Monday); `null` goes back to the default. */
+  setWeekWorkTarget(monday: ISODate, hours: number | null): void;
 }
 
 interface State extends Actions {
@@ -409,6 +422,29 @@ export const useStore = create<State>()((set, get) => {
         },
       }));
     },
+    addWorkSpan: (date, start, end) => {
+      const id = uid();
+      update(d => ({
+        workLog: [
+          ...d.workLog,
+          createMessage(pb.WorkSpanSchema, {id, date, start, end}),
+        ],
+      }));
+      return id;
+    },
+    updateWorkSpan: (id, patch) =>
+      update(d => ({workLog: patchById(d.workLog, id, patch)})),
+    deleteWorkSpan: id =>
+      update(d => ({workLog: d.workLog.filter(s => s.id !== id)})),
+    setWorkSettings: patch =>
+      update(d => ({settings: {...d.settings, ...patch}})),
+    setWeekWorkTarget: (monday, hours) =>
+      update(d => {
+        const weekWorkTargets = {...d.settings.weekWorkTargets};
+        if (hours === null) delete weekWorkTargets[monday];
+        else weekWorkTargets[monday] = hours;
+        return {settings: {...d.settings, weekWorkTargets}};
+      }),
     setDayReserved: (date, ranges) =>
       update(d => ({
         settings: {

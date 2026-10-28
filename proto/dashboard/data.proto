@@ -27,6 +27,18 @@ message AppData {
   // Freeform text per month, keyed `YYYY-MM`.
   map<string, string> month_notes = 8;
   Settings settings = 9;
+  // The work log: stretches of time actually worked.
+  repeated WorkSpan work_log = 10;
+}
+
+// A stretch of time actually worked, within one day.
+message WorkSpan {
+  string id = 1;
+  string date = 2;
+  string start = 3;
+  // After the start, on the same day.
+  string end = 4;
+  optional string note = 5;
 }
 
 // A top-level group of projects, e.g. University or Work.
@@ -162,6 +174,14 @@ message Settings {
   // The first day of the week in the calendar, mini months and the week
   // journal. Unset means Sunday.
   Weekday week_start = 6;
+  // Hours of work aimed for each week; 0 for no target.
+  double work_target = 7;
+  // Targets for single weeks, keyed by the week's Monday; they override
+  // work_target (0 there: no target that week).
+  map<string, double> week_work_targets = 8;
+  // Reserved time with this label is the planned work, e.g. what "Log as
+  // planned" logs. Empty means "Work".
+  string work_label = 9;
 }
 
 message CapacityRule {

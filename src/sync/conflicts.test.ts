@@ -93,6 +93,33 @@ group('describe', () => {
     });
   });
 
+  it('describes the work log', () => {
+    const data = base();
+    data.workLog = [
+      create(pb.WorkSpanSchema, {
+        id: 'w',
+        date: '2026-10-13',
+        start: '09:00',
+        end: '17:00',
+      }),
+    ];
+    expect(
+      describe(
+        {path: ['workLog', 'w', 'end'], local: '17:00', remote: '18:00'},
+        data,
+      ),
+    ).toEqual({
+      what: 'Work log on 13 Oct, 09:00 – 17:00',
+      field: 'end',
+      local: '17:00',
+      remote: '18:00',
+    });
+    expect(
+      describe({path: ['settings', 'workTarget'], local: 40, remote: 32}, data)
+        .field,
+    ).toBe('weekly work target');
+  });
+
   it('names a project’s group, and an item’s group by its name', () => {
     const groups = [
       create(pb.ItemGroupSchema, {id: 'g', name: 'Classes'}),

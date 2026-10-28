@@ -47,6 +47,9 @@ const FIELDS: Record<string, string> = {
   groupId: 'group',
   importGroupId: 'import group',
   text: 'text',
+  workTarget: 'weekly work target',
+  weekWorkTargets: 'week’s work target',
+  workLabel: 'work label',
 };
 
 interface Rec {
@@ -110,6 +113,11 @@ export function describe(c: Conflict, data: AppData): ConflictView {
     case 'events':
       what = `Event ${label(find(data.events), 'title')}`;
       break;
+    case 'workLog': {
+      const w = find(data.workLog);
+      what = `Work log${w?.date ? ` on ${shortDate(w.date as string)}` : ''}${w?.start ? `, ${w.start as string} – ${w.end as string}` : ''}`;
+      break;
+    }
     case 'dayNotes':
       what = `Note for ${id ? shortDate(id) : 'a day'}`;
       fieldPath = [];
