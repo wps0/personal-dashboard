@@ -9,6 +9,7 @@ import {
 } from '../components/ui/popover';
 import {ProgressRing} from '../components/progress_ring';
 import {TimeGrid} from '../components/time_grid';
+import {WorkCard} from '../components/work_card';
 import {fmtH, URGENCY_CLASS} from '../format';
 import {useLookups, useToday, type Lookups} from '../hooks';
 import {
@@ -68,6 +69,7 @@ export function HomeView({date}: {date?: ISODate}) {
         <UsosBanner />
         <Planned days={days} />
         <Projects />
+        <WorkCard />
       </div>
     </div>
   );
