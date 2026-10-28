@@ -78,7 +78,8 @@ On first launch, choose **Load sample data** to explore, or create empty areas.
   to edit it. **+ bulk** creates "Lecture 1…13" in one go. **+ group** makes
   a folder for items (e.g. all classes); its ⋯ menu moves every ungrouped
   item of a kind into it. Drag a group by its grip (left of the name) to
-  reorder the groups.
+  reorder the groups. Drag a task onto a group to move it; Shift-click
+  several first to move them together.
 - **Task overlay**: click any task, anywhere, for its details, sessions and
   notes.
 - **Undo**: deleting or completing something shows a toast with **Undo**
