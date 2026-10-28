@@ -122,6 +122,15 @@ Each day box is a hybrid of three parts:
   can still go there. It's versioned with the capacity rules. In Settings, each
   weekday's copy button copies its planning window and reserved time to the
   days you tick (with Weekdays / Weekend / All shortcuts).
+- **A day's own reserved time.** On the calendar, a reserved block's label
+  (top right, above events) is its handle: drag it to move the block, also
+  to another day, and drag the block's top or bottom edge to resize it.
+  Clicking the label opens a card with its label and times, Delete, and
+  "Use the weekly one". The first change to a day copies its weekday's
+  reserved time to that day, which keeps it from then on; other days keep
+  the weekday's. The block itself stays see-through, so clicking it still
+  creates an event. Ranges past midnight (sleep) are edited in the card only.
+  All of it is undoable.
 - **Overdue tray.** Unfinished allocations from past days move to a "missed"
   tray that is visible on today, so you reschedule them deliberately. They are
   never moved automatically.

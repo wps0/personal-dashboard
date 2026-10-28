@@ -93,21 +93,48 @@ export function defaultRules(): CapacityRule[] {
   ];
 }
 
+/**
+ * A date's reserved time: the day's own, once it's been edited on the
+ * calendar, otherwise its weekday's from the capacity rules.
+ */
+export function reservedRanges(
+  rules: CapacityRule[],
+  days: Record<ISODate, DayCapacity>,
+  date: ISODate,
+): Reserved[] {
+  return (
+    days[date]?.reserved?.ranges ??
+    reservedDays(ruleFor(rules, date))[weekdayIndex(date)]?.ranges ??
+    []
+  );
+}
+
+/** A reserved range as drawn on a day, in minutes. */
+export interface ReservedSpan {
+  start: number;
+  end: number;
+  label?: string;
+  /** The range's index in the day's reserved ranges. */
+  index: number;
+  /** Part of a range past midnight, drawn at both ends of the day. */
+  wraps: boolean;
+}
+
 /** Reserved spans for a date in minutes; ranges past midnight are drawn at both ends of the day. */
 export function reservedFor(
   rules: CapacityRule[],
   date: ISODate,
-): {start: number; end: number; label?: string}[] {
-  const ranges =
-    reservedDays(ruleFor(rules, date))[weekdayIndex(date)]?.ranges ?? [];
-  return ranges.flatMap(r => {
+  days: Record<ISODate, DayCapacity> = {},
+): ReservedSpan[] {
+  return reservedRanges(rules, days, date).flatMap((r, index) => {
     const s = toMinutes(r.start);
     const e = toMinutes(r.end);
-    if (e > s) return [{start: s, end: e, label: r.label}];
+    const label = r.label;
+    if (e > s) return [{start: s, end: e, label, index, wraps: false}];
     if (e === s) return [];
     return [
-      {start: 0, end: e, label: r.label},
-      {start: s, end: 24 * 60, label: r.label},
+      {start: 0, end: e, label, index, wraps: true},
+      {start: s, end: 24 * 60, label, index, wraps: true},
     ].filter(x => x.end > x.start);
   });
 }

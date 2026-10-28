@@ -8,6 +8,7 @@ import {
   plannedInWindow,
   defaultRules,
   range,
+  reservedDay,
   reservedFor,
   ruleFor,
   withRuleChange,
@@ -94,14 +95,30 @@ describe('reservedFor', () => {
   it('splits ranges that wrap past midnight and uses the weekday', () => {
     const rules = defaultRules();
     expect(reservedFor(rules, '2026-10-12')).toEqual([
-      {start: 0, end: 420, label: 'Sleep'},
-      {start: 1380, end: 1440, label: 'Sleep'},
-      {start: 540, end: 1020, label: 'Work'},
+      {start: 0, end: 420, label: 'Sleep', index: 0, wraps: true},
+      {start: 1380, end: 1440, label: 'Sleep', index: 0, wraps: true},
+      {start: 540, end: 1020, label: 'Work', index: 1, wraps: false},
     ]);
     expect(reservedFor(rules, '2026-10-11').map(r => r.label)).toEqual([
       'Sleep',
       'Sleep',
     ]); // Sunday: no work
+  });
+
+  it('uses a day’s own reserved time once it has some', () => {
+    const rules = defaultRules();
+    const days = {
+      '2026-10-12': create(pb.DayCapacitySchema, {
+        reserved: reservedDay(range('10:00', '18:30', 'Work')),
+      }),
+      // Edited down to nothing: still the day's own.
+      '2026-10-13': create(pb.DayCapacitySchema, {reserved: reservedDay()}),
+    };
+    expect(reservedFor(rules, '2026-10-12', days)).toEqual([
+      {start: 600, end: 1110, label: 'Work', index: 0, wraps: false},
+    ]);
+    expect(reservedFor(rules, '2026-10-13', days)).toEqual([]);
+    expect(reservedFor(rules, '2026-10-14', days)).toHaveLength(3);
   });
 });
 
