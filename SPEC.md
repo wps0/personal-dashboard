@@ -30,8 +30,9 @@ Area            e.g. University, Work, Personal, Side projects
      ├─ overviewDoc   markdown description: goals, links, decisions (one living doc)
      ├─ log[]         timestamped progress entries ("2026-10-10: finished part 2")
      ├─ progressMode  'checklist' | 'hours' | 'manual'
-     ├─ groups[]      { id, name }   folders for its items, e.g. "Classes", in display order
+     ├─ groups[]      { id, name, collapsed }   folders for its items, e.g. "Classes", in display order
      ├─ importGroupId?  the group USOS classes and curricula were last imported into
+     ├─ ungroupedCollapsed  "No group" is folded
      └─ Item          class | assignment | exam | task   (class: a lecture, lab, tutorial or seminar)
          ├─ title, dueDate?, heldOn? (class date), estimateHours?, status, notes (markdown)
          ├─ source?   { kind: 'usos', eventId }  (for auto-created items)
@@ -169,13 +170,28 @@ log, as tabs in the side panel.
   done/total, in the project's group order. Items in no group come last,
   under "No group": folders first, as in a file manager. The add field sits
   at the top of the list, above the groups; it adds to no group.
-  Collapsed groups are remembered per device.
+  Folded groups (and a folded "No group") are kept in the data, so they stay
+  folded after a reload and sync to other devices. Folding is a quiet undo
+  step. Folds that earlier versions kept per device are moved into the data
+  once.
 - **+ group** creates one. A row's folder button (on hover) or the Group
   select in the task overlay moves an item. A group's ⋯ menu moves the
   ungrouped items of a kind (e.g. every class not yet in a group) into it in
   one step; items already in another group stay where they are. It also
   moves the group up or down, or deletes it: its items stay, in no group,
   and Undo brings it back. An empty group offers the same one-step moves.
+- **Reordering:** drag a group by the grip left of its name (it shows on
+  hover; always on touch screens, where a press starts the drag). A line
+  shows where it lands, above or below the group under the pointer; Esc
+  cancels. "No group" stays last. Undoable, without a toast.
+- **Moving several tasks:** Shift- or Ctrl/Cmd-click rows to select them
+  (tinted; Shift-click again deselects). A bar shows how many, with
+  **Move to…** and **Clear**; Esc clears the selection before it closes the
+  panel. Drag any selected row onto a group, or onto "No group", to move them
+  all: the group lights up, a label says "3 tasks", and a toast offers Undo.
+  A row that isn't selected drags alone. Rows drag from anywhere but their
+  text fields (a press on touch screens); not while the project has no
+  groups.
 - An open group has its own add field, whose kind follows the group's last
   item; **+ bulk** can add into a group too.
 - **Done items sink to the bottom** of their group (or of "No group"), so

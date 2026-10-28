@@ -9,6 +9,7 @@ import {setUpAutosave} from './storage/autosave';
 import {claimSingleTab} from './storage/single_tab';
 import {IndexedDbStorage} from './storage/storage';
 import {useStore} from './store';
+import {adoptFoldedGroups} from './ui';
 import {setUpSync} from './sync/setup';
 
 const storage = new IndexedDbStorage();
@@ -32,6 +33,7 @@ async function boot() {
   // Asks the browser not to evict the data when space runs low.
   navigator.storage?.persist?.().catch(() => {});
   setUpAutosave(storage);
+  adoptFoldedGroups();
   setUpSync(storage);
 
   root.render(

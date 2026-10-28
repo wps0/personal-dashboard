@@ -5,6 +5,7 @@ import {
   deleteGroup,
   deleteReserved,
   deleteWorkSpan,
+  foldGroup,
   importClasses,
   importCurriculum,
   logAsPlanned,
@@ -219,6 +220,26 @@ describe('item groups', () => {
       undefined,
       undefined,
     ]);
+  });
+
+  it('folding is kept in the data and is a quiet undo step', () => {
+    const id = addGroup(projectId, 'Classes');
+    const [item] = useStore.getState().addItems(projectId, [{title: 'L1'}]);
+    moveToGroup(
+      data().items.filter(i => i.id === item),
+      data().projects[0].groups[0],
+    );
+    foldGroup(projectId, id, true);
+    foldGroup(projectId, null, true);
+    expect(data().projects[0].groups[0].collapsed).toBe(true);
+    expect(data().projects[0].ungroupedCollapsed).toBe(true);
+    expect(useToasts.getState().toasts).toEqual([]);
+    undoLast();
+    undoLast();
+    expect(data().projects[0].groups[0].collapsed).toBe(false);
+    // The change before it can still be undone.
+    undoLast();
+    expect(data().items[0].groupId).toBeUndefined();
   });
 
   it('moving one item is quiet', () => {

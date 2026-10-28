@@ -1,4 +1,19 @@
-import {memo, useMemo, useState} from 'react';
+import {
+  DndContext,
+  DragOverlay,
+  pointerWithin,
+  useDraggable,
+  useDroppable,
+} from '@dnd-kit/core';
+import {
+  memo,
+  useCallback,
+  useEffect,
+  useMemo,
+  useState,
+  type ReactNode,
+} from 'react';
+import {createPortal} from 'react-dom';
 import {withUndo} from '../toast';
 import {BufferedTextarea} from '../components/buffered';
 import {DateField} from '../components/date_field';
@@ -15,6 +30,7 @@ import {
   ArrowUp,
   ChevronRight,
   FolderInput,
+  GripVertical,
   MoreHorizontal,
   Pencil,
   Trash2,
@@ -58,11 +74,18 @@ import {
   addGroup,
   deleteGroup,
   deleteItem as deleteItemAction,
+  foldGroup,
   moveGroup,
   moveToGroup,
   renameGroup,
 } from '../actions';
-import {blockKeys} from '../keyboard';
+import {
+  clicksSuppressed,
+  ghostUnderPointer,
+  suppressClicks,
+  useDragSensors,
+} from '../dnd';
+import {blockKeys, isTyping} from '../keyboard';
 
 type Tab = 'items' | 'description' | 'log';
 
@@ -208,14 +231,81 @@ const PROGRESS_OPTIONS = [
   {value: ProgressMode.MANUAL, label: 'Progress: manual'},
 ];
 
+/** What a drag in the item list carries: a group's grip, or a task's row. */
+type DragData = {kind: 'group'; index: number} | {kind: 'item'; id: string};
+/** A group's rows, where a drag can land ('' for "No group"); `index` is its place in the order. */
+interface DropData {
+  groupId: string;
+  index?: number;
+}
+/** A drag in progress: a group to put elsewhere in the order, or tasks to move into a group. */
+type ListDrag =
+  | {kind: 'group'; from: number; to?: number}
+  | {kind: 'items'; ids: string[]; to?: string};
+
+function dataOf<T>(x: {data: {current?: unknown}} | null) {
+  return x?.data.current as T | undefined;
+}
+
 function ItemsTab({project}: {project: Project}) {
   const allItems = useStore(s => s.data.items);
   const allocations = useStore(s => s.data.allocations);
-  const collapsed = useUi(s => s.collapsedGroups);
   const [hideDone, setHideDone] = useState(false);
   const [form, setForm] = useState<'bulk' | 'group' | null>(null);
   const today = useToday();
   const {groups} = project;
+  const sensors = useDragSensors();
+  const [drag, setDrag] = useState<ListDrag | null>(null);
+  const draggedGroup = drag?.kind === 'group' ? groups[drag.from] : undefined;
+  // Tasks picked with Shift- or Ctrl/Cmd-click, to drag together.
+  const [selection, setSelection] = useState({
+    projectId: project.id,
+    ids: [] as string[],
+  });
+  const selected = useMemo(
+    () => new Set(selection.projectId === project.id ? selection.ids : []),
+    [selection, project.id],
+  );
+  const toggleSelected = useCallback(
+    (id: string) =>
+      setSelection(s => {
+        const ids = s.projectId === project.id ? s.ids : [];
+        return {
+          projectId: project.id,
+          ids: ids.includes(id) ? ids.filter(x => x !== id) : [...ids, id],
+        };
+      }),
+    [project.id],
+  );
+  const clearSelection = () => setSelection({projectId: project.id, ids: []});
+  const dragging = drag !== null;
+  useEffect(() => {
+    if (!dragging) return;
+    // Esc cancels the drag; marked handled so it doesn't close the panel too.
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') e.preventDefault();
+    };
+    document.addEventListener('keydown', onKey, true);
+    return () => document.removeEventListener('keydown', onKey, true);
+  }, [dragging]);
+  const anySelected = selected.size > 0;
+  useEffect(() => {
+    if (!anySelected) return;
+    // Esc clears the selection first; the next one closes the panel. Not
+    // when a popover or a drag took it.
+    const onKey = (e: KeyboardEvent) => {
+      if (
+        e.key === 'Escape' &&
+        !e.defaultPrevented &&
+        !isTyping(e.target as Element)
+      ) {
+        e.preventDefault();
+        setSelection(s => ({...s, ids: []}));
+      }
+    };
+    document.addEventListener('keydown', onKey);
+    return () => document.removeEventListener('keydown', onKey);
+  }, [anySelected]);
 
   const items = useMemo(
     // Done items sink to the bottom of each list, out of the way.
@@ -247,12 +337,51 @@ function ItemsTab({project}: {project: Project}) {
         groups={groups}
         allocs={allocs.get(item.id) ?? NO_ALLOCS}
         today={today}
+        selected={selected.has(item.id)}
+        lifted={drag?.kind === 'items' && drag.ids.includes(item.id)}
+        onSelect={toggleSelected}
       />
     ));
-  const toggle = (key: string) => useUi.getState().toggleGroup(key);
+  /** Dragged tasks would land in group `key` ('' for none): some aren't in it yet. */
+  const into = (key: string) =>
+    drag?.kind === 'items' &&
+    drag.to === key &&
+    items.some(i => drag.ids.includes(i.id) && groupIdOf(i, groups) !== key);
+  const startDrag = (d: DragData) =>
+    setDrag(
+      d.kind === 'group'
+        ? {kind: 'group', from: d.index}
+        : {
+            kind: 'items',
+            // A selected task brings the whole selection along.
+            ids: selected.has(d.id)
+              ? items.filter(i => selected.has(i.id)).map(i => i.id)
+              : [d.id],
+          },
+    );
+  const endDrag = (over: DropData | undefined) => {
+    setDrag(null);
+    // The pointer-up may also click the row it ends on.
+    suppressClicks();
+    if (!drag || !over) return;
+    if (drag.kind === 'group') {
+      if (over.index !== undefined && over.index !== drag.from)
+        moveGroup(project.id, groups[drag.from].id, over.index);
+      return;
+    }
+    const moving = items.filter(
+      i => drag.ids.includes(i.id) && groupIdOf(i, groups) !== over.groupId,
+    );
+    if (moving.length)
+      moveToGroup(
+        moving,
+        groups.find(g => g.id === over.groupId),
+      );
+    if (drag.ids.some(id => selected.has(id))) clearSelection();
+  };
+  const selectedItems = items.filter(i => selected.has(i.id));
   const ungrouped = byGroup.get('') ?? [];
-  const noneKey = `${project.id}:none`;
-  const noneOpen = !groups.length || !collapsed.includes(noneKey);
+  const noneOpen = !groups.length || !project.ungroupedCollapsed;
   const [editingDescription, setEditingDescription] = useState(false);
   const description = {
     project,
@@ -322,82 +451,146 @@ function ItemsTab({project}: {project: Project}) {
           />
         )}
         <AddItem projectId={project.id} />
-        <table className="w-full table-fixed border-collapse">
-          <colgroup>
-            <col className="w-28 @md:w-32" />
-            <col />
-            <col className="w-20" />
-            {/* Estimate and spent/plan: none on narrow panels (phones). */}
-            <col className="w-12 @max-md:w-0" />
-            <col className="w-16 @max-md:w-0" />
-            <col className="w-5" />
-          </colgroup>
-          <thead>
-            <tr className="label border-b border-line text-left [&>th]:px-1 [&>th]:py-1 [&>th]:font-normal">
-              <th>status</th>
-              <th>title</th>
-              <th>date</th>
-              <th
-                className="text-right @max-md:invisible @max-md:overflow-hidden @max-md:!px-0"
-                title="Estimated hours"
-              >
-                est
-              </th>
-              <th
-                className="text-right @max-md:invisible @max-md:overflow-hidden @max-md:!px-0"
-                title="Hours spent / planned"
-              >
-                spent/plan
-              </th>
-              <th />
-            </tr>
-          </thead>
-          {groups.map((g, k) => {
-            const list = byGroup.get(g.id) ?? [];
-            const open = !collapsed.includes(g.id);
-            return (
-              <tbody key={g.id}>
+        <DndContext
+          sensors={sensors}
+          collisionDetection={pointerWithin}
+          onDragStart={e => {
+            const d = dataOf<DragData>(e.active);
+            if (d) startDrag(d);
+          }}
+          onDragOver={e => {
+            const over = dataOf<DropData>(e.over);
+            setDrag(
+              d =>
+                d &&
+                (d.kind === 'group'
+                  ? {...d, to: over?.index}
+                  : {...d, to: over?.groupId}),
+            );
+          }}
+          onDragEnd={e => endDrag(dataOf<DropData>(e.over))}
+          onDragCancel={() => setDrag(null)}
+        >
+          {selectedItems.length > 0 && (
+            <SelectionBar
+              items={selectedItems}
+              groups={groups}
+              onClear={clearSelection}
+            />
+          )}
+          <table className="w-full table-fixed border-collapse">
+            <colgroup>
+              <col className="w-28 @md:w-32" />
+              <col />
+              <col className="w-20" />
+              {/* Estimate and spent/plan: none on narrow panels (phones). */}
+              <col className="w-12 @max-md:w-0" />
+              <col className="w-16 @max-md:w-0" />
+              <col className="w-5" />
+            </colgroup>
+            <thead>
+              <tr className="label border-b border-line text-left [&>th]:px-1 [&>th]:py-1 [&>th]:font-normal">
+                <th>status</th>
+                <th>title</th>
+                <th>date</th>
+                <th
+                  className="text-right @max-md:invisible @max-md:overflow-hidden @max-md:!px-0"
+                  title="Estimated hours"
+                >
+                  est
+                </th>
+                <th
+                  className="text-right @max-md:invisible @max-md:overflow-hidden @max-md:!px-0"
+                  title="Hours spent / planned"
+                >
+                  spent/plan
+                </th>
+                <th />
+              </tr>
+            </thead>
+            {groups.map((g, k) => {
+              const list = byGroup.get(g.id) ?? [];
+              const open = !g.collapsed;
+              const lands =
+                drag?.kind === 'group' && drag.to === k && k !== drag.from
+                  ? k < drag.from
+                    ? 'before'
+                    : 'after'
+                  : null;
+              return (
+                <GroupBody
+                  key={g.id}
+                  id={g.id}
+                  drop={{groupId: g.id, index: k}}
+                  lands={lands}
+                  lifted={draggedGroup === g}
+                  target={into(g.id)}
+                >
+                  <GroupHeader
+                    projectId={project.id}
+                    group={g}
+                    index={k}
+                    last={k === groups.length - 1}
+                    items={list}
+                    ungrouped={ungrouped}
+                    open={open}
+                    onToggle={() => foldGroup(project.id, g.id, open)}
+                  />
+                  {open && rows(list)}
+                  {open && !list.length && (
+                    <EmptyGroup group={g} ungrouped={ungrouped} />
+                  )}
+                  {open && (
+                    <tr>
+                      <td colSpan={6}>
+                        <AddItem
+                          projectId={project.id}
+                          group={g}
+                          defaultKind={list.at(-1)?.kind}
+                        />
+                      </td>
+                    </tr>
+                  )}
+                </GroupBody>
+              );
+            })}
+            <GroupBody
+              id={`${project.id}:none`}
+              drop={{groupId: ''}}
+              target={into('')}
+            >
+              {groups.length > 0 && ungrouped.length > 0 && (
                 <GroupHeader
                   projectId={project.id}
-                  group={g}
-                  index={k}
-                  last={k === groups.length - 1}
-                  items={list}
+                  items={ungrouped}
                   ungrouped={ungrouped}
-                  open={open}
-                  onToggle={() => toggle(g.id)}
+                  open={noneOpen}
+                  onToggle={() => foldGroup(project.id, null, noneOpen)}
                 />
-                {open && rows(list)}
-                {open && !list.length && (
-                  <EmptyGroup group={g} ungrouped={ungrouped} />
-                )}
-                {open && (
-                  <tr>
-                    <td colSpan={6}>
-                      <AddItem
-                        projectId={project.id}
-                        group={g}
-                        defaultKind={list.at(-1)?.kind}
-                      />
-                    </td>
-                  </tr>
-                )}
-              </tbody>
-            );
-          })}
-          <tbody>
-            {groups.length > 0 && ungrouped.length > 0 && (
-              <GroupHeader
-                projectId={project.id}
-                items={ungrouped}
-                ungrouped={ungrouped}
-                open={noneOpen}
-                onToggle={() => toggle(noneKey)}
-              />
-            )}
-            {noneOpen && rows(ungrouped)}
-          </tbody>
-        </table>
+              )}
+              {noneOpen && rows(ungrouped)}
+            </GroupBody>
+          </table>
+          {/* In the body: the panel's transform would offset a fixed ghost. */}
+          {createPortal(
+            <DragOverlay dropAnimation={null} modifiers={[ghostUnderPointer]}>
+              {draggedGroup && (
+                <div className="flex w-max items-center gap-1 rounded-md border border-line bg-panel px-2 py-1 text-[12px] font-medium text-strong shadow-lg">
+                  <GripVertical size={13} className="text-dim" />
+                  {draggedGroup.name}
+                </div>
+              )}
+              {drag?.kind === 'items' && (
+                <div className="w-max max-w-80 truncate rounded-md border border-line bg-panel px-2 py-1 text-[12px] font-medium text-strong shadow-lg">
+                  {drag.ids.length === 1
+                    ? items.find(i => i.id === drag.ids[0])?.title
+                    : `${drag.ids.length} tasks`}
+                </div>
+              )}
+            </DragOverlay>,
+            document.body,
+          )}
+        </DndContext>
       </div>
       {hasDescription && <DescriptionColumn {...description} />}
     </div>
@@ -414,6 +607,111 @@ function movable(ungrouped: Item[]) {
     name: o.label.toLowerCase(),
     items: ungrouped.filter(i => i.kind === o.value),
   })).filter(k => k.items.length > 0);
+}
+
+/**
+ * A group's rows, or "No group"'s, where a drag can land. For a dragged group,
+ * a line shows where it lands: above this group or below it. Dragged tasks
+ * that would move into it (`target`) tint it.
+ */
+function GroupBody({
+  id,
+  drop,
+  lands = null,
+  lifted = false,
+  target,
+  children,
+}: {
+  id: string;
+  drop: DropData;
+  lands?: 'before' | 'after' | null;
+  lifted?: boolean;
+  target: boolean;
+  children: ReactNode;
+}) {
+  const {setNodeRef} = useDroppable({id, data: drop});
+  const line =
+    lands === 'before'
+      ? '[&>tr:first-child>td]:shadow-[inset_0_2px_0_var(--color-accent)]'
+      : lands === 'after'
+        ? '[&>tr:last-child>td]:shadow-[inset_0_-2px_0_var(--color-accent)]'
+        : '';
+  return (
+    <tbody
+      ref={setNodeRef}
+      className={`${line} ${lifted ? 'opacity-50' : ''} ${target ? 'bg-accent/10' : ''}`}
+    >
+      {children}
+    </tbody>
+  );
+}
+
+/**
+ * Drags a group to another place in the order, with the mouse or a finger.
+ * Hidden from the keyboard and screen readers: the group's menu moves it up
+ * or down.
+ */
+function GroupGrip({group, index}: {group: ItemGroup; index: number}) {
+  const {setNodeRef, listeners} = useDraggable({
+    id: group.id,
+    data: {kind: 'group', index} satisfies DragData,
+  });
+  return (
+    <span
+      ref={setNodeRef}
+      {...listeners}
+      aria-hidden
+      title="Drag to reorder"
+      className="flex h-6 w-4 shrink-0 cursor-grab touch-none items-center justify-center text-dim opacity-0 group-hover/head:opacity-100 pointer-coarse:opacity-100 active:cursor-grabbing"
+    >
+      <GripVertical size={13} />
+    </span>
+  );
+}
+
+/** The tasks picked with Shift- or Ctrl/Cmd-click: how many, and where they can go. */
+function SelectionBar({
+  items,
+  groups,
+  onClear,
+}: {
+  items: Item[];
+  groups: ItemGroup[];
+  onClear(): void;
+}) {
+  const options = useMemo(() => groupOptions(groups), [groups]);
+  return (
+    <div className="sticky top-0 z-10 mb-2 flex flex-wrap items-center gap-x-2 gap-y-1 rounded-md border border-accent/40 bg-panel px-2 py-1 text-[12px]">
+      <span className="font-medium text-strong tabular-nums">
+        {items.length} selected
+      </span>
+      <span className="text-dim">
+        {groups.length
+          ? 'drag them onto a group, or'
+          : 'Shift-click to add more'}
+      </span>
+      {groups.length > 0 && (
+        <Select
+          // Matches no option: the trigger reads "Move to…".
+          value={'\0' as string}
+          onChange={id => {
+            moveToGroup(
+              items,
+              groups.find(g => g.id === id),
+            );
+            onClear();
+          }}
+          options={options}
+          display="Move to…"
+          className="h-6 text-[12px]"
+          ariaLabel={`Move the ${items.length} selected tasks to a group`}
+        />
+      )}
+      <button className="btn-ghost ml-auto" onClick={onClear} title="Esc">
+        Clear
+      </button>
+    </div>
+  );
 }
 
 /** A group's name, item count and done/total, collapsible; "No group" without `group`. */
@@ -440,9 +738,14 @@ function GroupHeader({
   const name = group?.name ?? 'No group';
   const done = items.filter(isItemDone).length;
   return (
-    <tr className="border-b border-line">
+    <tr className="group/head border-b border-line">
       <td colSpan={6} className="pt-3 pb-0.5">
         <div className="flex min-w-0 items-center gap-1">
+          {group ? (
+            <GroupGrip group={group} index={index} />
+          ) : (
+            <span className="w-4 shrink-0" />
+          )}
           <button
             className="icon-btn h-6 w-6 shrink-0"
             aria-expanded={open}
@@ -595,25 +898,67 @@ function EmptyGroup({group, ungrouped}: {group: ItemGroup; ungrouped: Item[]}) {
   );
 }
 
+/** Shift or Ctrl/Cmd: a click selects the row instead. */
+function selects(e: {shiftKey: boolean; ctrlKey: boolean; metaKey: boolean}) {
+  return e.shiftKey || e.ctrlKey || e.metaKey;
+}
+
 const ItemRow = memo(function ItemRow({
   item,
   groups,
   allocs,
   today,
+  selected,
+  lifted,
+  onSelect,
 }: {
   item: Item;
   groups: ItemGroup[];
   allocs: Allocation[];
   today: string;
+  /** Picked with Shift- or Ctrl/Cmd-click, to drag along with the others. */
+  selected: boolean;
+  /** Being dragged. */
+  lifted: boolean;
+  onSelect(id: string): void;
 }) {
   const openItem = useUi(s => s.openItem);
   const {updateItem} = useStore.getState();
   const done = isItemDone(item);
   const planned = plannedHours(allocs);
+  // The whole row drags (onto a group), except from a text field.
+  const {setNodeRef, listeners} = useDraggable({
+    id: item.id,
+    data: {kind: 'item', id: item.id} satisfies DragData,
+    disabled: !groups.length,
+  });
 
   return (
     <tr
-      className={`group border-b border-line/50 transition-colors duration-150 hover:bg-raised/50 ${done ? 'text-dim' : ''}`}
+      ref={setNodeRef}
+      onPointerDown={e => {
+        // A finger is the touch sensor's (press and hold), so swipes scroll.
+        if (e.pointerType !== 'touch' && !isTyping(e.target as Element))
+          listeners?.onPointerDown?.(e);
+      }}
+      onTouchStart={e => {
+        if (!isTyping(e.target as Element)) listeners?.onTouchStart?.(e);
+      }}
+      onPointerDownCapture={e => {
+        if (!selects(e)) return;
+        // Selecting: no text selection, and no menu or field opens. The row
+        // can still be dragged from here (first: dnd-kit skips a handled event).
+        listeners?.onPointerDown?.(e);
+        e.preventDefault();
+        e.stopPropagation();
+      }}
+      onClickCapture={e => {
+        if (!selects(e) && !clicksSuppressed()) return;
+        e.preventDefault();
+        e.stopPropagation();
+        if (selects(e) && !clicksSuppressed()) onSelect(item.id);
+      }}
+      className={`group border-b border-line/50 transition-colors duration-150 ${selected ? 'bg-accent/15' : 'hover:bg-raised/50'} ${lifted ? 'opacity-50' : ''} ${done ? 'text-dim' : ''}`}
     >
       <td className="px-1 py-0.5">
         <StatusSelect

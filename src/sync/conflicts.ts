@@ -46,6 +46,8 @@ const FIELDS: Record<string, string> = {
   itemId: 'task',
   groupId: 'group',
   importGroupId: 'import group',
+  collapsed: 'folded',
+  ungroupedCollapsed: '“No group” folded',
   text: 'text',
   workTarget: 'weekly work target',
   weekWorkTargets: 'week’s work target',
