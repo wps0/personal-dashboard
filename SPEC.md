@@ -675,17 +675,18 @@ only: in Chrome and the installed app. iPhone isn't supported.
   the app data. The data model doesn't change: a course's photos are the
   files in its folder.
 
-**Adding photos**
-- **In class:** **Take photo** (on Home, and in a course's Photos tab) opens
-  the camera. The photo goes to the course whose class is on now (from the
-  USOS timetable or the class's session on the calendar), or to the course
-  whose tab is open.
-- **After class:** **Add from gallery** picks many photos.
-  - Each is matched to the course whose class was on when it was taken (the
-    photo's own time, or the file's).
-  - A review comes first: "12 → Operating Systems, 8 → Networks, 3
-    unmatched". You pick a course for the unmatched ones.
-  - Nothing is uploaded before you confirm.
+**Adding photos:** only photos already taken, picked from the phone's
+gallery. The app doesn't take photos itself.
+- **Add photos** (on Home, and in a course's Photos tab) picks many photos
+  at once.
+- Each is matched to the course whose class was on when it was taken (from
+  the USOS timetable or the class's session on the calendar). The photo's
+  own time is used, or the file's.
+- A review comes first: "12 → Operating Systems, 8 → Networks, 3
+  unmatched". You pick a course for the unmatched ones; from a course's
+  tab, they start in that course.
+- Nothing is uploaded before you confirm. The photos stay in the gallery,
+  so an upload interrupted by a lost connection can just be retried.
 - **Android share sheet:** the installed app is a share target, so Gallery →
   Share → Dashboard opens the same review.
 
@@ -716,8 +717,8 @@ only: in Chrome and the installed app. iPhone isn't supported.
 **Security:** no new Google permission. The page's content policy allows
 `blob:` images. Photos go only to Drive, and to Gemini when transcribing.
 
-**Not now:** shrinking photos or removing their location, a copy on the
-device, iPhone, attaching photos to tasks, PDF export. Other files (e.g.
+**Not now:** taking photos in the app, shrinking photos or removing their
+location, a copy on the device, iPhone, attaching photos to tasks, PDF export. Other files (e.g.
 PDF slides) maybe later.
 
 ### 5.4 Tasks from a prompt (planned)
