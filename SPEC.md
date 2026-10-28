@@ -538,6 +538,7 @@ Google Drive sync.
   - RSS feed client: a reader pane for course, blog and release feeds.
     Fetching feeds needs a CORS proxy or a small backend, which this
     serverless app avoids today, so it needs a design decision first.
+- **Planned.** Class photos (5.3) and tasks from a prompt (5.4).
 
 ### 5.1 Keyboard shortcuts ✅
 
@@ -672,6 +673,104 @@ compares Gemini's output against the `*.expected.json` files.
 - **Linking to the USOS timetable.** Should imported lectures be matched to
   USOS timetable events in order, so each gets its `heldOn` date
   automatically?
+
+### 5.3 Class photos (planned)
+
+Agreed design; not built yet.
+
+Photos of the board or slides, attached to a course (any project). Android
+only: in Chrome and the installed app. iPhone isn't supported.
+
+**Storage: Google Drive only**
+- Photos need Drive sync connected. They use the same `drive.file`
+  permission, so nothing new is asked for. Without Drive, the Photos tab
+  offers **Connect**.
+- **Layout:** `Dashboard photos / <project id> / <photo id>.jpg`, with
+  thumbnails in `Dashboard photos / <project id> / thumbnails / <photo id>.jpg`.
+  The project id is the project's UUID, which never changes, so renaming a
+  course keeps its folder. Folders and files are found by app properties,
+  not by name.
+- **As taken:** photos are uploaded full size, with all their metadata,
+  location included. Large ones use Drive's resumable upload.
+- **Thumbnails:** about 400 px JPEGs, made on the phone and uploaded next to
+  the photos.
+- **No copy on the device:** thumbnails and photos are fetched from Drive
+  when shown and dropped afterwards.
+- **Per-photo details** (when it was taken, the caption, the transcript)
+  live on the Drive file itself (app properties and description), not in
+  the app data. The data model doesn't change: a course's photos are the
+  files in its folder. (Agreed.) So everything about photos, even a
+  course's photo count, needs a connection; offline, the Photos tab says
+  so.
+
+**Adding photos:** only photos already taken, picked from the phone's
+gallery. The app doesn't take photos itself.
+- **Add photos** (on Home, and in a course's Photos tab) picks many photos
+  at once.
+- Each is matched to the course whose class was on when it was taken (from
+  the USOS timetable or the class's session on the calendar). The photo's
+  own time is used, or the file's.
+- A review comes first: "12 → Operating Systems, 8 → Networks, 3
+  unmatched". You pick a course for the unmatched ones; from a course's
+  tab, they start in that course.
+- Nothing is uploaded before you confirm. The photos stay in the gallery,
+  so an upload interrupted by a lost connection can just be retried.
+- **Android share sheet:** the installed app is a share target, so Gallery →
+  Share → Dashboard opens the same review.
+
+**Viewing**
+- A **Photos** tab in the project panel, next to Items, Description and
+  Log: thumbnails by day, newest first.
+- Clicking one opens a full-screen viewer: swipe or arrow keys, caption,
+  and delete with Undo. Deleting moves the file to Drive's trash, and Undo
+  restores it.
+
+**Gemini transcription**
+- **Transcribe** on a photo sends it to Gemini (the key and model from 5.2).
+  It returns the board or slide as Markdown, with formulas as LaTeX.
+- The text is shown under the photo, editable, and saved as the photo's
+  description in Drive. **Add to course notes** appends it to the project's
+  description under a dated heading.
+- It runs only when clicked, and the dialog says the photo goes to Google.
+
+**Export**
+- **Export with photos** (Settings): a ZIP with the data file and every
+  photo, laid out as in Drive, plus an index naming the course of each
+  project id.
+- **Download photos** (a course's Photos tab): a ZIP of that course's
+  photos.
+- Both download from Drive, so they need a connection. Android can't stream
+  a download to disk, so a large export comes in parts.
+
+**Security:** no new Google permission. The page's content policy allows
+`blob:` images. Photos go only to Drive, and to Gemini when transcribing.
+
+**Not now:** taking photos in the app, shrinking photos or removing their
+location, a copy on the device, iPhone, attaching photos to tasks, PDF export. Other files (e.g.
+PDF slides) maybe later.
+
+### 5.4 Tasks from a prompt (planned)
+
+Agreed design; not built yet.
+
+A general form of the curriculum import (5.2).
+
+1. In the project panel, **from a prompt…** opens a dialog.
+2. You say what you want, for example "one task per lecture below, 2h
+   each, due the day before the next one" or "the problem sets in this
+   list, due Fridays".
+3. You paste any material: a curriculum, a list of lectures, an assignment
+   schedule.
+4. The LLM returns tasks as structured JSON: title, kind, due date,
+   estimate, group and notes, plus warnings.
+5. They're shown in the review dialog the curriculum import already has.
+   There you edit or untick rows, or ask for changes in words ("estimates
+   1h", "drop the labs") and get a revised list. The request sends the
+   current list along with the change.
+6. Confirming adds them as tasks in one undoable step; nothing is added
+   before that.
+
+Same Gemini key, model and privacy note as 5.2.
 
 ## 6. Engineering
 
