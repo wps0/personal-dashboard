@@ -171,6 +171,14 @@ log, as tabs in the side panel.
   hover; always on touch screens, where a press starts the drag). A line
   shows where it lands, above or below the group under the pointer; Esc
   cancels. "No group" stays last. Undoable, without a toast.
+- **Moving several tasks:** Shift- or Ctrl/Cmd-click rows to select them
+  (tinted; Shift-click again deselects). A bar shows how many, with
+  **Move to…** and **Clear**; Esc clears the selection before it closes the
+  panel. Drag any selected row onto a group, or onto "No group", to move them
+  all: the group lights up, a label says "3 tasks", and a toast offers Undo.
+  A row that isn't selected drags alone. Rows drag from anywhere but their
+  text fields (a press on touch screens); not while the project has no
+  groups.
 - An open group has its own add field, whose kind follows the group's last
   item; **+ bulk** can add into a group too.
 - **Done items sink to the bottom** of their group (or of "No group"), so
