@@ -7,6 +7,8 @@ import {
   type ItemGroup,
   type ItemInit,
 } from './model/types';
+import {create as createMessage} from '@bufbuild/protobuf';
+import * as pb from './gen/dashboard/data_pb';
 import {reservedRanges, type Reserved} from './model/capacity';
 import {importGroup} from './model/selectors';
 import {fromMinutes, toMinutes} from './model/time';
@@ -116,6 +118,19 @@ export function moveReserved(
       editReserved(to, ranges => [...ranges, moved]);
     },
     {quiet: true},
+  );
+}
+
+/** Adds a reserved range to a day (which then keeps its own reserved time). */
+export function addReserved(
+  date: ISODate,
+  r: Pick<Reserved, 'start' | 'end' | 'label'>,
+) {
+  withUndo(`Reserved ${r.start} – ${r.end}`, () =>
+    editReserved(date, ranges => [
+      ...ranges,
+      createMessage(pb.TimeRangeSchema, r),
+    ]),
   );
 }
 

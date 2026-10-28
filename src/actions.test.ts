@@ -1,6 +1,7 @@
 import {beforeEach, describe, expect, it, vi} from 'vitest';
 import {
   addGroup,
+  addReserved,
   deleteGroup,
   deleteReserved,
   importClasses,
@@ -304,6 +305,18 @@ describe('editing a day’s reserved time', () => {
     undoLast();
     expect(ranges(mon)[1]).toBe('Work 08:00–16:00');
     expect(ranges(tue)).toHaveLength(2);
+  });
+
+  it('adds a range to that day only, in one undo step', () => {
+    addReserved(mon, {start: '18:00', end: '19:30', label: 'Gym'});
+    expect(ranges(mon)).toEqual([
+      'Sleep 23:00–07:00',
+      'Work 09:00–17:00',
+      'Gym 18:00–19:30',
+    ]);
+    expect(ranges('2026-10-19')).toHaveLength(2);
+    undoLast();
+    expect(useStore.getState().data.settings.dayCapacity[mon]).toBeUndefined();
   });
 
   it('deletes with undo, and resets to the weekday’s', () => {
