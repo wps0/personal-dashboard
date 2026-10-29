@@ -12,10 +12,12 @@ import {
   toJson,
 } from '@bufbuild/protobuf';
 import * as pb from '../gen/dashboard/data_pb';
+import {migrate} from './migrations';
 
 /**
- * The schema version this version of the app reads and writes. Raise it for
- * any schema change older versions can't handle.
+ * The schema version this version of the app writes. Raise it for any schema
+ * change older versions can't handle, with a migration from the previous
+ * version (migrations.ts); data of older versions is upgraded as it's read.
  */
 export const SCHEMA_VERSION = 1;
 
@@ -68,9 +70,9 @@ export function fromReadableJson(text: string): pb.AppData {
 }
 
 /**
- * `data` once its schema version is checked, with the version cleared: it
- * only exists in what's stored, so data read from storage and data made in
- * the app compare equal.
+ * `data` once its schema version is checked and it's upgraded to this
+ * version's schema, with the version cleared: it only exists in what's
+ * stored, so data read from storage and data made in the app compare equal.
  */
 function checked(data: pb.AppData): pb.AppData {
   const version = data.schemaVersion;
@@ -79,5 +81,5 @@ function checked(data: pb.AppData): pb.AppData {
       'This data was saved by a newer version of the app. Update the app (reload it) to use it.',
     );
   if (version < 1) throw new Error('This isn’t dashboard data.');
-  return {...data, schemaVersion: 0};
+  return {...migrate(data, version, SCHEMA_VERSION), schemaVersion: 0};
 }

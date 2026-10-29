@@ -794,20 +794,30 @@ Same Gemini key, model and privacy note as 5.2.
   the generated messages: new ones are made with `create()`, which also
   checks that nested records are messages.
 - **Changing the data model:** every build must read what the released app
-  (`main`) wrote, with the same meaning. Adding optional fields is the easy
-  case. The model can also be reshaped when needed, in steps:
-  1. Add the new field and migrate old data into it where all data is read
-     (`checked()` in `storage/codec.ts`: IndexedDB, Drive and imports). Mark
-     the old field `[deprecated = true]`; the app reads it but no longer
-     writes it. The migration must be idempotent, since a device still on an
-     older version can keep writing the old field through sync.
-  2. Later, once no data or device should still use it, a separate change
-     deletes the field from the code and marks its number and name
-     `reserved`. Old exports may still contain it, and the JSON import
-     rejects keys it doesn't know, so that change keeps such files
-     importable.
-
-  Raise `SCHEMA_VERSION` only when older versions can't read the result.
+  (`main`) wrote, with the same meaning.
+  - **Adding optional fields** that older versions can ignore is the easy
+    case: no version change.
+  - **A change older versions can't handle** (they would misread or drop
+    something) raises `SCHEMA_VERSION` in `storage/codec.ts` by one and adds
+    the step from the previous version to `storage/migrations.ts`
+    (`MIGRATIONS[n]` upgrades version n to n + 1).
+    - Data is upgraded step by step as it's read (`checked()` in the codec),
+      which covers this device's copy, the sync base, the file on Drive and
+      imports. It's saved in the new version with the next save.
+    - Older versions refuse the new data and ask to be updated, instead of
+      misreading it.
+    - A test fails if a version has no step.
+  - **Steps are deterministic:** the same input gives the same output, with
+    ids derived from the data, never random or from the clock. This
+    device's data, its sync base and the Drive file are upgraded
+    separately, and the merge must see what they share as the same.
+  - **Fields a step reads stay in the schema,** marked
+    `[deprecated = true]`: the app no longer writes them, but data saved
+    before the step still has them.
+  - **Once no such data should be around,** a separate change deletes those
+    fields from the code and marks their numbers and names `reserved`. Old
+    exports may still contain them, and the JSON import rejects keys it
+    doesn't know, so that change keeps such files importable.
 - **Checks:** `npm run lint`, `format:check`, `proto:lint`, `typecheck`,
   `test`, `build`.
   The **Checks** workflow runs them on every pull request with a read-only
