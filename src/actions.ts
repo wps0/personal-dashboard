@@ -15,7 +15,9 @@ import {formatMedium} from './model/dates';
 import {
   changeEvent,
   deleteEvent as deleteFromEvents,
+  occurrenceKey,
   parseKey,
+  restoreOccurrence,
   type EventPatch,
   type Scope,
 } from './model/recurrence';
@@ -93,6 +95,18 @@ export function updateEvent(
   message = 'Event moved',
 ): string {
   return editEvent(key, 'this', patch, message);
+}
+
+/**
+ * Drops the changes made to one occurrence of a repeating event (`e`, an
+ * event of its own since): the repeating event happens there again. Returns
+ * the key it's shown as.
+ */
+export function backToSeries(e: CalendarEvent): string {
+  withUndo('Back to the repeating event', () =>
+    s().setEvents(restoreOccurrence(s().data.events, e.id)),
+  );
+  return occurrenceKey(e.seriesId!, e.seriesDate!);
 }
 
 /** Deletes the event shown as `e`; for an occurrence, `scope` says which. */

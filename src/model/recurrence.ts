@@ -247,6 +247,7 @@ export function changeEvent(
       recurrence: undefined,
       skippedDates: [],
       seriesId: e.id,
+      seriesDate: date,
       ...patch,
     };
     const skipping = {...e, skippedDates: [...e.skippedDates, date]};
@@ -268,6 +269,30 @@ export function changeEvent(
   }
   const changed = changeSeries(e, date, patch);
   return {events: replace(events, changed.event), key: changed.key};
+}
+
+/**
+ * The events after giving an occurrence that was changed on its own (`key`)
+ * back to its repeating event: the change is dropped and the repeating event
+ * happens on that date again. Unchanged if it can't be (no repeating event).
+ */
+export function restoreOccurrence(
+  events: CalendarEvent[],
+  key: string,
+): CalendarEvent[] {
+  const own = events.find(x => x.id === key);
+  const series = own?.seriesId
+    ? events.find(x => x.id === own.seriesId && x.recurrence)
+    : undefined;
+  if (!own || !series || own.seriesDate === undefined) return events;
+  const back = {
+    ...series,
+    skippedDates: series.skippedDates.filter(d => d !== own.seriesDate),
+  };
+  return replace(
+    events.filter(x => x.id !== own.id),
+    back,
+  );
 }
 
 /**

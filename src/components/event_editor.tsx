@@ -12,7 +12,7 @@ import {useUi, type Draft} from '../ui';
 import {BufferedInput, BufferedTextarea} from './buffered';
 import {DateField} from './date_field';
 import {EventColorRow} from './event_color_picker';
-import {addReserved, deleteEvent, editEvent} from '../actions';
+import {addReserved, backToSeries, deleteEvent, editEvent} from '../actions';
 import {
   parseKey,
   shownEvent,
@@ -294,6 +294,11 @@ export function EventEditor({eventId}: {eventId: string}) {
   const events = useStore(s => s.data.events);
   const event = useMemo(() => shownEvent(events, eventId), [events, eventId]);
   const occurrence = parseKey(eventId).date !== undefined;
+  // Changed on its own, and its repeating event is still there.
+  const inSeries =
+    !!event?.seriesId &&
+    event.seriesDate !== undefined &&
+    events.some(e => e.id === event.seriesId && e.recurrence);
   const [scope, setScope] = useState<Scope>('this');
   const edit = useCallback(
     (patch: EventPatch, to: Scope = scope) => {
@@ -411,8 +416,18 @@ export function EventEditor({eventId}: {eventId: string}) {
         </div>
         <EventColorRow value={event.color} onChange={color => edit({color})} />
       </div>
+      {inSeries && (
+        <p className="mt-3 flex flex-wrap items-center gap-x-2 pl-7 text-[12px] text-dim">
+          Changed on its own from a repeating event.
+          <button
+            className="text-accent hover:underline"
+            onClick={() => useUi.getState().openEvent(backToSeries(event))}
+          >
+            Back to the repeating event
+          </button>
+        </p>
+      )}
       <p className="mt-3 pl-7 text-[11px] text-dim">
-        {event.seriesId ? 'Changed on its own from a repeating event · ' : ''}
         Local event · syncs with Google Calendar in v2
       </p>
     </div>

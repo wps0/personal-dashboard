@@ -169,8 +169,9 @@ message CalendarEvent {
   // changed there into an event of its own.
   repeated string skipped_dates = 10;
   // Set on an occurrence of a repeating event that was changed on its own:
-  // the repeating event it came from.
+  // the repeating event it came from, and the date it was on there.
   optional string series_id = 11;
+  optional string series_date = 12;
 }
 
 // How an event repeats, from its date on.

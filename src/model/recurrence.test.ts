@@ -10,6 +10,7 @@ import {
   nthDate,
   occurrenceKey,
   parseKey,
+  restoreOccurrence,
   shownEvent,
   WORK_DAYS,
 } from './recurrence';
@@ -154,6 +155,7 @@ describe('changing an occurrence', () => {
       date: '2026-10-21',
       start: '19:00',
       seriesId: 'gym',
+      seriesDate: '2026-10-21',
     });
     expect(own.recurrence).toBeUndefined();
     expect(r.events[0].skippedDates).toEqual(['2026-10-21']);
@@ -264,6 +266,33 @@ describe('changing an occurrence', () => {
       newId,
     );
     expect(r.key).toBe('gym@2026-10-14');
+  });
+});
+
+describe('back to the repeating event', () => {
+  it('drops the day’s own event and unskips its original date', () => {
+    const series = event({unit: WEEK});
+    const moved = changeEvent(
+      [series],
+      'gym@2026-10-21',
+      'this',
+      {date: '2026-10-22'},
+      newId,
+    );
+    const back = restoreOccurrence(moved.events, moved.key);
+    expect(back).toHaveLength(1);
+    expect(back[0].skippedDates).toEqual([]);
+    expect(happensOn(back[0], '2026-10-21')).toBe(true);
+  });
+
+  it('leaves events alone without a repeating event to go back to', () => {
+    const lone = event(undefined, {
+      id: 'x',
+      seriesId: 'gone',
+      seriesDate: '2026-10-21',
+    });
+    expect(restoreOccurrence([lone], 'x')).toEqual([lone]);
+    expect(restoreOccurrence([event()], 'gym')).toEqual([event()]);
   });
 });
 

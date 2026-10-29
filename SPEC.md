@@ -39,7 +39,7 @@ Area            e.g. University, Work, Personal, Side projects
          ├─ groupId?  one of its project's groups
          └─ Allocation[]   { date, start?, plannedHours, done, actualHours }
 
-CalendarEvent   { date, start, end, title, notes, recurrence?, skippedDates[], seriesId? }   local in v1; Google Calendar in v2
+CalendarEvent   { date, start, end, title, notes, recurrence?, skippedDates[], seriesId?, seriesDate? }   local in v1; Google Calendar in v2
 WorkSpan        { date, start, end, note? }   the work log: time actually worked
 ```
 
@@ -247,6 +247,9 @@ log, as tabs in the side panel.
       every occurrence by the same number of days.
     - A new Repeat rule applies from that occurrence on, or to all of them.
     - Delete offers the same three choices, with Undo.
+    - An occurrence changed on its own remembers its date in the repeating
+      event; its card offers **Back to the repeating event**, which drops
+      the change.
 - **Dragging** shows where the block will land, snapped to 15 minutes, with
   its new time ("20:00 – 21:30"), and the drop lands exactly there. The
   target is the column under the pointer. Over the all-day row, month cells
