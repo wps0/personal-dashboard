@@ -19,7 +19,7 @@ import {migrate} from './migrations';
  * change older versions can't handle, with a migration from the previous
  * version (migrations.ts); data of older versions is upgraded as it's read.
  */
-export const SCHEMA_VERSION = 2;
+export const SCHEMA_VERSION = 3;
 
 /** The data as stored: protobuf binary, stamped with the schema version. */
 export function encode(data: pb.AppData): Uint8Array<ArrayBuffer> {

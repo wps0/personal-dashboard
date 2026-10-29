@@ -1,6 +1,5 @@
-import {Copy, Minus, Plus, Trash2} from 'lucide-react';
+import {Copy, Minus, Plus} from 'lucide-react';
 import {useState} from 'react';
-import {BufferedInput} from '../components/buffered';
 import {TimeSelect} from '../components/time_select';
 import {
   Popover,
@@ -8,15 +7,7 @@ import {
   PopoverTrigger,
 } from '../components/ui/popover';
 import {fmtH} from '../format';
-import {
-  copyDay,
-  range,
-  reservedDay,
-  reservedDays,
-  ruleFor,
-  type PlanningWindow,
-  type Reserved,
-} from '../model/capacity';
+import {copyDay, ruleFor, type PlanningWindow} from '../model/capacity';
 import {formatMedium} from '../model/dates';
 import {useToday} from '../hooks';
 import {moveStart, toMinutes} from '../model/time';
@@ -32,21 +23,15 @@ const WEEKDAYS = [
   'Sunday',
 ];
 
-/** Planning windows, global adjustment and reserved time, edited as a rule effective from today. */
+/** Planning windows and the global adjustment, edited as a rule effective from today. */
 export function CapacitySettings() {
   const rules = useStore(s => s.data.settings.capacityRules);
   const change = useStore(s => s.changeCapacityRule);
   const today = useToday();
   const rule = ruleFor(rules, today);
-  // Edited as one list of ranges per weekday.
-  const reserved = reservedDays(rule).map(day => day.ranges);
 
   const setWindow = (i: number, w: Partial<PlanningWindow>) =>
     change({windows: rule.windows.map((x, j) => (j === i ? {...x, ...w} : x))});
-  const setReserved = (i: number, list: Reserved[]) =>
-    change({
-      reserved: reserved.map((x, j) => reservedDay(...(j === i ? list : x))),
-    });
   const history = rules.filter(r => r.from > '0000-01-01' && r.from < today);
 
   return (
@@ -85,12 +70,11 @@ export function CapacitySettings() {
 
       {/* Wider than a phone: scrolls sideways on its own, not the page. */}
       <div className="-mx-4 overflow-x-auto px-4">
-        <table className="w-full min-w-[600px] border-collapse">
+        <table className="w-full min-w-[360px] border-collapse">
           <thead>
             <tr className="label text-left [&>th]:px-2 [&>th]:pb-1 [&>th]:font-medium">
               <th className="w-28">Day</th>
               <th>Planning window</th>
-              <th>Reserved time (shown hatched)</th>
             </tr>
           </thead>
           <tbody>
@@ -126,79 +110,6 @@ export function CapacitySettings() {
                       />
                     </div>
                   </td>
-                  <td className="px-2 py-1.5">
-                    <div className="space-y-1">
-                      {reserved[i].map((r, k) => (
-                        <div key={k} className="flex items-center gap-1">
-                          <TimeSelect
-                            value={r.start}
-                            onChange={start =>
-                              setReserved(
-                                i,
-                                reserved[i].map((x, j) =>
-                                  j === k ? {...x, start} : x,
-                                ),
-                              )
-                            }
-                            className="w-20"
-                            ariaLabel="Reserved from"
-                          />
-                          <span className="text-dim">–</span>
-                          <TimeSelect
-                            value={r.end}
-                            onChange={end =>
-                              setReserved(
-                                i,
-                                reserved[i].map((x, j) =>
-                                  j === k ? {...x, end} : x,
-                                ),
-                              )
-                            }
-                            className="w-20"
-                            ariaLabel="Reserved until"
-                          />
-                          <BufferedInput
-                            value={r.label ?? ''}
-                            placeholder="Label"
-                            onCommit={label =>
-                              setReserved(
-                                i,
-                                reserved[i].map((x, j) =>
-                                  j === k
-                                    ? {...x, label: label || undefined}
-                                    : x,
-                                ),
-                              )
-                            }
-                            className="field h-7 w-28"
-                          />
-                          <button
-                            className="icon-btn hover:!text-danger"
-                            aria-label="Remove reserved time"
-                            onClick={() =>
-                              setReserved(
-                                i,
-                                reserved[i].filter((_, j) => j !== k),
-                              )
-                            }
-                          >
-                            <Trash2 size={14} />
-                          </button>
-                        </div>
-                      ))}
-                      <button
-                        className="btn h-6 text-[12px]"
-                        onClick={() =>
-                          setReserved(i, [
-                            ...reserved[i],
-                            range('12:00', '13:00'),
-                          ])
-                        }
-                      >
-                        <Plus size={12} /> Add
-                      </button>
-                    </div>
-                  </td>
                 </tr>
               );
             })}
@@ -208,8 +119,8 @@ export function CapacitySettings() {
       <p className="text-[12px] text-dim">
         A day's capacity = planning window − calendar events inside it + global
         adjustment + that day's own adjustment (or a fixed value set from the
-        day's header). Reserved time is informational: you can still schedule
-        over it. Ranges like 23:00–07:00 wrap past midnight.
+        day's header). Reserved time (sleep, work) is on the calendar: create it
+        with the quick-create card's Reserved tab, and make it repeat.
       </p>
     </div>
   );
@@ -222,7 +133,7 @@ const DAY_SETS: Array<{label: string; days: number[]}> = [
   {label: 'All', days: [0, 1, 2, 3, 4, 5, 6]},
 ];
 
-/** Copies a weekday's planning window and reserved time to the days picked. */
+/** Copies a weekday's planning window to the days picked. */
 function CopyDay({day, onCopy}: {day: number; onCopy(to: number[]): void}) {
   const [open, setOpen] = useState(false);
   const [to, setTo] = useState<number[]>([]);
@@ -237,7 +148,7 @@ function CopyDay({day, onCopy}: {day: number; onCopy(to: number[]): void}) {
     >
       <PopoverTrigger
         className="icon-btn"
-        title={`Copy ${name}’s window and reserved time to other days`}
+        title={`Copy ${name}’s planning window to other days`}
         aria-label={`Copy ${name} to other days`}
       >
         <Copy size={14} />

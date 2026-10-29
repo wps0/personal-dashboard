@@ -68,9 +68,10 @@ On first launch, choose **Load sample data** to explore, or create empty areas.
   - Drag blocks to move them; drag a block's bottom edge to resize it.
   - Sessions without a time sit in the all-day row; drag them onto the grid to
     time-block them.
-  - Hatched areas are reserved time (sleep, work), set per weekday in
-    Settings. Drag a block's label (top right) to move it, or its edges to
-    resize it, for that day only; click the label to rename or delete it.
+  - Hatched areas are reserved time (sleep, work): reserved events, created
+    with the quick-create card's **Reserved** tab and usually repeating. Drag
+    a block's label (top right) to move it, or its edges to resize it, for
+    that day only; click the label for its card.
 - **Work** (`#/work`): the work log, a week at a time. Log the stretches you
   actually worked each day (or **Log as planned**, from the day's reserved
   Work time) and see the week's hours against its target (default in
@@ -100,8 +101,8 @@ On first launch, choose **Load sample data** to explore, or create empty areas.
   day.
 - **Settings**:
   - The first day of the week, the default calendar view and event length.
-  - Planning windows, the global adjustment and reserved time per weekday
-    (changes apply from today; past days don't change).
+  - Capacity: planning windows and the global adjustment (changes apply
+    from today; past days don't change).
   - Areas, export/import (protobuf's JSON form), reset.
   - The header icon switches the theme (auto / light / dark).
 

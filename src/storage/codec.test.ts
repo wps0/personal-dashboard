@@ -50,7 +50,10 @@ describe('binary', () => {
   it('reads data of the first schema version and saves it as this one', () => {
     const v1 = toBinary(pb.AppDataSchema, {...sample(), schemaVersion: 1});
     const out = decode(v1);
-    expect(equals(pb.AppDataSchema, out, sample())).toBe(true);
+    // Upgraded on the way: version 3 turns the default reserved time into
+    // reserved events; the rest is as it was.
+    expect(out.events.map(e => e.title)).toEqual(['Sleep', 'Work']);
+    expect(equals(pb.AppDataSchema, {...out, events: []}, sample())).toBe(true);
     expect(fromBinary(pb.AppDataSchema, encode(out)).schemaVersion).toBe(
       SCHEMA_VERSION,
     );

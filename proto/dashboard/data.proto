@@ -158,6 +158,8 @@ message CalendarEvent {
   string date = 3;
   // All-day events show in the all-day row; start and end are kept but ignored.
   bool all_day = 4;
+  // An end before the start (reserved time only, e.g. sleep 23:00–07:00)
+  // ends the next day.
   string start = 5;
   string end = 6;
   optional string notes = 7;
@@ -172,6 +174,14 @@ message CalendarEvent {
   // the repeating event it came from, and the date it was on there.
   optional string series_id = 11;
   optional string series_date = 12;
+  EventKind kind = 13;
+}
+
+enum EventKind {
+  // An ordinary event.
+  EVENT_KIND_UNSPECIFIED = 0;
+  // Reserved time (sleep, work): drawn hatched; it doesn't take capacity.
+  EVENT_KIND_RESERVED = 1;
 }
 
 // How an event repeats, from its date on.
@@ -221,8 +231,10 @@ message CapacityRule {
   repeated TimeRange windows = 2;
   // Hours added to (or, if negative, removed from) every day.
   double adjustment = 3;
-  // Reserved time (sleep, work) per weekday, Monday first. Informational.
-  repeated ReservedDay reserved = 4;
+  // Schema version 2 and before: reserved time per weekday, Monday first;
+  // empty meant the default (sleep, and work on weekdays). Only read by the
+  // migration to version 3, which turns it into reserved events.
+  repeated ReservedDay reserved = 4 [deprecated = true];
 }
 
 message ReservedDay {
@@ -240,9 +252,9 @@ message TimeRange {
 message DayCapacity {
   optional double delta = 1;
   optional double override = 2;
-  // This day's own reserved time, once it's edited on the calendar; unset
-  // means its weekday's reserved time from the capacity rules.
-  ReservedDay reserved = 3;
+  // Schema version 2 and before: this day's own reserved time. Only read by
+  // the migration to version 3, which turns it into reserved events.
+  ReservedDay reserved = 3 [deprecated = true];
 }
 
 enum CalendarView {

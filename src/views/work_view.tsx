@@ -56,6 +56,7 @@ export function WorkView({week}: {week?: ISODate}) {
   });
   const log = useStore(s => s.data.workLog);
   const settings = useStore(s => s.data.settings);
+  const events = useStore(s => s.data.events);
   const days = Array.from({length: 7}, (_, i) => addDays(monday, i));
 
   return (
@@ -99,12 +100,7 @@ export function WorkView({week}: {week?: ISODate}) {
               date={d}
               isToday={d === today}
               spans={spansOn(log, d)}
-              planned={plannedWork(
-                settings.capacityRules,
-                settings.dayCapacity,
-                d,
-                settings.workLabel,
-              )}
+              planned={plannedWork(events, d, settings.workLabel)}
             />
           ))}
         </ul>

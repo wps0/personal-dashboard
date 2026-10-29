@@ -10,6 +10,7 @@ import * as pb from './gen/dashboard/data_pb';
 import {capacityFor, type CapacityInfo} from './model/capacity';
 import {todayISO, type DayOfWeek} from './model/dates';
 import {eventsByDay} from './model/recurrence';
+import {isReserved} from './model/reserved';
 import {
   weekStartOf,
   type Area,
@@ -80,7 +81,11 @@ export function useCapacities(days: ISODate[]): Map<ISODate, CapacityInfo> {
   const google = useGoogleEvents(days);
   return useMemo(() => {
     const want = new Set(days);
-    const byDay = eventsByDay(events, days);
+    // Reserved time doesn't take capacity.
+    const byDay = eventsByDay(
+      events.filter(e => !isReserved(e)),
+      days,
+    );
     for (const [d, list] of google) {
       if (!want.has(d)) continue;
       const busy = list

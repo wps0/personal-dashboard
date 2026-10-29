@@ -22,6 +22,7 @@ import {
 } from '../hooks';
 import {monthGrid, weekdayNames} from '../model/dates';
 import {eventsByDay} from '../model/recurrence';
+import {isReserved} from '../model/reserved';
 import {dueByDay} from '../model/selectors';
 import type {Allocation, CalendarEvent, ISODate, Item} from '../model/types';
 import {eventStyle} from '../event_colors';
@@ -127,7 +128,8 @@ function MonthBody({
         for (const ev of list) m.get(d)!.push({kind: 'google', ev});
     if (!hidden.includes('events'))
       for (const [d, list] of eventsByDay(events, days))
-        for (const event of list) m.get(d)!.push({kind: 'event', event});
+        for (const event of list)
+          if (!isReserved(event)) m.get(d)!.push({kind: 'event', event});
     for (const a of allocations) {
       if (!want.has(a.date)) continue;
       const item = lookups.item(a.itemId);

@@ -3,10 +3,10 @@
  * work they're compared with (reserved time labelled as work), and weekly
  * targets.
  */
-import {reservedRanges, type CapacityRule, type DayCapacity} from './capacity';
 import {addDays} from './dates';
+import {reservedByDay} from './reserved';
 import {toMinutes} from './time';
-import type {ISODate, Settings, WorkSpan} from './types';
+import type {CalendarEvent, ISODate, Settings, WorkSpan} from './types';
 
 /** The label of reserved time that counts as planned work, unless set. */
 export const DEFAULT_WORK_LABEL = 'Work';
@@ -48,22 +48,17 @@ export function weekTarget(
 }
 
 /**
- * The planned work on `date`: its reserved ranges with the work label
- * (ignoring case), earliest first. Ranges past midnight are left out.
+ * The planned work on `date`: its reserved events named with the work label
+ * (ignoring case), earliest first. Ones past midnight are left out.
  */
 export function plannedWork(
-  rules: CapacityRule[],
-  days: Record<ISODate, DayCapacity>,
+  events: CalendarEvent[],
   date: ISODate,
   label: string,
 ): {start: string; end: string}[] {
   const want = (label.trim() || DEFAULT_WORK_LABEL).toLowerCase();
-  return reservedRanges(rules, days, date)
-    .filter(
-      r =>
-        (r.label ?? '').trim().toLowerCase() === want &&
-        toMinutes(r.end) > toMinutes(r.start),
-    )
-    .map(r => ({start: r.start, end: r.end}))
+  return (reservedByDay(events, [date]).get(date) ?? [])
+    .filter(s => !s.wraps && s.event.title.trim().toLowerCase() === want)
+    .map(s => ({start: s.event.start, end: s.event.end}))
     .sort((a, b) => a.start.localeCompare(b.start));
 }

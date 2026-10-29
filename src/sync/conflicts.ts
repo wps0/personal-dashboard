@@ -49,6 +49,7 @@ const FIELDS: Record<string, string> = {
   recurrence: 'repeat',
   skippedDates: 'skipped dates',
   seriesId: 'repeating event',
+  seriesDate: 'date in the repeating event',
   collapsed: 'folded',
   ungroupedCollapsed: '“No group” folded',
   text: 'text',

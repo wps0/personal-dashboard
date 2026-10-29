@@ -17,13 +17,9 @@ export function WorkCard() {
   const today = useToday();
   const log = useStore(s => s.data.workLog);
   const settings = useStore(s => s.data.settings);
+  const events = useStore(s => s.data.events);
   const spans = spansOn(log, today);
-  const planned = plannedWork(
-    settings.capacityRules,
-    settings.dayCapacity,
-    today,
-    settings.workLabel,
-  );
+  const planned = plannedWork(events, today, settings.workLabel);
   const monday = startOfWeek(today, MONDAY);
   const logged = weekHours(log, monday);
   const target = weekTarget(settings, monday);
