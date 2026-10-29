@@ -11,8 +11,9 @@ import {
   weekTarget,
 } from './work';
 
-const span = (id: string, date: string, start: string, end: string) =>
-  create(pb.WorkSpanSchema, {id, date, start, end});
+function span(id: string, date: string, start: string, end: string) {
+  return create(pb.WorkSpanSchema, {id, date, start, end});
+}
 
 describe('the work log', () => {
   const log = [

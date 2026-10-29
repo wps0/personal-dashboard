@@ -5,9 +5,9 @@ import {SCHEMA_VERSION} from './codec';
 import {MIGRATIONS, migrate, type Migration} from './migrations';
 
 /** A step that records that it ran, in the day notes. */
-const step =
-  (name: string): Migration =>
-  data => ({...data, dayNotes: {...data.dayNotes, [name]: name}});
+function step(name: string): Migration {
+  return data => ({...data, dayNotes: {...data.dayNotes, [name]: name}});
+}
 
 describe('migrate', () => {
   const data = create(pb.AppDataSchema, {});
