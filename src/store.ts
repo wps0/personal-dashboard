@@ -87,6 +87,8 @@ interface Actions {
   addEvent(event: EventInit): string;
   updateEvent(id: string, patch: Partial<Omit<CalendarEvent, 'id'>>): void;
   deleteEvent(id: string): void;
+  /** Replaces the events, e.g. after reshaping a repeating one (model/recurrence). */
+  setEvents(events: CalendarEvent[]): void;
 
   setDayNote(date: ISODate, text: string): void;
   setMonthNote(key: string, text: string): void;
@@ -382,6 +384,7 @@ export const useStore = create<State>()((set, get) => {
       update(d => ({events: patchById(d.events, id, patch)})),
     deleteEvent: id =>
       update(d => ({events: d.events.filter(e => e.id !== id)})),
+    setEvents: events => update(() => ({events})),
 
     setDayNote: (date, text) =>
       update(d => ({dayNotes: {...d.dayNotes, [date]: text}})),

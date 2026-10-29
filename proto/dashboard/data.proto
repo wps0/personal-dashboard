@@ -163,6 +163,31 @@ message CalendarEvent {
   optional string notes = 7;
   // Unset: the default event colour.
   EventColor color = 8;
+  // How it repeats from `date` on; unset: it happens once.
+  Recurrence recurrence = 9;
+  // A repeating event's dates on which it doesn't happen: deleted there, or
+  // changed there into an event of its own.
+  repeated string skipped_dates = 10;
+  // Set on an occurrence of a repeating event that was changed on its own:
+  // the repeating event it came from.
+  optional string series_id = 11;
+}
+
+// How an event repeats, from its date on.
+message Recurrence {
+  RecurrenceUnit unit = 1;
+  // Every `interval` days or weeks; 0 counts as 1.
+  int32 interval = 2;
+  // Weekly: the weekdays it happens on; empty means its date's weekday.
+  repeated Weekday weekdays = 3;
+  // The last date it can happen on; unset: it never ends.
+  optional string until = 4;
+}
+
+enum RecurrenceUnit {
+  RECURRENCE_UNIT_UNSPECIFIED = 0;
+  RECURRENCE_UNIT_DAY = 1;
+  RECURRENCE_UNIT_WEEK = 2;
 }
 
 message Settings {

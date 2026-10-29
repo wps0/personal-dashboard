@@ -9,10 +9,10 @@ import {
 import * as pb from './gen/dashboard/data_pb';
 import {capacityFor, type CapacityInfo} from './model/capacity';
 import {todayISO, type DayOfWeek} from './model/dates';
+import {eventsByDay} from './model/recurrence';
 import {
   weekStartOf,
   type Area,
-  type CalendarEvent,
   type ISODate,
   type Item,
   type Project,
@@ -80,10 +80,7 @@ export function useCapacities(days: ISODate[]): Map<ISODate, CapacityInfo> {
   const google = useGoogleEvents(days);
   return useMemo(() => {
     const want = new Set(days);
-    const byDay = new Map<ISODate, CalendarEvent[]>();
-    for (const e of events)
-      if (want.has(e.date))
-        byDay.set(e.date, [...(byDay.get(e.date) ?? []), e]);
+    const byDay = eventsByDay(events, days);
     for (const [d, list] of google) {
       if (!want.has(d)) continue;
       const busy = list

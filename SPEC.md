@@ -39,7 +39,7 @@ Area            e.g. University, Work, Personal, Side projects
          ├─ groupId?  one of its project's groups
          └─ Allocation[]   { date, start?, plannedHours, done, actualHours }
 
-CalendarEvent   { date, start, end, title, notes }   local in v1; Google Calendar in v2
+CalendarEvent   { date, start, end, title, notes, recurrence?, skippedDates[], seriesId? }   local in v1; Google Calendar in v2
 WorkSpan        { date, start, end, note? }   the work log: time actually worked
 ```
 
@@ -230,6 +230,23 @@ log, as tabs in the side panel.
   - Drag blocks to move them, and drag a block's bottom edge to resize it.
   - Click an event for its floating editor; click a session for the task
     overlay.
+  - **Repeating events:**
+    - **Repeat** in the quick-create card and the event card is like Google
+      Calendar's: Does not repeat, Daily, Weekly on (its weekday), Every
+      weekday (Monday to Friday), or Custom.
+    - Custom means every N days or weeks, on chosen weekdays, ending never,
+      on a date, or after N times (stored as the date of the last one).
+    - Stored once, on the first date, with the rule and the dates it skips.
+      Each occurrence is shown on its day.
+    - **On the calendar, dragging or resizing an occurrence (or pressing
+      Delete on it) changes that day only.** That occurrence becomes an
+      event of its own, and the repeating event skips its date.
+    - **The event card on an occurrence** asks what changes apply to: *This
+      event* (the default), *This and following* (the repeating event is
+      split there), or *All events*. Moving all events to another day moves
+      every occurrence by the same number of days.
+    - A new Repeat rule applies from that occurrence on, or to all of them.
+    - Delete offers the same three choices, with Undo.
 - **Dragging** shows where the block will land, snapped to 15 minutes, with
   its new time ("20:00 – 21:30"), and the drop lands exactly there. The
   target is the column under the pointer. Over the all-day row, month cells

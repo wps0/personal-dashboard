@@ -11,6 +11,14 @@ import {
 import {create as createMessage} from '@bufbuild/protobuf';
 import * as pb from './gen/dashboard/data_pb';
 import {reservedRanges, type Reserved} from './model/capacity';
+import {formatMedium} from './model/dates';
+import {
+  changeEvent,
+  deleteEvent as deleteFromEvents,
+  parseKey,
+  type EventPatch,
+  type Scope,
+} from './model/recurrence';
 import {importGroup} from './model/selectors';
 import {fromMinutes, toMinutes} from './model/time';
 import {plannedWork} from './model/work';
@@ -49,16 +57,56 @@ export function removeSession(id: string, message = 'Removed from plan') {
   withUndo(message, () => s().deleteAllocation(id));
 }
 
-export function updateEvent(
-  id: string,
-  patch: Partial<Omit<CalendarEvent, 'id'>>,
-  message = 'Event moved',
-) {
-  withUndo(message, () => s().updateEvent(id, patch), {quiet: true});
+/**
+ * Changes the event shown as `key` (see model/recurrence), quietly: on a
+ * repeating event's occurrence, `scope` says which occurrences change.
+ * Returns the key the changed event is shown as now.
+ */
+export function editEvent(
+  key: string,
+  scope: Scope,
+  patch: EventPatch,
+  message = 'Event changed',
+): string {
+  let shown = key;
+  withUndo(
+    message,
+    () => {
+      const r = changeEvent(s().data.events, key, scope, patch, () =>
+        crypto.randomUUID(),
+      );
+      s().setEvents(r.events);
+      shown = r.key;
+    },
+    {quiet: true},
+  );
+  return shown;
 }
 
-export function deleteEvent(e: CalendarEvent) {
-  withUndo(`Deleted “${e.title}”`, () => s().deleteEvent(e.id));
+/**
+ * A change made on the calendar (drag, resize): a repeating event's
+ * occurrence changes that day only.
+ */
+export function updateEvent(
+  key: string,
+  patch: EventPatch,
+  message = 'Event moved',
+): string {
+  return editEvent(key, 'this', patch, message);
+}
+
+/** Deletes the event shown as `e`; for an occurrence, `scope` says which. */
+export function deleteEvent(e: CalendarEvent, scope: Scope = 'this') {
+  const {date} = parseKey(e.id);
+  const message =
+    date === undefined || scope === 'all'
+      ? `Deleted “${e.title}”`
+      : scope === 'this'
+        ? `Deleted “${e.title}” on ${formatMedium(date)}`
+        : `Deleted “${e.title}” from ${formatMedium(date)} on`;
+  withUndo(message, () =>
+    s().setEvents(deleteFromEvents(s().data.events, e.id, scope)),
+  );
 }
 
 /**

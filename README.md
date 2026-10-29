@@ -61,6 +61,10 @@ On first launch, choose **Load sample data** to explore, or create empty areas.
     or drag to select any length in 15-minute steps. A floating card opens next
     to the selection.
   - Click the all-day row for an all-day event.
+  - **Repeat** (in the event card) makes an event repeat daily, weekly, every
+    weekday, or on a custom rule. Dragging one occurrence changes that day
+    only; the card asks whether a change is for this event, this and the
+    following ones, or all of them.
   - Drag blocks to move them; drag a block's bottom edge to resize it.
   - Sessions without a time sit in the all-day row; drag them onto the grid to
     time-block them.

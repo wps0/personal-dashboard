@@ -15,6 +15,7 @@ import {
   startOfWeek,
   type DayOfWeek,
 } from '../model/dates';
+import {shownEvent} from '../model/recurrence';
 import {calViewOf, type ISODate} from '../model/types';
 import {href, navigate, type CalView} from '../router';
 import {calendarConnected, useGoogle} from '../google/auth';
@@ -113,7 +114,7 @@ export function CalendarView({
   const draftDate = useUi(s => s.draft?.date);
   const openEventId = useUi(s => s.openEventId);
   const openEventDate = useStore(
-    s => s.data.events.find(e => e.id === openEventId)?.date,
+    s => openEventId && shownEvent(s.data.events, openEventId)?.date,
   );
   const followed = draftDate ?? openEventDate;
   const follow = useEffectEvent((d: ISODate) => {

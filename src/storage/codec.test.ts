@@ -47,6 +47,15 @@ describe('binary', () => {
     expect(equals(pb.AppDataSchema, out, data)).toBe(true);
   });
 
+  it('reads data of the first schema version and saves it as this one', () => {
+    const v1 = toBinary(pb.AppDataSchema, {...sample(), schemaVersion: 1});
+    const out = decode(v1);
+    expect(equals(pb.AppDataSchema, out, sample())).toBe(true);
+    expect(fromBinary(pb.AppDataSchema, encode(out)).schemaVersion).toBe(
+      SCHEMA_VERSION,
+    );
+  });
+
   it('refuses a newer schema version and anything that isn’t its data', () => {
     const newer = toBinary(
       pb.AppDataSchema,

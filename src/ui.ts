@@ -1,6 +1,7 @@
 import {create} from 'zustand';
 import {todayISO} from './model/dates';
 import {fromMinutes} from './model/time';
+import type {Recurrence} from './model/recurrence';
 import {EventColor, type ISODate} from './model/types';
 import {useStore} from './store';
 
@@ -20,6 +21,8 @@ export interface Draft {
   color: EventColor;
   /** The task to plan, in 'task' mode. */
   itemId?: string;
+  /** How the event repeats; unset: it happens once. */
+  recurrence?: Recurrence;
 }
 
 const HIDDEN_KEY = 'personal-dashboard/hidden-calendars';

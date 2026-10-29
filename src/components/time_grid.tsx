@@ -42,6 +42,7 @@ import {
   type ReservedSpan,
 } from '../model/capacity';
 import {dayName} from '../model/dates';
+import {eventsByDay, shownEvent} from '../model/recurrence';
 import {dueByDay, isItemDone} from '../model/selectors';
 import {
   fromMinutes,
@@ -302,7 +303,7 @@ function GridBody({days, hourHeight, scrollToHour, onDayClick}: BodyProps) {
   const draftElsewhere = useUi(s => !!s.draft && !days.includes(s.draft.date));
   const openEventId = useUi(s => s.openEventId);
   const eventElsewhere = useStore(s => {
-    const e = s.data.events.find(x => x.id === openEventId);
+    const e = openEventId && shownEvent(s.data.events, openEventId);
     return !!e && !days.includes(e.date);
   });
   const lookups = useLookups();
@@ -363,9 +364,9 @@ function GridBody({days, hourHeight, scrollToHour, onDayClick}: BodyProps) {
       if (want.has(a.date) && visibleAlloc(a))
         (a.start ? m.get(a.date)!.timed : m.get(a.date)!.untimed).push(a);
     if (showEvents)
-      for (const e of events)
-        if (want.has(e.date))
-          (e.allDay ? m.get(e.date)!.allDay : m.get(e.date)!.events).push(e);
+      for (const [d, list] of eventsByDay(events, days))
+        for (const e of list)
+          (e.allDay ? m.get(d)!.allDay : m.get(d)!.events).push(e);
     return m;
   }, [allocations, events, days, hidden, lookups]);
   const due = useMemo(
