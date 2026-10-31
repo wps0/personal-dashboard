@@ -84,10 +84,11 @@ On first launch, choose **Load sample data** to explore, or create empty areas.
   to edit it. **+ bulk** creates "Lecture 1…13" in one go. **+ group** makes
   a folder for items (e.g. all classes); its ⋯ menu moves every ungrouped
   item of a kind into it. Drag a group by its grip (left of the name) to
-  reorder the groups. Drag a task onto a group to move it; Shift-click
-  several first to move them together.
-- **Task overlay**: click any task, anywhere, for its details, sessions and
-  notes.
+  reorder the groups. Click a task to select it, Shift-click another to
+  select the tasks in between too, or Ctrl/Cmd-click to add one; drag them
+  onto a group to move them together.
+- **Task overlay**: click any task (double-click in the project panel) for
+  its details, sessions and notes.
 - **Undo**: deleting or completing something shows a toast with **Undo**
   (bottom left). **Ctrl+Z** also undoes moves, resizes and check-offs.
 - **Keyboard**: Google-Calendar-style shortcuts.

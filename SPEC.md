@@ -195,11 +195,17 @@ log, as tabs in the side panel.
   hover; always on touch screens, where a press starts the drag). A line
   shows where it lands, above or below the group under the pointer; Esc
   cancels. "No group" stays first. Undoable, without a toast.
-- **Moving several tasks:** Shift- or Ctrl/Cmd-click rows to select them
-  (tinted; Shift-click again deselects). A bar shows how many, with
-  **Move to…** and **Clear**; Esc clears the selection before it closes the
-  panel. Drag any selected row onto a group, or onto "No group", to move them
-  all: the group lights up, a label says "3 tasks", and a toast offers Undo.
+- **Selecting tasks:** click a row to select it (tinted); double-click it,
+  or press Enter on its title, to open the task. Shift-click selects every
+  task from the last clicked one to this one, both included, in the order
+  they're listed (done tasks hidden by "Hide done" and tasks in folded groups
+  aren't listed). Ctrl/Cmd-click adds or removes one row. With two or more
+  selected, a bar floats below the list with how many, **Move to…** and
+  **Clear**; Esc clears the selection before it closes the panel (not while a
+  task or a dialog is open).
+- **Moving several tasks:** drag any selected row onto a group, or onto
+  "No group", to move them all: the group lights up, a label says "3 tasks",
+  and a toast offers Undo.
   A row that isn't selected drags alone. Rows drag from anywhere but their
   text fields (a press on touch screens); not while the project has no
   groups.
@@ -294,8 +300,8 @@ log, as tabs in the side panel.
   between days. "N more" and day numbers open the day view.
 
 ### 3.5 Task overlay
-Clicking any task (in the week view, backlog, calendar, home or project panel)
-opens an overlay with:
+Clicking any task (in the week view, backlog, calendar or home), or
+double-clicking one in the project panel, opens an overlay with:
 - the title, project, kind and status;
 - the due date, class date and estimate;
 - spent / planned / remaining hours;

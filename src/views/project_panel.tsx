@@ -257,27 +257,19 @@ function ItemsTab({project}: {project: Project}) {
   const sensors = useDragSensors();
   const [drag, setDrag] = useState<ListDrag | null>(null);
   const draggedGroup = drag?.kind === 'group' ? groups[drag.from] : undefined;
-  // Tasks picked with Shift- or Ctrl/Cmd-click, to drag together.
+  // Selected tasks (a click selects one; Shift and Ctrl/Cmd add more), to
+  // drag together. `anchor` is where a Shift-click range starts.
   const [selection, setSelection] = useState({
     projectId: project.id,
     ids: [] as string[],
+    anchor: undefined as string | undefined,
   });
   const selected = useMemo(
     () => new Set(selection.projectId === project.id ? selection.ids : []),
     [selection, project.id],
   );
-  const toggleSelected = useCallback(
-    (id: string) =>
-      setSelection(s => {
-        const ids = s.projectId === project.id ? s.ids : [];
-        return {
-          projectId: project.id,
-          ids: ids.includes(id) ? ids.filter(x => x !== id) : [...ids, id],
-        };
-      }),
-    [project.id],
-  );
-  const clearSelection = () => setSelection({projectId: project.id, ids: []});
+  const clearSelection = () =>
+    setSelection({projectId: project.id, ids: [], anchor: undefined});
   const dragging = drag !== null;
   useEffect(() => {
     if (!dragging) return;
@@ -292,12 +284,16 @@ function ItemsTab({project}: {project: Project}) {
   useEffect(() => {
     if (!anySelected) return;
     // Esc clears the selection first; the next one closes the panel. Not
-    // when a popover or a drag took it.
+    // when a popover or a drag took it, nor while a task or a dialog is
+    // open: Esc closes that.
     const onKey = (e: KeyboardEvent) => {
+      const {openItemId, dialog} = useUi.getState();
       if (
         e.key === 'Escape' &&
         !e.defaultPrevented &&
-        !isTyping(e.target as Element)
+        !isTyping(e.target as Element) &&
+        openItemId === null &&
+        dialog === null
       ) {
         e.preventDefault();
         setSelection(s => ({...s, ids: []}));
@@ -329,8 +325,46 @@ function ItemsTab({project}: {project: Project}) {
     }
     return m;
   }, [items, groups]);
+  const shown = (list: Item[]) =>
+    hideDone ? list.filter(i => !isItemDone(i)) : list;
+  // The tasks as listed, top to bottom: what a Shift-click range spans.
+  const listed = useMemo(() => {
+    const lists = [
+      ...(!groups.length || !project.ungroupedCollapsed
+        ? [byGroup.get('') ?? []]
+        : []),
+      ...groups.filter(g => !g.collapsed).map(g => byGroup.get(g.id) ?? []),
+    ];
+    return lists.flatMap(l =>
+      (hideDone ? l.filter(i => !isItemDone(i)) : l).map(i => i.id),
+    );
+  }, [byGroup, groups, project.ungroupedCollapsed, hideDone]);
+  const select = useCallback(
+    (id: string, how: Selecting) =>
+      setSelection(s => {
+        const cur: {ids: string[]; anchor?: string} =
+          s.projectId === project.id ? s : {ids: []};
+        const base = {projectId: project.id};
+        if (how === 'toggle')
+          return {
+            ...base,
+            ids: cur.ids.includes(id)
+              ? cur.ids.filter(x => x !== id)
+              : [...cur.ids, id],
+            anchor: id,
+          };
+        const from = cur.anchor ? listed.indexOf(cur.anchor) : -1;
+        const to = listed.indexOf(id);
+        if (how === 'only' || from < 0 || to < 0)
+          return {...base, ids: [id], anchor: id};
+        // From the anchor to this one, both included; the anchor stays.
+        const [lo, hi] = from < to ? [from, to] : [to, from];
+        return {...base, ids: listed.slice(lo, hi + 1), anchor: cur.anchor};
+      }),
+    [project.id, listed],
+  );
   const rows = (list: Item[]) =>
-    (hideDone ? list.filter(i => !isItemDone(i)) : list).map(item => (
+    shown(list).map(item => (
       <ItemRow
         key={item.id}
         item={item}
@@ -339,7 +373,7 @@ function ItemsTab({project}: {project: Project}) {
         today={today}
         selected={selected.has(item.id)}
         lifted={drag?.kind === 'items' && drag.ids.includes(item.id)}
-        onSelect={toggleSelected}
+        onSelect={select}
       />
     ));
   /** Dragged tasks would land in group `key` ('' for none): some aren't in it yet. */
@@ -471,13 +505,6 @@ function ItemsTab({project}: {project: Project}) {
           onDragEnd={e => endDrag(dataOf<DropData>(e.over))}
           onDragCancel={() => setDrag(null)}
         >
-          {selectedItems.length > 0 && (
-            <SelectionBar
-              items={selectedItems}
-              groups={groups}
-              onClear={clearSelection}
-            />
-          )}
           <table className="w-full table-fixed border-collapse">
             <colgroup>
               <col className="w-28 @md:w-32" />
@@ -572,6 +599,14 @@ function ItemsTab({project}: {project: Project}) {
               );
             })}
           </table>
+          {/* Below the list, floating: showing it never moves the rows. */}
+          {selectedItems.length > 1 && (
+            <SelectionBar
+              items={selectedItems}
+              groups={groups}
+              onClear={clearSelection}
+            />
+          )}
           {/* In the body: the panel's transform would offset a fixed ghost. */}
           {createPortal(
             <DragOverlay dropAnimation={null} modifiers={[ghostUnderPointer]}>
@@ -682,7 +717,7 @@ function SelectionBar({
 }) {
   const options = useMemo(() => groupOptions(groups), [groups]);
   return (
-    <div className="sticky top-0 z-10 mb-2 flex flex-wrap items-center gap-x-2 gap-y-1 rounded-md border border-accent/40 bg-panel px-2 py-1 text-[12px]">
+    <div className="sticky bottom-0 z-10 mt-2 flex flex-wrap items-center gap-x-2 gap-y-1 rounded-md border border-accent/40 bg-panel px-2 py-1 text-[12px] shadow-lg">
       <span className="font-medium text-strong tabular-nums">
         {items.length} selected
       </span>
@@ -899,9 +934,29 @@ function EmptyGroup({group, ungrouped}: {group: ItemGroup; ungrouped: Item[]}) {
   );
 }
 
-/** Shift or Ctrl/Cmd: a click selects the row instead. */
-function selects(e: {shiftKey: boolean; ctrlKey: boolean; metaKey: boolean}) {
+/** How a click selects: this task only, toggled in, or a range up to it. */
+type Selecting = 'only' | 'toggle' | 'range';
+
+interface Modifiers {
+  shiftKey: boolean;
+  ctrlKey: boolean;
+  metaKey: boolean;
+}
+
+/** Shift or Ctrl/Cmd: a click anywhere on the row selects, even on a control. */
+function selects(e: Modifiers) {
   return e.shiftKey || e.ctrlKey || e.metaKey;
+}
+
+function selecting(e: Modifiers): Selecting {
+  return e.shiftKey ? 'range' : e.ctrlKey || e.metaKey ? 'toggle' : 'only';
+}
+
+/** A row's own controls (status, group, hours, delete) keep their clicks. */
+function onControl(target: EventTarget): boolean {
+  return !!(target as Element).closest(
+    'input, textarea, select, [role="combobox"], button:not([data-block])',
+  );
 }
 
 const ItemRow = memo(function ItemRow({
@@ -917,11 +972,11 @@ const ItemRow = memo(function ItemRow({
   groups: ItemGroup[];
   allocs: Allocation[];
   today: string;
-  /** Picked with Shift- or Ctrl/Cmd-click, to drag along with the others. */
+  /** Selected, to drag along with the others. */
   selected: boolean;
   /** Being dragged. */
   lifted: boolean;
-  onSelect(id: string): void;
+  onSelect(id: string, how: Selecting): void;
 }) {
   const openItem = useUi(s => s.openItem);
   const {updateItem} = useStore.getState();
@@ -957,8 +1012,12 @@ const ItemRow = memo(function ItemRow({
         if (!selects(e) && !clicksSuppressed()) return;
         e.preventDefault();
         e.stopPropagation();
-        if (selects(e) && !clicksSuppressed()) onSelect(item.id);
+        if (selects(e) && !clicksSuppressed()) onSelect(item.id, selecting(e));
       }}
+      // A plain click selects this task (its controls aside); a double click
+      // opens it.
+      onClick={e => !onControl(e.target) && onSelect(item.id, 'only')}
+      onDoubleClick={e => !onControl(e.target) && openItem(item.id)}
       className={`group border-b border-line/50 transition-colors duration-150 ${selected ? 'bg-accent/15' : 'hover:bg-raised/50'} ${lifted ? 'opacity-50' : ''} ${done ? 'text-dim' : ''}`}
     >
       <td className="px-1 py-0.5">
@@ -972,10 +1031,14 @@ const ItemRow = memo(function ItemRow({
         <div className="flex min-w-0 items-center">
           <button
             data-block
-            onKeyDown={blockKeys({remove: () => deleteItemAction(item)})}
+            onKeyDown={blockKeys({
+              open: () => openItem(item.id),
+              toggle: () => onSelect(item.id, 'toggle'),
+              remove: () => deleteItemAction(item),
+            })}
             className="flex min-w-0 flex-1 items-center gap-1.5 rounded px-1 text-left hover:bg-raised"
-            onClick={() => openItem(item.id)}
-            title="Open task details"
+            title="Click to select, double-click (or Enter) to open"
+            aria-pressed={selected}
           >
             <span className="tabular-nums text-[10px] text-dim">
               {kindBadge(item.kind)}
