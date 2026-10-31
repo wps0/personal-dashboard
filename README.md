@@ -109,7 +109,8 @@ On first launch, choose **Load sample data** to explore, or create empty areas.
   - The first day of the week, the default calendar view and event length.
   - Capacity: planning windows and the global adjustment (changes apply
     from today; past days don't change).
-  - Areas, export/import (protobuf's JSON form), reset.
+  - Areas (drag a grip or use ↑ / ↓ to reorder; the app lists them in that
+    order), export/import (protobuf's JSON form), reset.
   - The header icon switches the theme (auto / light / dark).
 
 ## Google Calendar (read-only)

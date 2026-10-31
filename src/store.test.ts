@@ -129,3 +129,24 @@ describe('item groups in the store', () => {
     expect(groupOf(b)).toBe(g);
   });
 });
+
+describe('area order in the store', () => {
+  beforeEach(() => useStore.getState().replaceAll(emptyData()));
+  const s = () => useStore.getState();
+  const order = () => s().data.areas.map(a => a.name);
+
+  it('moves an area to a place in the order, keeping its projects', () => {
+    const uni = s().addArea('University');
+    s().addArea('Work');
+    s().addArea('Personal');
+    s().addProject(uni, 'Operating Systems');
+    s().moveArea(uni, 2);
+    expect(order()).toEqual(['Work', 'Personal', 'University']);
+    s().moveArea(uni, 0);
+    expect(order()).toEqual(['University', 'Work', 'Personal']);
+    // Out of range lands at the end.
+    s().moveArea(uni, 9);
+    expect(order()).toEqual(['Work', 'Personal', 'University']);
+    expect(s().data.projects.map(p => p.areaId)).toEqual([uni]);
+  });
+});

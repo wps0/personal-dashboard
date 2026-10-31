@@ -44,6 +44,8 @@ interface Actions {
   addArea(name: string): string;
   updateArea(id: string, patch: Partial<Omit<Area, 'id'>>): void;
   deleteArea(id: string): void;
+  /** Moves an area to `index` in the order (where the others are listed). */
+  moveArea(id: string, index: number): void;
 
   addProject(areaId: string, name: string): string;
   updateProject(id: string, patch: Partial<Omit<Project, 'id'>>): void;
@@ -195,6 +197,14 @@ export const useStore = create<State>()((set, get) => {
     },
     updateArea: (id, patch) =>
       update(d => ({areas: patchById(d.areas, id, patch)})),
+    moveArea: (id, index) =>
+      update(d => {
+        const a = d.areas.find(x => x.id === id);
+        if (!a) return {};
+        const rest = d.areas.filter(x => x !== a);
+        rest.splice(Math.max(0, Math.min(index, rest.length)), 0, a);
+        return {areas: rest};
+      }),
     deleteArea: id =>
       update(d => ({
         areas: d.areas.filter(a => a.id !== id),

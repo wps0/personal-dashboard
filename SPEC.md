@@ -345,6 +345,12 @@ length, the default view and the first day of the week (Monday … Sunday;
 Sunday by default), which is part of the synced data. Capacity rules stay per
 weekday and are listed Monday first whatever the week start.
 
+**Areas** are listed in their order, which the whole app follows (the
+Projects page, the calendar's layers, the backlog's filters). Drag an area by
+its grip to reorder it (a line shows where it lands), or use its ↑ / ↓ for
+the keyboard. Undoable, without a toast. On phones its colours go on a line of
+their own, under the name.
+
 ### 3.9 How many actions things take (UX review, October 2026)
 Counted in a browser for 37 everyday tasks, from a fresh Home page with the
 sample data. One action is a click, key press, drag, scroll or typed field.
