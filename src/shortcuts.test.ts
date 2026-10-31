@@ -16,7 +16,8 @@ describe('actionFor', () => {
 
   it('maps numbers to pages and arrows to moves', () => {
     expect(actionFor({key: '1'})).toEqual({type: 'page', page: 'home'});
-    expect(actionFor({key: '4'})).toEqual({type: 'page', page: 'projects'});
+    expect(actionFor({key: '3'})).toEqual({type: 'page', page: 'projects'});
+    expect(actionFor({key: '4'})).toEqual({type: 'page', page: 'calendar'});
     expect(actionFor({key: '5'})).toEqual({type: 'page', page: 'work'});
     expect(actionFor({key: '6'})).toEqual({type: 'page', page: 'settings'});
     expect(actionFor({key: '7'})).toBeNull();
@@ -42,8 +43,8 @@ describe('actionFor', () => {
 describe('adjacentPage', () => {
   it('steps through the tabs in nav-bar order', () => {
     expect(adjacentPage('home', 1)).toBe('week');
-    expect(adjacentPage('calendar', -1)).toBe('week');
-    expect(adjacentPage('projects', 1)).toBe('work');
+    expect(adjacentPage('projects', -1)).toBe('week');
+    expect(adjacentPage('calendar', 1)).toBe('work');
     expect(adjacentPage('work', 1)).toBe('settings');
   });
 

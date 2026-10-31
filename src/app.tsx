@@ -58,8 +58,8 @@ function preload() {
 const NAV: {route: Route; label: string; icon: LucideIcon}[] = [
   {route: {name: 'home'}, label: 'Home', icon: House},
   {route: {name: 'week'}, label: 'Week', icon: NotebookPen},
-  {route: {name: 'calendar'}, label: 'Calendar', icon: CalendarDays},
   {route: {name: 'projects'}, label: 'Projects', icon: FolderKanban},
+  {route: {name: 'calendar'}, label: 'Calendar', icon: CalendarDays},
   {route: {name: 'work'}, label: 'Work', icon: BriefcaseBusiness},
   {route: {name: 'settings'}, label: 'Settings', icon: Settings},
 ];

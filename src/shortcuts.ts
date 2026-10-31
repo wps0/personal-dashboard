@@ -25,8 +25,8 @@ interface KeyLike {
 const PAGES = [
   'home',
   'week',
-  'calendar',
   'projects',
+  'calendar',
   'work',
   'settings',
 ] as const;
@@ -99,7 +99,7 @@ export const SHORTCUT_HELP: {group: string; keys: [string, string][]}[] = [
       ['t', 'Today'],
       ['g', 'Go to date'],
       ['h / l', 'Previous / next tab'],
-      ['1 – 6', 'Home · Week · Calendar · Projects · Work · Settings'],
+      ['1 – 6', 'Home · Week · Projects · Calendar · Work · Settings'],
     ],
   },
   {
