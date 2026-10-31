@@ -137,14 +137,14 @@ export function SettingsView() {
 
         <Section
           title="USOS timetable"
-          hint="Classes from your USOSweb timetable become tasks in their course’s project (set a course pattern in the project). You review new classes before they’re added."
+          hint="Classes from your USOSweb timetable become tasks in their course’s project (set a course pattern in the project’s Details tab). You review new classes before they’re added."
         >
           <UsosSettings />
         </Section>
 
         <Section
           title="Gemini"
-          hint="Used to turn a course description into class items (Import curriculum, in a project)."
+          hint="Used to turn a course description into class items (Import curriculum, in a project’s Details tab)."
         >
           <GeminiSettings />
         </Section>
