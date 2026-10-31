@@ -90,13 +90,44 @@ export function importJson(text: string): AppData {
   return withDefaults(fromReadableJson(text));
 }
 
-/** Saves the data as readable JSON (the browser's download). */
-export function downloadJson(data: AppData) {
-  const blob = new Blob([toReadableJson(data)], {type: 'application/json'});
+/**
+ * Reads an exported file: the readable JSON, or protobuf binary (an export,
+ * or the file Drive sync keeps). Throws if it can't.
+ */
+export function importFile(bytes: Uint8Array): AppData {
+  // JSON starts with "{" (after a byte-order mark or spaces, which the
+  // decoder and trimStart drop); protobuf binary of AppData can't.
+  const start = new TextDecoder().decode(bytes.subarray(0, 16)).trimStart();
+  return start.startsWith('{')
+    ? importJson(new TextDecoder().decode(bytes))
+    : readStored(bytes);
+}
+
+/** Saves a file with the browser's download, named for today. */
+function download(blob: Blob, extension: string) {
   const a = document.createElement('a');
   a.href = URL.createObjectURL(blob);
   // Today's local date: the UTC one is still yesterday just after midnight.
-  a.download = `dashboard-${todayISO()}.json`;
+  a.download = `dashboard-${todayISO()}.${extension}`;
   a.click();
   URL.revokeObjectURL(a.href);
+}
+
+/** Saves the data as readable JSON (the browser's download). */
+export function downloadJson(data: AppData) {
+  download(
+    new Blob([toReadableJson(data)], {type: 'application/json'}),
+    'json',
+  );
+}
+
+/**
+ * Saves the data as protobuf binary (the browser's download): exactly as
+ * it's stored, and as Drive sync keeps it.
+ */
+export function downloadBinary(data: AppData) {
+  download(
+    new Blob([encode(data)], {type: 'application/octet-stream'}),
+    'binpb',
+  );
 }

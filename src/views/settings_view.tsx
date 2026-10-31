@@ -5,7 +5,7 @@ import {AreaList} from '../components/area_list';
 import {DEFAULT_WORK_LABEL} from '../model/work';
 import {sampleData} from '../model/sample';
 import {CalendarView, emptyData, Weekday} from '../model/types';
-import {downloadJson, importJson} from '../storage/storage';
+import {downloadBinary, downloadJson, importFile} from '../storage/storage';
 import {useData, useStore} from '../store';
 import {useGoogle} from '../google/auth';
 import {CapacitySettings} from './capacity_settings';
@@ -52,9 +52,9 @@ export function SettingsView() {
   const [newArea, setNewArea] = useState('');
   const [message, setMessage] = useState<string | null>(null);
 
-  const importFile = async (file: File) => {
+  const importChosen = async (file: File) => {
     try {
-      const parsed = importJson(await file.text());
+      const parsed = importFile(new Uint8Array(await file.arrayBuffer()));
       if (
         confirm(`Replace all current data with "${file.name}"?${everywhere()}`)
       ) {
@@ -195,23 +195,26 @@ export function SettingsView() {
 
         <Section
           title="Data"
-          hint="Everything is stored in this browser (IndexedDB), and in Google Drive if sync is on. Export now and then as a backup."
+          hint="Everything is stored in this browser (IndexedDB), and in Google Drive if sync is on. Export now and then as a backup: JSON is readable; protobuf is the exact stored form, the same as the file on Drive. Import takes either."
         >
           <div className="flex flex-wrap gap-2">
             <button className="btn" onClick={() => downloadJson(data)}>
               Export JSON
             </button>
+            <button className="btn" onClick={() => downloadBinary(data)}>
+              Export protobuf
+            </button>
             <button className="btn" onClick={() => fileRef.current?.click()}>
-              Import JSON…
+              Import…
             </button>
             <input
               ref={fileRef}
               type="file"
-              accept="application/json,.json"
+              accept=".json,.binpb,.pb,application/json,application/octet-stream"
               className="hidden"
               onChange={e => {
                 const f = e.target.files?.[0];
-                if (f) void importFile(f);
+                if (f) void importChosen(f);
                 e.target.value = '';
               }}
             />

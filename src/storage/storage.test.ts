@@ -6,7 +6,7 @@ import * as pb from '../gen/dashboard/data_pb';
 import {sampleData} from '../model/sample';
 import {CalendarView} from '../model/types';
 import {encode, toReadableJson} from './codec';
-import {IndexedDbStorage, importJson} from './storage';
+import {IndexedDbStorage, importFile, importJson} from './storage';
 
 function sameData(a: pb.AppData, b: pb.AppData) {
   return equals(pb.AppDataSchema, a, b);
@@ -71,5 +71,16 @@ describe('storage', () => {
     const data = sampleData('2026-10-10');
     expect(sameData(importJson(toReadableJson(data)), data)).toBe(true);
     expect(() => importJson('{"version": 1}')).toThrow();
+  });
+
+  it('imports either export, telling them apart by content', () => {
+    const data = sampleData('2026-10-10');
+    const bytes = (text: string) => new TextEncoder().encode(text);
+    expect(sameData(importFile(encode(data)), data)).toBe(true);
+    expect(sameData(importFile(bytes(toReadableJson(data))), data)).toBe(true);
+    // A byte-order mark and spaces before the JSON.
+    const json = `\uFEFF \n${toReadableJson(data)}`;
+    expect(sameData(importFile(bytes(json)), data)).toBe(true);
+    expect(() => importFile(bytes('not data'))).toThrow();
   });
 });

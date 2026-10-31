@@ -110,7 +110,8 @@ On first launch, choose **Load sample data** to explore, or create empty areas.
   - Capacity: planning windows and the global adjustment (changes apply
     from today; past days don't change).
   - Areas (drag a grip or use ↑ / ↓ to reorder; the app lists them in that
-    order), export/import (protobuf's JSON form), reset.
+    order), export (protobuf's JSON form, or the protobuf binary as stored),
+    import (either), reset.
   - The header icon switches the theme (auto / light / dark).
 
 ## Google Calendar (read-only)

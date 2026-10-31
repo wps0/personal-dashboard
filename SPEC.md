@@ -15,7 +15,7 @@ See README.md for running and deploying it.
 | Decision | Choice |
 |---|---|
 | Hosting | Static site on GitHub Pages, no backend. Deployed by GitHub Actions from `main` only (see 6). |
-| Storage (v1) | Browser storage (IndexedDB), as protobuf binary (see Data schema in 6), with export/import as protobuf's JSON form. |
+| Storage (v1) | Browser storage (IndexedDB), as protobuf binary (see Data schema in 6). Settings → Data exports protobuf's JSON form (readable) or the protobuf binary (`.binpb`, exactly as stored and as on Drive); Import takes either, telling them apart by content (JSON starts with `{`), and upgrades older schema versions as it reads. |
 | Storage (v2) | ✅ IndexedDB stays the local copy on every device; Drive sync (4.3) keeps a protobuf file in the user's Google Drive in step with it (`drive.file` scope — the app sees only files it creates). |
 | Auth | Google sign-in (Google Identity Services token model, browser only, no refresh tokens) with an OAuth Client ID from a GCP project the user owns, in "testing" mode. It asks only for what's on: read-only Calendar access while the calendar is connected (4.1), and `drive.file` while Drive sync is on (4.3); each token carries just those. The access token lives in `sessionStorage` and expires after an hour (Reconnect). |
 | Devices | Desktop-first, phone usable. Below 640px: an icon-only header (the tabs too, so all six fit, with their names for screen readers and as tooltips), the calendar opens in 3-day view when the default is Week, Settings rows stack, and the week journal's days stack into a list. Installable as an app (PWA; Settings → App), and usable offline after the first visit (a service worker caches the app's own files only, never API calls). |
