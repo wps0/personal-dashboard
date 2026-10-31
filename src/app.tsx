@@ -225,8 +225,8 @@ function Welcome() {
         </button>
       </div>
       <p className="text-[12px] text-dim">
-        Data is stored in this browser only. Use Settings → Export to back it
-        up.
+        Data is stored in this browser. To keep it on your other devices too, or
+        back it up, use Drive sync or Export in Settings.
       </p>
     </div>
   );

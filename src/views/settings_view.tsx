@@ -123,7 +123,7 @@ export function SettingsView() {
 
         <Section
           title="Google Calendar"
-          hint="Show your Google calendars next to your plan (read-only for now)."
+          hint="Show your Google calendars next to your plan. Read-only: the app never changes them."
         >
           <GoogleSettings />
         </Section>
