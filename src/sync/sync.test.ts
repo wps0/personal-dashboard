@@ -80,6 +80,42 @@ describe('syncOnce', () => {
     expect(same(phone.data, laptop.data)).toBe(true);
   });
 
+  it('carries the order of the areas to the other device', async () => {
+    const laptop = new Device(sample(), drive);
+    await laptop.sync();
+    const phone = new Device(emptyData(), drive);
+    await phone.sync();
+    const order = (d: AppData) => d.areas.map(a => a.name);
+
+    laptop.data = edit(laptop.data, d => d.areas.reverse());
+    await laptop.sync();
+    expect((await phone.sync()).kind).toBe('pulled');
+    expect(order(phone.data)).toEqual(order(laptop.data));
+  });
+
+  it('keeps the areas’ new order when the other device edited one meanwhile', async () => {
+    const laptop = new Device(sample(), drive);
+    await laptop.sync();
+    const phone = new Device(emptyData(), drive);
+    await phone.sync();
+    const reversed = sample()
+      .areas.map(a => a.id)
+      .reverse();
+
+    // Reordered on the laptop, and an area renamed on the phone before it
+    // had synced.
+    laptop.data = edit(laptop.data, d => d.areas.reverse());
+    await laptop.sync();
+    phone.data = edit(phone.data, d => (d.areas[0].name = 'Uni'));
+    expect((await phone.sync()).kind).toBe('merged');
+    expect((await laptop.sync()).kind).toBe('pulled');
+
+    for (const device of [laptop, phone]) {
+      expect(device.data.areas.map(a => a.id)).toEqual(reversed);
+      expect(device.data.areas.at(-1)!.name).toBe('Uni');
+    }
+  });
+
   it('asks before mixing a device’s own data with Drive’s on the first sync', async () => {
     await new Device(sample(), drive).sync();
     const own = edit(emptyData(), d => {
