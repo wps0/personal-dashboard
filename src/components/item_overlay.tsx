@@ -356,7 +356,7 @@ function SessionRow({alloc, today}: {alloc: Allocation; today: string}) {
       </td>
       <td className="px-1 text-right">
         <button
-          className="icon-btn invisible h-6 w-6 group-hover:visible hover:!text-danger"
+          className="icon-btn invisible h-6 w-6 group-focus-within:visible group-hover:visible hover:!text-danger pointer-coarse:visible"
           onClick={() => removeSession(alloc.id, 'Session removed')}
           title="Remove session"
         >
