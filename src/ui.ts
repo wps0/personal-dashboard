@@ -57,6 +57,7 @@ const HIDDEN_KEY = 'personal-dashboard/hidden-calendars';
 const ALL_DAY_KEY = 'personal-dashboard/all-day-collapsed';
 const GROUPS_KEY = 'personal-dashboard/collapsed-groups';
 const DESCRIPTION_KEY = 'personal-dashboard/description-collapsed';
+const ROLLOVER_KEY = 'personal-dashboard/week-rollover';
 
 function loadList(key: string): string[] {
   try {
@@ -96,6 +97,8 @@ interface UiState {
   allDayCollapsed: boolean;
   /** The project description above the items is collapsed (narrow panels). Per device. */
   descriptionCollapsed: boolean;
+  /** The week journal shows next week's day in place of each past day. Per device. */
+  weekRollover: boolean;
   /** Dialogs: shortcut help, go-to-date, reviewing new USOS classes, importing a curriculum, tasks from a prompt, or reviewing sync conflicts. */
   dialog:
     'help' | 'goto' | 'usos' | 'curriculum' | 'prompt' | 'conflicts' | null;
@@ -118,6 +121,7 @@ interface UiState {
   toggleHidden(key: string): void;
   setAllDayCollapsed(collapsed: boolean): void;
   setDescriptionCollapsed(collapsed: boolean): void;
+  setWeekRollover(on: boolean): void;
 }
 
 export const useUi = create<UiState>()((set, get) => ({
@@ -137,6 +141,13 @@ export const useUi = create<UiState>()((set, get) => ({
   allDayCollapsed: (() => {
     try {
       return localStorage.getItem(ALL_DAY_KEY) === 'true';
+    } catch {
+      return false;
+    }
+  })(),
+  weekRollover: (() => {
+    try {
+      return localStorage.getItem(ROLLOVER_KEY) === 'true';
     } catch {
       return false;
     }
@@ -184,6 +195,10 @@ export const useUi = create<UiState>()((set, get) => ({
   setDescriptionCollapsed: descriptionCollapsed => {
     set({descriptionCollapsed});
     save(DESCRIPTION_KEY, descriptionCollapsed);
+  },
+  setWeekRollover: weekRollover => {
+    set({weekRollover});
+    save(ROLLOVER_KEY, weekRollover);
   },
 }));
 
