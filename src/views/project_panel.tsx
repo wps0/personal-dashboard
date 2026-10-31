@@ -1077,7 +1077,7 @@ function AddGroup({projectId, onDone}: {projectId: string; onDone(): void}) {
         }}
       />
       <button className="btn" disabled={!name.trim()} onClick={submit}>
-        add group
+        Add group
       </button>
     </div>
   );
@@ -1169,7 +1169,7 @@ function AddItem({
         <span className="text-dim">h</span>
       </span>
       <button className="btn" onClick={submit}>
-        add
+        Add
       </button>
     </div>
   );
@@ -1357,7 +1357,7 @@ function Log({project}: {project: Project}) {
         }
       />
       <button className="btn self-end" onClick={submit}>
-        add entry
+        Add entry
       </button>
       <ul className="scroll-thin min-h-0 flex-1 space-y-2 overflow-y-auto">
         {project.log.map(l => (

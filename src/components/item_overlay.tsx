@@ -250,7 +250,7 @@ function ItemDetails({item, onClose}: {item: Item; onClose(): void}) {
       <footer className="flex items-center gap-2 border-t border-line px-3 py-2">
         {!isItemDone(item) && (
           <button className="btn" onClick={() => completeItem(item)}>
-            ✓ mark complete
+            ✓ Mark complete
           </button>
         )}
         {project && (
