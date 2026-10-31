@@ -1,5 +1,15 @@
 import {ChevronLeft, ChevronRight, Plus, X} from 'lucide-react';
 import {
+  memo,
+  useCallback,
+  useEffect,
+  useLayoutEffect,
+  useMemo,
+  useRef,
+  useState,
+} from 'react';
+import {useShallow} from 'zustand/react/shallow';
+import {
   deleteWorkSpan,
   logAsPlanned,
   logWork,
@@ -32,41 +42,130 @@ import {
   weekHours,
   weekTarget,
 } from '../model/work';
-import {navigate} from '../router';
 import {useStore} from '../store';
 
+/** Weeks shown around the one in focus when the page opens or jumps. */
+const BEFORE = 8;
+const AFTER = 4;
+/** Weeks added at a time, scrolling near the top or the bottom. */
+const MORE = 8;
+/** The height of the sticky toolbar (`h-12`), above the week headings. */
+const TOOLBAR_PX = 48;
+
+interface WeekRange {
+  first: ISODate;
+  last: ISODate;
+  /** The week to bring to the top once it's rendered. */
+  target?: ISODate;
+}
+
+function around(monday: ISODate): WeekRange {
+  return {
+    first: addDays(monday, -7 * BEFORE),
+    last: addDays(monday, 7 * AFTER),
+    target: monday,
+  };
+}
+
 /**
- * The work log (SPEC 3.10), a week at a time, Monday to Sunday: what was
- * worked each day next to what was planned (reserved time labelled as
- * work), and the week's total against its target.
+ * The work log (SPEC 3.10): weeks, Monday to Sunday, in one scrolling list
+ * that opens on this week and grows both ways as it's scrolled. Each day
+ * shows what was worked next to what was planned (reserved time labelled
+ * as work), and each week its total against its target.
  */
 export function WorkView({week}: {week?: ISODate}) {
   const today = useToday();
-  const monday = startOfWeek(week && isISODate(week) ? week : today, MONDAY);
   const thisWeek = startOfWeek(today, MONDAY);
-  const go = (d: ISODate) => {
-    const target = startOfWeek(d, MONDAY);
-    navigate({name: 'work', week: target === thisWeek ? undefined : target});
+  const focus = startOfWeek(week && isISODate(week) ? week : today, MONDAY);
+  const [range, setRange] = useState(() => around(focus));
+  // A link to another week (the route changed) jumps there.
+  const [opened, setOpened] = useState(focus);
+  if (opened !== focus) {
+    setOpened(focus);
+    setRange(around(focus));
+  }
+  const scroller = useRef<HTMLDivElement>(null);
+  // The week at the top and where it starts, kept there when the list
+  // changes size: weeks added above it, a resize or a turned phone.
+  const anchor = useRef<WeekAtTop | null>(null);
+  const growing = useRef(false);
+
+  /** Brings `monday`'s week to the top, if it's rendered. */
+  const place = useCallback((monday: ISODate): boolean => {
+    const s = scroller.current;
+    const el = s?.querySelector<HTMLElement>(`[data-week="${monday}"]`);
+    if (!s || !el) return false;
+    s.scrollTop +=
+      el.getBoundingClientRect().top -
+      s.getBoundingClientRect().top -
+      TOOLBAR_PX;
+    anchor.current = weekAtTop(s);
+    return true;
+  }, []);
+  const show = useCallback(
+    (d: ISODate) => {
+      const monday = startOfWeek(d, MONDAY);
+      if (!place(monday)) setRange(around(monday));
+    },
+    [place],
+  );
+  /** The week at the top of the view, under the toolbar. */
+  const inView = (): ISODate => weekAtTop(scroller.current)?.week ?? focus;
+
+  useLayoutEffect(() => {
+    growing.current = false;
+    if (range.target) place(range.target);
+  }, [range, place]);
+  useEffect(() => {
+    const s = scroller.current;
+    const list = s?.firstElementChild;
+    if (!s || !list) return;
+    const keep = new ResizeObserver(() => {
+      const was = anchor.current;
+      const now = was && weekAtTop(s, was.week);
+      if (was && now) s.scrollTop += now.top - was.top;
+    });
+    keep.observe(s);
+    keep.observe(list);
+    return () => keep.disconnect();
+  }, []);
+
+  const onScroll = () => {
+    const s = scroller.current;
+    if (!s) return;
+    anchor.current = weekAtTop(s);
+    if (growing.current) return;
+    if (s.scrollTop < s.clientHeight) {
+      growing.current = true;
+      setRange(r => ({first: addDays(r.first, -7 * MORE), last: r.last}));
+    } else if (s.scrollHeight - s.scrollTop - s.clientHeight < s.clientHeight) {
+      growing.current = true;
+      setRange(r => ({first: r.first, last: addDays(r.last, 7 * MORE)}));
+    }
   };
+
   useNavTarget({
-    next: () => go(addDays(monday, 7)),
-    prev: () => go(addDays(monday, -7)),
-    today: () => go(today),
-    goTo: go,
+    next: () => show(addDays(inView(), 7)),
+    prev: () => show(addDays(inView(), -7)),
+    today: () => show(today),
+    goTo: show,
   });
-  const log = useStore(s => s.data.workLog);
-  const settings = useStore(s => s.data.settings);
-  const events = useStore(s => s.data.events);
-  const days = Array.from({length: 7}, (_, i) => addDays(monday, i));
+
+  const weeks: ISODate[] = [];
+  for (let m = range.first; m <= range.last; m = addDays(m, 7)) weeks.push(m);
 
   return (
-    <div className="scroll-thin h-full overflow-y-auto">
-      <div className="mx-auto max-w-3xl p-3 sm:p-5">
-        <div className="mb-3 flex items-center gap-1">
+    <div
+      ref={scroller}
+      onScroll={onScroll}
+      className="scroll-thin h-full overflow-y-auto"
+    >
+      <div className="mx-auto max-w-3xl px-3 pb-3 sm:px-5 sm:pb-5">
+        <div className="sticky top-0 z-20 flex h-12 items-center gap-1 bg-bg">
           <h1 className="mr-2 text-lg font-medium text-strong">Work</h1>
           <button
             className="btn h-8 rounded-full px-4"
-            onClick={() => go(today)}
+            onClick={() => show(today)}
             title="This week (t)"
           >
             This week
@@ -75,7 +174,7 @@ export function WorkView({week}: {week?: ISODate}) {
             className="icon-btn"
             aria-label="Previous week"
             title="Previous week (k)"
-            onClick={() => go(addDays(monday, -7))}
+            onClick={() => show(addDays(inView(), -7))}
           >
             <ChevronLeft size={18} />
           </button>
@@ -83,44 +182,114 @@ export function WorkView({week}: {week?: ISODate}) {
             className="icon-btn"
             aria-label="Next week"
             title="Next week (j)"
-            onClick={() => go(addDays(monday, 7))}
+            onClick={() => show(addDays(inView(), 7))}
           >
             <ChevronRight size={18} />
           </button>
-          <span className="ml-1 text-dim tabular-nums">
-            W{weekNumber(monday)} · {shortDate(monday)} –{' '}
-            {shortDate(addDays(monday, 6))}
-          </span>
         </div>
-        <WeekSummary monday={monday} days={days} />
-        <ul className="mt-3">
-          {days.map(d => (
-            <WorkDay
-              key={d}
-              date={d}
-              isToday={d === today}
-              spans={spansOn(log, d)}
-              planned={plannedWork(events, d, settings.workLabel)}
-            />
-          ))}
-        </ul>
+        {weeks.map(m => (
+          <WorkWeek key={m} monday={m} today={today} current={m === thisWeek} />
+        ))}
       </div>
     </div>
   );
 }
 
+interface WeekAtTop {
+  week: ISODate;
+  /** Where its section starts, from the top of the view. */
+  top: number;
+}
+
+/**
+ * The week at the top of `scroller`'s view, under the toolbar, or `week`
+ * wherever it is.
+ */
+function weekAtTop(
+  scroller: HTMLElement | null,
+  week?: ISODate,
+): WeekAtTop | null {
+  if (!scroller) return null;
+  const top = scroller.getBoundingClientRect().top;
+  for (const el of scroller.querySelectorAll<HTMLElement>('[data-week]')) {
+    const r = el.getBoundingClientRect();
+    if (week ? el.dataset.week === week : r.bottom > top + TOOLBAR_PX + 4)
+      return {week: el.dataset.week!, top: r.top - top};
+  }
+  return null;
+}
+
+/** One week: its heading, its total against its target, and its days. */
+const WorkWeek = memo(function WorkWeek({
+  monday,
+  today,
+  current,
+}: {
+  monday: ISODate;
+  today: ISODate;
+  current: boolean;
+}) {
+  const sunday = addDays(monday, 6);
+  const spans = useStore(
+    useShallow(s =>
+      s.data.workLog.filter(w => w.date >= monday && w.date <= sunday),
+    ),
+  );
+  const events = useStore(s => s.data.events);
+  const label = useStore(s => s.data.settings.workLabel);
+  const days = useMemo(
+    () => Array.from({length: 7}, (_, i) => addDays(monday, i)),
+    [monday],
+  );
+  const planned = useMemo(
+    () => days.map(d => plannedWork(events, d, label)),
+    [days, events, label],
+  );
+  const heading = `W${weekNumber(monday)} · ${shortDate(monday)} – ${shortDate(sunday)}`;
+  return (
+    <section data-week={monday} aria-label={heading} className="pt-3">
+      <h2 className="sticky top-12 z-10 flex items-baseline gap-2 bg-bg py-1.5 tabular-nums">
+        <span className={current ? 'font-medium text-accent' : 'text-strong'}>
+          {heading}
+        </span>
+        {current && <span className="text-[12px] text-accent">This week</span>}
+      </h2>
+      <WeekSummary monday={monday} days={days} />
+      <ul className="mt-3">
+        {days.map((d, i) => (
+          <WorkDay
+            key={d}
+            date={d}
+            isToday={d === today}
+            spans={spansOn(spans, d)}
+            planned={planned[i]}
+          />
+        ))}
+      </ul>
+    </section>
+  );
+});
+
 /** The week's hours against its target, the target itself, and month totals. */
 function WeekSummary({monday, days}: {monday: ISODate; days: ISODate[]}) {
-  const log = useStore(s => s.data.workLog);
-  const settings = useStore(s => s.data.settings);
-  const logged = weekHours(log, monday);
-  const target = weekTarget(settings, monday);
-  const own = settings.weekWorkTargets[monday] !== undefined;
+  const logged = useStore(s => weekHours(s.data.workLog, monday));
+  const target = useStore(s => weekTarget(s.data.settings, monday));
+  const own = useStore(
+    s => s.data.settings.weekWorkTargets[monday] !== undefined,
+  );
+  const workTarget = useStore(s => s.data.settings.workTarget);
+  const months = useStore(s =>
+    [...new Set(days.map(monthKey))]
+      .map(
+        m =>
+          `${monthName(m)}: ${fmtH(loggedHours(s.data.workLog, `${m}-01`, `${m}-31`))}`,
+      )
+      .join(' · '),
+  );
   const balance = logged - target;
-  const months = [...new Set(days.map(monthKey))];
   return (
     <section
-      aria-label="This week"
+      aria-label="Week's total"
       className="rounded-lg border border-line bg-panel p-3"
     >
       <div className="flex flex-wrap items-baseline gap-x-2">
@@ -155,7 +324,7 @@ function WeekSummary({monday, days}: {monday: ISODate; days: ISODate[]}) {
       )}
       <div className="mt-3 flex flex-wrap items-center gap-x-3 gap-y-1 text-[12px] text-dim">
         <label className="flex items-center gap-1">
-          Target this week
+          Week's target
           <HoursInput
             value={target}
             onChange={h => setWeekTarget(monday, h ?? 0)}
@@ -168,19 +337,12 @@ function WeekSummary({monday, days}: {monday: ISODate; days: ISODate[]}) {
             className="text-accent hover:underline"
             onClick={() => setWeekTarget(monday, null)}
           >
-            Use the default ({fmtH(settings.workTarget)})
+            Use the default ({fmtH(workTarget)})
           </button>
         ) : (
           <span>the default, set in Settings</span>
         )}
-        <span className="ml-auto">
-          {months
-            .map(
-              m =>
-                `${monthName(m)}: ${fmtH(loggedHours(log, `${m}-01`, `${m}-31`))}`,
-            )
-            .join(' · ')}
-        </span>
+        <span className="ml-auto">{months}</span>
       </div>
     </section>
   );

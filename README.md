@@ -72,7 +72,8 @@ On first launch, choose **Load sample data** to explore, or create empty areas.
     with the quick-create card's **Reserved** tab and usually repeating. Drag
     a block's label (top right) to move it, or its edges to resize it, for
     that day only; click the label for its card.
-- **Work** (`#/work`): the work log, a week at a time. Log the stretches you
+- **Work** (`#/work`): the work log, weeks in one scrolling list that opens
+  on this week. Log the stretches you
   actually worked each day (or **Log as planned**, from the day's reserved
   Work time) and see the week's hours against its target (default in
   Settings → Work log, or one of the week's own). A small card on Home shows
