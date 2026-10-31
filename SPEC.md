@@ -821,7 +821,10 @@ Same Gemini key, model and privacy note as 5.2.
   cope with enum values it doesn't know. Adding a field is safe: older
   versions keep fields they don't know when they save. Any change older
   versions can't handle raises `SCHEMA_VERSION`; they refuse such data and ask
-  to be updated. `buf lint` checks the schema's style. The app's records are
+  to be updated. A field that can be unset is marked `optional`, message
+  fields included (proto3 tracks their presence anyway, so there it only
+  documents it); an enum is unset at its `*_UNSPECIFIED` value instead.
+  `buf lint` checks the schema's style. The app's records are
   the generated messages: new ones are made with `create()`, which also
   checks that nested records are messages.
 - **Changing the data model:** every build must read what the released app
