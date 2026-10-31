@@ -167,9 +167,9 @@ log, as tabs in the side panel.
   long titles are cut short, so the table never scrolls sideways.
 - **Groups** (folders for items, e.g. all classes of a course). Each group is
   a collapsible header with its name (click to rename), item count and
-  done/total, in the project's group order. Items in no group come last,
-  under "No group": folders first, as in a file manager. The add field sits
-  at the top of the list, above the groups; it adds to no group.
+  done/total, in the project's group order. Items in no group come first,
+  under "No group", then the groups. The add field sits at the top of the
+  list, right above them; it adds to no group.
   Folded groups (and a folded "No group") are kept in the data, so they stay
   folded after a reload and sync to other devices. Folding is a quiet undo
   step. Folds that earlier versions kept per device are moved into the data
@@ -183,7 +183,7 @@ log, as tabs in the side panel.
 - **Reordering:** drag a group by the grip left of its name (it shows on
   hover; always on touch screens, where a press starts the drag). A line
   shows where it lands, above or below the group under the pointer; Esc
-  cancels. "No group" stays last. Undoable, without a toast.
+  cancels. "No group" stays first. Undoable, without a toast.
 - **Moving several tasks:** Shift- or Ctrl/Cmd-click rows to select them
   (tinted; Shift-click again deselects). A bar shows how many, with
   **Move to…** and **Clear**; Esc clears the selection before it closes the
