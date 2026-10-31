@@ -507,7 +507,10 @@ Google Drive sync.
 - **How.** Only this device changed → upload. Only Drive changed → take
   Drive's data. Both → a three-way merge against the base: record by record
   and field by field, so edits to different fields of the same task on two
-  devices both survive. If both changed the same field, this device's value
+  devices both survive. A list's order (areas, a project's groups) merges
+  the same way: a reorder made on one device only is kept, even when the
+  other changed records in the same list; if both reordered it, this
+  device's order wins. If both changed the same field, this device's value
   wins for now and the toast offers **Review**: a dialog lists each conflict
   (record, field, both values) with this device's or the other device's
   version to pick, and applying it never overwrites a value edited since (it

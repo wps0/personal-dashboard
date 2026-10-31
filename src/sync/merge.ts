@@ -107,9 +107,11 @@ function mergeObj(
 }
 
 /**
- * Merges records by id. Keeps this device's order; a record only Drive has
- * goes right after the record it follows there (so new log entries, which
- * are prepended, stay at the top).
+ * Merges records by id. Their order is this device's, unless only Drive's
+ * changed (records moved there, e.g. reordered groups), like any change made
+ * on one side only. A record only one side has goes right after the record
+ * it follows there (so new log entries, which are prepended, stay at the
+ * top).
  */
 function mergeById(
   b: WithId[],
@@ -123,11 +125,21 @@ function mergeById(
   const pick = (id: string) =>
     mergeValue(bm.get(id), lm.get(id), rm.get(id), [...path, id], conflicts);
 
-  // Records only on Drive, grouped by the record they follow there.
+  // The order of the records all three have, on each side.
+  const order = (xs: WithId[]) =>
+    xs
+      .map(x => x.id)
+      .filter(id => bm.has(id) && lm.has(id) && rm.has(id))
+      .join('\n');
+  const moved = (xs: WithId[]) => order(xs) !== order(b);
+  const [main, other] = moved(r) && !moved(l) ? [r, l] : [l, r];
+  const inMain = new Set(main.map(x => x.id));
+
+  // Records only the other side has, grouped by the record they follow there.
   const after = new Map<string | null, Json[]>();
   let prev: string | null = null;
-  for (const x of r) {
-    if (lm.has(x.id)) {
+  for (const x of other) {
+    if (inMain.has(x.id)) {
       prev = x.id;
       continue;
     }
@@ -136,7 +148,7 @@ function mergeById(
     after.set(prev, [...(after.get(prev) ?? []), v]);
   }
   const out: Json[] = [...(after.get(null) ?? [])];
-  for (const x of l) {
+  for (const x of main) {
     const v = pick(x.id);
     if (v !== undefined) out.push(v);
     out.push(...(after.get(x.id) ?? []));
