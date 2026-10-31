@@ -2,16 +2,40 @@ import {create} from 'zustand';
 import {todayISO} from './model/dates';
 import {fromMinutes} from './model/time';
 import type {Recurrence} from './model/recurrence';
-import {EventColor, type ISODate} from './model/types';
+import {EventColor, type ISODate, type ItemKind} from './model/types';
 import {useStore} from './store';
 
+interface DraftModeInfo {
+  /** Its tab in the create card. */
+  label: string;
+  /** It can be all day; otherwise it always has a time. */
+  allDay: boolean;
+  /** It can repeat. */
+  repeats: boolean;
+}
+
 /**
- * An event being created, a task's time block ('task' mode) or reserved
- * time for that day ('reserved' mode, labelled by `title`): shown as a ghost
- * block with a floating editor.
+ * What the calendar's create card makes, in the order of its tabs. A new
+ * kind is a row here, and its case where the card saves.
+ */
+export const DRAFT_MODES = {
+  event: {label: 'Event', allDay: true, repeats: true},
+  // A new task, due on the draft's date; with a time, also planned then.
+  task: {label: 'Task', allDay: true, repeats: false},
+  // Time planned for an existing task.
+  block: {label: 'Time block', allDay: false, repeats: false},
+  // Reserved time, labelled by the title.
+  reserved: {label: 'Reserved', allDay: false, repeats: true},
+} as const satisfies Record<string, DraftModeInfo>;
+
+export type DraftMode = keyof typeof DRAFT_MODES;
+
+/**
+ * Something being created on the calendar (see DRAFT_MODES): shown as a
+ * ghost block with a floating editor.
  */
 export interface Draft {
-  mode: 'event' | 'task' | 'reserved';
+  mode: DraftMode;
   date: ISODate;
   start: string;
   end: string;
@@ -19,8 +43,11 @@ export interface Draft {
   title: string;
   notes: string;
   color: EventColor;
-  /** The task to plan, in 'task' mode. */
+  /** The task to plan, in 'block' mode. */
   itemId?: string;
+  /** The new task's project and kind, in 'task' mode. */
+  projectId?: string;
+  itemKind?: ItemKind;
   /** How the event repeats; unset: it happens once. */
   recurrence?: Recurrence;
 }

@@ -236,10 +236,18 @@ log, as tabs in the side panel.
     tiny drag gives a 15-minute event. Either opens a floating quick-create card next to the
     selection, not a modal.
   - Click the all-day row for an all-day event.
-  - The quick-create card has **Event | Time block | Reserved** tabs, like Google
-    Calendar's, between the title (or task search) and the rest of the card.
-    (Not "Task", which is something else in Google Calendar.) Time block
-    plans time for one of your tasks instead: search open tasks by
+  - The quick-create card has **Event | Task | Time block | Reserved** tabs,
+    like Google Calendar's, between the title (or task search) and the rest of
+    the card. The tabs come from one table (`DRAFT_MODES` in `ui.ts`: label,
+    whether it can be all day, whether it repeats), so a new kind is a row
+    there plus its case where the card saves.
+  - **Task** creates a new task, like Google Calendar's Task: a title, a
+    project (the one used last, else the first open one) and a kind (Task by
+    default), due on the card's date, with optional notes. With a time, the
+    time is also planned for it as a session (and is its estimate); "All day"
+    makes it a due date only. The card says which ("Due 6 Nov, with
+    10:00–11:00 planned for it (1h)."). One undo step.
+  - **Time block** plans time for one of your existing tasks: search open tasks by
     title or project (without a query it lists the ones that still need
     time, with the hours left), and Save adds a session at the chosen time.
     The block is that session, so moving, resizing or deleting it changes
