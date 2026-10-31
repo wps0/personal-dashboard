@@ -1,5 +1,5 @@
-import {memo, useCallback, type CSSProperties} from 'react';
-import {AlignLeft, Clock, Trash2, X} from 'lucide-react';
+import {memo, useCallback, useMemo, useState, type CSSProperties} from 'react';
+import {AlignLeft, Clock, Repeat, Trash2, X} from 'lucide-react';
 import {eventStyle} from '../event_colors';
 import {withUndo} from '../toast';
 import {formatLong} from '../model/dates';
@@ -12,7 +12,15 @@ import {useUi, type Draft} from '../ui';
 import {BufferedInput, BufferedTextarea} from './buffered';
 import {DateField} from './date_field';
 import {EventColorRow} from './event_color_picker';
-import {addReserved} from '../actions';
+import {addReserved, backToSeries, deleteEvent, editEvent} from '../actions';
+import {
+  parseKey,
+  shownEvent,
+  type EventPatch,
+  type Scope,
+} from '../model/recurrence';
+import {RepeatSelect} from './repeat_select';
+import {Popover, PopoverContent, PopoverTrigger} from './ui/popover';
 import {TaskPicker} from './task_picker';
 import {TimeSelect} from './time_select';
 import {MoveBar} from './ui/move_bar';
@@ -149,10 +157,18 @@ export function DraftEditor() {
     } else {
       const name = draft.title.trim() || '(No title)';
       const notes = draft.notes.trim() || undefined;
+      const {recurrence} = draft;
       withUndo(`Created “${name}”`, () =>
-        useStore
-          .getState()
-          .addEvent({date, start, end, allDay, color, title: name, notes}),
+        useStore.getState().addEvent({
+          date,
+          start,
+          end,
+          allDay,
+          color,
+          title: name,
+          notes,
+          recurrence,
+        }),
       );
     }
     setDraft(null);
@@ -225,6 +241,14 @@ export function DraftEditor() {
         {draft.mode === 'event' && (
           <>
             <div className="flex gap-3">
+              <Repeat size={16} className="mt-1.5 shrink-0 text-dim" />
+              <RepeatSelect
+                value={draft.recurrence}
+                date={draft.date}
+                onChange={recurrence => patchDraft({recurrence})}
+              />
+            </div>
+            <div className="flex gap-3">
               <AlignLeft size={16} className="mt-1.5 shrink-0 text-dim" />
               <textarea
                 value={draft.notes}
@@ -254,30 +278,79 @@ export function DraftEditor() {
   );
 }
 
-/** Floating editor for an existing event; changes apply immediately. */
+const SCOPES: [Scope, string][] = [
+  ['this', 'This event'],
+  ['following', 'This and following'],
+  ['all', 'All events'],
+];
+
+/**
+ * Floating editor for an existing event (`eventId` is the key it's shown
+ * as); changes apply immediately. For a repeating event's occurrence, a
+ * choice at the top says which occurrences they apply to.
+ */
 export function EventEditor({eventId}: {eventId: string}) {
-  const event = useStore(s => s.data.events.find(e => e.id === eventId));
-  const onWhen = useCallback(
-    (p: Partial<When>) => useStore.getState().updateEvent(eventId, p),
-    [eventId],
+  // An occurrence is a new copy each time: selected as the event list.
+  const events = useStore(s => s.data.events);
+  const event = useMemo(() => shownEvent(events, eventId), [events, eventId]);
+  const occurrence = parseKey(eventId).date !== undefined;
+  // Changed on its own, and its repeating event is still there.
+  const inSeries =
+    !!event?.seriesId &&
+    event.seriesDate !== undefined &&
+    events.some(e => e.id === event.seriesId && e.recurrence);
+  const [scope, setScope] = useState<Scope>('this');
+  const edit = useCallback(
+    (patch: EventPatch, to: Scope = scope) => {
+      const key = editEvent(eventId, to, patch);
+      if (key !== eventId) useUi.getState().openEvent(key);
+    },
+    [eventId, scope],
   );
+  const onWhen = useCallback((p: Partial<When>) => edit(p), [edit]);
   const close = () => useUi.getState().openEvent(null);
   if (!event) return null;
-  const {updateEvent, deleteEvent} = useStore.getState();
+  const remove = (to: Scope) => {
+    close();
+    deleteEvent(event, to);
+  };
   return (
     <div className="w-[448px] max-w-[calc(100vw-24px)] p-3">
       <div className="mb-1 flex justify-end gap-0.5">
-        <button
-          className="icon-btn hover:!text-danger"
-          aria-label="Delete event"
-          title="Delete"
-          onClick={() => {
-            close();
-            withUndo(`Deleted “${event.title}”`, () => deleteEvent(event.id));
-          }}
-        >
-          <Trash2 size={16} />
-        </button>
+        {occurrence ? (
+          <Popover>
+            <PopoverTrigger
+              className="icon-btn hover:!text-danger"
+              aria-label="Delete event"
+              title="Delete"
+            >
+              <Trash2 size={16} />
+            </PopoverTrigger>
+            <PopoverContent align="end" className="w-52 p-1 text-[13px]">
+              <div className="label px-2.5 pt-1.5 pb-1">Delete</div>
+              {SCOPES.map(([s, label]) => (
+                <button
+                  key={s}
+                  className="flex w-full rounded-md px-2.5 py-1.5 text-left hover:bg-raised hover:text-danger"
+                  onClick={() => remove(s)}
+                >
+                  {label === 'This and following'
+                    ? 'This and following events'
+                    : label}
+                </button>
+              ))}
+            </PopoverContent>
+          </Popover>
+        ) : (
+          <button
+            className="icon-btn hover:!text-danger"
+            aria-label="Delete event"
+            title="Delete"
+            onClick={() => remove('all')}
+          >
+            <Trash2 size={16} />
+          </button>
+        )}
         <button className="icon-btn" aria-label="Close" onClick={close}>
           <X size={16} />
         </button>
@@ -290,35 +363,70 @@ export function EventEditor({eventId}: {eventId: string}) {
         <BufferedInput
           value={event.title}
           aria-label="Title"
-          onCommit={title =>
-            updateEvent(event.id, {title: title.trim() || '(No title)'})
-          }
+          onCommit={title => edit({title: title.trim() || '(No title)'})}
           className="min-w-0 flex-1 border-b-2 border-transparent pb-1 text-lg text-strong hover:border-line focus:border-accent"
         />
       </div>
+      {occurrence && (
+        <div
+          role="radiogroup"
+          aria-label="Changes apply to"
+          className="mb-3 ml-7 flex flex-wrap items-center gap-1 text-[12px]"
+        >
+          <span className="mr-1 text-dim">Changes apply to</span>
+          {SCOPES.map(([s, label]) => (
+            <button
+              key={s}
+              role="radio"
+              aria-checked={scope === s}
+              onClick={() => setScope(s)}
+              className={`rounded-md px-2 py-0.5 ${
+                scope === s
+                  ? 'bg-accent/20 text-accent'
+                  : 'text-fg hover:bg-raised'
+              }`}
+            >
+              {label}
+            </button>
+          ))}
+        </div>
+      )}
       <div className="space-y-3">
         <WhenFields value={event} onChange={onWhen} />
+        <div className="flex gap-3">
+          <Repeat size={16} className="mt-1.5 shrink-0 text-dim" />
+          <RepeatSelect
+            value={event.recurrence}
+            date={event.date}
+            // A new rule applies from this occurrence on, or to all of them.
+            onChange={recurrence =>
+              edit({recurrence}, scope === 'all' ? 'all' : 'following')
+            }
+          />
+        </div>
         <div className="flex gap-3">
           <AlignLeft size={16} className="mt-1.5 shrink-0 text-dim" />
           <BufferedTextarea
             value={event.notes ?? ''}
             placeholder="Add description"
             rows={3}
-            onCommit={notes =>
-              updateEvent(event.id, {notes: notes.trim() || undefined})
-            }
+            onCommit={notes => edit({notes: notes.trim() || undefined})}
             className="min-w-0 flex-1 resize-none rounded-md bg-raised px-2 py-1.5 placeholder:text-dim"
           />
         </div>
-        <EventColorRow
-          value={event.color}
-          onChange={color =>
-            withUndo('Colour changed', () => updateEvent(event.id, {color}), {
-              quiet: true,
-            })
-          }
-        />
+        <EventColorRow value={event.color} onChange={color => edit({color})} />
       </div>
+      {inSeries && (
+        <p className="mt-3 flex flex-wrap items-center gap-x-2 pl-7 text-[12px] text-dim">
+          Changed on its own from a repeating event.
+          <button
+            className="text-accent hover:underline"
+            onClick={() => useUi.getState().openEvent(backToSeries(event))}
+          >
+            Back to the repeating event
+          </button>
+        </p>
+      )}
       <p className="mt-3 pl-7 text-[11px] text-dim">
         Local event · syncs with Google Calendar in v2
       </p>

@@ -25,7 +25,12 @@ import type * as pb from '../gen/dashboard/data_pb';
 export type Migration = (data: pb.AppData) => pb.AppData;
 
 /** `MIGRATIONS[n]` upgrades data of schema version `n` to version `n + 1`. */
-export const MIGRATIONS: Readonly<Record<number, Migration>> = {};
+export const MIGRATIONS: Readonly<Record<number, Migration>> = {
+  // Version 2 adds repeating events. Version 1 data has none, so it reads as
+  // it is; the version changes so that older versions, which would show a
+  // repeating event only once, refuse the new data instead.
+  1: data => data,
+};
 
 /**
  * `data`, saved with schema version `from`, upgraded step by step to version

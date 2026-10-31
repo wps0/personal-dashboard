@@ -21,6 +21,7 @@ import {
   type Lookups,
 } from '../hooks';
 import {monthGrid, weekdayNames} from '../model/dates';
+import {eventsByDay} from '../model/recurrence';
 import {dueByDay} from '../model/selectors';
 import type {Allocation, CalendarEvent, ISODate, Item} from '../model/types';
 import {eventStyle} from '../event_colors';
@@ -125,8 +126,8 @@ function MonthBody({
       if (want.has(d))
         for (const ev of list) m.get(d)!.push({kind: 'google', ev});
     if (!hidden.includes('events'))
-      for (const e of events)
-        if (want.has(e.date)) m.get(e.date)!.push({kind: 'event', event: e});
+      for (const [d, list] of eventsByDay(events, days))
+        for (const event of list) m.get(d)!.push({kind: 'event', event});
     for (const a of allocations) {
       if (!want.has(a.date)) continue;
       const item = lookups.item(a.itemId);
