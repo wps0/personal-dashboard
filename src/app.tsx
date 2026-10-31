@@ -1,4 +1,17 @@
-import {CircleGauge, Keyboard, Monitor, Moon, Sun} from 'lucide-react';
+import {
+  BriefcaseBusiness,
+  CalendarDays,
+  CircleGauge,
+  FolderKanban,
+  House,
+  Keyboard,
+  Monitor,
+  Moon,
+  NotebookPen,
+  Settings,
+  Sun,
+  type LucideIcon,
+} from 'lucide-react';
 import {ConflictsBadge} from './components/conflicts_badge';
 import {Toaster} from './components/toaster';
 import {ShortcutDialogs} from './components/shortcut_dialogs';
@@ -42,13 +55,13 @@ function preload() {
   void preloadMarkdown();
 }
 
-const NAV: {route: Route; label: string}[] = [
-  {route: {name: 'home'}, label: 'Home'},
-  {route: {name: 'week'}, label: 'Week'},
-  {route: {name: 'calendar'}, label: 'Calendar'},
-  {route: {name: 'projects'}, label: 'Projects'},
-  {route: {name: 'work'}, label: 'Work'},
-  {route: {name: 'settings'}, label: 'Settings'},
+const NAV: {route: Route; label: string; icon: LucideIcon}[] = [
+  {route: {name: 'home'}, label: 'Home', icon: House},
+  {route: {name: 'week'}, label: 'Week', icon: NotebookPen},
+  {route: {name: 'calendar'}, label: 'Calendar', icon: CalendarDays},
+  {route: {name: 'projects'}, label: 'Projects', icon: FolderKanban},
+  {route: {name: 'work'}, label: 'Work', icon: BriefcaseBusiness},
+  {route: {name: 'settings'}, label: 'Settings', icon: Settings},
 ];
 
 const THEME_NEXT: Record<ThemeChoice, ThemeChoice> = {
@@ -91,9 +104,12 @@ export function App() {
               href={href(n.route)}
               aria-current={n.route.name === route.name ? 'page' : undefined}
               title={`${n.label} (${NAV.indexOf(n) + 1})`}
-              className={`shrink-0 rounded-md px-2 py-1 transition-colors duration-150 sm:px-2.5 ${n.route.name === route.name ? 'bg-raised text-strong' : 'text-dim hover:bg-raised/60 hover:text-fg'}`}
+              aria-label={n.label}
+              className={`flex shrink-0 items-center rounded-md px-2 py-1 transition-colors duration-150 sm:px-2.5 ${n.route.name === route.name ? 'bg-raised text-strong' : 'text-dim hover:bg-raised/60 hover:text-fg'}`}
             >
-              {n.label}
+              {/* On phones only the icon, so all six tabs fit. */}
+              <n.icon size={17} aria-hidden className="sm:hidden" />
+              <span className="hidden sm:inline">{n.label}</span>
             </a>
           ))}
         </nav>
