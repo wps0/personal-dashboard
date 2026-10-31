@@ -176,12 +176,6 @@ function ItemDetails({item, onClose}: {item: Item; onClose(): void}) {
       <section className="border-b border-line p-3">
         <div className="mb-1 flex items-center">
           <span className="label">sessions</span>
-          <button
-            className="btn-ghost ml-auto text-[11px]"
-            onClick={() => addAllocation(item.id, today, 1)}
-          >
-            + add session today
-          </button>
         </div>
         {allocs.length === 0 ? (
           <p className="text-[12px] text-dim">
@@ -207,6 +201,12 @@ function ItemDetails({item, onClose}: {item: Item; onClose(): void}) {
             </tbody>
           </table>
         )}
+        <button
+          className="btn-ghost mt-1 text-[11px]"
+          onClick={() => addAllocation(item.id, today, 1)}
+        >
+          + add session today
+        </button>
       </section>
 
       <section className="p-3">
