@@ -1,7 +1,7 @@
 import {create} from '@bufbuild/protobuf';
 import {describe, expect, it} from 'vitest';
 import * as pb from '../gen/dashboard/data_pb';
-import {defaultRules, range, reservedDay} from './capacity';
+import type {InitOf} from './types';
 import {
   loggedHours,
   plannedWork,
@@ -39,26 +39,56 @@ describe('the work log', () => {
 });
 
 describe('plannedWork', () => {
-  const rules = defaultRules(); // weekdays: Sleep 23:00–07:00, Work 09:00–17:00
+  const reserved = (
+    id: string,
+    date: string,
+    start: string,
+    end: string,
+    title: string,
+    recurrence?: InitOf<typeof pb.RecurrenceSchema>,
+  ) =>
+    create(pb.CalendarEventSchema, {
+      id,
+      kind: pb.EventKind.RESERVED,
+      date,
+      start,
+      end,
+      title,
+      recurrence: recurrence && create(pb.RecurrenceSchema, recurrence),
+    });
+  const WORK_DAYS = [1, 2, 3, 4, 5] as pb.Weekday[];
+  // From Monday 5 Oct: work on weekdays, sleep every day.
+  const events = [
+    reserved('w', '2026-10-05', '09:00', '17:00', 'Work', {
+      unit: pb.RecurrenceUnit.WEEK,
+      weekdays: WORK_DAYS,
+    }),
+    reserved('s', '2026-10-05', '23:00', '07:00', 'Sleep', {
+      unit: pb.RecurrenceUnit.DAY,
+    }),
+  ];
 
-  it('is the day’s reserved time labelled as work', () => {
-    expect(plannedWork(rules, {}, '2026-10-12', '')).toEqual([
+  it('is the day’s reserved events named as work', () => {
+    expect(plannedWork(events, '2026-10-12', '')).toEqual([
       {start: '09:00', end: '17:00'},
     ]);
-    expect(plannedWork(rules, {}, '2026-10-11', '')).toEqual([]); // Sunday
+    expect(plannedWork(events, '2026-10-11', '')).toEqual([]); // Sunday
   });
 
-  it('follows the day’s own reserved time and a custom label, ignoring case', () => {
-    const days = {
-      '2026-10-12': create(pb.DayCapacitySchema, {
-        reserved: reservedDay(
-          range('14:00', '18:00', 'praca'),
-          range('08:00', '12:00', 'Praca'),
-          range('22:00', '06:00', 'Praca'), // past midnight: left out
-        ),
+  it('follows a custom label, ignoring case, and leaves out ones past midnight', () => {
+    const praca = [
+      reserved('a', '2026-10-12', '14:00', '18:00', 'praca'),
+      reserved('b', '2026-10-12', '08:00', '12:00', 'Praca'),
+      reserved('c', '2026-10-12', '22:00', '06:00', 'Praca'),
+      create(pb.CalendarEventSchema, {
+        id: 'not reserved',
+        date: '2026-10-12',
+        start: '07:00',
+        end: '08:00',
+        title: 'Praca',
       }),
-    };
-    expect(plannedWork(rules, days, '2026-10-12', 'Praca')).toEqual([
+    ];
+    expect(plannedWork(praca, '2026-10-12', 'Praca')).toEqual([
       {start: '08:00', end: '12:00'},
       {start: '14:00', end: '18:00'},
     ]);

@@ -24,6 +24,19 @@ export function moveStart(
   return {start, end: fromMinutes(toMinutes(start) + len)};
 }
 
+/**
+ * Like `moveStart`, for a range that may end after midnight (reserved time):
+ * keeps its length, ending the next day if it has to.
+ */
+export function moveStartOvernight(
+  range: {start: string; end: string},
+  start: string,
+): {start: string; end: string} {
+  const day = 24 * 60;
+  const len = (toMinutes(range.end) - toMinutes(range.start) + day) % day || 15;
+  return {start, end: fromMinutes((toMinutes(start) + len) % day)};
+}
+
 export function snap(min: number, step = 15): number {
   return Math.round(min / step) * step;
 }

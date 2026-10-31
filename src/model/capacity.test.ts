@@ -8,8 +8,6 @@ import {
   plannedInWindow,
   defaultRules,
   range,
-  reservedDay,
-  reservedFor,
   ruleFor,
   withRuleChange,
 } from './capacity';
@@ -91,39 +89,8 @@ describe('capacity', () => {
   });
 });
 
-describe('reservedFor', () => {
-  it('splits ranges that wrap past midnight and uses the weekday', () => {
-    const rules = defaultRules();
-    expect(reservedFor(rules, '2026-10-12')).toEqual([
-      {start: 0, end: 420, label: 'Sleep', index: 0, wraps: true},
-      {start: 1380, end: 1440, label: 'Sleep', index: 0, wraps: true},
-      {start: 540, end: 1020, label: 'Work', index: 1, wraps: false},
-    ]);
-    expect(reservedFor(rules, '2026-10-11').map(r => r.label)).toEqual([
-      'Sleep',
-      'Sleep',
-    ]); // Sunday: no work
-  });
-
-  it('uses a day’s own reserved time once it has some', () => {
-    const rules = defaultRules();
-    const days = {
-      '2026-10-12': create(pb.DayCapacitySchema, {
-        reserved: reservedDay(range('10:00', '18:30', 'Work')),
-      }),
-      // Edited down to nothing: still the day's own.
-      '2026-10-13': create(pb.DayCapacitySchema, {reserved: reservedDay()}),
-    };
-    expect(reservedFor(rules, '2026-10-12', days)).toEqual([
-      {start: 600, end: 1110, label: 'Work', index: 0, wraps: false},
-    ]);
-    expect(reservedFor(rules, '2026-10-13', days)).toEqual([]);
-    expect(reservedFor(rules, '2026-10-14', days)).toHaveLength(3);
-  });
-});
-
 describe('copyDay', () => {
-  it('copies a weekday’s window and reserved time to the picked days only', () => {
+  it('copies a weekday’s planning window to the picked days only', () => {
     const rule = {
       ...defaultRules()[0],
       windows: defaultRules()[0].windows.map((w, i) =>
@@ -140,11 +107,6 @@ describe('copyDay', () => {
       '10:00-16:00',
       '08:00-12:00',
     ]);
-    const labels = (i: number) => out.reserved[i].ranges.map(r => r.label);
-    expect(labels(6)).toEqual(['Sleep', 'Work']);
-    expect(labels(5)).toEqual(['Sleep']);
-    // The copies are separate records, not the source's.
-    expect(out.reserved[6]).not.toBe(out.reserved[2]);
   });
 });
 

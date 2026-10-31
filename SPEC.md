@@ -39,7 +39,7 @@ Area            e.g. University, Work, Personal, Side projects
          ├─ groupId?  one of its project's groups
          └─ Allocation[]   { date, start?, plannedHours, done, actualHours }
 
-CalendarEvent   { date, start, end, title, notes, recurrence?, skippedDates[], seriesId?, seriesDate? }   local in v1; Google Calendar in v2
+CalendarEvent   { kind (event | reserved), date, start, end, title, notes, recurrence?, skippedDates[], seriesId?, seriesDate? }   local in v1; Google Calendar in v2
 WorkSpan        { date, start, end, note? }   the work log: time actually worked
 ```
 
@@ -121,21 +121,32 @@ Each day box is a hybrid of three parts:
   - The planned hours set against capacity are the untimed sessions plus the
     part of timed ones inside the planning window: a class at noon doesn't
     use evening planning time.
-- **Reserved time** per weekday (e.g. sleep 23:00–07:00, work 09:00–17:00) is
-  drawn with diagonal hatching on the calendar. It's informational only: events
-  can still go there. It's versioned with the capacity rules. In Settings, each
-  weekday's copy button copies its planning window and reserved time to the
-  days you tick (with Weekdays / Weekend / All shortcuts).
-- **A day's own reserved time.** On the calendar, a reserved block's label
-  (top right, above events) is its handle: drag it to move the block, also
-  to another day, and drag the block's top or bottom edge to resize it.
-  Clicking the label opens a card with its label and times, Delete, and
-  "Use the weekly one". The first change to a day copies its weekday's
-  reserved time to that day, which keeps it from then on; other days keep
-  the weekday's. The block itself stays see-through, so clicking it still
-  creates an event. Ranges past midnight (sleep) are edited in the card only.
-  All of it is undoable. The quick-create card's **Reserved** tab adds
-  reserved time to that day: a label (e.g. Gym) and times, no all-day.
+- **Reserved time** (e.g. sleep 23:00–07:00, work 09:00–17:00) is a kind of
+  event: reserved events, which usually repeat (see Repeating events in 3.4).
+  - **Drawn with diagonal hatching** on the calendar. Informational only:
+    events can still go there, and it doesn't take capacity. The month view
+    leaves it out.
+  - **Can end after midnight:** an end before the start ends the next day
+    (sleep). It's drawn at the end of its day and the start of the next, and
+    edited in its card only.
+  - **The block's label** (top right, above events) is its handle: drag it
+    to move the block, also to another day; drag the block's top or bottom
+    edge to resize it. Like any repeating event dragged on the calendar,
+    that changes that day only. The block itself stays see-through, so
+    clicking it still creates an event.
+  - **Clicking the label** opens its event card: label, times, Repeat, and
+    for a repeating one "Changes apply to" and **Back to the repeating
+    event**. No colour. All of it is undoable.
+  - **Created** with the quick-create card's **Reserved** tab: a label (e.g.
+    Gym), times and Repeat, no all-day.
+  - **Before schema version 3,** reserved time lived in Settings (per
+    weekday, versioned with the capacity rules, and a day's own once edited
+    on the calendar). The step to version 3 turns it into reserved events:
+    the same range on several weekdays becomes one repeating event from the
+    rule's date to the next rule's, and a day with its own reserved time
+    gets one-off events while the repeating ones skip it. Settings → Capacity
+    has the planning windows and the global adjustment; each weekday's copy
+    button copies its planning window to the days you tick.
 - **Overdue tray.** Unfinished allocations from past days move to a "missed"
   tray that is visible on today, so you reschedule them deliberately. They are
   never moved automatically.
@@ -314,7 +325,7 @@ choice is stored per device. Text on the accent colour (primary buttons,
 today's date) is dark navy in the dark theme and white in the light theme.
 
 ### 3.8 Settings
-Sections (Calendar, Google Calendar, Capacity & reserved time, Work log, Areas, Data)
+Sections (Calendar, Google Calendar, Capacity, Work log, Areas, Data)
 are cards with a heading and a one-line hint. Calendar holds the default event
 length, the default view and the first day of the week (Monday … Sunday;
 Sunday by default), which is part of the synced data. Capacity rules stay per
@@ -352,15 +363,15 @@ somewhere else (backlog and day notes on Week, the log in the panel, status
 behind a dropdown, Google reconnect in Calendar or Settings).
 
 ### 3.10 Work log (`#/work`)
-The plan is reserved time labelled as work (Work by default; Settings → Work
-log). The work log records what was actually worked: stretches of time
+The plan is reserved time named as work: reserved events with that label
+(Work by default; Settings → Work log). The work log records what was actually worked: stretches of time
 (start – end) per day, synced like everything else.
 
 - **The Work page**, a tab of its own (key 5), shows a week at a time,
   Monday to Sunday, like the week journal; ‹ › and `j` / `k` move by a week,
   `t` comes back to this one.
 - **Each day** lists its planned work ("Planned 09:00–17:00", from the
-  day's reserved time, including a day's own), its logged stretches with
+  day's reserved events, including one changed on its own that day), its logged stretches with
   editable start and end and a remove button, and the day's total. A day
   with nothing logged offers **Log as planned** (its planned work, in one
   step); **+ add** adds a stretch after the last one, or the planned work,

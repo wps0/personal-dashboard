@@ -1,6 +1,4 @@
 import {beforeEach, describe, expect, it} from 'vitest';
-import {range} from './model/capacity';
-import {addDays, todayISO} from './model/dates';
 import {emptyData, Weekday} from './model/types';
 import {useStore} from './store';
 
@@ -129,33 +127,5 @@ describe('item groups in the store', () => {
     s().updateItem(b, {projectId, title: 'Lecture 2'});
     expect(groupOf(a)).toBeUndefined();
     expect(groupOf(b)).toBe(g);
-  });
-});
-
-describe('a day’s reserved time in the store', () => {
-  beforeEach(() => useStore.getState().replaceAll(emptyData()));
-  const s = () => useStore.getState();
-  const day = addDays(todayISO(), 2);
-  const entry = () => s().data.settings.dayCapacity[day];
-
-  it('is kept by capacity tweaks, and kept apart from their reset', () => {
-    s().setDayReserved(day, [range('10:00', '18:00', 'Work')]);
-    s().setDayCapacity(day, {delta: 1});
-    expect(entry().delta).toBe(1);
-    expect(entry().reserved?.ranges).toMatchObject([{start: '10:00'}]);
-    s().setDayCapacity(day, null);
-    expect(entry().delta).toBeUndefined();
-    expect(entry().reserved?.ranges).toHaveLength(1);
-  });
-
-  it('can be emptied, and set back to the weekday’s', () => {
-    s().setDayCapacity(day, {override: 3});
-    s().setDayReserved(day, []);
-    expect(entry().reserved?.ranges).toEqual([]);
-    s().setDayReserved(day, null);
-    expect(entry().reserved).toBeUndefined();
-    expect(entry().override).toBe(3);
-    s().setDayCapacity(day, null);
-    expect(entry()).toBeUndefined();
   });
 });

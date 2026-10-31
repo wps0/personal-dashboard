@@ -3,7 +3,7 @@ import {AlignLeft, Clock, Repeat, Trash2, X} from 'lucide-react';
 import {eventStyle} from '../event_colors';
 import {withUndo} from '../toast';
 import {formatLong} from '../model/dates';
-import {moveStart, toMinutes} from '../model/time';
+import {moveStart, moveStartOvernight, toMinutes} from '../model/time';
 import type {CalendarEvent} from '../model/types';
 import {useLookups} from '../hooks';
 import {EventColor} from '../model/types';
@@ -19,6 +19,7 @@ import {
   type EventPatch,
   type Scope,
 } from '../model/recurrence';
+import {isReserved} from '../model/reserved';
 import {RepeatSelect} from './repeat_select';
 import {Popover, PopoverContent, PopoverTrigger} from './ui/popover';
 import {TaskPicker} from './task_picker';
@@ -31,12 +32,16 @@ function WhenFieldsImpl({
   value,
   onChange,
   allDayOption = true,
+  overnight = false,
 }: {
   value: When;
   onChange(p: Partial<When>): void;
   /** Off for time blocks, which always have a time. */
   allDayOption?: boolean;
+  /** Reserved time may end after midnight: an end before the start. */
+  overnight?: boolean;
 }) {
+  const nextDay = overnight && toMinutes(value.end) <= toMinutes(value.start);
   return (
     <div className="flex gap-3">
       <Clock size={16} className="mt-1.5 shrink-0 text-dim" />
@@ -52,7 +57,11 @@ function WhenFieldsImpl({
             <>
               <TimeSelect
                 value={value.start}
-                onChange={s => onChange(moveStart(value, s))}
+                onChange={s =>
+                  onChange(
+                    (overnight ? moveStartOvernight : moveStart)(value, s),
+                  )
+                }
                 variant="ghost"
                 className="w-fit"
                 ariaLabel="Start time"
@@ -60,12 +69,15 @@ function WhenFieldsImpl({
               <span className="text-dim">–</span>
               <TimeSelect
                 value={value.end}
-                after={value.start}
+                after={overnight ? undefined : value.start}
                 onChange={e => onChange({end: e})}
                 variant="ghost"
                 className="w-fit"
                 ariaLabel="End time"
               />
+              {nextDay && (
+                <span className="text-[12px] text-dim">the next day</span>
+              )}
             </>
           )}
         </div>
@@ -91,6 +103,7 @@ const WhenFields = memo(
   (a, b) =>
     a.onChange === b.onChange &&
     a.allDayOption === b.allDayOption &&
+    a.overnight === b.overnight &&
     a.value.date === b.value.date &&
     a.value.start === b.value.start &&
     a.value.end === b.value.end &&
@@ -146,7 +159,8 @@ export function DraftEditor() {
   const save = () => {
     const {date, start, end, allDay, color, itemId} = draft;
     if (isReserved) {
-      addReserved(date, {start, end, label: draft.title.trim() || undefined});
+      const {recurrence} = draft;
+      addReserved({date, start, end, title: draft.title.trim(), recurrence});
     } else if (isTask) {
       const item = useStore.getState().data.items.find(i => i.id === itemId);
       if (!item) return;
@@ -231,23 +245,26 @@ export function DraftEditor() {
           value={draft}
           onChange={patchWhen}
           allDayOption={draft.mode === 'event'}
+          overnight={isReserved}
         />
+        {!isTask && (
+          <div className="flex gap-3">
+            <Repeat size={16} className="mt-1.5 shrink-0 text-dim" />
+            <RepeatSelect
+              value={draft.recurrence}
+              date={draft.date}
+              onChange={recurrence => patchDraft({recurrence})}
+            />
+          </div>
+        )}
         {isReserved && (
           <p className="pl-7 text-[12px] text-dim">
-            Hatched on the calendar, for this day only; it doesn’t change
-            capacity. Weekly reserved time is in Settings.
+            Hatched on the calendar; it doesn’t change capacity. An end before
+            the start ends the next day (e.g. sleep 23:00–07:00).
           </p>
         )}
         {draft.mode === 'event' && (
           <>
-            <div className="flex gap-3">
-              <Repeat size={16} className="mt-1.5 shrink-0 text-dim" />
-              <RepeatSelect
-                value={draft.recurrence}
-                date={draft.date}
-                onChange={recurrence => patchDraft({recurrence})}
-              />
-            </div>
             <div className="flex gap-3">
               <AlignLeft size={16} className="mt-1.5 shrink-0 text-dim" />
               <textarea
@@ -294,6 +311,7 @@ export function EventEditor({eventId}: {eventId: string}) {
   const events = useStore(s => s.data.events);
   const event = useMemo(() => shownEvent(events, eventId), [events, eventId]);
   const occurrence = parseKey(eventId).date !== undefined;
+  const reserved = !!event && isReserved(event);
   // Changed on its own, and its repeating event is still there.
   const inSeries =
     !!event?.seriesId &&
@@ -356,14 +374,21 @@ export function EventEditor({eventId}: {eventId: string}) {
         </button>
       </div>
       <div className="mb-3 flex items-start gap-3">
-        <span
-          className="mt-2.5 h-3 w-3 shrink-0 rounded"
-          style={{background: eventStyle(event.color).background}}
-        />
+        {reserved ? (
+          <span className="reserved mt-2.5 h-3 w-3 shrink-0 rounded border border-line" />
+        ) : (
+          <span
+            className="mt-2.5 h-3 w-3 shrink-0 rounded"
+            style={{background: eventStyle(event.color).background}}
+          />
+        )}
         <BufferedInput
           value={event.title}
-          aria-label="Title"
-          onCommit={title => edit({title: title.trim() || '(No title)'})}
+          aria-label={reserved ? 'Label' : 'Title'}
+          placeholder={reserved ? 'Label, e.g. Work' : undefined}
+          onCommit={title =>
+            edit({title: title.trim() || (reserved ? '' : '(No title)')})
+          }
           className="min-w-0 flex-1 border-b-2 border-transparent pb-1 text-lg text-strong hover:border-line focus:border-accent"
         />
       </div>
@@ -392,7 +417,12 @@ export function EventEditor({eventId}: {eventId: string}) {
         </div>
       )}
       <div className="space-y-3">
-        <WhenFields value={event} onChange={onWhen} />
+        <WhenFields
+          value={event}
+          onChange={onWhen}
+          allDayOption={!reserved}
+          overnight={reserved}
+        />
         <div className="flex gap-3">
           <Repeat size={16} className="mt-1.5 shrink-0 text-dim" />
           <RepeatSelect
@@ -414,7 +444,12 @@ export function EventEditor({eventId}: {eventId: string}) {
             className="min-w-0 flex-1 resize-none rounded-md bg-raised px-2 py-1.5 placeholder:text-dim"
           />
         </div>
-        <EventColorRow value={event.color} onChange={color => edit({color})} />
+        {!reserved && (
+          <EventColorRow
+            value={event.color}
+            onChange={color => edit({color})}
+          />
+        )}
       </div>
       {inSeries && (
         <p className="mt-3 flex flex-wrap items-center gap-x-2 pl-7 text-[12px] text-dim">
@@ -428,7 +463,9 @@ export function EventEditor({eventId}: {eventId: string}) {
         </p>
       )}
       <p className="mt-3 pl-7 text-[11px] text-dim">
-        Local event · syncs with Google Calendar in v2
+        {reserved
+          ? 'Reserved time: drawn hatched; it doesn’t take capacity.'
+          : 'Local event · syncs with Google Calendar in v2'}
       </p>
     </div>
   );

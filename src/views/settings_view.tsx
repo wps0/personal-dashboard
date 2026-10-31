@@ -150,8 +150,8 @@ export function SettingsView() {
         </Section>
 
         <Section
-          title="Capacity & reserved time"
-          hint="When you can plan work, and which hours are taken (sleep, work)."
+          title="Capacity"
+          hint="When you can plan work: a window per weekday, and an adjustment."
         >
           <CapacitySettings />
         </Section>

@@ -213,6 +213,40 @@ export function sampleData(today = todayISO()): AppData {
   event(addDays(today, 2), '09:30', '10:00', 'Team standup');
   event(addDays(today, 2), '14:00', '14:30', '1:1 with manager');
 
+  // Reserved time: sleep every night, work on weekdays.
+  const reserved = (
+    title: string,
+    start: string,
+    end: string,
+    recurrence: pb.Recurrence,
+  ) =>
+    d.events.push(
+      create(pb.CalendarEventSchema, {
+        id: id('r'),
+        kind: pb.EventKind.RESERVED,
+        date: addDays(monday, -7),
+        start,
+        end,
+        title,
+        recurrence,
+      }),
+    );
+  reserved(
+    'Sleep',
+    '23:00',
+    '07:00',
+    create(pb.RecurrenceSchema, {unit: pb.RecurrenceUnit.DAY}),
+  );
+  reserved(
+    'Work',
+    '09:00',
+    '17:00',
+    create(pb.RecurrenceSchema, {
+      unit: pb.RecurrenceUnit.WEEK,
+      weekdays: [1, 2, 3, 4, 5],
+    }),
+  );
+
   d.dayNotes[today] = 'Freeform notes for the day go here.';
   return d;
 }

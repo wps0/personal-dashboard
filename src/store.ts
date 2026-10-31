@@ -28,7 +28,6 @@ import {
   withRuleChange,
   type CapacityRule,
   type DayCapacity,
-  type Reserved,
 } from './model/capacity';
 import {todayISO} from './model/dates';
 
@@ -102,13 +101,11 @@ interface Actions {
   markUsosHandled(keys: string[]): void;
   /** Offers the skipped classes again. */
   clearUsosHandled(): void;
-  /** Per-day tweak; ignored for past days. `null` resets it (not the day's reserved time). */
+  /** Per-day tweak; ignored for past days. `null` resets it. */
   setDayCapacity(
     date: ISODate,
     patch: {delta?: number; override?: number} | null,
   ): void;
-  /** A day's own reserved time; `null` goes back to its weekday's. */
-  setDayReserved(date: ISODate, ranges: Reserved[] | null): void;
 
   /** Logs a stretch of work; returns its id. */
   addWorkSpan(date: ISODate, start: string, end: string): string;
@@ -131,18 +128,16 @@ interface State extends Actions {
 function withDay(
   days: Record<ISODate, DayCapacity>,
   date: ISODate,
-  patch: Partial<Pick<DayCapacity, 'delta' | 'override' | 'reserved'>>,
+  patch: Partial<Pick<DayCapacity, 'delta' | 'override'>>,
 ): Record<ISODate, DayCapacity> {
   const old = days[date];
   const day = createMessage(pb.DayCapacitySchema, {
     delta: old?.delta,
     override: old?.override,
-    reserved: old?.reserved,
     ...patch,
   });
   const next = {...days};
-  if (day.delta === undefined && day.override === undefined && !day.reserved)
-    delete next[date];
+  if (day.delta === undefined && day.override === undefined) delete next[date];
   else next[date] = day;
   return next;
 }
@@ -462,17 +457,6 @@ export const useStore = create<State>()((set, get) => {
         else weekWorkTargets[monday] = hours;
         return {settings: {...d.settings, weekWorkTargets}};
       }),
-    setDayReserved: (date, ranges) =>
-      update(d => ({
-        settings: {
-          ...d.settings,
-          dayCapacity: withDay(d.settings.dayCapacity, date, {
-            reserved: ranges
-              ? createMessage(pb.ReservedDaySchema, {ranges})
-              : undefined,
-          }),
-        },
-      })),
   };
 });
 

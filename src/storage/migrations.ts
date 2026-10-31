@@ -20,6 +20,7 @@
  */
 
 import type * as pb from '../gen/dashboard/data_pb';
+import {reservedToEvents} from './v3_reserved_events';
 
 /** Upgrades data of one schema version to the next. */
 export type Migration = (data: pb.AppData) => pb.AppData;
@@ -30,6 +31,9 @@ export const MIGRATIONS: Readonly<Record<number, Migration>> = {
   // it is; the version changes so that older versions, which would show a
   // repeating event only once, refuse the new data instead.
   1: data => data,
+  // Version 3 moves reserved time from the capacity settings to reserved
+  // events, which can repeat.
+  2: reservedToEvents,
 };
 
 /**

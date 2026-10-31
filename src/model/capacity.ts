@@ -4,19 +4,16 @@ import {weekdayIndex} from './dates';
 import {toMinutes} from './time';
 import type {Allocation, CalendarEvent, ISODate} from './types';
 
-/** A time range; `end` before `start` wraps past midnight (e.g. sleep 23:00–07:00). */
+/** A time range, e.g. a planning window. */
 export type TimeRange = pb.TimeRange;
 /** Time of day you can plan work into, per weekday. */
 export type PlanningWindow = pb.TimeRange;
-/** A reserved time range, e.g. sleep or work. */
-export type Reserved = pb.TimeRange;
-/** One weekday's reserved time. */
-export type ReservedDay = pb.ReservedDay;
 /**
  * Capacity settings effective from a date. Edits create (or update) the rule
  * starting today, so past days keep the values they had.
  */
 export type CapacityRule = pb.CapacityRule;
+
 /** Per-day tweaks: a relative delta, or an absolute override that wins over everything. */
 export type DayCapacity = pb.DayCapacity;
 
@@ -43,41 +40,15 @@ const DEFAULT_WINDOWS: PlanningWindow[] = [
   range('10:00', '16:00'),
 ];
 
-const SLEEP = range('23:00', '07:00', 'Sleep');
-/** One weekday's reserved time, from its ranges. */
-export function reservedDay(...ranges: Reserved[]): ReservedDay {
-  return create(pb.ReservedDaySchema, {ranges});
-}
-
-const DEFAULT_RESERVED: ReservedDay[] = [
-  ...Array.from({length: 5}, () =>
-    reservedDay(SLEEP, range('09:00', '17:00', 'Work')),
-  ),
-  reservedDay(SLEEP),
-  reservedDay(SLEEP),
-];
-
-/** A rule's reserved time per weekday, or the defaults if it has none. */
-export function reservedDays(rule: CapacityRule): ReservedDay[] {
-  return rule.reserved.length ? rule.reserved : DEFAULT_RESERVED;
-}
-
-/**
- * A rule's planning windows and reserved time with weekday `from`'s copied to
- * the weekdays `to` (0 is Monday).
- */
+/** A rule's planning windows with weekday `from`'s copied to the weekdays `to` (0 is Monday). */
 export function copyDay(
   rule: CapacityRule,
   from: number,
   to: number[],
-): Pick<CapacityRule, 'windows' | 'reserved'> {
-  const reserved = reservedDays(rule);
+): Pick<CapacityRule, 'windows'> {
   return {
     windows: rule.windows.map((w, i) =>
       to.includes(i) ? rule.windows[from] : w,
-    ),
-    reserved: reserved.map((d, i) =>
-      to.includes(i) ? reservedDay(...reserved[from].ranges) : d,
     ),
   };
 }
@@ -88,55 +59,8 @@ export function defaultRules(): CapacityRule[] {
       from: '0000-01-01',
       windows: DEFAULT_WINDOWS,
       adjustment: 0,
-      reserved: DEFAULT_RESERVED,
     }),
   ];
-}
-
-/**
- * A date's reserved time: the day's own, once it's been edited on the
- * calendar, otherwise its weekday's from the capacity rules.
- */
-export function reservedRanges(
-  rules: CapacityRule[],
-  days: Record<ISODate, DayCapacity>,
-  date: ISODate,
-): Reserved[] {
-  return (
-    days[date]?.reserved?.ranges ??
-    reservedDays(ruleFor(rules, date))[weekdayIndex(date)]?.ranges ??
-    []
-  );
-}
-
-/** A reserved range as drawn on a day, in minutes. */
-export interface ReservedSpan {
-  start: number;
-  end: number;
-  label?: string;
-  /** The range's index in the day's reserved ranges. */
-  index: number;
-  /** Part of a range past midnight, drawn at both ends of the day. */
-  wraps: boolean;
-}
-
-/** Reserved spans for a date in minutes; ranges past midnight are drawn at both ends of the day. */
-export function reservedFor(
-  rules: CapacityRule[],
-  date: ISODate,
-  days: Record<ISODate, DayCapacity> = {},
-): ReservedSpan[] {
-  return reservedRanges(rules, days, date).flatMap((r, index) => {
-    const s = toMinutes(r.start);
-    const e = toMinutes(r.end);
-    const label = r.label;
-    if (e > s) return [{start: s, end: e, label, index, wraps: false}];
-    if (e === s) return [];
-    return [
-      {start: 0, end: e, label, index, wraps: true},
-      {start: s, end: 24 * 60, label, index, wraps: true},
-    ].filter(x => x.end > x.start);
-  });
 }
 
 export function ruleFor(rules: CapacityRule[], date: ISODate): CapacityRule {
