@@ -456,8 +456,9 @@ count in the day's, week's and month's totals like a time slot of that length, b
   day's reserved events, including one changed on its own that day), what's
   logged (time slots with editable start and end, hours alone with an
   editable length such as "7h 30m", each with a remove button), and the
-  day's total. A day with nothing logged offers **Log as planned** (its
-  planned work, in one step) and shows its planned hours instead of a
+  day's total. A day with nothing logged, today or before, offers **Log as
+  planned** (its planned work, in one step; not on later days, which haven't
+  happened). A day with nothing logged shows its planned hours instead of a
   total, after a hatched swatch. **+ time slot** adds one after the last
   one, or the planned work, or 09:00–17:00. **+ hours** adds hours alone:
   the day's planned hours, or 8h, or 1h beside other entries, with the
