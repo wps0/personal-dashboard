@@ -256,3 +256,79 @@ describe('item groups', () => {
     ]);
   });
 });
+
+describe('record order', () => {
+  const group = (id: string, name: string) =>
+    create(pb.ItemGroupSchema, {id, name});
+  /** The first project with groups a, b and c, in that order. */
+  function abc() {
+    return edit(base(), d =>
+      d.projects[0].groups.push(
+        group('a', 'A'),
+        group('b', 'B'),
+        group('c', 'C'),
+      ),
+    );
+  }
+  const ids = (d: AppData) => d.projects[0].groups.map(g => g.id);
+  const move = (d: AppData, from: number, to: number) => {
+    const gs = d.projects[0].groups;
+    gs.splice(to, 0, ...gs.splice(from, 1));
+  };
+
+  it('takes groups reordered on the other device, with a rename made here', () => {
+    const b = abc();
+    const local = edit(b, d => (d.projects[0].groups[1].name = 'Lectures'));
+    const remote = edit(b, d => move(d, 2, 0));
+    const {data, conflicts} = mergeData(b, local, remote);
+    expect(conflicts).toEqual([]);
+    expect(ids(data)).toEqual(['c', 'a', 'b']);
+    expect(data.projects[0].groups[2].name).toBe('Lectures');
+  });
+
+  it('keeps an order changed here, with a rename made there', () => {
+    const b = abc();
+    const local = edit(b, d => move(d, 0, 2));
+    const remote = edit(b, d => (d.projects[0].groups[0].name = 'Classes'));
+    const {data} = mergeData(b, local, remote);
+    expect(ids(data)).toEqual(['b', 'c', 'a']);
+    expect(data.projects[0].groups[2].name).toBe('Classes');
+  });
+
+  it('keeps this device’s order when both reordered', () => {
+    const b = abc();
+    const local = edit(b, d => move(d, 0, 2));
+    const remote = edit(b, d => move(d, 2, 0));
+    expect(ids(mergeData(b, local, remote).data)).toEqual(['b', 'c', 'a']);
+  });
+
+  it('places a record added here after the one it follows, in their order', () => {
+    const b = abc();
+    const local = edit(b, d =>
+      d.projects[0].groups.splice(1, 0, group('new', 'N')),
+    );
+    const remote = edit(b, d => move(d, 0, 2));
+    // Their order (b, c, a), with the new one right after a, as here.
+    expect(ids(mergeData(b, local, remote).data)).toEqual([
+      'b',
+      'c',
+      'a',
+      'new',
+    ]);
+  });
+
+  it('takes areas reordered there and drops one deleted here', () => {
+    const b = edit(base(), d =>
+      d.areas.push(create(pb.AreaSchema, {id: 'x', name: 'Extra'})),
+    );
+    const local = edit(b, d => (d.areas = d.areas.filter(a => a.id !== 'x')));
+    const remote = edit(b, d => d.areas.reverse());
+    const {data} = mergeData(b, local, remote);
+    expect(data.areas.map(a => a.id)).toEqual(
+      b.areas
+        .map(a => a.id)
+        .filter(id => id !== 'x')
+        .reverse(),
+    );
+  });
+});
