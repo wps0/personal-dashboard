@@ -508,6 +508,23 @@ function ItemsTab({project}: {project: Project}) {
                 <th />
               </tr>
             </thead>
+            {/* Tasks in no group come first, then the groups. */}
+            <GroupBody
+              id={`${project.id}:none`}
+              drop={{groupId: ''}}
+              target={into('')}
+            >
+              {groups.length > 0 && ungrouped.length > 0 && (
+                <GroupHeader
+                  projectId={project.id}
+                  items={ungrouped}
+                  ungrouped={ungrouped}
+                  open={noneOpen}
+                  onToggle={() => foldGroup(project.id, null, noneOpen)}
+                />
+              )}
+              {noneOpen && rows(ungrouped)}
+            </GroupBody>
             {groups.map((g, k) => {
               const list = byGroup.get(g.id) ?? [];
               const open = !g.collapsed;
@@ -554,22 +571,6 @@ function ItemsTab({project}: {project: Project}) {
                 </GroupBody>
               );
             })}
-            <GroupBody
-              id={`${project.id}:none`}
-              drop={{groupId: ''}}
-              target={into('')}
-            >
-              {groups.length > 0 && ungrouped.length > 0 && (
-                <GroupHeader
-                  projectId={project.id}
-                  items={ungrouped}
-                  ungrouped={ungrouped}
-                  open={noneOpen}
-                  onToggle={() => foldGroup(project.id, null, noneOpen)}
-                />
-              )}
-              {noneOpen && rows(ungrouped)}
-            </GroupBody>
           </table>
           {/* In the body: the panel's transform would offset a fixed ghost. */}
           {createPortal(
