@@ -207,6 +207,10 @@ export function renameGroup(projectId: string, groupId: string, name: string) {
   });
 }
 
+export function moveArea(id: string, index: number) {
+  withUndo('Area moved', () => s().moveArea(id, index), {quiet: true});
+}
+
 export function moveGroup(projectId: string, groupId: string, index: number) {
   withUndo('Group moved', () => s().moveGroup(projectId, groupId, index), {
     quiet: true,

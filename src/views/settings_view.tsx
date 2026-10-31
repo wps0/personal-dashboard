@@ -1,10 +1,10 @@
 import {useRef, useState, type ReactNode} from 'react';
 import {BufferedInput} from '../components/buffered';
 import {HoursInput} from '../components/hours_input';
-import {InlineText} from '../components/inline_text';
+import {AreaList} from '../components/area_list';
 import {DEFAULT_WORK_LABEL} from '../model/work';
 import {sampleData} from '../model/sample';
-import {AREA_COLORS, CalendarView, emptyData, Weekday} from '../model/types';
+import {CalendarView, emptyData, Weekday} from '../model/types';
 import {downloadJson, importJson} from '../storage/storage';
 import {useData, useStore} from '../store';
 import {useGoogle} from '../google/auth';
@@ -47,7 +47,7 @@ function everywhere() {
 
 export function SettingsView() {
   const data = useData();
-  const {addArea, updateArea, deleteArea, replaceAll} = useStore.getState();
+  const {addArea, replaceAll} = useStore.getState();
   const fileRef = useRef<HTMLInputElement>(null);
   const [newArea, setNewArea] = useState('');
   const [message, setMessage] = useState<string | null>(null);
@@ -165,51 +165,9 @@ export function SettingsView() {
 
         <Section
           title="Areas"
-          hint="Top-level groups for projects. Deleting an area deletes its projects."
+          hint="Top-level groups for projects, listed in this order everywhere. Drag one by its grip, or use ↑ ↓, to reorder. Deleting an area deletes its projects."
         >
-          <ul className="space-y-1">
-            {data.areas.map(a => (
-              <li
-                key={a.id}
-                className="flex items-center gap-2 rounded border border-line bg-panel px-2 py-1"
-              >
-                <div className="flex gap-0.5">
-                  {AREA_COLORS.map(c => (
-                    <button
-                      key={c}
-                      aria-label={`Color ${c}`}
-                      onClick={() => updateArea(a.id, {color: c})}
-                      className={`h-3.5 w-3.5 rounded-full ${a.color === c ? 'ring-2 ring-fg' : 'opacity-50 hover:opacity-100'}`}
-                      style={{background: c}}
-                    />
-                  ))}
-                </div>
-                <InlineText
-                  value={a.name}
-                  onChange={name => updateArea(a.id, {name})}
-                  className="flex-1"
-                />
-                <span className="tabular-nums text-[11px] text-dim">
-                  {data.projects.filter(p => p.areaId === a.id).length} projects
-                </span>
-                <button
-                  className="btn-ghost hover:text-danger"
-                  onClick={() => {
-                    const n = data.projects.filter(
-                      p => p.areaId === a.id,
-                    ).length;
-                    if (
-                      n === 0 ||
-                      confirm(`Delete "${a.name}" and its ${n} project(s)?`)
-                    )
-                      deleteArea(a.id);
-                  }}
-                >
-                  ×
-                </button>
-              </li>
-            ))}
-          </ul>
+          <AreaList areas={data.areas} projects={data.projects} />
           <form
             className="mt-2 flex gap-2"
             onSubmit={e => {
