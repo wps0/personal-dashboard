@@ -8,7 +8,8 @@ import {
   type DragStartEvent,
 } from '@dnd-kit/core';
 import {ghostUnderPointer, useDragSensors} from '../dnd';
-import {memo, useMemo, useState, type ReactNode} from 'react';
+import {ChevronLeft, ChevronRight, Redo2} from 'lucide-react';
+import {memo, useCallback, useMemo, useState, type ReactNode} from 'react';
 import {BufferedTextarea} from '../components/buffered';
 import {HoursInput} from '../components/hours_input';
 import {WeekNav} from '../components/week_nav';
@@ -130,6 +131,7 @@ export function WeekView({week}: {week?: ISODate}) {
       <div className="flex h-full flex-col">
         <div className="flex shrink-0 flex-wrap items-center gap-x-2 border-b border-line px-2 py-1 sm:px-3">
           <WeekNav start={start} />
+          {start === thisWeek && today !== start && <RolloverToggle />}
           <WeekTotal start={start} />
         </div>
         <WeekGrid start={start} today={today} />
@@ -176,12 +178,52 @@ function WeekTotal({start}: {start: ISODate}) {
   );
 }
 
+/** Shows next week's day in place of each day of this week that's past. */
+function RolloverToggle() {
+  const on = useUi(s => s.weekRollover);
+  return (
+    <button
+      className={`btn h-8 gap-1.5 rounded-full px-3 ${on ? 'border-accent/60 bg-accent/15 text-accent' : ''}`}
+      aria-pressed={on}
+      onClick={() => useUi.getState().setWeekRollover(!on)}
+      title="Show next week’s day in place of each day that’s past"
+    >
+      <Redo2 size={15} />
+      <span className="hidden sm:inline">Past days: next week</span>
+      <span className="sm:hidden">Roll over</span>
+    </button>
+  );
+}
+
+const NO_FLIPS: ReadonlySet<number> = new Set();
+
 function WeekGrid({start, today}: {start: ISODate; today: ISODate}) {
   const allocations = useStore(s => s.data.allocations);
   const lookups = useLookups();
+  const rollover = useUi(s => s.weekRollover);
+  // Days flipped by hand (by weekday, 0 = Monday), relative to what the
+  // rollover shows; reset on another week or when the rollover changes.
+  const view = `${start}|${rollover}`;
+  const [flips, setFlips] = useState({view, days: NO_FLIPS});
+  const flipped = flips.view === view ? flips.days : NO_FLIPS;
+  const flip = useCallback(
+    (weekday: number) =>
+      setFlips(f => {
+        const days = new Set(f.view === view ? f.days : NO_FLIPS);
+        if (!days.delete(weekday)) days.add(weekday);
+        return {view, days};
+      }),
+    [view],
+  );
+  const thisWeek = startOfWeek(today, MONDAY);
   const days = useMemo(
-    () => Array.from({length: 7}, (_, i) => addDays(start, i)),
-    [start],
+    () =>
+      Array.from({length: 7}, (_, i) => {
+        const date = addDays(start, i);
+        const rolled = rollover && start === thisWeek && date < today;
+        return rolled !== flipped.has(i) ? addDays(date, 7) : date;
+      }),
+    [start, rollover, thisWeek, today, flipped],
   );
   const capacities = useCapacities(days);
   const slide = useSlide(start);
@@ -198,10 +240,13 @@ function WeekGrid({start, today}: {start: ISODate; today: ISODate}) {
     return m;
   }, [allocations]);
 
-  const dayBox = (date: ISODate) => (
+  const dayBox = (date: ISODate, i: number) => (
     <DayBox
       key={date}
       date={date}
+      weekday={i}
+      nextWeek={date > addDays(start, 6)}
+      onFlip={flip}
       isToday={date === today}
       isPast={date < today}
       allocs={byDate.get(date) ?? NO_ALLOCS}
@@ -221,7 +266,7 @@ function WeekGrid({start, today}: {start: ISODate; today: ISODate}) {
         </div>
         <div className="grid gap-2 md:min-h-0 md:grid-cols-5">
           <div className="grid gap-2 md:col-span-2 md:min-h-0 md:grid-cols-2">
-            {days.slice(5).map(dayBox)}
+            {days.slice(5).map((d, i) => dayBox(d, i + 5))}
           </div>
           <BacklogBox
             lookups={lookups}
@@ -236,6 +281,12 @@ function WeekGrid({start, today}: {start: ISODate; today: ISODate}) {
 
 interface DayBoxProps {
   date: ISODate;
+  /** Its place in the week, 0 = Monday. */
+  weekday: number;
+  /** It shows next week's day in this weekday's place. */
+  nextWeek: boolean;
+  /** Shows this weekday in the other week. */
+  onFlip(weekday: number): void;
   isToday: boolean;
   isPast: boolean;
   allocs: Allocation[];
@@ -259,7 +310,7 @@ const DayBox = memo(function DayBox(props: DayBoxProps) {
           : props.isToday
             ? 'border-accent/50'
             : 'border-line'
-      } ${props.isPast ? 'opacity-75' : ''}`}
+      } ${props.isPast ? 'opacity-75' : ''} ${props.nextWeek ? 'border-dashed' : ''}`}
     >
       <DayContent {...props} />
     </section>
@@ -268,6 +319,9 @@ const DayBox = memo(function DayBox(props: DayBoxProps) {
 
 const DayContent = memo(function DayContent({
   date,
+  weekday,
+  nextWeek,
+  onFlip,
   isToday,
   isPast,
   allocs,
@@ -275,6 +329,8 @@ const DayContent = memo(function DayContent({
   lookups,
 }: DayBoxProps) {
   const planned = plannedInWindow(allocs, capacity.window);
+  const other = addDays(date, nextWeek ? -7 : 7);
+  const flipLabel = `Show ${dayName(other)} ${shortDate(other)}${nextWeek ? '' : ' (next week)'}`;
   return (
     <>
       <header className="flex items-center gap-1.5 border-b border-line px-2 py-1">
@@ -288,7 +344,20 @@ const DayContent = memo(function DayContent({
         >
           {Number(date.slice(8))}
         </span>
-        <span className="ml-auto">
+        {nextWeek && (
+          <span className="rounded-full bg-accent/15 px-1.5 text-[10px] font-medium text-accent">
+            next week
+          </span>
+        )}
+        <button
+          className="icon-btn ml-auto h-6 w-6"
+          aria-label={flipLabel}
+          title={flipLabel}
+          onClick={() => onFlip(weekday)}
+        >
+          {nextWeek ? <ChevronLeft size={14} /> : <ChevronRight size={14} />}
+        </button>
+        <span>
           <CapacityBadge
             date={date}
             planned={planned}

@@ -108,6 +108,17 @@ Each day box is a hybrid of three parts:
 3. A freeform text area for anything else.
 
 - **Planning is manual.** Drag items or allocations into days and set hours.
+- **Next week's days in place.** Late in the week the days ahead matter more
+  than the ones gone by:
+  - **Past days: next week** (a switch in the top bar, on this week only,
+    remembered per device) shows next week's day in place of each day that's
+    past: on a Saturday, Mon–Fri show next week's Mon–Fri next to today and
+    Sunday.
+  - Each day's ›/‹ (in its header) shows that weekday in the other week, by
+    hand; it resets on another week or when the switch changes.
+  - Next week's days have a dashed border and a "next week" tag. They work
+    like any day: drops, notes and sessions go to the date shown. The week's
+    total still counts this week.
 - **Capacity** is inferred per day:
   - Start from the weekday's **planning window** (e.g. 18:00–21:00), minus
     calendar events inside it (overlapping events are merged).
