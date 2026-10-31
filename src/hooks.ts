@@ -26,8 +26,8 @@ export interface Lookups {
   item(id: string): Item | undefined;
   project(id: string): Project | undefined;
   area(id: string): Area | undefined;
-  /** Area color for an item, via its project. */
-  color(item: Item | undefined): string;
+  /** Area color for an item (or a project's new item), via its project. */
+  color(item: Pick<Item, 'projectId'> | undefined): string;
 }
 
 const FALLBACK_COLOR = '#94a3b8';

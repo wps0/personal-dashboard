@@ -1,14 +1,14 @@
 import {memo, useCallback, useMemo, useState, type CSSProperties} from 'react';
-import {AlignLeft, Clock, Repeat, Trash2, X} from 'lucide-react';
+import {AlignLeft, Clock, FolderKanban, Repeat, Trash2, X} from 'lucide-react';
 import {eventStyle} from '../event_colors';
 import {withUndo} from '../toast';
-import {formatLong} from '../model/dates';
+import {formatLong, shortDate} from '../model/dates';
 import {moveStart, moveStartOvernight, toMinutes} from '../model/time';
 import type {CalendarEvent} from '../model/types';
 import {useLookups} from '../hooks';
-import {EventColor} from '../model/types';
+import {EventColor, ItemKind} from '../model/types';
 import {useStore} from '../store';
-import {useUi, type Draft} from '../ui';
+import {DRAFT_MODES, useUi, type Draft, type DraftMode} from '../ui';
 import {BufferedInput, BufferedTextarea} from './buffered';
 import {DateField} from './date_field';
 import {EventColorRow} from './event_color_picker';
@@ -25,6 +25,9 @@ import {Popover, PopoverContent, PopoverTrigger} from './ui/popover';
 import {TaskPicker} from './task_picker';
 import {TimeSelect} from './time_select';
 import {MoveBar} from './ui/move_bar';
+import {Select} from './ui/select';
+import {fmtH, KIND_OPTIONS} from '../format';
+import {unreachable} from '../unreachable';
 
 type When = Pick<CalendarEvent, 'date' | 'start' | 'end' | 'allDay'>;
 
@@ -111,8 +114,8 @@ const WhenFields = memo(
 );
 
 /**
- * How the draft looks on the calendar: an event in its colour, or in 'task'
- * mode a session of the chosen task (its area's colour, like a planned block).
+ * How the draft looks on the calendar: an event in its colour, reserved time
+ * hatched, or a task's time in its area's colour, like a planned block.
  */
 export function useDraftLook(): {
   title: string;
@@ -127,16 +130,23 @@ export function useDraftLook(): {
       style: {},
       className: 'reserved border border-line text-dim',
     };
-  if (draft?.mode !== 'task')
+  if (draft?.mode !== 'block' && draft?.mode !== 'task')
     return {
       title: draft?.title || '(No title)',
       style: eventStyle(draft?.color ?? EventColor.UNSPECIFIED),
       className: '',
     };
   const item = draft.itemId ? lookups.item(draft.itemId) : undefined;
-  const color = lookups.color(item);
+  const color = lookups.color(
+    draft.mode === 'task' && draft.projectId
+      ? {projectId: draft.projectId}
+      : item,
+  );
   return {
-    title: item?.title ?? '(Choose a task)',
+    title:
+      draft.mode === 'task'
+        ? draft.title || '(No title)'
+        : (item?.title ?? '(Choose a task)'),
     style: {
       background: `color-mix(in srgb, ${color} 55%, var(--color-panel))`,
       borderLeftColor: color,
@@ -150,30 +160,67 @@ function patchWhen(p: Partial<When>) {
   useUi.getState().patchDraft(p as Partial<Draft>);
 }
 
-export function DraftEditor() {
-  const draft = useUi(s => s.draft);
-  const {patchDraft, setDraft} = useUi.getState();
-  if (!draft) return null;
-  const isTask = draft.mode === 'task';
-  const isReserved = draft.mode === 'reserved';
-  const save = () => {
-    const {date, start, end, allDay, color, itemId} = draft;
-    if (isReserved) {
+/** The project a new task went in last, offered for the next one. */
+let lastTaskProject: string | undefined;
+
+/** Starts a draft in `mode`, with what that mode needs. */
+function switchMode(draft: Draft, mode: DraftMode): Partial<Draft> {
+  const p: Partial<Draft> = {mode};
+  // Time blocks and reserved time always have a time.
+  if (!DRAFT_MODES[mode].allDay) p.allDay = false;
+  if (mode === 'task' && !draft.projectId) {
+    const open = useStore.getState().data.projects.filter(x => !x.archived);
+    p.projectId = open.some(x => x.id === lastTaskProject)
+      ? lastTaskProject
+      : open[0]?.id;
+  }
+  return p;
+}
+
+/** Creates what the draft describes; false if something is missing. */
+function saveDraft(draft: Draft): boolean {
+  const {date, start, end, allDay} = draft;
+  const store = useStore.getState();
+  const hours = (toMinutes(end) - toMinutes(start)) / 60;
+  switch (draft.mode) {
+    case 'reserved': {
       const {recurrence} = draft;
       addReserved({date, start, end, title: draft.title.trim(), recurrence});
-    } else if (isTask) {
-      const item = useStore.getState().data.items.find(i => i.id === itemId);
-      if (!item) return;
-      const hours = (toMinutes(end) - toMinutes(start)) / 60;
+      return true;
+    }
+    case 'block': {
+      const item = store.data.items.find(i => i.id === draft.itemId);
+      if (!item) return false;
       withUndo(`Planned “${item.title}”`, () =>
-        useStore.getState().addAllocation(item.id, date, hours, start),
+        store.addAllocation(item.id, date, hours, start),
       );
-    } else {
+      return true;
+    }
+    case 'task': {
+      const {projectId} = draft;
+      if (!projectId) return false;
+      const title = draft.title.trim() || 'Untitled';
+      lastTaskProject = projectId;
+      withUndo(`Created “${title}”`, () => {
+        const [id] = store.addItems(projectId, [
+          {
+            kind: draft.itemKind ?? ItemKind.TASK,
+            title,
+            dueDate: date,
+            estimateHours: allDay ? undefined : hours,
+            notes: draft.notes.trim() || undefined,
+          },
+        ]);
+        if (!allDay) store.addAllocation(id, date, hours, start);
+      });
+      return true;
+    }
+    case 'event': {
       const name = draft.title.trim() || '(No title)';
       const notes = draft.notes.trim() || undefined;
-      const {recurrence} = draft;
+      const {color, recurrence} = draft;
       withUndo(`Created “${name}”`, () =>
-        useStore.getState().addEvent({
+        store.addEvent({
           date,
           start,
           end,
@@ -184,41 +231,50 @@ export function DraftEditor() {
           recurrence,
         }),
       );
+      return true;
     }
-    setDraft(null);
+    default:
+      return unreachable(draft.mode);
+  }
+}
+
+export function DraftEditor() {
+  const draft = useUi(s => s.draft);
+  const projects = useStore(s => s.data.projects);
+  const areas = useStore(s => s.data.areas);
+  const {patchDraft, setDraft} = useUi.getState();
+  if (!draft) return null;
+  const mode = DRAFT_MODES[draft.mode];
+  const isBlock = draft.mode === 'block';
+  const isReserved = draft.mode === 'reserved';
+  const isTask = draft.mode === 'task';
+  const save = () => {
+    if (saveDraft(draft)) setDraft(null);
   };
   const tabs = (
     <div role="tablist" aria-label="What to create" className="mb-3 flex gap-1">
-      {(
-        [
-          ['event', 'Event'],
-          ['task', 'Time block'],
-          ['reserved', 'Reserved'],
-        ] as const
-      ).map(([mode, label]) => (
+      {(Object.keys(DRAFT_MODES) as DraftMode[]).map(m => (
         <button
-          key={mode}
+          key={m}
           role="tab"
-          aria-selected={draft.mode === mode}
-          onClick={() =>
-            // Time blocks and reserved time always have a time.
-            patchDraft(mode === 'event' ? {mode} : {mode, allDay: false})
-          }
+          aria-selected={draft.mode === m}
+          onClick={() => patchDraft(switchMode(draft, m))}
           className={`rounded-md px-3 py-1 text-[13px] font-medium transition-colors ${
-            draft.mode === mode
+            draft.mode === m
               ? 'bg-accent/20 text-accent'
               : 'text-fg hover:bg-raised'
           }`}
         >
-          {label}
+          {DRAFT_MODES[m].label}
         </button>
       ))}
     </div>
   );
+  const openProjects = projects.filter(p => !p.archived);
   return (
     <div className="w-[448px] max-w-[calc(100vw-24px)] p-3">
       <MoveBar onClose={() => setDraft(null)} />
-      {isTask ? (
+      {isBlock ? (
         <TaskPicker
           itemId={draft.itemId}
           onPick={itemId => patchDraft({itemId})}
@@ -244,10 +300,51 @@ export function DraftEditor() {
         <WhenFields
           value={draft}
           onChange={patchWhen}
-          allDayOption={draft.mode === 'event'}
+          allDayOption={mode.allDay}
           overnight={isReserved}
         />
-        {!isTask && (
+        {isTask && (
+          <>
+            <p className="pl-7 text-[12px] text-dim">
+              Due {shortDate(draft.date)}
+              {draft.allDay
+                ? '.'
+                : `, with ${draft.start}–${draft.end} planned for it (${fmtH(
+                    (toMinutes(draft.end) - toMinutes(draft.start)) / 60,
+                  )}).`}
+            </p>
+            <div className="flex items-center gap-3">
+              <FolderKanban size={16} className="shrink-0 text-dim" />
+              {openProjects.length ? (
+                <div className="flex min-w-0 flex-1 flex-wrap gap-2">
+                  <Select
+                    value={draft.projectId ?? ''}
+                    onChange={projectId => patchDraft({projectId})}
+                    options={openProjects.map(p => ({
+                      value: p.id,
+                      label: p.name,
+                      color: areas.find(a => a.id === p.areaId)?.color,
+                    }))}
+                    className="w-52"
+                    ariaLabel="Project"
+                  />
+                  <Select
+                    value={draft.itemKind ?? ItemKind.TASK}
+                    onChange={itemKind => patchDraft({itemKind})}
+                    options={KIND_OPTIONS}
+                    className="w-32"
+                    ariaLabel="Kind"
+                  />
+                </div>
+              ) : (
+                <span className="text-[12px] text-dim">
+                  Add a project first (Projects page).
+                </span>
+              )}
+            </div>
+          </>
+        )}
+        {mode.repeats && (
           <div className="flex gap-3">
             <Repeat size={16} className="mt-1.5 shrink-0 text-dim" />
             <RepeatSelect
@@ -263,30 +360,30 @@ export function DraftEditor() {
             the start ends the next day (e.g. sleep 23:00–07:00).
           </p>
         )}
-        {draft.mode === 'event' && (
-          <>
-            <div className="flex gap-3">
-              <AlignLeft size={16} className="mt-1.5 shrink-0 text-dim" />
-              <textarea
-                value={draft.notes}
-                placeholder="Add description"
-                rows={2}
-                onChange={e => patchDraft({notes: e.target.value})}
-                className="min-w-0 flex-1 resize-none rounded-md bg-raised px-2 py-1.5 placeholder:text-dim"
-              />
-            </div>
-            <EventColorRow
-              value={draft.color}
-              onChange={color => patchDraft({color})}
+        {(draft.mode === 'event' || isTask) && (
+          <div className="flex gap-3">
+            <AlignLeft size={16} className="mt-1.5 shrink-0 text-dim" />
+            <textarea
+              value={draft.notes}
+              placeholder={isTask ? 'Add notes' : 'Add description'}
+              rows={2}
+              onChange={e => patchDraft({notes: e.target.value})}
+              className="min-w-0 flex-1 resize-none rounded-md bg-raised px-2 py-1.5 placeholder:text-dim"
             />
-          </>
+          </div>
+        )}
+        {draft.mode === 'event' && (
+          <EventColorRow
+            value={draft.color}
+            onChange={color => patchDraft({color})}
+          />
         )}
       </div>
       <div className="mt-3 flex justify-end">
         <button
           className="btn-primary"
           onClick={save}
-          disabled={isTask && !draft.itemId}
+          disabled={(isBlock && !draft.itemId) || (isTask && !draft.projectId)}
         >
           Save
         </button>

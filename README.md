@@ -61,6 +61,9 @@ On first launch, choose **Load sample data** to explore, or create empty areas.
     or drag to select any length in 15-minute steps. A floating card opens next
     to the selection.
   - Click the all-day row for an all-day event.
+  - The card's tabs: **Event**, **Task** (a new task in a project, due that
+    day; with a time, that time is planned for it), **Time block** (time for
+    an existing task) and **Reserved**.
   - **Repeat** (in the event card) makes an event repeat daily, weekly, every
     weekday, or on a custom rule. Dragging one occurrence changes that day
     only; the card asks whether a change is for this event, this and the

@@ -49,7 +49,6 @@ import {
   toMinutes,
 } from '../model/time';
 import {
-  EventColor,
   type Allocation,
   type CalendarEvent,
   type ISODate,
@@ -725,16 +724,15 @@ const StripChip = memo(function StripChip({
 });
 
 function DraftChip() {
-  const title = useUi(s => s.draft?.title);
-  const color = useUi(s => s.draft?.color ?? EventColor.UNSPECIFIED);
+  const look = useDraftLook();
   return (
     <Popover open onOpenChange={o => !o && useUi.getState().setDraft(null)}>
       <PopoverAnchor asChild>
         <div
-          className="animate-pop-in truncate rounded px-1.5 py-px text-[11px] font-medium shadow-md"
-          style={eventStyle(color)}
+          className={`animate-pop-in truncate rounded px-1.5 py-px text-[11px] font-medium shadow-md ${look.className}`}
+          style={look.style}
         >
-          {title || '(No title)'}
+          {look.title}
         </div>
       </PopoverAnchor>
       <PopoverContent side="bottom" align="start">
