@@ -94,7 +94,8 @@ On first launch, choose **Load sample data** to explore, or create empty areas.
   (bottom left). **Ctrl+Z** also undoes moves, resizes and check-offs.
 - **Keyboard**: Google-Calendar-style shortcuts.
   - `j` / `k`: next / previous period; `t`: today; `g`: go to date.
-  - `1`–`5`: pages; `d` / `x` / `w` / `m`: calendar views; `c`: create.
+  - `1`–`6`: pages (Home, Week, Projects, Calendar, Work, Settings);
+    `d` / `x` / `w` / `m`: calendar views; `c`: create.
   - Arrow keys select blocks; then `Enter` opens, `Space` toggles done, and
     `Delete` removes.
   - Press `?` for the full list.
