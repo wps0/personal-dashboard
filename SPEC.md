@@ -154,7 +154,10 @@ Each day box is a hybrid of three parts:
   - *Backlog*: open items that still need time on the plan. For items with an
     estimate, that is while spent + planned hours are below the estimate; for
     items without one, it is while they have no open allocation. It can be
-    filtered by area, and it holds the overdue tray.
+    filtered by area, and it holds the overdue tray. Long lists show their
+    first rows (60 backlog tasks, 20 missed sessions) and a "Show more"
+    button: hundreds of draggable rows took over a second to draw, and the
+    grid redraws them when the week changes.
   - *Month notes*: freeform text for the month.
 
 - **Week picker.** Click the "W41 5 Oct – 11 Oct" label and pick any date to

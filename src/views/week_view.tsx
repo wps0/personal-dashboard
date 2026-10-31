@@ -61,6 +61,14 @@ type DragData =
 const NO_ALLOCS: Allocation[] = [];
 
 /**
+ * Rows the backlog and the missed tray show at first, and how many more each
+ * "Show more" adds: hundreds of draggable rows are slow to draw (a second or
+ * more), and the week grid redraws them when the week changes.
+ */
+const BACKLOG_ROWS = 60;
+const MISSED_ROWS = 20;
+
+/**
  * The drag-and-drop context lives here and must not re-render on data changes:
  * when it does, dnd-kit re-renders every draggable. Data subscriptions live in
  * the children (WeekGrid, WeekTotal) instead.
@@ -492,6 +500,8 @@ const BacklogContents = memo(function BacklogContents({
   const areas = useStore(s => s.data.areas);
   const [tab, setTab] = useState<'backlog' | 'notes'>('backlog');
   const [areaFilter, setAreaFilter] = useState<string | null>(null);
+  const [backlogRows, setBacklogRows] = useState(BACKLOG_ROWS);
+  const [missedRows, setMissedRows] = useState(MISSED_ROWS);
 
   const {backlog, missed} = useMemo(() => {
     const slice = {items, allocations, projects};
@@ -545,7 +555,7 @@ const BacklogContents = memo(function BacklogContents({
                 missed · drag to a day to reschedule
               </div>
               <ul className="space-y-px">
-                {missed.map(a => (
+                {missed.slice(0, missedRows).map(a => (
                   <AllocationBlock
                     key={a.id}
                     alloc={a}
@@ -554,6 +564,11 @@ const BacklogContents = memo(function BacklogContents({
                   />
                 ))}
               </ul>
+              <ShowMore
+                rest={missed.length - missedRows}
+                step={MISSED_ROWS}
+                onMore={() => setMissedRows(n => n + MISSED_ROWS)}
+              />
             </div>
           )}
           {visible.length === 0 ? (
@@ -562,23 +577,48 @@ const BacklogContents = memo(function BacklogContents({
               a block here to unschedule it.
             </p>
           ) : (
-            <ul className="grid grid-cols-1 gap-px xl:grid-cols-2">
-              {visible.map(b => (
-                <BacklogItem
-                  key={b.item.id}
-                  item={b.item}
-                  remaining={b.remaining}
-                  lookups={lookups}
-                  today={today}
-                />
-              ))}
-            </ul>
+            <>
+              <ul className="grid grid-cols-1 gap-px xl:grid-cols-2">
+                {visible.slice(0, backlogRows).map(b => (
+                  <BacklogItem
+                    key={b.item.id}
+                    item={b.item}
+                    remaining={b.remaining}
+                    lookups={lookups}
+                    today={today}
+                  />
+                ))}
+              </ul>
+              <ShowMore
+                rest={visible.length - backlogRows}
+                step={BACKLOG_ROWS}
+                onMore={() => setBacklogRows(n => n + BACKLOG_ROWS)}
+              />
+            </>
           )}
         </div>
       )}
     </>
   );
 });
+
+/** "Show 60 more (of 240)" under a list cut short; nothing when it isn't. */
+function ShowMore({
+  rest,
+  step,
+  onMore,
+}: {
+  rest: number;
+  step: number;
+  onMore(): void;
+}) {
+  if (rest <= 0) return null;
+  return (
+    <button className="btn-ghost mt-1 w-full text-[11px]" onClick={onMore}>
+      Show {Math.min(step, rest)} more{rest > step ? ` (of ${rest})` : ''}
+    </button>
+  );
+}
 
 function MonthNote({month}: {month: string}) {
   const note = useStore(s => s.data.monthNotes[month] ?? '');
