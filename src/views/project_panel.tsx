@@ -38,8 +38,8 @@ import {
 } from 'lucide-react';
 import {HoursInput} from '../components/hours_input';
 import {InlineText} from '../components/inline_text';
-import {CoursePattern} from '../components/course_pattern';
 import {UsosBanner} from '../components/usos_review';
+import {ProjectDetails} from './project_details';
 import {Markdown} from '../components/markdown';
 import {ProgressRing} from '../components/progress_ring';
 import {
@@ -61,13 +61,12 @@ import {
 } from '../model/selectors';
 import {
   ItemKind,
-  ProgressMode,
   type Allocation,
   type Item,
   type ItemGroup,
   type Project,
 } from '../model/types';
-import {href, navigate} from '../router';
+import {href} from '../router';
 import {useStore} from '../store';
 import {useUi} from '../ui';
 import {
@@ -87,7 +86,7 @@ import {
 } from '../dnd';
 import {blockKeys, isTyping} from '../keyboard';
 
-type Tab = 'items' | 'description' | 'log';
+type Tab = 'items' | 'description' | 'log' | 'details';
 
 /** Project details shown beside the project cards. */
 export function ProjectPanel({
@@ -103,9 +102,14 @@ export function ProjectPanel({
   );
   return (
     <div className="flex h-full flex-col">
-      <Header project={project} percent={percent} color={color} />
+      <Header
+        project={project}
+        percent={percent}
+        color={color}
+        onDetails={() => setTab('details')}
+      />
       <div className="flex shrink-0 gap-1 border-b border-line px-3 py-1">
-        {(['items', 'description', 'log'] as const).map(t => (
+        {(['items', 'description', 'log', 'details'] as const).map(t => (
           <button
             key={t}
             className={`label rounded px-1.5 py-0.5 transition-colors duration-150 ${tab === t ? 'bg-raised !text-fg' : 'hover:!text-fg'}`}
@@ -119,33 +123,59 @@ export function ProjectPanel({
         {tab === 'items' && <ItemsTab project={project} />}
         {tab === 'description' && <Description project={project} />}
         {tab === 'log' && <Log project={project} />}
+        {tab === 'details' && (
+          <ProjectDetails project={project} showItems={() => setTab('items')} />
+        )}
       </div>
     </div>
   );
 }
 
+/**
+ * The project's ring and name, with its area and due date as a line of text
+ * that opens the details, where they're changed.
+ */
 function Header({
   project,
   percent,
   color,
+  onDetails,
 }: {
   project: Project;
   percent: number;
   color: string;
+  onDetails(): void;
 }) {
-  const areas = useStore(s => s.data.areas);
-  const {updateProject, deleteProject} = useStore.getState();
-  const set = (patch: Partial<Project>) => updateProject(project.id, patch);
+  const area = useStore(s => s.data.areas.find(a => a.id === project.areaId));
+  const today = useToday();
+  const set = (patch: Partial<Project>) =>
+    useStore.getState().updateProject(project.id, patch);
 
   return (
     <div className="shrink-0 space-y-2 border-b border-line px-3 py-2">
       <div className="flex items-center gap-3">
         <ProgressRing percent={percent} color={color} size={44} stroke={4} />
-        <InlineText
-          value={project.name}
-          onChange={name => set({name})}
-          className="min-w-0 flex-1 text-base font-semibold text-strong"
-        />
+        <div className="min-w-0 flex-1">
+          <InlineText
+            value={project.name}
+            onChange={name => set({name})}
+            className="w-full text-base font-semibold text-strong"
+          />
+          <button
+            className="flex max-w-full items-center gap-1.5 truncate px-1 text-[12px] text-dim hover:text-fg"
+            onClick={onDetails}
+            title="Project details"
+          >
+            <span
+              className="h-2 w-2 shrink-0 rounded-full"
+              style={{background: color}}
+            />
+            {area?.name ?? 'No area'}
+            {project.dueDate &&
+              ` · due ${shortDate(project.dueDate)} (${countdown(project.dueDate, today)})`}
+            {project.archived && ' · archived'}
+          </button>
+        </div>
         <a
           href={href({name: 'projects'})}
           className="btn-ghost text-base"
@@ -155,81 +185,12 @@ function Header({
           ×
         </a>
       </div>
-      <div className="flex flex-wrap items-center gap-2">
-        <Select
-          value={project.areaId}
-          onChange={areaId => set({areaId})}
-          options={areas.map(a => ({
-            value: a.id,
-            label: a.name,
-            color: a.color,
-          }))}
-          className="w-36"
-          ariaLabel="Area"
-        />
-        <Select
-          value={project.progressMode}
-          onChange={(progressMode: ProgressMode) => set({progressMode})}
-          options={PROGRESS_OPTIONS}
-          className="w-52"
-          ariaLabel="How progress is computed"
-        />
-        {project.progressMode === ProgressMode.MANUAL && (
-          <input
-            type="range"
-            min={0}
-            max={100}
-            step={5}
-            value={project.manualProgress}
-            onChange={e => set({manualProgress: Number(e.target.value)})}
-            className="w-28 accent-accent"
-          />
-        )}
-        <DateField
-          optional
-          value={project.dueDate}
-          onChange={dueDate => set({dueDate})}
-          placeholder="Project due date"
-        />
-        <div className="ml-auto flex gap-1">
-          <button
-            className="btn-ghost"
-            onClick={() => set({archived: !project.archived})}
-          >
-            {project.archived ? 'unarchive' : 'archive'}
-          </button>
-          <button
-            className="btn-ghost hover:text-danger"
-            onClick={() => {
-              if (
-                confirm(
-                  `Delete "${project.name}" with all its items and planned time?`,
-                )
-              ) {
-                navigate({name: 'projects'});
-                withUndo(`Deleted “${project.name}”`, () =>
-                  deleteProject(project.id),
-                );
-              }
-            }}
-          >
-            delete
-          </button>
-        </div>
-      </div>
-      <CoursePattern project={project} />
       <UsosBanner projectId={project.id} />
     </div>
   );
 }
 
 const NO_ALLOCS: Allocation[] = [];
-
-const PROGRESS_OPTIONS = [
-  {value: ProgressMode.CHECKLIST, label: 'Progress: items done'},
-  {value: ProgressMode.HOURS, label: 'Progress: hours spent / estimate'},
-  {value: ProgressMode.MANUAL, label: 'Progress: manual'},
-];
 
 /** What a drag in the item list carries: a group's grip, or a task's row. */
 type DragData = {kind: 'group'; index: number} | {kind: 'item'; id: string};
@@ -251,7 +212,7 @@ function ItemsTab({project}: {project: Project}) {
   const allItems = useStore(s => s.data.items);
   const allocations = useStore(s => s.data.allocations);
   const [hideDone, setHideDone] = useState(false);
-  const [form, setForm] = useState<'bulk' | 'group' | null>(null);
+  const [addingGroup, setAddingGroup] = useState(false);
   const today = useToday();
   const {groups} = project;
   const sensors = useDragSensors();
@@ -455,33 +416,16 @@ function ItemsTab({project}: {project: Project}) {
           </label>
           <button
             className="btn-ghost"
-            onClick={() => useUi.getState().importCurriculum(project.id)}
-            title="Turn a course description into class items, with Gemini"
-          >
-            import curriculum…
-          </button>
-          <button
-            className="btn-ghost"
-            onClick={() => setForm(f => (f === 'group' ? null : 'group'))}
+            onClick={() => setAddingGroup(a => !a)}
             title="A folder for items, e.g. all classes"
           >
-            {form === 'group' ? 'cancel group' : '+ group'}
-          </button>
-          <button
-            className="btn-ghost"
-            onClick={() => setForm(f => (f === 'bulk' ? null : 'bulk'))}
-          >
-            {form === 'bulk' ? 'cancel bulk' : '+ bulk'}
+            {addingGroup ? 'cancel group' : '+ group'}
           </button>
         </div>
-        {form === 'group' && (
-          <AddGroup projectId={project.id} onDone={() => setForm(null)} />
-        )}
-        {form === 'bulk' && (
-          <BulkAdd
+        {addingGroup && (
+          <AddGroup
             projectId={project.id}
-            groups={groups}
-            onDone={() => setForm(null)}
+            onDone={() => setAddingGroup(false)}
           />
         )}
         <AddItem projectId={project.id} />
@@ -1226,95 +1170,6 @@ function AddItem({
       </span>
       <button className="btn" onClick={submit}>
         add
-      </button>
-    </div>
-  );
-}
-
-function BulkAdd({
-  projectId,
-  groups,
-  onDone,
-}: {
-  projectId: string;
-  groups: ItemGroup[];
-  onDone(): void;
-}) {
-  const [kind, setKind] = useState(ItemKind.CLASS);
-  const [groupId, setGroupId] = useState('');
-  const [prefix, setPrefix] = useState('Lecture');
-  const [from, setFrom] = useState(1);
-  const [to, setTo] = useState(13);
-  const [estimate, setEstimate] = useState<number | undefined>(1.5);
-  // Whole numbers from 1 (not "Lecture 1.5" or "Lecture -1"); otherwise nothing to add.
-  const whole = Number.isInteger(from) && Number.isInteger(to) && from >= 1;
-  const count = whole ? Math.max(0, to - from + 1) : 0;
-
-  return (
-    <div className="mb-3 flex flex-wrap items-center gap-1.5 rounded-md border border-line bg-panel p-2">
-      <Select
-        value={kind}
-        onChange={setKind}
-        options={KIND_OPTIONS}
-        className="w-32"
-        ariaLabel="Kind"
-      />
-      <input
-        className="field w-28"
-        value={prefix}
-        onChange={e => setPrefix(e.target.value)}
-      />
-      <input
-        type="number"
-        className="field w-14 tabular-nums"
-        min={1}
-        step={1}
-        value={from}
-        onChange={e => setFrom(Number(e.target.value))}
-      />
-      <span className="text-dim">to</span>
-      <input
-        type="number"
-        className="field w-14 tabular-nums"
-        min={1}
-        step={1}
-        value={to}
-        onChange={e => setTo(Number(e.target.value))}
-      />
-      <HoursInput
-        optional
-        value={estimate}
-        onChange={setEstimate}
-        placeholder="est"
-        className="field w-14"
-      />
-      <span className="text-dim">h each</span>
-      {groups.length > 0 && (
-        <Select
-          value={groupId}
-          onChange={setGroupId}
-          options={groupOptions(groups)}
-          className="w-32"
-          ariaLabel="Group"
-        />
-      )}
-      <button
-        className="btn"
-        disabled={count === 0 || count > 200}
-        onClick={() => {
-          useStore.getState().addItems(
-            projectId,
-            Array.from({length: count}, (_, k) => ({
-              kind,
-              title: `${prefix} ${from + k}`.trim(),
-              estimateHours: estimate,
-              groupId: groupId || undefined,
-            })),
-          );
-          onDone();
-        }}
-      >
-        add {count}
       </button>
     </div>
   );

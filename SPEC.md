@@ -162,8 +162,21 @@ Each day box is a hybrid of three parts:
   containing it.
 
 ### 3.3 Project panel
-The project's items, description (its overview doc, Markdown) and progress
-log, as tabs in the side panel.
+The project's items, description (its overview doc, Markdown), progress log
+and details, as tabs in the side panel.
+
+- **The header** is the progress ring, the name (click to rename), and a
+  line with the area and the due date ("University · due 15 Dec (in 45d)",
+  "· archived" if so), which opens the details. New USOS classes show as a
+  banner under it.
+- **Details** holds what's changed now and then rather than every day: the
+  area, how progress is computed (items done, hours spent / estimate, or set
+  by hand with a slider), the due date and the USOS course pattern; **Add
+  many items** (Import curriculum…, and Numbered series… for "Lecture 1…13");
+  and **Archive** / **Delete**, each with a line on what it does. After a
+  numbered series is added, or while a curriculum is being imported, the
+  panel shows the items.
+- **The items toolbar** is the done count, "hide done" and **+ group**.
 
 - **Description next to the items.** On a wide panel (56rem and up) the
   rendered description is a column to the right of the task list; on a
@@ -210,7 +223,7 @@ log, as tabs in the side panel.
   text fields (a press on touch screens); not while the project has no
   groups.
 - An open group has its own add field, whose kind follows the group's last
-  item; **+ bulk** can add into a group too.
+  item; a numbered series (Details) can add into a group too.
 - **Done items sink to the bottom** of their group (or of "No group"), so
   they don't mix with open ones; both parts keep the planning order (due
   date, then class date, then title).
@@ -643,7 +656,7 @@ Sample inputs and the output we expect from them live in
 `docs/curriculum-import/` and double as evaluation fixtures.
 
 **Flow**
-1. In the project panel: **import curriculum…** → paste the text (any
+1. In the project panel: Details → **Import curriculum…** → paste the text (any
    language; the examples are Polish). Without an API key the dialog links
    to Settings → Gemini.
 2. The app calls the Gemini API with the prompt and response schema below.
