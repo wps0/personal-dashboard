@@ -265,7 +265,7 @@ function BulkAdd({
           onDone();
         }}
       >
-        add {count}
+        Add {count}
       </button>
     </div>
   );
