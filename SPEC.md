@@ -415,9 +415,10 @@ The plan is reserved time named as work: reserved events with that label
 - **Each day** lists its planned work ("Planned 09:00–17:00", from the
   day's reserved events, including one changed on its own that day), its logged stretches with
   editable start and end and a remove button, and the day's total. A day
-  with nothing logged offers **Log as planned** (its planned work, in one
-  step); **+ add** adds a stretch after the last one, or the planned work,
-  or 09:00–17:00.
+  with nothing logged, today or before, offers **Log as planned** (its
+  planned work, in one step; not on later days, which haven't happened);
+  **+ add** adds a stretch after the last one, or the planned work, or
+  09:00–17:00.
 - **The week** shows the hours logged against its target, with a bar and
   "N h to go" or "N h over". The target is the default from Settings unless
   the week has its own: typing one on the page sets it for that week only,
