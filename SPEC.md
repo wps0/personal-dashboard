@@ -373,9 +373,13 @@ The plan is reserved time named as work: reserved events with that label
 (Work by default; Settings → Work log). The work log records what was actually worked: stretches of time
 (start – end) per day, synced like everything else.
 
-- **The Work page**, a tab of its own (key 5), shows a week at a time,
-  Monday to Sunday, like the week journal; ‹ › and `j` / `k` move by a week,
-  `t` comes back to this one.
+- **The Work page**, a tab of its own (key 5), is one scrolling list of
+  weeks, Monday to Sunday like the week journal, that opens on this week
+  (its heading at the top, marked "This week"). Earlier weeks are above it
+  and later ones below; more load as you scroll near either end, without
+  moving what's in view. Each week's heading stays at the top while you're
+  in it. ‹ › and `j` / `k` jump a week from the one at the top, `t` comes
+  back to this one. `#/work/<date>` opens on that date's week.
 - **Each day** lists its planned work ("Planned 09:00–17:00", from the
   day's reserved events, including one changed on its own that day), its logged stretches with
   editable start and end and a remove button, and the day's total. A day
