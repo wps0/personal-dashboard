@@ -165,7 +165,7 @@ export function SettingsView() {
 
         <Section
           title="Areas"
-          hint="Top-level groups for projects, listed in this order everywhere. Drag one by its grip, or use ↑ ↓, to reorder. Deleting an area deletes its projects."
+          hint="Top-level groups for projects, listed in this order everywhere. Drag one by its grip to reorder. Deleting an area deletes its projects."
         >
           <AreaList areas={data.areas} projects={data.projects} />
           <form

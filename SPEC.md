@@ -365,8 +365,8 @@ weekday and are listed Monday first whatever the week start.
 
 **Areas** are listed in their order, which the whole app follows (the
 Projects page, the calendar's layers, the backlog's filters). Drag an area by
-its grip to reorder it (a line shows where it lands), or use its ↑ / ↓ for
-the keyboard. Undoable, without a toast. On phones its colours go on a line of
+its grip to reorder it (a line shows where it lands). Undoable, without a
+toast. On phones its colours go on a line of
 their own, under the name.
 
 ### 3.9 How many actions things take (UX review, October 2026)
