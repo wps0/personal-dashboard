@@ -331,7 +331,9 @@ double-clicking one in the project panel, opens an overlay with:
 - spent / planned / remaining hours;
 - every session, each with an editable date, start, planned and actual hours
   (on phones one hours column: planned, or actual once done, as in the week
-  journal); dates in this card leave out the year when it's this year's;
+  journal); dates in this card leave out the year when it's this year's.
+  Lengths here (planned, actual, spent / planned / left) are written in hours
+  and minutes ("1h 53m") and typed as "1h 53m", "45m", "1:53" or "1.5";
 - markdown notes;
 - mark complete and open project, with **Close** in the bottom-right corner;
   delete is the trash icon next to × at the top, as in the event card (with

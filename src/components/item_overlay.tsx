@@ -5,11 +5,13 @@ import {StatusSelect} from './status_select';
 import {TimeSelect} from './time_select';
 import {Select} from './ui/select';
 import {Trash2, X} from 'lucide-react';
+import {DurationInput} from './duration_input';
 import {HoursInput} from './hours_input';
 import {Markdown} from './markdown';
 import {GroupSelect} from './group_select';
 import {Modal} from './modal';
 import {countdown, dayName, formatMedium, shortDate} from '../model/dates';
+import {fromMinutes, toMinutes} from '../model/time';
 import {useToday} from '../hooks';
 import {
   actualHours,
@@ -23,7 +25,7 @@ import {
   type ISODate,
   type Item,
 } from '../model/types';
-import {fmtH, KIND_OPTIONS, URGENCY_CLASS} from '../format';
+import {fmtDuration, KIND_OPTIONS, URGENCY_CLASS} from '../format';
 import {navigate} from '../router';
 import {useStore} from '../store';
 import {useUi} from '../ui';
@@ -181,11 +183,11 @@ function ItemDetails({item, onClose}: {item: Item; onClose(): void}) {
         </Field>
         <Field label="spent / planned">
           <span className="tabular-nums">
-            {fmtH(spent)} / {fmtH(planned)}
+            {fmtDuration(spent)} / {fmtDuration(planned)}
             {remaining != null && (
               <span className={remaining < 0 ? 'text-warn' : 'text-dim'}>
                 {' '}
-                · {fmtH(Math.max(0, remaining))} left
+                · {fmtDuration(Math.max(0, remaining))} left
               </span>
             )}
           </span>
@@ -207,10 +209,8 @@ function ItemDetails({item, onClose}: {item: Item; onClose(): void}) {
               <tr className="label text-left [&>th]:px-1 [&>th]:font-normal">
                 <th className="w-6" />
                 <th>date</th>
-                <th>start</th>
-                {/* On phones one column: planned, or actual once done. */}
-                <th className="text-right sm:hidden">hours</th>
-                <th className="text-right max-sm:hidden">plan</th>
+                {/* Start – end, or a length while it has no start time. */}
+                <th>time</th>
                 <th className="text-right max-sm:hidden">actual</th>
                 <th className="w-6" />
               </tr>
@@ -294,20 +294,17 @@ function compactDate(d: ISODate, today: ISODate): string {
 function SessionRow({alloc, today}: {alloc: Allocation; today: string}) {
   const {updateAllocation} = useStore.getState();
   const missed = !alloc.done && alloc.date < today;
-  const planned = (
-    <HoursInput
-      value={alloc.plannedHours}
-      onChange={h => h && updateAllocation(alloc.id, {plannedHours: h})}
-      title="Planned hours"
-      className="text-[12px]"
-    />
-  );
+  const {start} = alloc;
+  // A timed session's end: its start plus its planned length.
+  const end =
+    start &&
+    fromMinutes(toMinutes(start) + Math.round(alloc.plannedHours * 60));
   const actual = (
-    <HoursInput
+    <DurationInput
       value={alloc.actualHours ?? alloc.plannedHours}
       onChange={h => updateAllocation(alloc.id, {actualHours: h})}
-      title={`Actual hours (planned ${alloc.plannedHours}h)`}
-      className="text-[12px] text-ok"
+      title={`Actual time (planned ${fmtDuration(alloc.plannedHours)})`}
+      className="w-14 text-[12px] text-ok"
     />
   );
   return (
@@ -330,31 +327,59 @@ function SessionRow({alloc, today}: {alloc: Allocation; today: string}) {
         />
       </td>
       <td className="px-1">
-        <span className="flex items-center">
+        <span className="flex flex-wrap items-center">
           <TimeSelect
-            value={alloc.start ?? '--:--'}
-            onChange={start =>
-              start !== '--:--' && updateAllocation(alloc.id, {start})
+            value={start ?? '--:--'}
+            // Moving the start keeps the length: the end moves along.
+            onChange={t =>
+              t !== '--:--' && updateAllocation(alloc.id, {start: t})
             }
             variant="ghost"
-            className="w-20"
+            className="w-fit"
             ariaLabel="Start time"
           />
-          {alloc.start && (
-            <button
-              className="icon-btn h-6 w-6"
-              aria-label="Clear start time"
-              onClick={() => updateAllocation(alloc.id, {start: undefined})}
-            >
-              <X size={12} />
-            </button>
+          {start && end ? (
+            <>
+              <span className="px-0.5 text-dim">–</span>
+              <TimeSelect
+                value={end}
+                after={start}
+                onChange={t =>
+                  updateAllocation(alloc.id, {
+                    plannedHours: (toMinutes(t) - toMinutes(start)) / 60,
+                  })
+                }
+                variant="ghost"
+                className="w-fit"
+                ariaLabel="End time"
+              />
+              <button
+                className="icon-btn h-5 w-5"
+                aria-label="Clear start time"
+                title="No set time: keep just its length"
+                onClick={() => updateAllocation(alloc.id, {start: undefined})}
+              >
+                <X size={12} />
+              </button>
+            </>
+          ) : (
+            <DurationInput
+              value={alloc.plannedHours}
+              onChange={h =>
+                h > 0 && updateAllocation(alloc.id, {plannedHours: h})
+              }
+              title="Planned time"
+              className="w-14 text-[12px]"
+            />
+          )}
+          {/* On phones the actual time goes under the planned one. */}
+          {alloc.done && (
+            <span className="flex basis-full items-center gap-1 pl-2 text-[11px] text-dim sm:hidden">
+              actual {actual}
+            </span>
           )}
         </span>
       </td>
-      <td className="px-1 text-right sm:hidden">
-        {alloc.done ? actual : planned}
-      </td>
-      <td className="px-1 text-right max-sm:hidden">{planned}</td>
       <td className="px-1 text-right max-sm:hidden">
         {alloc.done ? actual : <span className="text-dim">–</span>}
       </td>
