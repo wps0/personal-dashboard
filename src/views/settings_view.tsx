@@ -182,7 +182,7 @@ export function SettingsView() {
               value={newArea}
               onChange={e => setNewArea(e.target.value)}
             />
-            <button className="btn">add</button>
+            <button className="btn">Add</button>
           </form>
         </Section>
 

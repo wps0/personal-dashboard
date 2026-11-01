@@ -856,6 +856,9 @@ Same Gemini key, model and privacy note as 5.2.
   hooks rules. Two deviations, both documented there: `== null` is allowed
   (as the style guide itself allows), and named function expressions are
   allowed for `memo(function Name…)`. Prettier with gts's settings.
+- **Button text:** buttons with a background start with a capital ("Add",
+  "Export JSON", "✓ Mark complete"); text-only buttons and links are
+  lowercase ("+ group", "edit", "open project ↗").
 - **Data schema:** `proto/dashboard/data.proto` (protobuf) describes the
   stored data; `npm run proto:generate` writes the TypeScript for it to
   `src/gen/`. Generated code isn't committed: it is regenerated before every
