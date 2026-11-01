@@ -5,7 +5,7 @@ import {
   useDraggable,
   useDroppable,
 } from '@dnd-kit/core';
-import {ChevronDown, ChevronUp, GripVertical} from 'lucide-react';
+import {GripVertical} from 'lucide-react';
 import {useState} from 'react';
 import {createPortal} from 'react-dom';
 import {moveArea} from '../actions';
@@ -16,8 +16,7 @@ import {InlineText} from './inline_text';
 
 /**
  * The areas in their order, which the rest of the app lists them in. Drag
- * one by its grip to reorder (a line shows where it lands), or use its
- * ↑ / ↓ buttons.
+ * one by its grip to reorder (a line shows where it lands).
  */
 export function AreaList({
   areas,
@@ -52,7 +51,6 @@ export function AreaList({
             key={a.id}
             area={a}
             index={i}
-            last={i === areas.length - 1}
             projects={projects.filter(p => p.areaId === a.id).length}
             lifted={drag?.from === i}
             lands={
@@ -88,14 +86,12 @@ export function AreaList({
 function AreaRow({
   area,
   index,
-  last,
   projects,
   lifted,
   lands,
 }: {
   area: Area;
   index: number;
-  last: boolean;
   projects: number;
   lifted: boolean;
   lands: 'before' | 'after' | null;
@@ -118,7 +114,7 @@ function AreaRow({
       aria-label={area.name}
       className={`group flex flex-wrap items-center gap-x-2 gap-y-1 rounded border border-line bg-panel px-1 py-1 ${line} ${lifted ? 'opacity-50' : ''}`}
     >
-      {/* Hidden from the keyboard and screen readers: ↑ / ↓ do the same. */}
+      {/* Dragged with the mouse or a finger. */}
       <span
         ref={dragRef}
         {...listeners}
@@ -147,26 +143,6 @@ function AreaRow({
       />
       <span className="tabular-nums text-[11px] text-dim">
         {projects} {projects === 1 ? 'project' : 'projects'}
-      </span>
-      <span className="flex">
-        <button
-          className="icon-btn h-6 w-6 disabled:invisible"
-          aria-label={`Move ${area.name} up`}
-          title="Move up"
-          disabled={index === 0}
-          onClick={() => moveArea(area.id, index - 1)}
-        >
-          <ChevronUp size={14} />
-        </button>
-        <button
-          className="icon-btn h-6 w-6 disabled:invisible"
-          aria-label={`Move ${area.name} down`}
-          title="Move down"
-          disabled={last}
-          onClick={() => moveArea(area.id, index + 1)}
-        >
-          <ChevronDown size={14} />
-        </button>
       </span>
       <button
         className="btn-ghost hover:text-danger"
