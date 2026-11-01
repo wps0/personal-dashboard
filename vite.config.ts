@@ -22,10 +22,22 @@ const assetManifest = (): Plugin => ({
   },
 });
 
+/**
+ * The dev server only: lets Vite add its styles, which it injects as inline
+ * <style> tags that index.html's CSP (style-src 'self') blocks. The built
+ * app keeps the strict policy.
+ */
+const devInlineStyles = (): Plugin => ({
+  name: 'dev-inline-styles',
+  apply: 'serve',
+  transformIndexHtml: html =>
+    html.replace("style-src 'self'", "style-src 'self' 'unsafe-inline'"),
+});
+
 export default defineConfig({
   // Relative base so the build works on GitHub Pages under /<repo>/.
   base: './',
-  plugins: [react(), tailwindcss(), assetManifest()],
+  plugins: [react(), tailwindcss(), assetManifest(), devInlineStyles()],
   test: {
     environment: 'node',
   },
