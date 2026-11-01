@@ -18,7 +18,7 @@ import {
 } from '../actions';
 import {HoursInput} from '../components/hours_input';
 import {TimeSelect} from '../components/time_select';
-import {fmtDuration} from '../format';
+import {fmtDuration, fmtHours} from '../format';
 import {useToday} from '../hooks';
 import {useNavTarget} from '../keyboard';
 import {
@@ -282,7 +282,7 @@ function WeekSummary({monday, days}: {monday: ISODate; days: ISODate[]}) {
     [...new Set(days.map(monthKey))]
       .map(
         m =>
-          `${monthName(m)}: ${fmtDuration(loggedHours(s.data.workLog, `${m}-01`, `${m}-31`))}`,
+          `${monthName(m)}: ${fmtHours(loggedHours(s.data.workLog, `${m}-01`, `${m}-31`))}`,
       )
       .join(' · '),
   );
@@ -294,18 +294,18 @@ function WeekSummary({monday, days}: {monday: ISODate; days: ISODate[]}) {
     >
       <div className="flex flex-wrap items-baseline gap-x-2">
         <span className="text-2xl text-strong tabular-nums">
-          {fmtDuration(logged)}
+          {fmtHours(logged)}
         </span>
         <span className="text-dim">
-          logged{target > 0 && ` of ${fmtDuration(target)}`}
+          logged{target > 0 && ` of ${fmtHours(target)}`}
         </span>
         {target > 0 && (
           <span
             className={`ml-auto tabular-nums ${balance >= 0 ? 'text-accent' : 'text-dim'}`}
           >
             {balance >= 0
-              ? `${fmtDuration(balance)} over`
-              : `${fmtDuration(-balance)} to go`}
+              ? `${fmtHours(balance)} over`
+              : `${fmtHours(-balance)} to go`}
           </span>
         )}
       </div>
@@ -339,7 +339,7 @@ function WeekSummary({monday, days}: {monday: ISODate; days: ISODate[]}) {
             className="text-accent hover:underline"
             onClick={() => setWeekTarget(monday, null)}
           >
-            Use the default ({fmtDuration(workTarget)})
+            Use the default ({fmtHours(workTarget)})
           </button>
         ) : (
           <span>the default, set in Settings</span>
@@ -409,7 +409,7 @@ function WorkDay({
         </div>
       </div>
       <div className="w-14 shrink-0 pt-0.5 text-right tabular-nums text-strong">
-        {total ? fmtDuration(total) : <span className="text-dim">–</span>}
+        {total ? fmtHours(total) : <span className="text-dim">–</span>}
       </div>
     </li>
   );

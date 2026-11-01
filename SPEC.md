@@ -423,9 +423,10 @@ The plan is reserved time named as work: reserved events with that label
   step); **+ add** adds a stretch after the last one, or the planned work,
   or 09:00–17:00.
 - **The week** shows the hours logged against its target, with a bar and
-  "N h to go" or "N h over". Lengths on the page and the Home card are
-  written in hours and minutes ("7h 53m logged of 40h", a stretch's "1h
-  53m"), since stretches start and end at any minute. The target is the default from Settings unless
+  "N h to go" or "N h over". A stretch's length is written in hours and minutes ("8h 53m"), since
+  stretches start and end at any minute; totals (a day, the week, its target,
+  "to go" / "over", the months, the Home card) in whole hours, rounded down
+  ("8h logged of 40h"), to keep them short. The target is the default from Settings unless
   the week has its own: typing one on the page sets it for that week only,
   and "Use the default" removes it. 0 means no target. The month totals of
   the months the week touches are shown too.
