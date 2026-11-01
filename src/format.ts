@@ -8,6 +8,14 @@ export function fmtNum(n: number) {
 export function fmtH(n: number) {
   return `${fmtNum(n)}h`;
 }
+/** Hours as "1h 53m", "45m" or "2h" (whole minutes); nothing is "0h". */
+export function fmtDuration(hours: number) {
+  const min = Math.round(hours * 60);
+  if (min === 0) return '0h';
+  const h = Math.floor(min / 60);
+  const m = min % 60;
+  return [h && `${h}h`, m && `${m}m`].filter(Boolean).join(' ');
+}
 
 export const URGENCY_CLASS: Record<Urgency, string> = {
   overdue: 'text-danger',

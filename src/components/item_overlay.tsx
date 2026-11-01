@@ -5,6 +5,7 @@ import {StatusSelect} from './status_select';
 import {TimeSelect} from './time_select';
 import {Select} from './ui/select';
 import {Trash2, X} from 'lucide-react';
+import {DurationInput} from './duration_input';
 import {HoursInput} from './hours_input';
 import {Markdown} from './markdown';
 import {GroupSelect} from './group_select';
@@ -23,7 +24,7 @@ import {
   type ISODate,
   type Item,
 } from '../model/types';
-import {fmtH, KIND_OPTIONS, URGENCY_CLASS} from '../format';
+import {fmtDuration, KIND_OPTIONS, URGENCY_CLASS} from '../format';
 import {navigate} from '../router';
 import {useStore} from '../store';
 import {useUi} from '../ui';
@@ -181,11 +182,11 @@ function ItemDetails({item, onClose}: {item: Item; onClose(): void}) {
         </Field>
         <Field label="spent / planned">
           <span className="tabular-nums">
-            {fmtH(spent)} / {fmtH(planned)}
+            {fmtDuration(spent)} / {fmtDuration(planned)}
             {remaining != null && (
               <span className={remaining < 0 ? 'text-warn' : 'text-dim'}>
                 {' '}
-                · {fmtH(Math.max(0, remaining))} left
+                · {fmtDuration(Math.max(0, remaining))} left
               </span>
             )}
           </span>
@@ -295,19 +296,19 @@ function SessionRow({alloc, today}: {alloc: Allocation; today: string}) {
   const {updateAllocation} = useStore.getState();
   const missed = !alloc.done && alloc.date < today;
   const planned = (
-    <HoursInput
+    <DurationInput
       value={alloc.plannedHours}
-      onChange={h => h && updateAllocation(alloc.id, {plannedHours: h})}
-      title="Planned hours"
-      className="text-[12px]"
+      onChange={h => h > 0 && updateAllocation(alloc.id, {plannedHours: h})}
+      title="Planned time"
+      className="w-14 text-[12px]"
     />
   );
   const actual = (
-    <HoursInput
+    <DurationInput
       value={alloc.actualHours ?? alloc.plannedHours}
       onChange={h => updateAllocation(alloc.id, {actualHours: h})}
-      title={`Actual hours (planned ${alloc.plannedHours}h)`}
-      className="text-[12px] text-ok"
+      title={`Actual time (planned ${fmtDuration(alloc.plannedHours)})`}
+      className="w-14 text-[12px] text-ok"
     />
   );
   return (
