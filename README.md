@@ -47,7 +47,9 @@ On first launch, choose **Load sample data** to explore, or create empty areas.
   the nearest deadline.
 - **Week** (`#/week`): the bullet journal. Mon–Fri on top, then Sat, Sun and
   the backlog. It always runs Monday–Sunday; the week start in Settings →
-  Calendar is for the calendar and its mini months.
+  Calendar is for the calendar and its mini months. **Past days: next week**
+  (top bar) shows next week's day in place of each day that's past, e.g. next
+  Mon–Fri on a Saturday; a day's › / ‹ flips just that day.
   - Drag a backlog item onto a day to plan time. Drag it onto another day too
     to split it (e.g. 1h today + 1h tomorrow).
   - Checking a session off logs its hours; click the number to correct them.
