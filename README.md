@@ -4,19 +4,23 @@ All ongoing projects (university, work, personal) in one place: progress rings,
 deadlines, and a one-screen bullet-journal week where you plan hours per day.
 See [SPEC.md](SPEC.md) for the full design.
 
-**Status: v1.2, a local-only UI.** Data lives in your browser (IndexedDB), and
-calendar events are local for now. Google Drive sync, Google Calendar and USOS
-import come in v2; keyboard shortcuts come next (see the SPEC roadmap).
+**Status: in daily use.** It all runs in the browser, with no server of its
+own. Data lives in each browser (IndexedDB), with optional **Google Drive
+sync** between devices, a read-only view of your **Google calendars**, the
+**USOS** timetable as tasks, **curriculum import** with Gemini, and an
+installable app that works offline. What's next is in the SPEC roadmap.
 
 ## Run it
 
 ```sh
 npm install
 npm run dev        # http://localhost:5173
-npm test           # unit tests (model logic, storage)
+npm test           # unit tests (in the Europe/Warsaw time zone)
+npm run typecheck  # TypeScript only
 npm run build      # typecheck + production build into dist/
 npm run lint       # ESLint: Google TypeScript style (gts rules) + React hooks rules
 npm run format     # Prettier with gts settings (format:check only reports)
+npm run proto:lint # buf lint on the data schema
 ```
 
 ### Without installing Node (Podman)
@@ -54,6 +58,10 @@ On first launch, choose **Load sample data** to explore, or create empty areas.
   - Unchecked sessions from past days show up under **missed**.
   - Drop a session on the backlog to unschedule it.
   - Click the week label to jump to any week.
+  - Each day has a notes field; the backlog box's month tab holds notes for
+    the month.
+  - The backlog can be filtered by area. Long lists (backlog, missed) show
+    their first rows and a **Show more** button.
 - **Calendar** (`#/calendar`): Google-Calendar-style Day / 3-day / Week /
   Month views, with a mini month and layer toggles in the sidebar. It opens in
   the default view set in Settings.
@@ -69,6 +77,8 @@ On first launch, choose **Load sample data** to explore, or create empty areas.
     only; the card asks whether a change is for this event, this and the
     following ones, or all of them.
   - Drag blocks to move them; drag a block's bottom edge to resize it.
+  - An event's card picks its colour from Google Calendar's palette.
+    Connected Google calendars show alongside, read-only.
   - Sessions without a time sit in the all-day row; drag them onto the grid to
     time-block them.
   - Hatched areas are reserved time (sleep, work): reserved events, created
@@ -92,13 +102,16 @@ On first launch, choose **Load sample data** to explore, or create empty areas.
   item of a kind into it. Drag a group by its grip (left of the name) to
   reorder the groups. Click a task to select it, Shift-click another to
   select the tasks in between too, or Ctrl/Cmd-click to add one; drag them
-  onto a group to move them together.
+  onto a group to move them together. Items in no group come first, done
+  items sink to the bottom of their group, the add field sits at the top,
+  and which groups are folded is remembered (and synced).
 - **Task overlay**: click any task (double-click in the project panel) for
   its details, sessions and notes.
 - **Undo**: deleting or completing something shows a toast with **Undo**
   (bottom left). **Ctrl+Z** also undoes moves, resizes and check-offs.
 - **Keyboard**: Google-Calendar-style shortcuts.
-  - `j` / `k`: next / previous period; `t`: today; `g`: go to date.
+  - `j` / `k`: next / previous period; `t`: today; `g`: go to date;
+    `h` / `l`: previous / next tab.
   - `1`–`6`: pages (Home, Week, Projects, Calendar, Work, Settings);
     `d` / `x` / `w` / `m`: calendar views; `c`: create.
   - Arrow keys select blocks; then `Enter` opens, `Space` toggles done, and
@@ -111,10 +124,15 @@ On first launch, choose **Load sample data** to explore, or create empty areas.
   - The first day of the week, the default calendar view and event length.
   - Capacity: planning windows and the global adjustment (changes apply
     from today; past days don't change).
+  - Work log: the weekly target, and the label of the reserved time that
+    counts as planned work (Work by default).
+  - Google Calendar, Google Drive sync, USOS timetable and Gemini (see
+    below), and App, to install it.
   - Areas (drag one by its grip to reorder; the app lists them in that
     order), export (protobuf's JSON form, or the protobuf binary as stored),
     import (either), reset.
-  - The header icon switches the theme (auto / light / dark).
+  - In the header: the keyboard shortcuts, the theme (auto / light / dark),
+    and a badge when sync conflicts wait for review.
 
 ## Google Calendar (read-only)
 
@@ -176,10 +194,49 @@ changed the same field, this device's value is kept until you review it:
 either device's version for each one. Sessions last an hour, so after that sync waits
 until you click **Connect**.
 
+## USOS timetable
+
+**Settings → USOS timetable** reads your USOSweb timetable, either from one of
+your Google calendars (a USOS iCal feed subscribed in Google Calendar) or
+from an iCal link. In a university project, set the course pattern
+(**Details** tab), part of the course title, e.g. `systemów operacyjnych`.
+New classes then show up as "N new classes from USOS · Review" on Home and in
+the project. Nothing is added without that review: ticked classes become
+class tasks, each planned at the class's own day and time unless you untick
+"on calendar", and skipped ones aren't offered again.
+
+## Curriculum import (Gemini)
+
+**Import curriculum…** (a project's **Details** tab) turns a pasted course
+description, e.g. the "Pełny opis" section from USOS, into one item per
+lecture or topic, keeping the original wording. Google's Gemini API does the
+extraction, and you review and edit the list before anything is created. It
+needs your own API key in **Settings → Gemini**; the key stays in this
+browser only, never exported or synced. Only the pasted text is sent.
+
+## Install and offline
+
+**Settings → App** installs the dashboard as an app with its own window (a
+PWA). After the first visit it also works offline: a service worker keeps
+the app's own files. Pages are fetched network-first, so a new deploy shows
+on the next reload. Google, Gemini and USOS calls always go to the network.
+
+## Your data
+
+- It's stored in this browser as protobuf binary (`proto/`), and on Drive if
+  sync is on.
+- **Settings → Data** exports it as readable JSON or as the protobuf binary
+  (`.binpb`, the same bytes as the Drive file). **Import…** takes either.
+- Data saved by an older version is upgraded as it's read. An older version
+  of the app refuses newer data rather than misreading it.
+- The app runs in one tab at a time; another tab asks you to close it first.
+
 ## Deploy
 
-`.github/workflows/deploy.yml` builds and publishes `main` to GitHub Pages.
-Set it up once:
+`.github/workflows/checks.yml` runs lint, format, the schema lint,
+typecheck, tests and the build on every pull request, with a read-only token
+and no secrets; it can never deploy. `.github/workflows/deploy.yml` builds
+and publishes `main` to GitHub Pages. Set it up once:
 
 1. Repo Settings → Pages → Source: **GitHub Actions**.
 2. Repo Settings → Environments → `github-pages` → Deployment branches and
@@ -206,9 +263,13 @@ your client ID. So:
 | `src/store.ts` | Zustand store: all mutations, cascading deletes |
 | `src/ui.ts`, `src/theme.ts` | Transient UI state (open overlays), theme preference |
 | `proto/` | The data schema (protobuf). The TypeScript for it is generated into `src/gen/` (not committed) before `dev`, `build`, `typecheck` and `test` |
-| `src/storage/` | `Storage` interface, IndexedDB implementation, import validation |
-| `src/sync/` | Drive sync: three-way merge, sync engine, runner and triggers |
-| `src/views/` | Home, Week, Calendar, Projects (+ side panel), Settings |
+| `src/storage/` | IndexedDB storage, the protobuf codec, schema migrations (`migrations.ts`), autosave, one tab at a time |
+| `src/sync/` | Drive sync: three-way merge, sync engine, runner and triggers, conflicts |
+| `src/google/` | Google sign-in, Calendar and Drive requests, errors |
+| `src/usos/` | USOS timetable: iCal parsing, fetching, class proposals |
+| `src/curriculum/` | Curriculum import: the Gemini call and checking its answer |
+| `src/pwa.ts`, `public/sw.js` | Installing the app; the service worker (offline) |
+| `src/views/` | Home, Week, Projects (+ side panel and its Details tab), Calendar, Work, Settings |
 | `src/components/` | TimeGrid, MonthGrid, event editor, task overlay, mini month, date/time pickers, capacity badge |
 | `src/components/ui/` | Select (lightweight listbox) and Popover (Radix) wrappers |
 | `src/toast.ts`, `src/actions.ts` | Toasts, undo history (`withUndo`, `undoLast`), undoable user actions |
