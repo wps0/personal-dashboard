@@ -110,7 +110,9 @@ Each day box is a hybrid of three parts:
 - **Planning is manual.** Drag items or allocations into days and set hours.
 - **Capacity** is inferred per day:
   - Start from the weekday's **planning window** (e.g. 18:00–21:00), minus
-    calendar events inside it (overlapping events are merged).
+    the calendar events and the reserved time inside it (overlaps are
+    merged, so an event on reserved time takes it once). The breakdown shows
+    reserved time and events on lines of their own.
   - Add a **global adjustment** (± hours on every day) and the day's own
     **± delta**. A **fixed value** set for the day overrides the calculation.
   - Window and adjustment changes are stored as rules with an effective date
@@ -123,9 +125,9 @@ Each day box is a hybrid of three parts:
     use evening planning time.
 - **Reserved time** (e.g. sleep 23:00–07:00, work 09:00–17:00) is a kind of
   event: reserved events, which usually repeat (see Repeating events in 3.4).
-  - **Drawn with diagonal hatching** on the calendar. Informational only:
-    events can still go there, and it doesn't take capacity. The month view
-    leaves it out.
+  - **Drawn with diagonal hatching** on the calendar. Events can still go
+    there. Inside the planning window it takes capacity, like an event; sleep
+    or work outside the window doesn't. The month view leaves it out.
   - **Can end after midnight:** an end before the start ends the next day
     (sleep). It's drawn at the end of its day and the start of the next, and
     edited in its card only.
