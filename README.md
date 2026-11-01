@@ -85,7 +85,9 @@ On first launch, choose **Load sample data** to explore, or create empty areas.
   items, description (Markdown) and progress log in a side panel; the
   description also shows beside the items (above them on narrow screens).
   Drag the divider to resize the panel; double-click a log entry (or use ✎)
-  to edit it. **+ bulk** creates "Lecture 1…13" in one go. **+ group** makes
+  to edit it. The **Details** tab holds the area, progress mode, due date,
+  USOS course, adding many items (Import curriculum…, or a numbered series
+  like "Lecture 1…13") and Archive / Delete. **+ group** makes
   a folder for items (e.g. all classes); its ⋯ menu moves every ungrouped
   item of a kind into it. Drag a group by its grip (left of the name) to
   reorder the groups. Click a task to select it, Shift-click another to
