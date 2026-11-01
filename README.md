@@ -203,6 +203,7 @@ your client ID. So:
 | Path | What |
 |---|---|
 | `src/model/` | Types, date/time helpers, selectors (progress, backlog, missed), capacity rules, block layout, sample data |
+| `src/config.ts` | Numbers to tune: list lengths, calendar sizes, timings, cache times, limits |
 | `src/store.ts` | Zustand store: all mutations, cascading deletes |
 | `src/ui.ts`, `src/theme.ts` | Transient UI state (open overlays), theme preference |
 | `proto/` | The data schema (protobuf). The TypeScript for it is generated into `src/gen/` (not committed) before `dev`, `build`, `typecheck` and `test` |

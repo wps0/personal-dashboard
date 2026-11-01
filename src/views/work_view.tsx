@@ -1,3 +1,4 @@
+import {WORK_WEEKS_AFTER, WORK_WEEKS_BEFORE, WORK_WEEKS_MORE} from '../config';
 import {ChevronLeft, ChevronRight, Plus, X} from 'lucide-react';
 import {
   memo,
@@ -44,11 +45,6 @@ import {
 } from '../model/work';
 import {useStore} from '../store';
 
-/** Weeks shown around the one in focus when the page opens or jumps. */
-const BEFORE = 8;
-const AFTER = 4;
-/** Weeks added at a time, scrolling near the top or the bottom. */
-const MORE = 8;
 /** The height of the sticky toolbar (`h-12`), above the week headings. */
 const TOOLBAR_PX = 48;
 
@@ -61,8 +57,8 @@ interface WeekRange {
 
 function around(monday: ISODate): WeekRange {
   return {
-    first: addDays(monday, -7 * BEFORE),
-    last: addDays(monday, 7 * AFTER),
+    first: addDays(monday, -7 * WORK_WEEKS_BEFORE),
+    last: addDays(monday, 7 * WORK_WEEKS_AFTER),
     target: monday,
   };
 }
@@ -137,10 +133,16 @@ export function WorkView({week}: {week?: ISODate}) {
     if (growing.current) return;
     if (s.scrollTop < s.clientHeight) {
       growing.current = true;
-      setRange(r => ({first: addDays(r.first, -7 * MORE), last: r.last}));
+      setRange(r => ({
+        first: addDays(r.first, -7 * WORK_WEEKS_MORE),
+        last: r.last,
+      }));
     } else if (s.scrollHeight - s.scrollTop - s.clientHeight < s.clientHeight) {
       growing.current = true;
-      setRange(r => ({first: r.first, last: addDays(r.last, 7 * MORE)}));
+      setRange(r => ({
+        first: r.first,
+        last: addDays(r.last, 7 * WORK_WEEKS_MORE),
+      }));
     }
   };
 

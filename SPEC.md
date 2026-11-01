@@ -155,7 +155,7 @@ Each day box is a hybrid of three parts:
     estimate, that is while spent + planned hours are below the estimate; for
     items without one, it is while they have no open allocation. It can be
     filtered by area, and it holds the overdue tray. Long lists show their
-    first rows (60 backlog tasks, 20 missed sessions) and a "Show more"
+    first rows (50 backlog tasks, 20 missed sessions) and a "Show more"
     button: hundreds of draggable rows took over a second to draw, and the
     grid redraws them when the week changes.
   - *Month notes*: freeform text for the month.
@@ -900,6 +900,11 @@ Same Gemini key, model and privacy note as 5.2.
     fields from the code and marks their numbers and names `reserved`. Old
     exports may still contain them, and the JSON import rejects keys it
     doesn't know, so that change keeps such files importable.
+- **Numbers to tune** live in `src/config.ts`: list lengths (backlog,
+  missed sessions, Work page weeks), calendar sizes, toast and undo lengths,
+  save and sync timings, cache times and limits on what's read. Sizes tied
+  to a CSS class, the schema version and lookup tables stay next to their
+  code.
 - **Checks:** `npm run lint`, `format:check`, `proto:lint`, `typecheck`,
   `test`, `build`.
   The **Checks** workflow runs them on every pull request with a read-only

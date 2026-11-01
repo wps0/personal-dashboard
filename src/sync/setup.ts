@@ -1,3 +1,8 @@
+import {
+  SYNC_AFTER_EDIT_MS,
+  SYNC_ON_RETURN_MIN_MS,
+  SYNC_POLL_MS,
+} from '../config';
 import {hasDriveAccess, useGoogle} from '../google/auth';
 import * as drive from '../google/drive';
 import {navigate} from '../router';
@@ -8,13 +13,6 @@ import {useUi} from '../ui';
 import {addConflicts, clearConflicts} from './pending';
 import {SyncRunner, useSync} from './runner';
 import type {FirstSyncChoice} from './sync';
-
-/** Upload this long after the last edit. */
-const AFTER_EDIT_MS = 3000;
-/** While the tab is visible, look for changes from other devices this often. */
-const POLL_MS = 2 * 60_000;
-/** Coming back to the tab syncs, but not more often than this. */
-const FOCUS_MIN_MS = 15_000;
 
 let runner: SyncRunner | undefined;
 
@@ -61,7 +59,7 @@ export function setUpSync(storage: IndexedDbStorage) {
     // The sync's own result isn't an edit.
     if (r.isOwnChange(s.data) || !on()) return;
     window.clearTimeout(editTimer);
-    editTimer = window.setTimeout(sync, AFTER_EDIT_MS);
+    editTimer = window.setTimeout(sync, SYNC_AFTER_EDIT_MS);
   });
 
   useSync.subscribe((s, prev) => {
@@ -86,7 +84,7 @@ export function setUpSync(storage: IndexedDbStorage) {
   const onReturn = () => {
     if (
       document.visibilityState === 'visible' &&
-      Date.now() - lastSync > FOCUS_MIN_MS
+      Date.now() - lastSync > SYNC_ON_RETURN_MIN_MS
     )
       sync();
   };
@@ -95,7 +93,7 @@ export function setUpSync(storage: IndexedDbStorage) {
   window.addEventListener('online', sync);
   window.setInterval(() => {
     if (document.visibilityState === 'visible') sync();
-  }, POLL_MS);
+  }, SYNC_POLL_MS);
 
   if (on()) sync();
   else useSync.setState({status: {kind: 'off'}});

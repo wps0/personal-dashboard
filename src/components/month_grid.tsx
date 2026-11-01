@@ -1,3 +1,4 @@
+import {MONTH_CELL_ENTRIES} from '../config';
 import {
   DndContext,
   DragOverlay,
@@ -50,8 +51,6 @@ type Entry =
   | {kind: 'google'; ev: GEvent};
 /** What a cell lists: draggable entries, and tasks due that day. */
 type CellEntry = Entry | {kind: 'due'; item: Item};
-
-const MAX_ENTRIES = 3;
 
 /** Month view: 6×7 cells with events and planned sessions; drag entries between days. */
 export function MonthGrid({
@@ -213,7 +212,7 @@ const Cell = memo(function Cell({
 }: CellProps) {
   const {setNodeRef, isOver} = useDroppable({id: `cell|${date}`});
   const hasDraft = useUi(s => s.draft?.date === date);
-  const shown = entries.slice(0, MAX_ENTRIES);
+  const shown = entries.slice(0, MONTH_CELL_ENTRIES);
   const more = entries.length - shown.length;
   return (
     <div
