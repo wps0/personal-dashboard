@@ -10,3 +10,12 @@ updates:
     directory: /
     schedule:
       interval: weekly
+    groups:
+      # React won't start if react and react-dom differ (error #527): one PR
+      # bumps them, and their types, together.
+      react:
+        patterns:
+          - react
+          - react-dom
+          - '@types/react'
+          - '@types/react-dom'
