@@ -335,6 +335,15 @@ double-clicking one in the project panel, opens an overlay with:
 - markdown notes;
 - mark complete, open project, and delete.
 
+- **Times of day** (event and session starts and ends, work stretches,
+  planning windows) are typed fields with a list, like Google Calendar's:
+  type any minute ("9:07", "907", "9pm") and Enter or Tab keeps it, or pick
+  from the list in 15-minute steps, which opens on focus scrolled to the
+  current time. An end's list counts from the start and shows the length;
+  an end typed before the start, or text that isn't a time, goes back. Esc
+  closes the list without closing the card it's in. Dragging on the
+  calendar still snaps to 15 minutes.
+
 ### 3.6 Feedback and motion
 - Every interactive element has hover and press states, and buttons press in
   slightly.

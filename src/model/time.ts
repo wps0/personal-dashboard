@@ -11,6 +11,24 @@ export function fromMinutes(min: number): string {
 }
 
 /**
+ * A time of day as typed: "9", "930", "09:30", "9.30", "21:05", "9:30pm",
+ * "12am". `HH:MM`, or null if it isn't a time of day.
+ */
+export function parseTime(text: string): string | null {
+  const t = text.trim().toLowerCase().replace(/\s+/g, '');
+  const m = /^(\d{1,2})(?:[:.h]?(\d{2}))?([ap])?\.?m?\.?$/.exec(t);
+  if (!m) return null;
+  let h = Number(m[1]);
+  const min = Number(m[2] ?? 0);
+  if (m[3]) {
+    if (h < 1 || h > 12) return null;
+    h = (h % 12) + (m[3] === 'p' ? 12 : 0);
+  }
+  if (h > 23 || min > 59) return null;
+  return fromMinutes(h * 60 + min);
+}
+
+/**
  * A time range with its start moved to `start`, keeping its length (at least
  * 15 min) as far as the day allows, like Google Calendar. An end of 23:59
  * means midnight.
