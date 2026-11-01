@@ -1406,7 +1406,7 @@ function LogEntryRow({
           {entry.editedAt && ' · edited'}
         </span>
         {!editing && (
-          <span className="ml-auto flex opacity-0 group-hover:opacity-100 focus-within:opacity-100">
+          <span className="ml-auto flex opacity-0 group-hover:opacity-100 focus-within:opacity-100 pointer-coarse:opacity-100">
             <button
               className="icon-btn h-6 w-6"
               aria-label="Edit entry"
