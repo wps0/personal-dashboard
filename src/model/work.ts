@@ -62,3 +62,22 @@ export function plannedWork(
     .map(s => ({start: s.event.start, end: s.event.end}))
     .sort((a, b) => a.start.localeCompare(b.start));
 }
+
+/**
+ * Hours of planned work in the week starting on `monday` on the days nothing
+ * is logged yet: once a day has a stretch logged, its log replaces its plan.
+ */
+export function weekPlannedHours(
+  log: WorkSpan[],
+  events: CalendarEvent[],
+  monday: ISODate,
+  label: string,
+): number {
+  let sum = 0;
+  for (let i = 0; i < 7; i++) {
+    const date = addDays(monday, i);
+    if (log.some(s => s.date === date)) continue;
+    for (const p of plannedWork(events, date, label)) sum += spanHours(p);
+  }
+  return sum;
+}

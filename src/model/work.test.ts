@@ -8,6 +8,7 @@ import {
   spanHours,
   spansOn,
   weekHours,
+  weekPlannedHours,
   weekTarget,
 } from './work';
 
@@ -93,5 +94,20 @@ describe('plannedWork', () => {
       {start: '08:00', end: '12:00'},
       {start: '14:00', end: '18:00'},
     ]);
+  });
+
+  it('counts a week’s plan on the days nothing is logged yet', () => {
+    // Monday 12 Oct to Sunday 18 Oct: 5 × 8h planned.
+    expect(weekPlannedHours([], events, '2026-10-12', '')).toBe(40);
+    // A logged day's log replaces its plan, however long it is.
+    const log = [
+      create(pb.WorkSpanSchema, {
+        id: 'x',
+        date: '2026-10-13',
+        start: '10:00',
+        end: '11:00',
+      }),
+    ];
+    expect(weekPlannedHours(log, events, '2026-10-12', '')).toBe(32);
   });
 });
