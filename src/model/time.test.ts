@@ -3,6 +3,7 @@ import {
   fromMinutes,
   layoutSpans,
   moveStart,
+  parseTime,
   slotRange,
   snap,
   toMinutes,
@@ -83,5 +84,41 @@ describe('moveStart', () => {
       start: '12:00',
       end: '12:15',
     });
+  });
+});
+
+describe('parseTime', () => {
+  it('reads times however they are typed', () => {
+    const cases: [string, string][] = [
+      ['9', '09:00'],
+      ['09', '09:00'],
+      ['930', '09:30'],
+      ['0930', '09:30'],
+      ['9:30', '09:30'],
+      ['09:07', '09:07'],
+      ['9.07', '09:07'],
+      ['21:53', '21:53'],
+      [' 21 : 53 ', '21:53'],
+      ['0', '00:00'],
+      ['23:59', '23:59'],
+    ];
+    for (const [typed, time] of cases)
+      expect(parseTime(typed), typed).toBe(time);
+  });
+
+  it('refuses what is not a time of day', () => {
+    for (const typed of [
+      '',
+      '24',
+      '24:00',
+      '9:60',
+      '9pm',
+      '9h30',
+      'abc',
+      '9:5',
+      '12345',
+      '-1',
+    ])
+      expect(parseTime(typed), typed).toBeNull();
   });
 });
