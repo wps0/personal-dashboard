@@ -425,6 +425,11 @@ The plan is reserved time named as work: reserved events with that label
   the week has its own: typing one on the page sets it for that week only,
   and "Use the default" removes it. 0 means no target. The month totals of
   the months the week touches are shown too.
+- **On the calendar** (and Home's day), each stretch logged is tinted in
+  the accent colour with a solid left edge, over the hatched reserved time
+  it was planned in: planned is hatched, worked is solid. It's
+  see-through, so clicks still create events, and its "Worked" label
+  (bottom right) opens its week on the Work page.
 - **On Home**, a small card at the bottom right shows today (logged, or
   planned with Log as planned) and the week against its target; "edit ↗"
   opens the Work page.
