@@ -143,7 +143,7 @@ function TimeSelectImpl({
               open && active >= 0 ? `${listId}-${active}` : undefined
             }
             inputMode="numeric"
-            size={5}
+            size={1}
             value={text}
             placeholder={isTime ? undefined : value}
             onChange={e => {
@@ -158,12 +158,13 @@ function TimeSelectImpl({
             onBlur={() => commit(text)}
             onKeyDown={onKeyDown}
             onPointerDown={e => e.stopPropagation()}
-            className="min-w-0 flex-1 bg-transparent tabular-nums outline-none placeholder:text-dim"
+            className="min-w-[5ch] flex-1 bg-transparent tabular-nums outline-none placeholder:text-dim"
           />
           <ChevronDown
             size={14}
             aria-hidden
-            className={`shrink-0 text-dim transition-transform duration-200 ${open ? 'rotate-180' : ''}`}
+            // Phones: the list opens on a tap; the room goes to the time.
+            className={`shrink-0 text-dim transition-transform duration-200 max-sm:hidden ${open ? 'rotate-180' : ''}`}
           />
         </span>
       </PopoverAnchor>
