@@ -856,11 +856,6 @@ Same Gemini key, model and privacy note as 5.2.
   hooks rules. Two deviations, both documented there: `== null` is allowed
   (as the style guide itself allows), and named function expressions are
   allowed for `memo(function Name…)`. Prettier with gts's settings.
-- **Numbers to tune** live in `src/config.ts`: list lengths (backlog,
-  missed sessions, Work page weeks), calendar sizes, toast and undo lengths,
-  save and sync timings, cache times and limits on what's read. Sizes tied
-  to a CSS class, the schema version and lookup tables stay next to their
-  code.
 - **Data schema:** `proto/dashboard/data.proto` (protobuf) describes the
   stored data; `npm run proto:generate` writes the TypeScript for it to
   `src/gen/`. Generated code isn't committed: it is regenerated before every
@@ -902,6 +897,11 @@ Same Gemini key, model and privacy note as 5.2.
     fields from the code and marks their numbers and names `reserved`. Old
     exports may still contain them, and the JSON import rejects keys it
     doesn't know, so that change keeps such files importable.
+- **Numbers to tune** live in `src/config.ts`: list lengths (backlog,
+  missed sessions, Work page weeks), calendar sizes, toast and undo lengths,
+  save and sync timings, cache times and limits on what's read. Sizes tied
+  to a CSS class, the schema version and lookup tables stay next to their
+  code.
 - **Checks:** `npm run lint`, `format:check`, `proto:lint`, `typecheck`,
   `test`, `build`.
   The **Checks** workflow runs them on every pull request with a read-only
