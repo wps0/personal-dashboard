@@ -333,7 +333,9 @@ double-clicking one in the project panel, opens an overlay with:
   (on phones one hours column: planned, or actual once done, as in the week
   journal); dates in this card leave out the year when it's this year's;
 - markdown notes;
-- mark complete, open project, and delete.
+- mark complete and open project, with **Close** in the bottom-right corner;
+  delete is the trash icon next to × at the top, as in the event card (with
+  Undo).
 
 ### 3.6 Feedback and motion
 - Every interactive element has hover and press states, and buttons press in

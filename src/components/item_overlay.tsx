@@ -121,6 +121,18 @@ function ItemDetails({item, onClose}: {item: Item; onClose(): void}) {
             />
           </div>
         </div>
+        {/* Delete up here, like the event card's: the corner below is Close. */}
+        <button
+          className="icon-btn hover:!text-danger"
+          onClick={() => {
+            onClose();
+            deleteItemAction(item);
+          }}
+          aria-label="Delete task"
+          title="Delete task"
+        >
+          <Trash2 size={16} />
+        </button>
         <button className="icon-btn" onClick={onClose} aria-label="Close">
           <X size={18} />
         </button>
@@ -264,16 +276,8 @@ function ItemDetails({item, onClose}: {item: Item; onClose(): void}) {
             open project ↗
           </button>
         )}
-        <button
-          className="btn-ghost ml-auto hover:text-danger"
-          onClick={() => {
-            {
-              onClose();
-              deleteItemAction(item);
-            }
-          }}
-        >
-          delete
+        <button className="btn ml-auto" onClick={onClose}>
+          Close
         </button>
       </footer>
     </div>
