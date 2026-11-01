@@ -329,7 +329,9 @@ double-clicking one in the project panel, opens an overlay with:
 - the title, project, kind and status;
 - the due date, class date and estimate;
 - spent / planned / remaining hours;
-- every session, each with an editable date, start, planned and actual hours;
+- every session, each with an editable date, start, planned and actual hours
+  (on phones one hours column: planned, or actual once done, as in the week
+  journal); dates in this card leave out the year when it's this year's;
 - markdown notes;
 - mark complete, open project, and delete.
 

@@ -9,7 +9,7 @@ import {HoursInput} from './hours_input';
 import {Markdown} from './markdown';
 import {GroupSelect} from './group_select';
 import {Modal} from './modal';
-import {countdown} from '../model/dates';
+import {countdown, dayName, formatMedium, shortDate} from '../model/dates';
 import {useToday} from '../hooks';
 import {
   actualHours,
@@ -17,7 +17,12 @@ import {
   plannedHours,
   urgency,
 } from '../model/selectors';
-import {ItemKind, type Allocation, type Item} from '../model/types';
+import {
+  ItemKind,
+  type Allocation,
+  type ISODate,
+  type Item,
+} from '../model/types';
 import {fmtH, KIND_OPTIONS, URGENCY_CLASS} from '../format';
 import {navigate} from '../router';
 import {useStore} from '../store';
@@ -127,6 +132,7 @@ function ItemDetails({item, onClose}: {item: Item; onClose(): void}) {
             optional
             value={item.dueDate}
             onChange={dueDate => set({dueDate})}
+            format={d => compactDate(d, today)}
             placeholder="No due date"
             className="w-full"
           />
@@ -144,6 +150,7 @@ function ItemDetails({item, onClose}: {item: Item; onClose(): void}) {
               optional
               value={item.heldOn}
               onChange={heldOn => set({heldOn})}
+              format={d => compactDate(d, today)}
               placeholder="Not set"
               className="w-full"
             />
@@ -189,8 +196,10 @@ function ItemDetails({item, onClose}: {item: Item; onClose(): void}) {
                 <th className="w-6" />
                 <th>date</th>
                 <th>start</th>
-                <th className="text-right">plan</th>
-                <th className="text-right">actual</th>
+                {/* On phones one column: planned, or actual once done. */}
+                <th className="text-right sm:hidden">hours</th>
+                <th className="text-right max-sm:hidden">plan</th>
+                <th className="text-right max-sm:hidden">actual</th>
                 <th className="w-6" />
               </tr>
             </thead>
@@ -271,9 +280,32 @@ function ItemDetails({item, onClose}: {item: Item; onClose(): void}) {
   );
 }
 
+/** "Wed, 28 Oct", with the year only when it isn't this year's: fits a phone. */
+function compactDate(d: ISODate, today: ISODate): string {
+  return d.slice(0, 4) === today.slice(0, 4)
+    ? `${dayName(d)}, ${shortDate(d)}`
+    : formatMedium(d);
+}
+
 function SessionRow({alloc, today}: {alloc: Allocation; today: string}) {
   const {updateAllocation} = useStore.getState();
   const missed = !alloc.done && alloc.date < today;
+  const planned = (
+    <HoursInput
+      value={alloc.plannedHours}
+      onChange={h => h && updateAllocation(alloc.id, {plannedHours: h})}
+      title="Planned hours"
+      className="text-[12px]"
+    />
+  );
+  const actual = (
+    <HoursInput
+      value={alloc.actualHours ?? alloc.plannedHours}
+      onChange={h => updateAllocation(alloc.id, {actualHours: h})}
+      title={`Actual hours (planned ${alloc.plannedHours}h)`}
+      className="text-[12px] text-ok"
+    />
+  );
   return (
     <tr className="group">
       <td className="px-1">
@@ -289,6 +321,7 @@ function SessionRow({alloc, today}: {alloc: Allocation; today: string}) {
           value={alloc.date}
           onChange={date => date && updateAllocation(alloc.id, {date})}
           variant="ghost"
+          format={d => compactDate(d, today)}
           className={missed ? 'text-danger' : ''}
         />
       </td>
@@ -314,23 +347,12 @@ function SessionRow({alloc, today}: {alloc: Allocation; today: string}) {
           )}
         </span>
       </td>
-      <td className="px-1 text-right">
-        <HoursInput
-          value={alloc.plannedHours}
-          onChange={h => h && updateAllocation(alloc.id, {plannedHours: h})}
-          className="text-[12px]"
-        />
+      <td className="px-1 text-right sm:hidden">
+        {alloc.done ? actual : planned}
       </td>
-      <td className="px-1 text-right">
-        {alloc.done ? (
-          <HoursInput
-            value={alloc.actualHours ?? alloc.plannedHours}
-            onChange={h => updateAllocation(alloc.id, {actualHours: h})}
-            className="text-[12px] text-ok"
-          />
-        ) : (
-          <span className="text-dim">–</span>
-        )}
+      <td className="px-1 text-right max-sm:hidden">{planned}</td>
+      <td className="px-1 text-right max-sm:hidden">
+        {alloc.done ? actual : <span className="text-dim">–</span>}
       </td>
       <td className="px-1 text-right">
         <button
