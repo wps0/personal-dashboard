@@ -47,6 +47,8 @@ function CapacityBadgeImpl({
             Planning window {info.window.start}–{info.window.end}
           </dt>
           <dd>{fmtH(info.windowHours)}</dd>
+          <dt className="text-dim">Reserved in window</dt>
+          <dd>{info.reservedHours ? `−${fmtH(info.reservedHours)}` : '0h'}</dd>
           <dt className="text-dim">Events in window</dt>
           <dd>{info.busyHours ? `−${fmtH(info.busyHours)}` : '0h'}</dd>
           <dt className="text-dim">Global adjustment</dt>

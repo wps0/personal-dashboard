@@ -25,7 +25,12 @@ export function range(start: string, end: string, label?: string): TimeRange {
 export interface CapacityInfo {
   window: PlanningWindow;
   windowHours: number;
-  /** Hours inside the window taken by calendar events (overlaps merged). */
+  /** Hours inside the window taken by reserved time (overlaps merged). */
+  reservedHours: number;
+  /**
+   * Hours inside the window taken by calendar events, besides reserved time
+   * (overlaps merged).
+   */
   busyHours: number;
   adjustment: number;
   delta: number;
@@ -99,24 +104,36 @@ export function busyMinutes(
   return total + (curE - curS);
 }
 
+/**
+ * A day's capacity: its planning window minus the events and reserved time
+ * inside it, plus the adjustments. `reservedOfDay` holds the day's pieces of
+ * reserved time, none past midnight.
+ */
 export function capacityFor(
   date: ISODate,
   rules: CapacityRule[],
   days: Record<ISODate, DayCapacity>,
   eventsOfDay: CalendarEvent[],
+  reservedOfDay: CalendarEvent[] = [],
 ): CapacityInfo {
   const rule = ruleFor(rules, date);
   const window = rule.windows[weekdayIndex(date)];
   const windowHours =
     Math.max(0, toMinutes(window.end) - toMinutes(window.start)) / 60;
-  const busyHours = busyMinutes(window, eventsOfDay) / 60;
+  const reserved = busyMinutes(window, reservedOfDay);
+  // An event on reserved time takes that time once.
+  const busy = busyMinutes(window, [...eventsOfDay, ...reservedOfDay]);
+  const reservedHours = reserved / 60;
+  const busyHours = (busy - reserved) / 60;
   const day = days[date] ?? {};
   const delta = day.delta ?? 0;
-  const computed = windowHours - busyHours + rule.adjustment + delta;
+  const computed =
+    windowHours - reservedHours - busyHours + rule.adjustment + delta;
   const total = Math.max(0, Math.round((day.override ?? computed) * 4) / 4);
   return {
     window,
     windowHours,
+    reservedHours,
     busyHours,
     adjustment: rule.adjustment,
     delta,
