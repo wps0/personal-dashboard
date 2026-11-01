@@ -418,16 +418,22 @@ The plan is reserved time named as work: reserved events with that label
   day's reserved events, including one changed on its own that day), its logged stretches with
   editable start and end and a remove button, and the day's total. A day
   with nothing logged offers **Log as planned** (its planned work, in one
-  step); **+ add** adds a stretch after the last one, or the planned work,
+  step) and shows its planned hours instead of a total, after a hatched
+  swatch; **+ add** adds a stretch after the last one, or the planned work,
   or 09:00–17:00.
+- **Planned hours** are the planned work of the days with nothing logged
+  yet: once a day has a stretch logged, its log replaces its plan. They're
+  hatched in the accent colour, where logged hours are solid.
 - **The week** shows the hours logged against its target, with a bar and
-  "N h to go" or "N h over". The target is the default from Settings unless
+  "N h to go" or "N h over", and its planned hours ("24h planned"). The
+  bar fills solid for the hours logged, then hatched for the planned ones,
+  so it shows where the week is heading. The target is the default from Settings unless
   the week has its own: typing one on the page sets it for that week only,
   and "Use the default" removes it. 0 means no target. The month totals of
   the months the week touches are shown too.
 - **On Home**, a small card at the bottom right shows today (logged, or
-  planned with Log as planned) and the week against its target; "edit ↗"
-  opens the Work page.
+  planned with Log as planned) and the week against its target, with the
+  same bar; "edit ↗" opens the Work page.
 - Everything is undoable.
 
 ## 4. Integrations (v2)

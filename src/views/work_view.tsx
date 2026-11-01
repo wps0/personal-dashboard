@@ -18,6 +18,7 @@ import {
 } from '../actions';
 import {HoursInput} from '../components/hours_input';
 import {TimeSelect} from '../components/time_select';
+import {WorkBar} from '../components/work_bar';
 import {fmtH} from '../format';
 import {useToday} from '../hooks';
 import {useNavTarget} from '../keyboard';
@@ -40,6 +41,7 @@ import {
   spanHours,
   spansOn,
   weekHours,
+  weekPlannedHours,
   weekTarget,
 } from '../model/work';
 import {useStore} from '../store';
@@ -270,9 +272,20 @@ const WorkWeek = memo(function WorkWeek({
   );
 });
 
-/** The week's hours against its target, the target itself, and month totals. */
+/**
+ * The week's hours against its target (and the planned hours not logged
+ * yet), the target itself, and month totals.
+ */
 function WeekSummary({monday, days}: {monday: ISODate; days: ISODate[]}) {
   const logged = useStore(s => weekHours(s.data.workLog, monday));
+  const planned = useStore(s =>
+    weekPlannedHours(
+      s.data.workLog,
+      s.data.events,
+      monday,
+      s.data.settings.workLabel,
+    ),
+  );
   const target = useStore(s => weekTarget(s.data.settings, monday));
   const own = useStore(
     s => s.data.settings.weekWorkTargets[monday] !== undefined,
@@ -299,6 +312,12 @@ function WeekSummary({monday, days}: {monday: ISODate; days: ISODate[]}) {
         <span className="text-dim">
           logged{target > 0 && ` of ${fmtH(target)}`}
         </span>
+        {planned > 0 && (
+          <span className="flex items-center gap-1 self-center text-dim tabular-nums">
+            <span className="planned h-2.5 w-3.5 rounded-sm" aria-hidden />
+            {fmtH(planned)} planned
+          </span>
+        )}
         {target > 0 && (
           <span
             className={`ml-auto tabular-nums ${balance >= 0 ? 'text-accent' : 'text-dim'}`}
@@ -308,19 +327,13 @@ function WeekSummary({monday, days}: {monday: ISODate; days: ISODate[]}) {
         )}
       </div>
       {target > 0 && (
-        <div
-          className="mt-2 h-1.5 overflow-hidden rounded-full bg-raised"
-          role="progressbar"
-          aria-label="Logged of the weekly target"
-          aria-valuemin={0}
-          aria-valuemax={target}
-          aria-valuenow={logged}
-        >
-          <div
-            className="h-full rounded-full bg-accent"
-            style={{width: `${Math.min(100, (logged / target) * 100)}%`}}
-          />
-        </div>
+        <WorkBar
+          logged={logged}
+          planned={planned}
+          target={target}
+          label="Logged of the weekly target"
+          className="mt-2 h-2"
+        />
       )}
       <div className="mt-3 flex flex-wrap items-center gap-x-3 gap-y-1 text-[12px] text-dim">
         <label className="flex items-center gap-1">
@@ -361,6 +374,7 @@ function WorkDay({
   planned: {start: string; end: string}[];
 }) {
   const total = spans.reduce((sum, s) => sum + spanHours(s), 0);
+  const plan = planned.reduce((sum, p) => sum + spanHours(p), 0);
   const label = `${dayName(date)} ${shortDate(date)}`;
   const add = () => {
     // After the last stretch, or the planned work, or a usual day.
@@ -407,7 +421,19 @@ function WorkDay({
         </div>
       </div>
       <div className="w-14 shrink-0 pt-0.5 text-right tabular-nums text-strong">
-        {total ? fmtH(total) : <span className="text-dim">–</span>}
+        {total ? (
+          fmtH(total)
+        ) : plan ? (
+          <span
+            className="inline-flex items-center gap-1 text-dim"
+            title="Planned, not logged yet"
+          >
+            <span className="planned h-2.5 w-2.5 rounded-sm" aria-hidden />
+            {fmtH(plan)}
+          </span>
+        ) : (
+          <span className="text-dim">–</span>
+        )}
       </div>
     </li>
   );

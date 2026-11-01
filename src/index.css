@@ -202,6 +202,22 @@
   }
 }
 
+/*
+ * Planned work not logged yet: hatched in the accent colour, where logged
+ * work is solid. Soft-edged lines, so they all come out in one shade.
+ */
+@layer components {
+  .planned {
+    background-color: color-mix(in srgb, var(--color-accent) 15%, transparent);
+    background-image: repeating-linear-gradient(
+      135deg,
+      transparent 0,
+      var(--color-accent) 1px 2px,
+      transparent 3px 5px
+    );
+  }
+}
+
 /* ───────────── Motion ─────────────
  * Short, physical-feeling transitions so every action gets feedback.
  * All of it is turned off for prefers-reduced-motion.

@@ -7,10 +7,12 @@ import {
   spanHours,
   spansOn,
   weekHours,
+  weekPlannedHours,
   weekTarget,
 } from '../model/work';
 import {href} from '../router';
 import {useStore} from '../store';
+import {WorkBar} from './work_bar';
 
 /** Home's small work card: today's work, logged or planned, and the week against its target. */
 export function WorkCard() {
@@ -22,6 +24,7 @@ export function WorkCard() {
   const planned = plannedWork(events, today, settings.workLabel);
   const monday = startOfWeek(today, MONDAY);
   const logged = weekHours(log, monday);
+  const plannedWeek = weekPlannedHours(log, events, monday, settings.workLabel);
   const target = weekTarget(settings, monday);
   const times = (xs: {start: string; end: string}[]) =>
     xs.map(x => `${x.start}–${x.end}`).join(', ');
@@ -70,15 +73,12 @@ export function WorkCard() {
             {target > 0 && ` of ${fmtH(target)}`}
           </span>
           {target > 0 && (
-            <div
-              className="h-1 min-w-0 flex-1 overflow-hidden rounded-full bg-raised"
-              aria-hidden
-            >
-              <div
-                className="h-full rounded-full bg-accent"
-                style={{width: `${Math.min(100, (logged / target) * 100)}%`}}
-              />
-            </div>
+            <WorkBar
+              logged={logged}
+              planned={plannedWeek}
+              target={target}
+              className="h-1.5 min-w-0 flex-1"
+            />
           )}
         </div>
       </div>
