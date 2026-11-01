@@ -1,3 +1,4 @@
+import {USOS_ICAL_MAX_BYTES} from '../config';
 import {listEvents} from '../google/api';
 import {addDays, todayISO} from '../model/dates';
 import type {ISODate, UsosSource} from '../model/types';
@@ -19,9 +20,6 @@ export function isValidICalUrl(url: string): boolean {
     return false;
   }
 }
-
-/** A timetable is a few hundred kB; anything much bigger is the wrong link. */
-const MAX_ICAL_BYTES = 5_000_000;
 
 /** Class meetings from the configured source, plus warnings about anything skipped. */
 export async function fetchMeetings(
@@ -74,13 +72,13 @@ async function fetchICal(
   };
 }
 
-/** The body as text, refusing one over MAX_ICAL_BYTES without reading it all. */
+/** The body as text, refusing one over USOS_ICAL_MAX_BYTES without reading it all. */
 async function readLimited(res: Response): Promise<string> {
   const tooLarge = () =>
     new Error(
-      `The iCal link returned more than ${MAX_ICAL_BYTES / 1_000_000} MB, too much for a timetable: check the link.`,
+      `The iCal link returned more than ${USOS_ICAL_MAX_BYTES / 1_000_000} MB, too much for a timetable: check the link.`,
     );
-  if (Number(res.headers.get('Content-Length')) > MAX_ICAL_BYTES)
+  if (Number(res.headers.get('Content-Length')) > USOS_ICAL_MAX_BYTES)
     throw tooLarge();
   if (!res.body) return res.text();
   const reader = res.body.getReader();
@@ -90,7 +88,7 @@ async function readLimited(res: Response): Promise<string> {
     const {done, value} = await reader.read();
     if (done) break;
     size += value.byteLength;
-    if (size > MAX_ICAL_BYTES) {
+    if (size > USOS_ICAL_MAX_BYTES) {
       void reader.cancel();
       throw tooLarge();
     }

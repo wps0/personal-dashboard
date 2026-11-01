@@ -155,7 +155,7 @@ Each day box is a hybrid of three parts:
     estimate, that is while spent + planned hours are below the estimate; for
     items without one, it is while they have no open allocation. It can be
     filtered by area, and it holds the overdue tray. Long lists show their
-    first rows (60 backlog tasks, 20 missed sessions) and a "Show more"
+    first rows (50 backlog tasks, 20 missed sessions) and a "Show more"
     button: hundreds of draggable rows took over a second to draw, and the
     grid redraws them when the week changes.
   - *Month notes*: freeform text for the month.
@@ -856,6 +856,11 @@ Same Gemini key, model and privacy note as 5.2.
   hooks rules. Two deviations, both documented there: `== null` is allowed
   (as the style guide itself allows), and named function expressions are
   allowed for `memo(function Name…)`. Prettier with gts's settings.
+- **Numbers to tune** live in `src/config.ts`: list lengths (backlog,
+  missed sessions, Work page weeks), calendar sizes, toast and undo lengths,
+  save and sync timings, cache times and limits on what's read. Sizes tied
+  to a CSS class, the schema version and lookup tables stay next to their
+  code.
 - **Data schema:** `proto/dashboard/data.proto` (protobuf) describes the
   stored data; `npm run proto:generate` writes the TypeScript for it to
   `src/gen/`. Generated code isn't committed: it is regenerated before every

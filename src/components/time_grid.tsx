@@ -1,3 +1,4 @@
+import {ALL_DAY_COLLAPSED_ITEMS, CALENDAR_HOUR_PX} from '../config';
 import {ChevronDown, ChevronUp} from 'lucide-react';
 import {sameProps} from '../same_props';
 import {
@@ -136,7 +137,7 @@ function clientY(e: Event | null): number {
  */
 export function TimeGrid({
   days,
-  hourHeight = 48,
+  hourHeight = CALENDAR_HOUR_PX,
   scrollToHour = 7,
   onDayClick,
 }: Props) {
@@ -341,7 +342,7 @@ function GridBody({days, hourHeight, scrollToHour, onDayClick}: BodyProps) {
   );
   const collapsed = useUi(s => s.allDayCollapsed);
   const spanRows = collapsed
-    ? Math.min(allDay.lanes, COLLAPSED_ITEMS)
+    ? Math.min(allDay.lanes, ALL_DAY_COLLAPSED_ITEMS)
     : allDay.lanes;
 
   const byDay = useMemo(() => {
@@ -585,7 +586,7 @@ const Strip = memo(function Strip(props: {
     ...allocs.map(a => <StripChip key={a.id} alloc={a} lookups={lookups} />),
   ];
   const shown = collapsed
-    ? chips.slice(0, Math.max(0, COLLAPSED_ITEMS - spanRows))
+    ? chips.slice(0, Math.max(0, ALL_DAY_COLLAPSED_ITEMS - spanRows))
     : chips;
   const more = chips.length - shown.length + hiddenSpans;
   return (
@@ -612,9 +613,6 @@ const Strip = memo(function Strip(props: {
     </div>
   );
 }, sameProps);
-
-/** Items per day in the all-day row while it's collapsed. */
-const COLLAPSED_ITEMS = 2;
 
 /** "all-day" label with the collapse / expand toggle, like Google Calendar's chevron. */
 function AllDayGutter({rows}: {rows: number}) {

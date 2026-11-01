@@ -1,3 +1,4 @@
+import {HOME_HOUR_PX} from '../config';
 import {UsosBanner} from '../components/usos_review';
 import {ChevronDown, ChevronLeft, ChevronRight} from 'lucide-react';
 import {memo, useMemo, useState} from 'react';
@@ -59,7 +60,7 @@ export function HomeView({date}: {date?: ISODate}) {
         <div className="min-h-0 flex-1">
           <TimeGrid
             days={days}
-            hourHeight={44}
+            hourHeight={HOME_HOUR_PX}
             scrollToHour={Math.max(0, new Date().getHours() - 2)}
             onDayClick={d => navigate({name: 'calendar', view: 'day', date: d})}
           />

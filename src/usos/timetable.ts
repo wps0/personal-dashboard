@@ -1,12 +1,10 @@
+import {USOS_TIMETABLE_FRESH_MS} from '../config';
 import {useEffect} from 'react';
 import {create} from 'zustand';
 import type {UsosSource} from '../model/types';
 import {useStore} from '../store';
 import {fetchMeetings} from './fetch';
 import type {ClassMeeting} from './usos';
-
-/** How long a fetched timetable is reused before it's fetched again. */
-const FRESH_MS = 30 * 60 * 1000;
 
 interface Timetable {
   state: 'idle' | 'loading' | 'ready' | 'error';
@@ -35,7 +33,8 @@ export async function loadTimetable(force = false): Promise<void> {
   const fresh =
     t.source === key &&
     (t.state === 'loading' ||
-      (t.state === 'ready' && Date.now() - t.fetchedAt < FRESH_MS));
+      (t.state === 'ready' &&
+        Date.now() - t.fetchedAt < USOS_TIMETABLE_FRESH_MS));
   if (fresh && !force) return;
   useTimetable.setState({state: 'loading', source: key, error: undefined});
   try {
