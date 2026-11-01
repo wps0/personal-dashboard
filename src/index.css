@@ -190,13 +190,18 @@
   }
 }
 
-/* Reserved time (sleep, work): diagonal hatching, informational only. */
+/*
+ * Reserved time (sleep, work): diagonal hatching. Each line fades in and out
+ * over 1.4px: a hard 1px line covers one pixel diagonal or two, depending on
+ * where it lands, so the lines came out in two shades.
+ */
 @layer components {
   .reserved {
     background-image: repeating-linear-gradient(
       135deg,
-      color-mix(in srgb, var(--color-dim) 22%, transparent) 0 1px,
-      transparent 1px 7px
+      transparent 0,
+      color-mix(in srgb, var(--color-dim) 16%, transparent) 1.4142px,
+      transparent 2.8284px 7px
     );
     background-color: color-mix(in srgb, var(--color-dim) 5%, transparent);
   }
