@@ -337,7 +337,7 @@ double-clicking one in the project panel, opens an overlay with:
 
 - **Times of day** (event and session starts and ends, work stretches,
   planning windows) are typed fields with a list, like Google Calendar's:
-  type any minute ("9:07", "907", "9pm") and Enter or Tab keeps it, or pick
+  type any minute ("9:07", "907", "9.07") and Enter or Tab keeps it, or pick
   from the list in 15-minute steps, which opens on focus scrolled to the
   current time. An end's list counts from the start and shows the length;
   an end typed before the start, or text that isn't a time, goes back. Esc

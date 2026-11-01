@@ -11,19 +11,14 @@ export function fromMinutes(min: number): string {
 }
 
 /**
- * A time of day as typed: "9", "930", "09:30", "9.30", "21:05", "9:30pm",
- * "12am". `HH:MM`, or null if it isn't a time of day.
+ * A time of day as typed: "9", "930", "0930", "9:30", "09:30" or "9.30".
+ * `HH:MM`, or null if it isn't a time of day.
  */
 export function parseTime(text: string): string | null {
-  const t = text.trim().toLowerCase().replace(/\s+/g, '');
-  const m = /^(\d{1,2})(?:[:.h]?(\d{2}))?([ap])?\.?m?\.?$/.exec(t);
+  const m = /^(\d{1,2})(?:[:.]?(\d{2}))?$/.exec(text.replace(/\s+/g, ''));
   if (!m) return null;
-  let h = Number(m[1]);
+  const h = Number(m[1]);
   const min = Number(m[2] ?? 0);
-  if (m[3]) {
-    if (h < 1 || h > 12) return null;
-    h = (h % 12) + (m[3] === 'p' ? 12 : 0);
-  }
   if (h > 23 || min > 59) return null;
   return fromMinutes(h * 60 + min);
 }

@@ -33,7 +33,7 @@ const TIME = /^\d\d:\d\d$/;
 
 /**
  * A time of day, like Google Calendar's: type any time ("9:07", "907",
- * "9pm") or pick one from a list in 15-minute steps, which opens as the field
+ * "9.07") or pick one from a list in 15-minute steps, which opens as the field
  * is focused, scrolled to the current time. Enter or leaving the field keeps
  * what was typed; Esc goes back.
  */
