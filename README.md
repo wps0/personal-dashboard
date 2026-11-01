@@ -159,7 +159,7 @@ One-time setup (free, about 5 minutes):
      `http://localhost:5173` and `https://<you>.github.io`.
    - No redirect URI is needed.
 4. Give the app the Client ID (it isn't a secret). Either:
-   - set the repository variable `GOOGLE_CLIENT_ID` (Settings → Secrets and
+   - set the repository variable `VITE_GOOGLE_CLIENT_ID` (Settings → Secrets and
      variables → Actions → Variables → **Repository variables**), and the
      deploy builds it in, so every device has it. It must be a repository
      variable: a secret, or an environment variable of `github-pages`, doesn't
@@ -169,8 +169,8 @@ One-time setup (free, about 5 minutes):
    - paste it in **Settings → Google Calendar** on each device (this wins
      over a built-in one; clear the field to go back to it).
 
-   Locally, `VITE_GOOGLE_CLIENT_ID=… npm run dev` does the same as the
-   variable.
+   Locally, the same name works as an environment variable:
+   `VITE_GOOGLE_CLIENT_ID=… npm run dev`.
 
 Google shows an "unverified app" warning for apps in testing mode. That's
 expected for a personal client.
