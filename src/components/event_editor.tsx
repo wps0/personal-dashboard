@@ -1,5 +1,6 @@
 import {memo, useCallback, useMemo, useState, type CSSProperties} from 'react';
 import {AlignLeft, Clock, FolderKanban, Repeat, Trash2, X} from 'lucide-react';
+import {ALL_DAY_TASK_SESSION_HOURS} from '../config';
 import {eventStyle} from '../event_colors';
 import {withUndo} from '../toast';
 import {formatLong, shortDate} from '../model/dates';
@@ -202,16 +203,17 @@ function saveDraft(draft: Draft): boolean {
       const title = draft.title.trim() || 'Untitled';
       lastTaskProject = projectId;
       withUndo(`Created “${title}”`, () => {
+        // No due date: the day is when it's planned, not when it's due.
         const [id] = store.addItems(projectId, [
           {
             kind: draft.itemKind ?? ItemKind.TASK,
             title,
-            dueDate: date,
             estimateHours: allDay ? undefined : hours,
             notes: draft.notes.trim() || undefined,
           },
         ]);
-        if (!allDay) store.addAllocation(id, date, hours, start);
+        if (allDay) store.addAllocation(id, date, ALL_DAY_TASK_SESSION_HOURS);
+        else store.addAllocation(id, date, hours, start);
       });
       return true;
     }
@@ -306,12 +308,12 @@ export function DraftEditor() {
         {isTask && (
           <>
             <p className="pl-7 text-[12px] text-dim">
-              Due {shortDate(draft.date)}
               {draft.allDay
-                ? '.'
-                : `, with ${draft.start}–${draft.end} planned for it (${fmtH(
+                ? `Planned for ${shortDate(draft.date)}, without a time (${fmtH(ALL_DAY_TASK_SESSION_HOURS)}).`
+                : `${draft.start}–${draft.end} on ${shortDate(draft.date)} planned for it (${fmtH(
                     (toMinutes(draft.end) - toMinutes(draft.start)) / 60,
-                  )}).`}
+                  )}).`}{' '}
+              No due date.
             </p>
             <div className="flex items-center gap-3">
               <FolderKanban size={16} className="shrink-0 text-dim" />
