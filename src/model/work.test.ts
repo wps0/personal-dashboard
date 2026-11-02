@@ -3,6 +3,7 @@ import {describe, expect, it} from 'vitest';
 import * as pb from '../gen/dashboard/data_pb';
 import type {InitOf} from './types';
 import {
+  isHoursOnly,
   loggedHours,
   plannedWork,
   spanHours,
@@ -31,6 +32,22 @@ describe('the work log', () => {
     // Monday 12 Oct to Sunday 18 Oct.
     expect(weekHours(log, '2026-10-12')).toBe(8.75);
     expect(weekHours(log, '2026-10-19')).toBe(8);
+  });
+
+  it('counts hours logged alone, listed before the stretches', () => {
+    const hours = create(pb.WorkSpanSchema, {
+      id: 'h',
+      date: '2026-10-12',
+      start: '',
+      end: '',
+      hours: 2.5,
+    });
+    expect(isHoursOnly(hours)).toBe(true);
+    expect(isHoursOnly(log[0])).toBe(false);
+    expect(spanHours(hours)).toBe(2.5);
+    const all = [...log, hours];
+    expect(spansOn(all, '2026-10-12').map(s => s.id)).toEqual(['h', 'a', 'b']);
+    expect(weekHours(all, '2026-10-12')).toBe(11.25);
   });
 
   it('uses a week’s own target over the default', () => {

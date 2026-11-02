@@ -111,9 +111,11 @@ interface Actions {
 
   /** Logs a stretch of work; returns its id. */
   addWorkSpan(date: ISODate, start: string, end: string): string;
+  /** Logs hours worked on `date` without a time of day. */
+  addWorkHours(date: ISODate, hours: number): string;
   updateWorkSpan(
     id: string,
-    patch: Partial<Pick<WorkSpan, 'start' | 'end' | 'note'>>,
+    patch: Partial<Pick<WorkSpan, 'start' | 'end' | 'note' | 'hours'>>,
   ): void;
   deleteWorkSpan(id: string): void;
   /** The default weekly target (0: none) and the label of planned work. */
@@ -450,6 +452,22 @@ export const useStore = create<State>()((set, get) => {
         workLog: [
           ...d.workLog,
           createMessage(pb.WorkSpanSchema, {id, date, start, end}),
+        ],
+      }));
+      return id;
+    },
+    addWorkHours: (date, hours) => {
+      const id = uid();
+      update(d => ({
+        workLog: [
+          ...d.workLog,
+          createMessage(pb.WorkSpanSchema, {
+            id,
+            date,
+            start: '',
+            end: '',
+            hours,
+          }),
         ],
       }));
       return id;

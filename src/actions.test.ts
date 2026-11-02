@@ -9,6 +9,7 @@ import {
   importClasses,
   importCurriculum,
   logAsPlanned,
+  logHours,
   logWork,
   moveToGroup,
   renameGroup,
@@ -359,6 +360,23 @@ describe('the work log', () => {
     );
     undoLast();
     expect(log()).toHaveLength(1);
+  });
+
+  it('logs hours without a time of day, with undo', () => {
+    const id = logHours('2026-10-12', 8);
+    expect(useStore.getState().data.workLog).toMatchObject([
+      {id, date: '2026-10-12', start: '', end: '', hours: 8},
+    ]);
+    updateWorkSpan(id, {hours: 7.5});
+    expect(useStore.getState().data.workLog[0].hours).toBe(7.5);
+    deleteWorkSpan(useStore.getState().data.workLog[0]);
+    expect(useToasts.getState().toasts.at(-1)?.message).toBe(
+      'Removed 7h 30m from the work log',
+    );
+    undoLast();
+    undoLast();
+    undoLast();
+    expect(useStore.getState().data.workLog).toEqual([]);
   });
 
   it('sets a week’s own target and goes back to the default', () => {

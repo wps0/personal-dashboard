@@ -39,10 +39,14 @@ message AppData {
 message WorkSpan {
   string id = 1;
   string date = 2;
+  // Empty when only hours are logged (see hours).
   string start = 3;
-  // After the start, on the same day.
+  // After the start, on the same day; empty when only hours are logged.
   string end = 4;
   optional string note = 5;
+  // Hours worked, logged without a time of day ("8h on Monday"); then start
+  // and end are empty. Unset for a stretch, whose hours are end - start.
+  optional double hours = 6;
 }
 
 // A top-level group of projects, e.g. University or Work.

@@ -118,6 +118,12 @@ group('describe', () => {
       describe({path: ['settings', 'workTarget'], local: 40, remote: 32}, data)
         .field,
     ).toBe('weekly work target');
+    data.workLog.push(
+      create(pb.WorkSpanSchema, {id: 'h', date: '2026-10-14', hours: 7.5}),
+    );
+    expect(
+      describe({path: ['workLog', 'h', 'hours'], local: 7.5, remote: 8}, data),
+    ).toMatchObject({what: 'Work log on 14 Oct, 7h 30m', field: 'hours'});
   });
 
   it('names a project’s group, and an item’s group by its name', () => {
