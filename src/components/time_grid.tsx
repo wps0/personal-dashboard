@@ -53,7 +53,10 @@ import {
   type CalendarEvent,
   type ISODate,
   type Item,
+  type WorkSpan,
 } from '../model/types';
+import {spansOn} from '../model/work';
+import {href} from '../router';
 import {eventStyle} from '../event_colors';
 import {useStore} from '../store';
 import {draftAt, useUi} from '../ui';
@@ -298,6 +301,7 @@ function GridBody({days, hourHeight, scrollToHour, onDayClick}: BodyProps) {
   const events = useStore(s => s.data.events);
   const items = useStore(s => s.data.items);
   const projects = useStore(s => s.data.projects);
+  const workLog = useStore(s => s.data.workLog);
   const hidden = useUi(s => s.hidden);
   const draftElsewhere = useUi(s => !!s.draft && !days.includes(s.draft.date));
   const openEventId = useUi(s => s.openEventId);
@@ -503,6 +507,7 @@ function GridBody({days, hourHeight, scrollToHour, onDayClick}: BodyProps) {
                 timed={day.timed.length ? day.timed : EMPTY}
                 events={day.events.length ? day.events : EMPTY}
                 reserved={reserved.get(d)!}
+                worked={spansOn(workLog, d)}
                 google={googleByDay.get(d)!.timed}
                 hourHeight={hourHeight}
                 lookups={lookups}
@@ -748,6 +753,8 @@ interface ColumnProps {
   timed: Allocation[];
   events: CalendarEvent[];
   reserved: ReservedSpan[];
+  /** The stretches logged as worked this day. */
+  worked: WorkSpan[];
   /** Read-only Google events for this day. */
   google: GEvent[];
   hourHeight: number;
@@ -762,6 +769,7 @@ const Column = memo(function Column({
   timed,
   events,
   reserved,
+  worked,
   google,
   hourHeight,
   lookups,
@@ -850,6 +858,9 @@ const Column = memo(function Column({
           hourHeight={hourHeight}
         />
       ))}
+      {worked.map(w => (
+        <WorkedBlock key={w.id} span={w} hourHeight={hourHeight} />
+      ))}
       {events.map(e => (
         <EventBlock
           key={e.id}
@@ -884,6 +895,37 @@ const Column = memo(function Column({
     </div>
   );
 }, sameProps);
+
+/**
+ * A stretch logged as worked, tinted in the accent colour with a solid left
+ * edge (in the gutter events leave): planned work is the hatched reserved
+ * time, worked time is solid. See-through, like reserved time, so clicks
+ * still create events; its label (bottom right, opposite the reserved
+ * block's) opens its week on the Work page.
+ */
+function WorkedBlock({span, hourHeight}: {span: WorkSpan; hourHeight: number}) {
+  const start = toMinutes(span.start);
+  const end = toMinutes(span.end);
+  const height = ((end - start) / 60) * hourHeight;
+  const label = `Worked ${span.start} – ${span.end}`;
+  return (
+    <div
+      className="pointer-events-none absolute right-0 left-0 border-l-2 border-accent bg-accent/10"
+      style={{top: (start / 60) * hourHeight, height}}
+    >
+      {height >= 20 && (
+        <a
+          href={href({name: 'work', week: span.date})}
+          aria-label={label}
+          title={label}
+          className="pointer-events-auto absolute right-1.5 bottom-1 z-[15] max-w-[calc(100%-0.75rem)] truncate rounded bg-panel/80 px-1 text-[10px] text-accent hover:bg-raised"
+        >
+          Worked
+        </a>
+      )}
+    </div>
+  );
+}
 
 /**
  * Reserved time (a reserved event, e.g. Work): hatched and see-through, so
