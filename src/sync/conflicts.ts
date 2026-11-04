@@ -1,3 +1,4 @@
+import {fmtDuration} from '../format';
 import {monthName, shortDate} from '../model/dates';
 import type {AppData, ItemGroup} from '../model/types';
 import {same, withoutOrphans, type Conflict} from './merge';
@@ -34,6 +35,7 @@ const FIELDS: Record<string, string> = {
   date: 'date',
   start: 'start',
   end: 'end',
+  hours: 'hours',
   allDay: 'all day',
   color: 'colour',
   overviewDoc: 'description',
@@ -121,7 +123,7 @@ export function describe(c: Conflict, data: AppData): ConflictView {
       break;
     case 'workLog': {
       const w = find(data.workLog);
-      what = `Work log${w?.date ? ` on ${shortDate(w.date as string)}` : ''}${w?.start ? `, ${w.start as string} – ${w.end as string}` : ''}`;
+      what = `Work log${w?.date ? ` on ${shortDate(w.date as string)}` : ''}${w?.start ? `, ${w.start as string} – ${w.end as string}` : typeof w?.hours === 'number' ? `, ${fmtDuration(w.hours)}` : ''}`;
       break;
     }
     case 'dayNotes':

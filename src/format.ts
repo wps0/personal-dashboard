@@ -1,5 +1,6 @@
 import type {Urgency} from './model/selectors';
-import {ItemKind, type ItemGroup} from './model/types';
+import {ItemKind, type ItemGroup, type WorkSpan} from './model/types';
+import {isHoursOnly} from './model/work';
 
 /** 1.5 → "1.5", 0.25 → "0.25", 2 → "2". */
 export function fmtNum(n: number) {
@@ -15,6 +16,11 @@ export function fmtDuration(hours: number) {
   const h = Math.floor(min / 60);
   const m = min % 60;
   return [h && `${h}h`, m && `${m}m`].filter(Boolean).join(' ');
+}
+
+/** A work log entry: "09:00 – 17:00", or "8h" for hours logged alone. */
+export function fmtWorkSpan(s: Pick<WorkSpan, 'start' | 'end' | 'hours'>) {
+  return isHoursOnly(s) ? fmtDuration(s.hours) : `${s.start} – ${s.end}`;
 }
 
 export const URGENCY_CLASS: Record<Urgency, string> = {

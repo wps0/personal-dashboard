@@ -9,6 +9,7 @@ import {
   type WorkSpan,
 } from './model/types';
 import * as pb from './gen/dashboard/data_pb';
+import {fmtDuration, fmtWorkSpan} from './format';
 import {formatMedium} from './model/dates';
 import {
   changeEvent,
@@ -142,6 +143,19 @@ export function logWork(date: ISODate, start: string, end: string) {
 }
 
 /**
+ * Logs `hours` worked on `date` without a time of day. Returns its id.
+ */
+export function logHours(date: ISODate, hours: number): string {
+  let id = '';
+  withUndo(
+    `Logged ${fmtDuration(hours)}`,
+    () => void (id = s().addWorkHours(date, hours)),
+    {quiet: true},
+  );
+  return id;
+}
+
+/**
  * Logs `date`'s planned work (its reserved time labelled as work) as worked,
  * in one step. Returns how many stretches were logged.
  */
@@ -157,7 +171,7 @@ export function logAsPlanned(date: ISODate): number {
 
 export function updateWorkSpan(
   id: string,
-  patch: Partial<Pick<WorkSpan, 'start' | 'end' | 'note'>>,
+  patch: Partial<Pick<WorkSpan, 'start' | 'end' | 'note' | 'hours'>>,
 ) {
   withUndo('Work log changed', () => s().updateWorkSpan(id, patch), {
     quiet: true,
@@ -165,7 +179,7 @@ export function updateWorkSpan(
 }
 
 export function deleteWorkSpan(span: WorkSpan) {
-  withUndo(`Removed ${span.start} – ${span.end} from the work log`, () =>
+  withUndo(`Removed ${fmtWorkSpan(span)} from the work log`, () =>
     s().deleteWorkSpan(span.id),
   );
 }

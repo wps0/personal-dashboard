@@ -3,6 +3,7 @@ import {fmtH} from '../format';
 import {useToday} from '../hooks';
 import {MONDAY, startOfWeek} from '../model/dates';
 import {
+  isHoursOnly,
   plannedWork,
   spanHours,
   spansOn,
@@ -21,6 +22,8 @@ export function WorkCard() {
   const settings = useStore(s => s.data.settings);
   const events = useStore(s => s.data.events);
   const spans = spansOn(log, today);
+  // Hours logged alone have no times to list.
+  const timed = spans.filter(s => !isHoursOnly(s));
   const planned = plannedWork(events, today, settings.workLabel);
   const monday = startOfWeek(today, MONDAY);
   const logged = weekHours(log, monday);
@@ -47,7 +50,7 @@ export function WorkCard() {
           <span className="text-dim">Today</span>
           {spans.length ? (
             <span className="min-w-0 flex-1 truncate tabular-nums">
-              {times(spans)} ·{' '}
+              {timed.length > 0 && `${times(timed)} · `}
               {fmtH(spans.reduce((sum, s) => sum + spanHours(s), 0))} logged
             </span>
           ) : planned.length ? (
