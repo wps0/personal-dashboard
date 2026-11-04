@@ -71,6 +71,31 @@ describe('capacity', () => {
     ).toBe(0);
   });
 
+  it('subtracts reserved time inside the window, and an event on it once', () => {
+    const rules = [
+      create(pb.CapacityRuleSchema, {
+        from: '0000-01-01',
+        windows: Array.from({length: 7}, () => range('18:00', '22:00')),
+        adjustment: 0,
+      }),
+    ];
+    const monday = '2026-10-12';
+    const gym = ev('18:00', '19:30');
+    const reserved = capacityFor(monday, rules, {}, [], [gym]);
+    expect(reserved.reservedHours).toBe(1.5);
+    expect(reserved.busyHours).toBe(0);
+    expect(reserved.total).toBe(2.5);
+    // A call 19:00–20:00 overlaps the gym by half an hour: 4 - 1.5 - 0.5.
+    const both = capacityFor(monday, rules, {}, [ev('19:00', '20:00')], [gym]);
+    expect(both.reservedHours).toBe(1.5);
+    expect(both.busyHours).toBe(0.5);
+    expect(both.total).toBe(2);
+    // Work 09:00–17:00 is outside the evening window.
+    expect(
+      capacityFor(monday, rules, {}, [], [ev('09:00', '17:00')]).total,
+    ).toBe(4);
+  });
+
   it('applies rule changes from today on, leaving past days alone', () => {
     let rules = defaultRules();
     rules = withRuleChange(rules, '2026-10-10', {adjustment: 1});

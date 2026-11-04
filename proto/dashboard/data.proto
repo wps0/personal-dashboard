@@ -184,7 +184,8 @@ message CalendarEvent {
 enum EventKind {
   // An ordinary event.
   EVENT_KIND_UNSPECIFIED = 0;
-  // Reserved time (sleep, work): drawn hatched; it doesn't take capacity.
+  // Reserved time (sleep, work): drawn hatched; it takes capacity inside the
+  // planning window, like an event.
   EVENT_KIND_RESERVED = 1;
 }
 

@@ -10,7 +10,7 @@ import * as pb from './gen/dashboard/data_pb';
 import {capacityFor, type CapacityInfo} from './model/capacity';
 import {todayISO, type DayOfWeek} from './model/dates';
 import {eventsByDay} from './model/recurrence';
-import {isReserved} from './model/reserved';
+import {isReserved, reservedByDay} from './model/reserved';
 import {
   weekStartOf,
   type Area,
@@ -73,7 +73,7 @@ export function useLookups(): Lookups {
 
 /**
  * Capacity per day; only recomputed when events or capacity settings change.
- * Busy Google Calendar events count too.
+ * Busy Google Calendar events and reserved time count too.
  */
 export function useCapacities(days: ISODate[]): Map<ISODate, CapacityInfo> {
   const events = useStore(s => s.data.events);
@@ -81,11 +81,12 @@ export function useCapacities(days: ISODate[]): Map<ISODate, CapacityInfo> {
   const google = useGoogleEvents(days);
   return useMemo(() => {
     const want = new Set(days);
-    // Reserved time doesn't take capacity.
     const byDay = eventsByDay(
       events.filter(e => !isReserved(e)),
       days,
     );
+    // Each day's pieces, so sleep from 23:00 takes the next morning too.
+    const reserved = reservedByDay(events, days);
     for (const [d, list] of google) {
       if (!want.has(d)) continue;
       const busy = list
@@ -109,6 +110,14 @@ export function useCapacities(days: ISODate[]): Map<ISODate, CapacityInfo> {
           settings.capacityRules,
           settings.dayCapacity,
           byDay.get(d) ?? [],
+          (reserved.get(d) ?? []).map(r =>
+            create(pb.CalendarEventSchema, {
+              id: r.key,
+              date: d,
+              start: fromMinutes(r.start),
+              end: fromMinutes(r.end),
+            }),
+          ),
         ),
       ]),
     );

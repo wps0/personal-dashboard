@@ -1,7 +1,8 @@
 /**
  * @fileoverview Reserved time (sleep, work): reserved events, drawn hatched
- * on the calendar. They don't take capacity. Unlike other events, one may
- * end after midnight (an end before its start), so it's drawn on two days.
+ * on the calendar. Like events, they take capacity inside the planning
+ * window. Unlike other events, one may end after midnight (an end before its
+ * start), so it's drawn on two days.
  */
 
 import * as pb from '../gen/dashboard/data_pb';

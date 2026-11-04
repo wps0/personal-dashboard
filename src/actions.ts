@@ -122,7 +122,7 @@ export function deleteEvent(e: CalendarEvent, scope: Scope = 'this') {
 
 /**
  * Adds reserved time (sleep, work): a reserved event, which may repeat. It's
- * drawn hatched and doesn't take capacity.
+ * drawn hatched and takes capacity inside the planning window.
  */
 export function addReserved(
   r: Pick<CalendarEvent, 'date' | 'start' | 'end' | 'title' | 'recurrence'>,
