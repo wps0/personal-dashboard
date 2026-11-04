@@ -424,7 +424,7 @@ const AllocationContent = memo(function AllocationContent(props: {
           {projectName}
         </div>
       </button>
-      <div className="flex shrink-0 items-center opacity-0 group-hover:opacity-100 focus-within:opacity-100">
+      <div className="flex shrink-0 items-center opacity-0 group-hover:opacity-100 focus-within:opacity-100 pointer-coarse:opacity-100">
         {!itemDone && (
           <button
             className="btn-ghost px-1 text-[11px]"
