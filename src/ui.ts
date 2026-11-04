@@ -22,7 +22,8 @@ export const DRAFT_MODES = {
   event: {label: 'Event', allDay: true, repeats: true},
   // Time planned for an existing task.
   block: {label: 'Time block', allDay: false, repeats: false},
-  // A new task, due on the draft's date; with a time, also planned then.
+  // A new task, planned on the draft's date (at its time, or untimed if all
+  // day), without a due date.
   task: {label: 'Task', allDay: true, repeats: false},
   // Reserved time, labelled by the title.
   reserved: {label: 'Reserved', allDay: false, repeats: true},
