@@ -159,13 +159,14 @@ One-time setup (free, about 5 minutes):
      `http://localhost:5173` and `https://<you>.github.io`.
    - No redirect URI is needed.
 4. Give the app the Client ID (it isn't a secret). Either:
-   - set the repository variable `GOOGLE_CLIENT_ID` (Settings → Secrets and
-     variables → Actions → Variables → **Repository variables**), and the
-     deploy builds it in, so every device has it. It must be a repository
-     variable: a secret, or an environment variable of `github-pages`, doesn't
-     reach the build, and the deploy then warns "No Google Client ID". It
-     takes effect with the next deploy (merge anything, or Actions → Deploy
-     to GitHub Pages → Run workflow); or
+   - set the variable `GOOGLE_CLIENT_ID`, and the deploy builds it in, so
+     every device has it. Make it a variable of the `github-pages`
+     environment (Settings → Environments → github-pages → **Environment
+     variables**), or a repository variable (Settings → Secrets and
+     variables → Actions → Variables); not a secret, which the build doesn't
+     read (the deploy then warns "No Google Client ID"). It takes effect with
+     the next deploy (merge anything, or Actions → Deploy to GitHub Pages →
+     Run workflow); or
    - paste it in **Settings → Google Calendar** on each device (this wins
      over a built-in one; clear the field to go back to it).
 
