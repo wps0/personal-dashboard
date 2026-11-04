@@ -254,7 +254,7 @@ and details, as tabs in the side panel.
     tiny drag gives a 15-minute event. Either opens a floating quick-create card next to the
     selection, not a modal.
   - Click the all-day row for an all-day event.
-  - The quick-create card has **Event | Task | Time block | Reserved** tabs,
+  - The quick-create card has **Event | Time block | Task | Reserved** tabs,
     like Google Calendar's, between the title (or task search) and the rest of
     the card. The tabs come from one table (`DRAFT_MODES` in `ui.ts`: label,
     whether it can be all day, whether it repeats), so a new kind is a row

@@ -20,10 +20,10 @@ interface DraftModeInfo {
  */
 export const DRAFT_MODES = {
   event: {label: 'Event', allDay: true, repeats: true},
-  // A new task, due on the draft's date; with a time, also planned then.
-  task: {label: 'Task', allDay: true, repeats: false},
   // Time planned for an existing task.
   block: {label: 'Time block', allDay: false, repeats: false},
+  // A new task, due on the draft's date; with a time, also planned then.
+  task: {label: 'Task', allDay: true, repeats: false},
   // Reserved time, labelled by the title.
   reserved: {label: 'Reserved', allDay: false, repeats: true},
 } as const satisfies Record<string, DraftModeInfo>;
