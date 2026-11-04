@@ -1,3 +1,4 @@
+import {TOAST_MS, TOAST_WITH_UNDO_MS, UNDO_STEPS} from './config';
 import {create} from 'zustand';
 import type {AppData} from './model/types';
 import {useStore} from './store';
@@ -22,7 +23,10 @@ export const useToasts = create<ToastState>()((set, get) => ({
     const id = nextId++;
     // Keep the stack short: newest three.
     set({toasts: [...get().toasts.slice(-2), {...t, id}]});
-    window.setTimeout(() => get().dismiss(id), t.action ? 6000 : 3000);
+    window.setTimeout(
+      () => get().dismiss(id),
+      t.action ? TOAST_WITH_UNDO_MS : TOAST_MS,
+    );
   },
   dismiss: id => set({toasts: get().toasts.filter(t => t.id !== id)}),
 }));
@@ -38,7 +42,6 @@ interface Step {
   after: AppData;
 }
 
-const MAX_STEPS = 50;
 const history: Step[] = [];
 
 /**
@@ -83,7 +86,7 @@ export function withUndo(
   if (before === after) return;
   const step = {message, before, after};
   history.push(step);
-  if (history.length > MAX_STEPS) history.shift();
+  if (history.length > UNDO_STEPS) history.shift();
   if (quiet) return;
   toast(message, {
     label: 'Undo',

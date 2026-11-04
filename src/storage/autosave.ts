@@ -1,9 +1,7 @@
+import {AUTOSAVE_DELAY_MS} from '../config';
 import {useStore} from '../store';
 import {toast, useToasts} from '../toast';
 import {downloadJson, type IndexedDbStorage} from './storage';
-
-/** Save this long after the last change. */
-const DELAY_MS = 400;
 
 /**
  * Saves the data a moment after each change, and at once when the tab is
@@ -29,7 +27,7 @@ export function setUpAutosave(storage: Pick<IndexedDbStorage, 'save'>) {
     if (s.data === prev.data) return;
     dirty = true;
     window.clearTimeout(timer);
-    timer = window.setTimeout(() => void flush(), DELAY_MS);
+    timer = window.setTimeout(() => void flush(), AUTOSAVE_DELAY_MS);
   });
   document.addEventListener('visibilitychange', () => {
     if (document.visibilityState === 'hidden') void flush();

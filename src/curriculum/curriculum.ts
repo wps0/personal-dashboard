@@ -3,6 +3,10 @@
  * Gemini extracts the lecture plan, keeping the original wording → class
  * items. Pure functions plus the API call; the UI is in components/.
  */
+import {
+  CURRICULUM_MAX_LECTURE,
+  CURRICULUM_MAX_LECTURES_PER_TOPIC,
+} from '../config';
 import type {Schema} from '@google/genai';
 import {ItemKind, type ItemInit} from '../model/types';
 
@@ -70,22 +74,23 @@ function isNumOrNull(v: unknown): v is number | null {
   return v === null || typeof v === 'number';
 }
 
-/** Lecture numbers above this are taken as a mistake. */
-const MAX_LECTURE = 500;
-/** The most lectures one topic can span. */
-const MAX_LECTURES_PER_TOPIC = 100;
-
-/** A lecture number: a positive integer up to MAX_LECTURE, otherwise null. */
+/** A lecture number: a positive integer up to CURRICULUM_MAX_LECTURE, otherwise null. */
 export function lectureNumber(v: number | null): number | null {
-  return v !== null && Number.isInteger(v) && v > 0 && v <= MAX_LECTURE
+  return v !== null &&
+    Number.isInteger(v) &&
+    v > 0 &&
+    v <= CURRICULUM_MAX_LECTURE
     ? v
     : null;
 }
 
-/** A topic's lectures in order, at most MAX_LECTURES_PER_TOPIC of them. */
+/** A topic's lectures in order, at most CURRICULUM_MAX_LECTURES_PER_TOPIC of them. */
 function lectureSpan(from: number, to: number): [number, number] {
   const lo = Math.min(from, to);
-  return [lo, Math.min(Math.max(from, to), lo + MAX_LECTURES_PER_TOPIC - 1)];
+  return [
+    lo,
+    Math.min(Math.max(from, to), lo + CURRICULUM_MAX_LECTURES_PER_TOPIC - 1),
+  ];
 }
 
 /** Checks the model's JSON against the schema. Throws a readable error otherwise. */

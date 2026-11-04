@@ -1,3 +1,4 @@
+import {BACKLOG_ROWS, MISSED_ROWS} from '../config';
 import {sameProps} from '../same_props';
 import {
   DndContext,
@@ -59,14 +60,6 @@ type DragData =
   | {kind: 'alloc'; alloc: Allocation};
 
 const NO_ALLOCS: Allocation[] = [];
-
-/**
- * Rows the backlog and the missed tray show at first, and how many more each
- * "Show more" adds: hundreds of draggable rows are slow to draw (a second or
- * more), and the week grid redraws them when the week changes.
- */
-const BACKLOG_ROWS = 60;
-const MISSED_ROWS = 20;
 
 /**
  * The drag-and-drop context lives here and must not re-render on data changes:

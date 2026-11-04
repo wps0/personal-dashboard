@@ -1,3 +1,4 @@
+import {GOOGLE_EVENTS_FRESH_MS} from '../config';
 import {useEffect, useMemo} from 'react';
 import {create} from 'zustand';
 import type {ISODate} from '../model/types';
@@ -7,8 +8,6 @@ import {clearGoogleError, reportGoogleError} from './status';
 import {loadCalendars, useGoogleCalendars} from './calendars';
 import {calendarConnected, useGoogle} from './auth';
 import {expandEvent, rangeBounds, type GEvent} from './events';
-
-const FRESH_MS = 5 * 60_000;
 
 interface Entry {
   at: number;
@@ -98,7 +97,8 @@ export async function fetchRange(from: ISODate, to: ISODate) {
       );
     else clearGoogleError();
     // After a failure, try again in about a minute instead of waiting the full 5.
-    const at = failed >= 0 ? Date.now() - FRESH_MS + 60_000 : Date.now();
+    const at =
+      failed >= 0 ? Date.now() - GOOGLE_EVENTS_FRESH_MS + 60_000 : Date.now();
     useCache.setState(s => ({ranges: {...s.ranges, [key]: {at, events}}}));
   } finally {
     if (gen === generation) inFlight.delete(key);
@@ -130,7 +130,11 @@ export function useGoogleEvents(days: ISODate[]): Map<ISODate, GEvent[]> {
   const hidden = useUi(s => s.hidden);
 
   useEffect(() => {
-    if (connected && ready && (!entry || Date.now() - entry.at > FRESH_MS))
+    if (
+      connected &&
+      ready &&
+      (!entry || Date.now() - entry.at > GOOGLE_EVENTS_FRESH_MS)
+    )
       void fetchRange(from, to);
   }, [connected, ready, from, to, entry]);
 
