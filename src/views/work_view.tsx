@@ -28,7 +28,7 @@ import {DurationInput} from '../components/duration_input';
 import {HoursInput} from '../components/hours_input';
 import {TimeSelect} from '../components/time_select';
 import {WorkBar} from '../components/work_bar';
-import {fmtH, fmtWorkSpan} from '../format';
+import {fmtDuration, fmtHours, fmtWorkSpan} from '../format';
 import {useToday} from '../hooks';
 import {useNavTarget} from '../keyboard';
 import {
@@ -306,7 +306,7 @@ function WeekSummary({monday, days}: {monday: ISODate; days: ISODate[]}) {
     [...new Set(days.map(monthKey))]
       .map(
         m =>
-          `${monthName(m)}: ${fmtH(loggedHours(s.data.workLog, `${m}-01`, `${m}-31`))}`,
+          `${monthName(m)}: ${fmtHours(loggedHours(s.data.workLog, `${m}-01`, `${m}-31`))}`,
       )
       .join(' · '),
   );
@@ -318,22 +318,24 @@ function WeekSummary({monday, days}: {monday: ISODate; days: ISODate[]}) {
     >
       <div className="flex flex-wrap items-baseline gap-x-2">
         <span className="text-2xl text-strong tabular-nums">
-          {fmtH(logged)}
+          {fmtHours(logged)}
         </span>
         <span className="text-dim">
-          logged{target > 0 && ` of ${fmtH(target)}`}
+          logged{target > 0 && ` of ${fmtHours(target)}`}
         </span>
         {planned > 0 && (
           <span className="flex items-center gap-1 self-center text-dim tabular-nums">
             <span className="planned h-2.5 w-3.5 rounded-sm" aria-hidden />
-            {fmtH(planned)} planned
+            {fmtHours(planned)} planned
           </span>
         )}
         {target > 0 && (
           <span
             className={`ml-auto tabular-nums ${balance >= 0 ? 'text-accent' : 'text-dim'}`}
           >
-            {balance >= 0 ? `${fmtH(balance)} over` : `${fmtH(-balance)} to go`}
+            {balance >= 0
+              ? `${fmtHours(balance)} over`
+              : `${fmtHours(-balance)} to go`}
           </span>
         )}
       </div>
@@ -361,7 +363,7 @@ function WeekSummary({monday, days}: {monday: ISODate; days: ISODate[]}) {
             className="text-accent hover:underline"
             onClick={() => setWeekTarget(monday, null)}
           >
-            Use the default ({fmtH(workTarget)})
+            Use the default ({fmtHours(workTarget)})
           </button>
         ) : (
           <span>the default, set in Settings</span>
@@ -458,14 +460,14 @@ function WorkDay({
       </div>
       <div className="w-14 shrink-0 pt-0.5 text-right tabular-nums text-strong">
         {total ? (
-          fmtH(total)
+          fmtHours(total)
         ) : plan ? (
           <span
             className="inline-flex items-center gap-1 text-dim"
             title="Planned, not logged yet"
           >
             <span className="planned h-2.5 w-2.5 rounded-sm" aria-hidden />
-            {fmtH(plan)}
+            {fmtHours(plan)}
           </span>
         ) : (
           <span className="text-dim">–</span>
@@ -502,7 +504,7 @@ function SpanRow({span, day}: {span: WorkSpan; day: string}) {
         ariaLabel={`End, ${day}`}
       />
       <span className="text-[11px] text-dim tabular-nums">
-        {fmtH(spanHours(span))}
+        {fmtDuration(spanHours(span))}
       </span>
       <RemoveSpan span={span} day={day} />
     </div>
