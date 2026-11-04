@@ -1,4 +1,4 @@
-import {fmtH} from '../format';
+import {fmtHours} from '../format';
 
 /**
  * A week's work against its target: the hours logged, solid, then the
@@ -21,7 +21,7 @@ export function WorkBar({
   const share = (h: number) => Math.max(0, Math.min(100, (h / target) * 100));
   const done = share(logged);
   const ahead = Math.min(100 - done, share(planned));
-  const text = `${fmtH(logged)} logged, ${fmtH(planned)} planned, of ${fmtH(target)}`;
+  const text = `${fmtHours(logged)} logged, ${fmtHours(planned)} planned, of ${fmtHours(target)}`;
   return (
     <div
       className={`flex overflow-hidden rounded-full bg-raised ${className}`}
