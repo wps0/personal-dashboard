@@ -16,6 +16,13 @@ export function fmtDuration(hours: number) {
   const m = min % 60;
   return [h && `${h}h`, m && `${m}m`].filter(Boolean).join(' ');
 }
+/**
+ * Hours as whole hours, rounded down ("8h" for 8h 53m): for totals, where the
+ * minutes would be noise. Counted in whole minutes, so 7.99999 is "8h".
+ */
+export function fmtHours(hours: number) {
+  return `${Math.floor(Math.round(hours * 60) / 60)}h`;
+}
 
 export const URGENCY_CLASS: Record<Urgency, string> = {
   overdue: 'text-danger',
