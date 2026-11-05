@@ -110,9 +110,10 @@ Each day box is a hybrid of three parts:
 - **Planning is manual.** Drag items or allocations into days and set hours.
 - **Capacity** is inferred per day:
   - Start from the weekday's **planning window** (e.g. 18:00–21:00), minus
-    the calendar events and the reserved time inside it (overlaps are
-    merged, so an event on reserved time takes it once). The breakdown shows
-    reserved time and events on lines of their own.
+    the time **occupied** inside it by reserved time and calendar events:
+    each minute once, however many of them overlap there (an event on
+    reserved time takes it once). The breakdown shows it on one line,
+    "Occupied (reserved, events)".
   - Add a **global adjustment** (± hours on every day) and the day's own
     **± delta**. A **fixed value** set for the day overrides the calculation.
   - Window and adjustment changes are stored as rules with an effective date
@@ -121,8 +122,11 @@ Each day box is a hybrid of three parts:
   - Click a day's "planned/capacity" badge for the breakdown and the per-day
     controls. A day turns red when it is over capacity.
   - The planned hours set against capacity are the untimed sessions plus the
-    part of timed ones inside the planning window: a class at noon doesn't
-    use evening planning time.
+    part of timed ones (time blocks) inside the planning window and outside
+    its occupied time: a class at noon doesn't use evening planning time,
+    and a time block on reserved time or an event doesn't use it either,
+    since that time is already out of the capacity (it would be taken
+    twice).
 - **Reserved time** (e.g. sleep 23:00–07:00, work 09:00–17:00) is a kind of
   event: reserved events, which usually repeat (see Repeating events in 3.4).
   - **Drawn with diagonal hatching** on the calendar. Events can still go

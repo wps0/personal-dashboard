@@ -82,13 +82,13 @@ describe('capacity', () => {
     const monday = '2026-10-12';
     const gym = ev('18:00', '19:30');
     const reserved = capacityFor(monday, rules, {}, [], [gym]);
-    expect(reserved.reservedHours).toBe(1.5);
-    expect(reserved.busyHours).toBe(0);
+    expect(reserved.occupiedHours).toBe(1.5);
     expect(reserved.total).toBe(2.5);
-    // A call 19:00–20:00 overlaps the gym by half an hour: 4 - 1.5 - 0.5.
+    // A call 19:00–20:00 overlaps the gym by half an hour: occupied
+    // 18:00–20:00, 2h, not 1.5h + 1h.
     const both = capacityFor(monday, rules, {}, [ev('19:00', '20:00')], [gym]);
-    expect(both.reservedHours).toBe(1.5);
-    expect(both.busyHours).toBe(0.5);
+    expect(both.occupiedHours).toBe(2);
+    expect(both.occupied).toEqual([[18 * 60, 20 * 60]]);
     expect(both.total).toBe(2);
     // Work 09:00–17:00 is outside the evening window.
     expect(
@@ -139,6 +139,7 @@ describe('plannedInWindow', () => {
   const session = (plannedHours: number, start?: string) =>
     create(pb.AllocationSchema, {plannedHours, start});
   const evening = range('18:00', '21:00');
+  const free = {window: evening, occupied: []};
 
   it('counts untimed sessions in full and timed ones only inside the window', () => {
     expect(
@@ -149,8 +150,45 @@ describe('plannedInWindow', () => {
           session(1, '20:30'), // half inside
           session(1, '18:30'), // inside
         ],
-        evening,
+        free,
       ),
     ).toBe(3.5);
+  });
+
+  it('leaves out the part of a time block on occupied time, already out of the capacity', () => {
+    // Reserved 18:00–19:00 and an event 20:00–20:30 in the window.
+    const busy = {
+      window: evening,
+      occupied: [
+        [18 * 60, 19 * 60],
+        [20 * 60, 20 * 60 + 30],
+      ] as const,
+    };
+    expect(plannedInWindow([session(1, '18:00')], busy)).toBe(0); // all on it
+    expect(plannedInWindow([session(2, '18:30')], busy)).toBe(1); // 19:00–20:00
+    expect(plannedInWindow([session(1.5, '19:00')], busy)).toBe(1);
+    expect(plannedInWindow([session(2)], busy)).toBe(2); // untimed: in full
+  });
+
+  it('takes each occupied minute once, with the capacity', () => {
+    // Window 18:00–21:00, reserved 18:00–20:00, a time block 19:00–20:00 on
+    // it: capacity 1h (21:00 - 20:00), and the block isn't counted against it.
+    const rules = [
+      create(pb.CapacityRuleSchema, {
+        from: '0000-01-01',
+        windows: Array.from({length: 7}, () => evening),
+        adjustment: 0,
+      }),
+    ];
+    const info = capacityFor(
+      '2026-10-12',
+      rules,
+      {},
+      [],
+      [ev('18:00', '20:00')],
+    );
+    expect(info.total).toBe(1);
+    expect(plannedInWindow([session(1, '19:00')], info)).toBe(0);
+    expect(plannedInWindow([session(1, '20:00')], info)).toBe(1);
   });
 });

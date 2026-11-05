@@ -146,7 +146,7 @@ function WeekTotal({start}: {start: ISODate}) {
       sum +
       plannedInWindow(
         allocations.filter(a => a.date === d),
-        capacities.get(d)!.window,
+        capacities.get(d)!,
       ),
     0,
   );
@@ -267,7 +267,7 @@ const DayContent = memo(function DayContent({
   capacity,
   lookups,
 }: DayBoxProps) {
-  const planned = plannedInWindow(allocs, capacity.window);
+  const planned = plannedInWindow(allocs, capacity);
   return (
     <>
       <header className="flex items-center gap-1.5 border-b border-line px-2 py-1">

@@ -393,7 +393,7 @@ function GridBody({days, hourHeight, scrollToHour, onDayClick}: BodyProps) {
           const day = byDay.get(d)!;
           const planned = plannedInWindow(
             [...day.timed, ...day.untimed],
-            capacities.get(d)!.window,
+            capacities.get(d)!,
           );
           const isToday = d === today;
           return (
