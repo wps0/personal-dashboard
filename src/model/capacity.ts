@@ -22,16 +22,19 @@ export function range(start: string, end: string, label?: string): TimeRange {
   return create(pb.TimeRangeSchema, {start, end, label});
 }
 
+/** A part of a day, from `[0]` to `[1]` minutes after midnight. */
+export type Span = readonly [number, number];
+
 export interface CapacityInfo {
   window: PlanningWindow;
   windowHours: number;
-  /** Hours inside the window taken by reserved time (overlaps merged). */
-  reservedHours: number;
   /**
-   * Hours inside the window taken by calendar events, besides reserved time
-   * (overlaps merged).
+   * Hours of the window occupied by reserved time and calendar events: each
+   * minute once, however many of them overlap there.
    */
-  busyHours: number;
+  occupiedHours: number;
+  /** Those parts of the window, merged and in order. */
+  occupied: readonly Span[];
   adjustment: number;
   delta: number;
   override?: number;
@@ -74,40 +77,43 @@ export function ruleFor(rules: CapacityRule[], date: ISODate): CapacityRule {
   return found;
 }
 
+/** The parts of `window` covered by timed events, overlapping ones merged, in order. */
+export function occupiedSpans(
+  window: PlanningWindow,
+  events: CalendarEvent[],
+): Span[] {
+  const ws = toMinutes(window.start);
+  const we = toMinutes(window.end);
+  const spans = events
+    .filter(e => !e.allDay)
+    .map((e): Span => [
+      Math.max(ws, toMinutes(e.start)),
+      Math.min(we, toMinutes(e.end)),
+    ])
+    .filter(([s, e]) => e > s)
+    .sort((a, b) => a[0] - b[0]);
+  const merged: [number, number][] = [];
+  for (const [s, e] of spans) {
+    const last = merged.at(-1);
+    if (last && s <= last[1]) last[1] = Math.max(last[1], e);
+    else merged.push([s, e]);
+  }
+  return merged;
+}
+
 /** Minutes of `window` covered by timed events, with overlapping events merged. */
 export function busyMinutes(
   window: PlanningWindow,
   events: CalendarEvent[],
 ): number {
-  const ws = toMinutes(window.start);
-  const we = toMinutes(window.end);
-  const spans = events
-    .filter(e => !e.allDay)
-    .map(
-      e =>
-        [
-          Math.max(ws, toMinutes(e.start)),
-          Math.min(we, toMinutes(e.end)),
-        ] as const,
-    )
-    .filter(([s, e]) => e > s)
-    .sort((a, b) => a[0] - b[0]);
-  let total = 0;
-  let curS = -1;
-  let curE = -1;
-  for (const [s, e] of spans) {
-    if (s > curE) {
-      total += curE - curS;
-      [curS, curE] = [s, e];
-    } else curE = Math.max(curE, e);
-  }
-  return total + (curE - curS);
+  return occupiedSpans(window, events).reduce((sum, [s, e]) => sum + e - s, 0);
 }
 
 /**
- * A day's capacity: its planning window minus the events and reserved time
- * inside it, plus the adjustments. `reservedOfDay` holds the day's pieces of
- * reserved time, none past midnight.
+ * A day's capacity: its planning window minus the time occupied by events and
+ * reserved time inside it (each minute once), plus the adjustments.
+ * `reservedOfDay` holds the day's pieces of reserved time, none past
+ * midnight.
  */
 export function capacityFor(
   date: ISODate,
@@ -120,21 +126,18 @@ export function capacityFor(
   const window = rule.windows[weekdayIndex(date)];
   const windowHours =
     Math.max(0, toMinutes(window.end) - toMinutes(window.start)) / 60;
-  const reserved = busyMinutes(window, reservedOfDay);
   // An event on reserved time takes that time once.
-  const busy = busyMinutes(window, [...eventsOfDay, ...reservedOfDay]);
-  const reservedHours = reserved / 60;
-  const busyHours = (busy - reserved) / 60;
+  const occupied = occupiedSpans(window, [...eventsOfDay, ...reservedOfDay]);
+  const occupiedHours = occupied.reduce((sum, [s, e]) => sum + e - s, 0) / 60;
   const day = days[date] ?? {};
   const delta = day.delta ?? 0;
-  const computed =
-    windowHours - reservedHours - busyHours + rule.adjustment + delta;
+  const computed = windowHours - occupiedHours + rule.adjustment + delta;
   const total = Math.max(0, Math.round((day.override ?? computed) * 4) / 4);
   return {
     window,
     windowHours,
-    reservedHours,
-    busyHours,
+    occupiedHours,
+    occupied,
     adjustment: rule.adjustment,
     delta,
     override: day.override,
@@ -145,19 +148,28 @@ export function capacityFor(
 /**
  * The planned hours that use a day's capacity: untimed sessions in full,
  * timed ones only for their part inside the planning window (a class at noon
- * doesn't take evening planning time).
+ * doesn't take evening planning time) and outside its occupied time (a time
+ * block on reserved time or an event: that time is already out of the
+ * capacity, so it isn't taken twice).
  */
 export function plannedInWindow(
   allocs: Allocation[],
-  window: PlanningWindow,
+  {window, occupied}: Pick<CapacityInfo, 'window' | 'occupied'>,
 ): number {
   const from = toMinutes(window.start);
   const to = toMinutes(window.end);
+  const overlap = (a: number, b: number, s: number, e: number) =>
+    Math.max(0, Math.min(b, e) - Math.max(a, s));
   return allocs.reduce((sum, a) => {
     if (!a.start) return sum + a.plannedHours;
     const start = toMinutes(a.start);
     const end = start + a.plannedHours * 60;
-    return sum + Math.max(0, Math.min(end, to) - Math.max(start, from)) / 60;
+    const inWindow = overlap(start, end, from, to);
+    const onOccupied = occupied.reduce(
+      (taken, [s, e]) => taken + overlap(start, end, s, e),
+      0,
+    );
+    return sum + (inWindow - onOccupied) / 60;
   }, 0);
 }
 

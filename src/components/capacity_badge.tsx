@@ -47,10 +47,13 @@ function CapacityBadgeImpl({
             Planning window {info.window.start}–{info.window.end}
           </dt>
           <dd>{fmtH(info.windowHours)}</dd>
-          <dt className="text-dim">Reserved in window</dt>
-          <dd>{info.reservedHours ? `−${fmtH(info.reservedHours)}` : '0h'}</dd>
-          <dt className="text-dim">Events in window</dt>
-          <dd>{info.busyHours ? `−${fmtH(info.busyHours)}` : '0h'}</dd>
+          <dt
+            className="text-dim"
+            title="Reserved time and calendar events in the window, each minute once however many overlap"
+          >
+            Occupied (reserved, events)
+          </dt>
+          <dd>{info.occupiedHours ? `−${fmtH(info.occupiedHours)}` : '0h'}</dd>
           <dt className="text-dim">Global adjustment</dt>
           <dd>{signed(info.adjustment)}</dd>
           <dt className="text-dim">This day</dt>
