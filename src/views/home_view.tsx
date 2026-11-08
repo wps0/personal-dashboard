@@ -1,5 +1,11 @@
 import {HOME_HOUR_PX} from '../config';
 import {UsosBanner} from '../components/usos_review';
+import {
+  SignInBanner,
+  SignInChip,
+  SignInCorner,
+  SignInPopup,
+} from '../components/signin_prompt';
 import {ChevronDown, ChevronLeft, ChevronRight} from 'lucide-react';
 import {memo, useMemo, useState} from 'react';
 import {MiniMonth} from '../components/mini_month';
@@ -67,11 +73,14 @@ export function HomeView({date}: {date?: ISODate}) {
         </div>
       </div>
       <div className="flex min-h-0 flex-col gap-2">
+        <SignInBanner />
         <UsosBanner />
         <Planned days={days} />
         <Projects />
         <WorkCard />
       </div>
+      <SignInPopup />
+      <SignInCorner />
     </div>
   );
 }
@@ -128,6 +137,7 @@ function DayNav({start, today}: {start: ISODate; today: ISODate}) {
           />
         </PopoverContent>
       </Popover>
+      <SignInChip />
     </div>
   );
 }
