@@ -38,6 +38,11 @@ export const ALL_DAY_COLLAPSED_ITEMS = 2;
 /** Entries a month view cell shows before "N more". */
 export const MONTH_CELL_ENTRIES = 3;
 
+// Settings (views/settings_view.tsx)
+
+/** Characters of the commit hash shown as the app's version. */
+export const VERSION_COMMIT_CHARS = 7;
+
 // Toasts and undo (toast.ts)
 
 /** How long a toast stays, without and with an Undo button. */

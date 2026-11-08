@@ -1,4 +1,5 @@
 import {useRef, useState, type ReactNode} from 'react';
+import {VERSION_COMMIT_CHARS} from '../config';
 import {BufferedInput} from '../components/buffered';
 import {HoursInput} from '../components/hours_input';
 import {AreaList} from '../components/area_list';
@@ -191,6 +192,7 @@ export function SettingsView() {
           hint="Install the dashboard to open it like an app, in its own window. It also works offline after your first visit."
         >
           <InstallApp />
+          <AppVersion />
         </Section>
 
         <Section
@@ -305,6 +307,43 @@ function Section({
       </header>
       {children}
     </section>
+  );
+}
+
+const BUILT_AT = new Intl.DateTimeFormat('en-GB', {
+  dateStyle: 'medium',
+  timeStyle: 'short',
+});
+
+/**
+ * "Version 1a2b3c4, built 4 Nov 2026, 21:35": the start of the commit it's
+ * built from (linked to it on GitHub) and when it was built, in local time.
+ */
+function AppVersion() {
+  const {APP_COMMIT: commit, APP_BUILT_AT: builtAt} = import.meta.env;
+  const source = import.meta.env.APP_SOURCE_URL;
+  const short = commit.slice(0, VERSION_COMMIT_CHARS) || 'unknown';
+  return (
+    <p className="mt-3 text-[12px] text-dim">
+      Version{' '}
+      {source && commit ? (
+        <a
+          href={`${source}/commit/${commit}`}
+          target="_blank"
+          rel="noreferrer"
+          title={commit}
+          className="font-mono text-accent hover:underline"
+        >
+          {short}
+        </a>
+      ) : (
+        <span title={commit} className="font-mono text-fg">
+          {short}
+        </span>
+      )}
+      , built {BUILT_AT.format(new Date(builtAt))}
+      {import.meta.env.DEV && ' (development server)'}
+    </p>
   );
 }
 

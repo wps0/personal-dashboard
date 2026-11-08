@@ -382,6 +382,13 @@ length, the default view and the first day of the week (Monday … Sunday;
 Sunday by default), which is part of the synced data. Capacity rules stay per
 weekday and are listed Monday first whatever the week start.
 
+**App** offers installing the dashboard and shows its version: the start
+of the commit it was built from (7 characters, linked to the commit on
+GitHub when GitHub Actions built it) and when it was built, e.g. "Version
+1a2b3c4, built 4 Nov 2026, 21:35". The build stamps both in (vite.config.ts:
+GitHub Actions' commit, else the checkout's HEAD), so a phone can show
+which deploy it's running.
+
 **Areas** are listed in their order, which the whole app follows (the
 Projects page, the calendar's layers, the backlog's filters). Drag an area by
 its grip to reorder it (a line shows where it lands). Undoable, without a
