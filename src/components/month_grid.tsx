@@ -1,4 +1,5 @@
 import {MONTH_CELL_ENTRIES} from '../config';
+import {DragCancel} from '../drag_cancel';
 import {
   DndContext,
   DragOverlay,
@@ -90,6 +91,7 @@ export function MonthGrid({
         },
       }}
     >
+      <DragCancel />
       <MonthBody date={date} onDayClick={onDayClick} />
       <DragOverlay dropAnimation={null} modifiers={[ghostUnderPointer]}>
         {dragging && <Ghost entry={dragging} />}

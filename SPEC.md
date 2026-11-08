@@ -278,6 +278,11 @@ and details, as tabs in the side panel.
     With a finger, a block (or a week journal row) drags after a long press
     (250 ms, `TOUCH_DRAG_DELAY_MS`); a swipe that starts on it scrolls, as
     it would anywhere else. The mouse drags after 5 px.
+    While a drag lasts (moving, resizing, selecting slots, a week journal
+    row, a card), any key or another press (a second mouse button or
+    finger) cancels it, as in Google Calendar: what was dragged goes back,
+    the key does nothing else, and the release doesn't click
+    (`drag_cancel.ts`).
   - Click an event for its floating editor; click a session for the task
     overlay.
   - **Repeating events:**

@@ -1,4 +1,5 @@
 import {BACKLOG_ROWS, MISSED_ROWS} from '../config';
+import {DragCancel} from '../drag_cancel';
 import {sameProps} from '../same_props';
 import {
   DndContext,
@@ -120,6 +121,7 @@ export function WeekView({week}: {week?: ISODate}) {
         },
       }}
     >
+      <DragCancel />
       <div className="flex h-full flex-col">
         <div className="flex shrink-0 flex-wrap items-center gap-x-2 border-b border-line px-2 py-1 sm:px-3">
           <WeekNav start={start} />
