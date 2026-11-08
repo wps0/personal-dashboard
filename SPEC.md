@@ -275,6 +275,9 @@ and details, as tabs in the side panel.
     The block is that session, so moving, resizing or deleting it changes
     the task's plan; there's no separate event to keep in sync.
   - Drag blocks to move them, and drag a block's bottom edge to resize it.
+    With a finger, a block (or a week journal row) drags after a long press
+    (250 ms, `TOUCH_DRAG_DELAY_MS`); a swipe that starts on it scrolls, as
+    it would anywhere else. The mouse drags after 5 px.
   - Click an event for its floating editor; click a session for the task
     overlay.
   - **Repeating events:**

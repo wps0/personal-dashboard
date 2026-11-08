@@ -938,8 +938,7 @@ const ItemRow = memo(function ItemRow({
       ref={setNodeRef}
       onPointerDown={e => {
         // A finger is the touch sensor's (press and hold), so swipes scroll.
-        if (e.pointerType !== 'touch' && !isTyping(e.target as Element))
-          listeners?.onPointerDown?.(e);
+        if (!isTyping(e.target as Element)) listeners?.onPointerDown?.(e);
       }}
       onTouchStart={e => {
         if (!isTyping(e.target as Element)) listeners?.onTouchStart?.(e);

@@ -50,6 +50,14 @@ export const MONTH_CELL_ENTRIES = 3;
 /** Characters of the commit hash shown as the app's version. */
 export const VERSION_COMMIT_CHARS = 7;
 
+// Dragging (dnd.ts)
+
+/**
+ * How long a finger must rest on a block or row before it drags it; moving
+ * sooner scrolls instead.
+ */
+export const TOUCH_DRAG_DELAY_MS = 250;
+
 // Toasts and undo (toast.ts)
 
 /** How long a toast stays, without and with an Undo button. */

@@ -4,17 +4,46 @@ import {
   useSensor,
   useSensors,
   type Modifier,
+  type PointerSensorOptions,
 } from '@dnd-kit/core';
+import type {PointerEvent as ReactPointerEvent} from 'react';
+import {TOUCH_DRAG_DELAY_MS} from './config';
+
+/**
+ * dnd-kit's pointer sensor for a mouse or a pen only. A finger is left to
+ * the touch sensor, which waits for a long press: dnd-kit's own pointer
+ * sensor took fingers too and started a drag on any swipe over a block, so
+ * the calendar could hardly be scrolled on a phone.
+ */
+class MouseOrPenSensor extends PointerSensor {
+  static activators = [
+    {
+      eventName: 'onPointerDown' as const,
+      handler: (
+        {nativeEvent: e}: ReactPointerEvent,
+        {onActivation}: PointerSensorOptions,
+      ) => {
+        if (e.pointerType === 'touch' || !e.isPrimary || e.button !== 0)
+          return false;
+        onActivation?.({event: e});
+        return true;
+      },
+    },
+  ];
+}
 
 /**
  * Drag sensors shared by the calendar grids and the week planner: a mouse drag
  * starts after 5px of movement (so clicks still click), a touch drag after a
- * 200ms press (so swipes still scroll).
+ * long press (so swipes scroll; draggable blocks are `touch-manipulation`,
+ * not `touch-none`, for the same reason).
  */
 export function useDragSensors() {
   return useSensors(
-    useSensor(PointerSensor, {activationConstraint: {distance: 5}}),
-    useSensor(TouchSensor, {activationConstraint: {delay: 200, tolerance: 6}}),
+    useSensor(MouseOrPenSensor, {activationConstraint: {distance: 5}}),
+    useSensor(TouchSensor, {
+      activationConstraint: {delay: TOUCH_DRAG_DELAY_MS, tolerance: 8},
+    }),
   );
 }
 

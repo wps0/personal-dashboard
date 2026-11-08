@@ -669,7 +669,7 @@ const AllDayChip = memo(function AllDayChip({event}: {event: CalendarEvent}) {
           onClick={() =>
             !clicksSuppressed() && useUi.getState().openEvent(event.id)
           }
-          className={`block-interactive cursor-pointer touch-none truncate rounded px-1.5 py-px text-[11px] font-medium ${isDragging ? 'opacity-30' : ''}`}
+          className={`block-interactive cursor-pointer touch-manipulation truncate rounded px-1.5 py-px text-[11px] font-medium ${isDragging ? 'opacity-30' : ''}`}
           style={eventStyle(event.color)}
         >
           {event.title}
@@ -710,7 +710,7 @@ const StripChip = memo(function StripChip({
       onClick={() =>
         !clicksSuppressed() && useUi.getState().openItem(alloc.itemId)
       }
-      className={`block-interactive flex cursor-pointer touch-none items-center gap-1 truncate rounded border-l-4 px-1.5 py-px text-[11px] font-medium ${isDragging ? 'opacity-30' : ''} ${
+      className={`block-interactive flex cursor-pointer touch-manipulation items-center gap-1 truncate rounded border-l-4 px-1.5 py-px text-[11px] font-medium ${isDragging ? 'opacity-30' : ''} ${
         alloc.done ? 'line-through opacity-60' : ''
       }`}
       style={{
@@ -972,7 +972,7 @@ const ReservedBlock = memo(function ReservedBlock({
         <div
           {...top}
           aria-hidden
-          className="pointer-events-auto absolute inset-x-0 top-0 h-1.5 cursor-ns-resize"
+          className="pointer-events-auto absolute inset-x-0 top-0 h-1.5 cursor-ns-resize touch-none"
         />
       )}
       <Popover
@@ -1015,7 +1015,7 @@ const ReservedBlock = memo(function ReservedBlock({
         <div
           {...bottom}
           aria-hidden
-          className="pointer-events-auto absolute inset-x-0 bottom-0 h-1.5 cursor-ns-resize"
+          className="pointer-events-auto absolute inset-x-0 bottom-0 h-1.5 cursor-ns-resize touch-none"
         />
       )}
     </div>
@@ -1254,7 +1254,7 @@ const EventBlock = memo(function EventBlock({
           onClick={() =>
             !clicksSuppressed() && useUi.getState().openEvent(event.id)
           }
-          className={`block-interactive absolute z-10 cursor-pointer touch-none overflow-hidden rounded-md px-1.5 text-[11px] ${blockTextClass(height)} ${
+          className={`block-interactive absolute z-10 cursor-pointer touch-manipulation overflow-hidden rounded-md px-1.5 text-[11px] ${blockTextClass(height)} ${
             isDragging ? 'opacity-30' : ''
           } ${open ? 'shadow-lg ring-2 ring-bg' : ''} ${previewEnd != null ? 'resizing' : ''}`}
           style={{
@@ -1270,7 +1270,7 @@ const EventBlock = memo(function EventBlock({
           />
           <div
             {...handleProps}
-            className="absolute right-0 bottom-0 left-0 cursor-ns-resize"
+            className="absolute right-0 bottom-0 left-0 cursor-ns-resize touch-none"
             style={{height: handleHeight(height)}}
           />
         </div>
@@ -1322,7 +1322,7 @@ const AllocBlock = memo(function AllocBlock(props: {
       onClick={() =>
         !clicksSuppressed() && useUi.getState().openItem(alloc.itemId)
       }
-      className={`block-interactive absolute z-10 cursor-pointer touch-none overflow-hidden rounded-md border-l-4 px-1.5 text-[11px] ${blockTextClass(height)} ${
+      className={`block-interactive absolute z-10 cursor-pointer touch-manipulation overflow-hidden rounded-md border-l-4 px-1.5 text-[11px] ${blockTextClass(height)} ${
         isDragging ? 'opacity-30' : done ? 'opacity-60' : ''
       } ${previewEnd != null ? 'resizing' : ''}`}
       style={{
@@ -1347,7 +1347,7 @@ const AllocBlock = memo(function AllocBlock(props: {
       />
       <div
         {...handleProps}
-        className="absolute right-0 bottom-0 left-0 cursor-ns-resize"
+        className="absolute right-0 bottom-0 left-0 cursor-ns-resize touch-none"
         style={{height: handleHeight(height)}}
       />
     </div>
