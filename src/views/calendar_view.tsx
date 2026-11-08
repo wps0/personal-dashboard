@@ -208,90 +208,106 @@ export function CalendarView({
       ? [firstOfMonth(date), addDays(addMonths(date, 1), -1)]
       : [days[0], days[days.length - 1]];
 
+  // Wide: the sidebar's width slides between 248px and 0, its content with it.
+  // Narrow: it slides over the calendar from the left. Closed, it's inert.
+  const slide =
+    'duration-200 ease-[var(--ease-out-soft)] motion-reduce:transition-none';
   return (
-    <div className="relative flex h-full">
-      {sidebar.open && !sidebar.wide && (
-        <div
-          aria-hidden
-          className="absolute inset-0 z-30 animate-fade-in bg-black/40"
-          onClick={sidebar.close}
-        />
-      )}
-      <aside
-        id="calendar-sidebar"
-        className={`w-[248px] shrink-0 flex-col gap-4 overflow-y-auto px-3 py-3 ${sidebar.open ? 'flex' : 'hidden'} ${sidebar.wide ? '' : 'absolute inset-y-0 left-0 z-40 animate-from-left bg-panel shadow-2xl'}`}
-      >
+    <div className="flex h-full flex-col">
+      {/* Full width, ☰ first at the left, as in Google Calendar. */}
+      <div className="flex shrink-0 items-center gap-2 px-3 py-2 max-sm:gap-1 max-sm:px-2">
         <button
-          className="flex h-12 w-fit items-center gap-2 rounded-2xl bg-raised pr-5 pl-4 font-medium text-strong shadow-md ring-1 ring-line hover:brightness-110"
-          onClick={fromSidebar(() => {
-            if (!days.includes(today)) go(view, today);
-            useUi.getState().setDraft(nextHourDraft());
-          })}
+          className="icon-btn shrink-0"
+          onClick={sidebar.toggle}
+          aria-label={sidebar.open ? 'Hide the sidebar' : 'Show the sidebar'}
+          aria-expanded={sidebar.open}
+          aria-controls="calendar-sidebar"
+          title={sidebar.open ? 'Hide the sidebar' : 'Show the sidebar'}
         >
-          <Plus size={20} className="text-accent" /> Create
+          <Menu size={18} />
         </button>
-        <MiniMonth
-          selected={date}
-          range={range}
-          onSelect={d => fromSidebar(() => go(view, d))()}
+        <button
+          className="btn h-8 rounded-full px-4"
+          onClick={() => go(view, today)}
+          title="Today (t)"
+        >
+          Today
+        </button>
+        <button
+          className="icon-btn"
+          aria-label="Previous"
+          title="Previous (k)"
+          onClick={() => go(view, step(view, date, -1))}
+        >
+          <ChevronLeft size={18} />
+        </button>
+        <button
+          className="icon-btn"
+          aria-label="Next"
+          title="Next (j)"
+          onClick={() => go(view, step(view, date, 1))}
+        >
+          <ChevronRight size={18} />
+        </button>
+        <h1 className="ml-1 text-lg font-normal text-strong">
+          {title(view, days, date)}
+        </h1>
+        <Select
+          value={view}
+          onChange={v => go(v, date)}
+          options={VIEW_OPTIONS}
+          className="ml-auto h-8 w-28 rounded-full px-3"
+          ariaLabel="Calendar view"
         />
-        <Layers />
-      </aside>
-      <div className="flex min-w-0 flex-1 flex-col">
-        <div className="flex shrink-0 items-center gap-2 px-3 py-2 max-sm:gap-1 max-sm:px-2">
-          <button
-            className="icon-btn shrink-0"
-            onClick={sidebar.toggle}
-            aria-label={sidebar.open ? 'Hide the sidebar' : 'Show the sidebar'}
-            aria-expanded={sidebar.open}
-            aria-controls="calendar-sidebar"
-            title={sidebar.open ? 'Hide the sidebar' : 'Show the sidebar'}
-          >
-            <Menu size={18} />
-          </button>
-          <button
-            className="btn h-8 rounded-full px-4"
-            onClick={() => go(view, today)}
-            title="Today (t)"
-          >
-            Today
-          </button>
-          <button
-            className="icon-btn"
-            aria-label="Previous"
-            title="Previous (k)"
-            onClick={() => go(view, step(view, date, -1))}
-          >
-            <ChevronLeft size={18} />
-          </button>
-          <button
-            className="icon-btn"
-            aria-label="Next"
-            title="Next (j)"
-            onClick={() => go(view, step(view, date, 1))}
-          >
-            <ChevronRight size={18} />
-          </button>
-          <h1 className="ml-1 text-lg font-normal text-strong">
-            {title(view, days, date)}
-          </h1>
-          <Select
-            value={view}
-            onChange={v => go(v, date)}
-            options={VIEW_OPTIONS}
-            className="ml-auto h-8 w-28 rounded-full px-3"
-            ariaLabel="Calendar view"
+      </div>
+      <div className="relative flex min-h-0 flex-1">
+        {!sidebar.wide && (
+          <div
+            aria-hidden
+            className={`absolute inset-0 z-30 bg-black/40 transition-opacity ${slide} ${sidebar.open ? 'opacity-100' : 'pointer-events-none opacity-0'}`}
+            onClick={sidebar.close}
           />
-        </div>
-        <div className="min-h-0 flex-1 pr-2 pb-2">
-          {view === 'month' ? (
-            <MonthGrid
-              date={firstOfMonth(date)}
-              onDayClick={d => go('day', d)}
+        )}
+        <aside
+          id="calendar-sidebar"
+          inert={!sidebar.open}
+          className={
+            sidebar.wide
+              ? `shrink-0 overflow-hidden transition-[width] ${slide} ${sidebar.open ? 'w-[248px]' : 'w-0'}`
+              : `absolute inset-y-0 left-0 z-40 w-[248px] bg-panel transition-transform ${slide} ${sidebar.open ? 'translate-x-0 shadow-2xl' : '-translate-x-full'}`
+          }
+        >
+          <div
+            className={`flex h-full w-[248px] flex-col gap-4 overflow-y-auto px-3 py-3 ${sidebar.wide ? `transition-transform ${slide} ${sidebar.open ? '' : '-translate-x-full'}` : ''}`}
+          >
+            <button
+              className="flex h-12 w-fit items-center gap-2 rounded-2xl bg-raised pr-5 pl-4 font-medium text-strong shadow-md ring-1 ring-line hover:brightness-110"
+              onClick={fromSidebar(() => {
+                if (!days.includes(today)) go(view, today);
+                useUi.getState().setDraft(nextHourDraft());
+              })}
+            >
+              <Plus size={20} className="text-accent" /> Create
+            </button>
+            <MiniMonth
+              selected={date}
+              range={range}
+              onSelect={d => fromSidebar(() => go(view, d))()}
             />
-          ) : (
-            <TimeGrid key={view} days={days} onDayClick={d => go('day', d)} />
-          )}
+            <Layers />
+          </div>
+        </aside>
+        <div className="flex min-w-0 flex-1 flex-col">
+          <div className="min-h-0 flex-1 pr-2 pb-2">
+            {view === 'month' ? (
+              <MonthGrid
+                date={firstOfMonth(date)}
+                onDayClick={d => go('day', d)}
+              />
+            ) : (
+              <TimeGrid key={view} days={days} onDayClick={d => go('day', d)} />
+            )}
+          </div>
         </div>
       </div>
     </div>
