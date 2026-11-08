@@ -16,6 +16,7 @@ import {UsosSettings} from '../components/usos_settings';
 import {install, useInstall} from '../pwa';
 import {GeminiSettings} from '../components/gemini_settings';
 import {Select} from '../components/ui/select';
+import {usePhoneNav, type PhoneNav} from '../nav';
 
 const CAL_VIEW_OPTIONS = [
   {value: CalendarView.DAY, label: 'Day'},
@@ -189,9 +190,10 @@ export function SettingsView() {
 
         <Section
           title="App"
-          hint="Install the dashboard to open it like an app, in its own window. It also works offline after your first visit."
+          hint="Install the dashboard to open it like an app, in its own window (it also works offline after your first visit), and choose how a phone moves between pages."
         >
           <InstallApp />
+          <PhoneNavSetting />
           <AppVersion />
         </Section>
 
@@ -344,6 +346,30 @@ function AppVersion() {
       , built {BUILT_AT.format(new Date(builtAt))}
       {import.meta.env.DEV && ' (development server)'}
     </p>
+  );
+}
+
+const PHONE_NAV_OPTIONS: {value: PhoneNav; label: string}[] = [
+  {value: 'tabs', label: 'Tabs at the bottom'},
+  {value: 'menu', label: 'A menu (☰)'},
+];
+
+/** How a phone moves between pages; this device only, like the theme. */
+function PhoneNavSetting() {
+  const nav = usePhoneNav(s => s.nav);
+  const setNav = usePhoneNav(s => s.setNav);
+  return (
+    <div className="mt-3 flex flex-wrap items-center gap-2 text-[12px]">
+      <span className="text-dim">On a phone, the pages are in</span>
+      <Select
+        value={nav}
+        onChange={setNav}
+        options={PHONE_NAV_OPTIONS}
+        className="w-44"
+        ariaLabel="On a phone, the pages are in"
+      />
+      <span className="text-dim">(this device only)</span>
+    </div>
   );
 }
 

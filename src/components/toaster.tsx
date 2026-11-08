@@ -1,14 +1,17 @@
 import {X} from 'lucide-react';
+import {usePhoneNav} from '../nav';
 import {useToasts} from '../toast';
 
 /** Bottom-left stack of short confirmations, some with Undo (kept off the calendar grid, like Google Calendar). */
 export function Toaster() {
   const toasts = useToasts(s => s.toasts);
   const dismiss = useToasts(s => s.dismiss);
+  // On a phone with tabs at the bottom, above them.
+  const aboveTabs = usePhoneNav(s => s.nav === 'tabs');
   return (
     <div
       aria-live="polite"
-      className="pointer-events-none fixed bottom-4 left-4 z-[80] flex flex-col items-start gap-2"
+      className={`pointer-events-none fixed bottom-4 left-4 z-[80] flex flex-col items-start gap-2 ${aboveTabs ? 'max-sm:bottom-[calc(4.5rem+env(safe-area-inset-bottom))]' : ''}`}
     >
       {toasts.map(t => (
         <div
