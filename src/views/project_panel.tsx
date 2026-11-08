@@ -14,6 +14,7 @@ import {
   type ReactNode,
 } from 'react';
 import {createPortal} from 'react-dom';
+import {DragCancel} from '../drag_cancel';
 import {withUndo} from '../toast';
 import {BufferedTextarea} from '../components/buffered';
 import {DateField} from '../components/date_field';
@@ -449,6 +450,7 @@ function ItemsTab({project}: {project: Project}) {
           onDragEnd={e => endDrag(dataOf<DropData>(e.over))}
           onDragCancel={() => setDrag(null)}
         >
+          <DragCancel />
           <table className="w-full table-fixed border-collapse">
             <colgroup>
               <col className="w-28 @md:w-32" />

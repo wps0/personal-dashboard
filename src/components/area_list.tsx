@@ -6,6 +6,7 @@ import {
   useDroppable,
 } from '@dnd-kit/core';
 import {GripVertical} from 'lucide-react';
+import {DragCancel} from '../drag_cancel';
 import {useState} from 'react';
 import {createPortal} from 'react-dom';
 import {moveArea} from '../actions';
@@ -45,6 +46,7 @@ export function AreaList({
       }}
       onDragCancel={() => setDrag(null)}
     >
+      <DragCancel />
       <ul className="space-y-1">
         {areas.map((a, i) => (
           <AreaRow

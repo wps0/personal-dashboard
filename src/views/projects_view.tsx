@@ -5,6 +5,7 @@ import {
   type PointerEvent as ReactPointerEvent,
 } from 'react';
 import {ProgressRing} from '../components/progress_ring';
+import {holdDrag} from '../drag_cancel';
 import {URGENCY_CLASS} from '../format';
 import {countdown} from '../model/dates';
 import {useToday} from '../hooks';
@@ -133,6 +134,7 @@ function useSplitWidth(): [
     let last = width;
     const move = (ev: PointerEvent) => setWidth((last = clamp(ev.clientX)));
     const stop = () => {
+      release();
       handle.removeEventListener('pointermove', move);
       handle.removeEventListener('pointerup', up);
       handle.removeEventListener('pointercancel', cancel);
@@ -147,11 +149,13 @@ function useSplitWidth(): [
         // Not remembered; fine.
       }
     };
-    // Cancelled (e.g. the browser took the touch over): back to where it was.
+    // Cancelled (e.g. the browser took the touch over, or a key was
+    // pressed): back to where it was.
     const cancel = () => {
       stop();
       setWidth(from);
     };
+    const release = holdDrag(cancel);
     handle.addEventListener('pointermove', move);
     handle.addEventListener('pointerup', up);
     handle.addEventListener('pointercancel', cancel);

@@ -1,4 +1,5 @@
 import {ALL_DAY_COLLAPSED_ITEMS, CALENDAR_HOUR_PX} from '../config';
+import {DragCancel, holdDrag} from '../drag_cancel';
 import {ChevronDown, ChevronUp} from 'lucide-react';
 import {sameProps} from '../same_props';
 import {
@@ -274,6 +275,7 @@ export function TimeGrid({
       onDragEnd={onDragEnd}
       onDragCancel={() => (setDragging(null), suppressClicks(), stopTracking())}
     >
+      <DragCancel />
       <GridBody
         days={days}
         hourHeight={hourHeight}
@@ -784,6 +786,8 @@ const Column = memo(function Column({
     y0: number;
     dragged: boolean;
   } | null>(null);
+  // Ends the selection's hold on keys and other presses (drag_cancel.ts).
+  const releaseSel = useRef<(() => void) | null>(null);
 
   const layout = useMemo(
     () =>
@@ -821,6 +825,7 @@ const Column = memo(function Column({
         e.currentTarget.setPointerCapture(e.pointerId);
         const m = minuteAt(e);
         setSel({a: m, b: m, y0: e.clientY, dragged: false});
+        releaseSel.current = holdDrag(() => setSel(null));
       }}
       onPointerMove={e =>
         sel &&
@@ -831,6 +836,7 @@ const Column = memo(function Column({
         })
       }
       onPointerUp={() => {
+        releaseSel.current?.();
         if (!sel) return;
         setSel(null);
         // A click makes an event of the default length (on the half hour, or the quarter for
@@ -844,7 +850,10 @@ const Column = memo(function Column({
           : draftAt(date, start, start + len);
         useUi.getState().setDraft(draft);
       }}
-      onPointerCancel={() => setSel(null)}
+      onPointerCancel={() => {
+        releaseSel.current?.();
+        setSel(null);
+      }}
       className={`drop-target relative border-l border-line ${isOver ? 'is-over bg-accent/5' : ''}`}
       style={{
         backgroundImage: `repeating-linear-gradient(to bottom, var(--color-line) 0 1px, transparent 1px ${hourHeight}px)`,
@@ -1052,6 +1061,7 @@ function useEdges(
       };
       const move = (ev: PointerEvent) => setPreview(at(ev.clientY));
       const finish = (ev: PointerEvent | null) => {
+        release();
         target.removeEventListener('pointermove', move);
         target.removeEventListener('pointerup', up);
         target.removeEventListener('pointercancel', cancel);
@@ -1065,6 +1075,7 @@ function useEdges(
       };
       const up = (ev: PointerEvent) => finish(ev);
       const cancel = () => finish(null);
+      const release = holdDrag(cancel);
       target.addEventListener('pointermove', move);
       target.addEventListener('pointerup', up);
       target.addEventListener('pointercancel', cancel);
@@ -1172,8 +1183,10 @@ function useResize(
           Math.min(DAY_MIN, snap(((y - col.top) / hourHeight) * 60)),
         );
       const move = (ev: PointerEvent) => setPreviewEnd(toEnd(ev.clientY));
-      // Cancelled (e.g. the browser took the touch over): drop the preview, keep the length.
+      // Cancelled (e.g. the browser took the touch over, or a key was
+      // pressed): drop the preview, keep the length.
       const stop = () => {
+        release();
         target.removeEventListener('pointermove', move);
         target.removeEventListener('pointerup', up);
         target.removeEventListener('pointercancel', stop);
@@ -1185,6 +1198,7 @@ function useResize(
         suppressClicks();
         commit(toEnd(ev.clientY));
       };
+      const release = holdDrag(stop);
       target.addEventListener('pointermove', move);
       target.addEventListener('pointerup', up);
       target.addEventListener('pointercancel', stop);

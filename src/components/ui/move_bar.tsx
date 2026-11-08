@@ -1,4 +1,5 @@
 import {GripHorizontal, X} from 'lucide-react';
+import {holdDrag} from '../../drag_cancel';
 import type {KeyboardEvent, PointerEvent} from 'react';
 
 /** Keep at least this much of the card on screen (px), so it can be dragged back. */
@@ -59,10 +60,16 @@ export function MoveBar({onClose}: {onClose(): void}) {
     const move = (ev: globalThis.PointerEvent) =>
       moveBy(wrapper, from, rect, ev.clientX - x0, ev.clientY - y0);
     const up = () => {
+      release();
       bar.removeEventListener('pointermove', move);
       bar.removeEventListener('pointerup', up);
       bar.removeEventListener('pointercancel', up);
     };
+    // A key or another press: the card goes back to where it was.
+    const release = holdDrag(() => {
+      up();
+      moveBy(wrapper, from, rect, 0, 0);
+    });
     bar.addEventListener('pointermove', move);
     bar.addEventListener('pointerup', up);
     bar.addEventListener('pointercancel', up);
