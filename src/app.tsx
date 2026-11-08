@@ -1,18 +1,6 @@
-import {
-  BriefcaseBusiness,
-  CalendarDays,
-  CircleGauge,
-  FolderKanban,
-  House,
-  Keyboard,
-  Monitor,
-  Moon,
-  NotebookPen,
-  Settings,
-  Sun,
-  type LucideIcon,
-} from 'lucide-react';
+import {CircleGauge, Keyboard, Monitor, Moon, Sun} from 'lucide-react';
 import {ConflictsBadge} from './components/conflicts_badge';
+import {BottomTabs, PhoneHeader} from './components/phone_nav';
 import {Toaster} from './components/toaster';
 import {ShortcutDialogs} from './components/shortcut_dialogs';
 import {isTyping, useGlobalShortcuts} from './keyboard';
@@ -20,6 +8,7 @@ import {lazy, Suspense, useEffect, type ReactNode} from 'react';
 import {ItemOverlay} from './components/item_overlay';
 import {preloadMarkdown} from './components/markdown';
 import {sampleData} from './model/sample';
+import {PAGES, usePhoneNav} from './nav';
 import {href, navigate, useRoute, type Route} from './router';
 import {useStore} from './store';
 import {useTheme, type ThemeChoice} from './theme';
@@ -55,15 +44,6 @@ function preload() {
   void preloadMarkdown();
 }
 
-const NAV: {route: Route; label: string; icon: LucideIcon}[] = [
-  {route: {name: 'home'}, label: 'Home', icon: House},
-  {route: {name: 'week'}, label: 'Week', icon: NotebookPen},
-  {route: {name: 'projects'}, label: 'Projects', icon: FolderKanban},
-  {route: {name: 'calendar'}, label: 'Calendar', icon: CalendarDays},
-  {route: {name: 'work'}, label: 'Work', icon: BriefcaseBusiness},
-  {route: {name: 'settings'}, label: 'Settings', icon: Settings},
-];
-
 const THEME_NEXT: Record<ThemeChoice, ThemeChoice> = {
   system: 'light',
   light: 'dark',
@@ -79,6 +59,7 @@ export function App() {
   const route = useRoute();
   const hasAreas = useStore(s => s.data.areas.length > 0);
   const [theme, setTheme] = useTheme();
+  const phoneTabs = usePhoneNav(s => s.nav === 'tabs');
   useGlobalShortcuts(route);
   // After the first screen is up, fetch the rest when the browser is idle.
   useEffect(() => {
@@ -86,51 +67,60 @@ export function App() {
     else setTimeout(preload, 2000);
   }, []);
 
+  const themeButton = (
+    <button
+      className="icon-btn shrink-0"
+      onClick={() => setTheme(THEME_NEXT[theme])}
+      title={`Theme: ${theme === 'system' ? 'auto (follows system)' : theme} — click to change`}
+      aria-label="Change theme"
+    >
+      {THEME_ICON[theme]}
+    </button>
+  );
+
   return (
     <div className="flex h-full flex-col">
-      <header className="flex shrink-0 items-center gap-1 border-b border-line bg-panel px-2 py-1.5 sm:px-3">
-        <span className="mr-1 flex shrink-0 items-center gap-1.5 text-[14px] font-semibold tracking-tight text-strong sm:mr-3">
+      {/* Phones get a header of their own, and tabs at the bottom or a menu. */}
+      <PhoneHeader
+        route={route}
+        actions={
+          <>
+            <ConflictsBadge />
+            {themeButton}
+          </>
+        }
+      />
+      <header className="hidden shrink-0 items-center gap-1 border-b border-line bg-panel px-3 py-1.5 sm:flex">
+        <span className="mr-3 flex shrink-0 items-center gap-1.5 text-[14px] font-semibold tracking-tight text-strong">
           <CircleGauge size={18} className="text-accent" />
-          {/* On phones only the icon, so every tab fits. */}
-          <span className="sr-only sm:not-sr-only">Dashboard</span>
+          Dashboard
         </span>
         <nav
           aria-label="Pages"
           className="no-scrollbar flex min-w-0 flex-1 gap-0.5 overflow-x-auto"
         >
-          {NAV.map(n => (
+          {PAGES.map((p, i) => (
             <a
-              key={n.label}
-              href={href(n.route)}
-              aria-current={n.route.name === route.name ? 'page' : undefined}
-              title={`${n.label} (${NAV.indexOf(n) + 1})`}
-              aria-label={n.label}
-              className={`flex shrink-0 items-center rounded-md px-2 py-1 transition-colors duration-150 sm:px-2.5 ${n.route.name === route.name ? 'bg-raised text-strong' : 'text-dim hover:bg-raised/60 hover:text-fg'}`}
+              key={p.label}
+              href={href(p.route)}
+              aria-current={p.route.name === route.name ? 'page' : undefined}
+              title={`${p.label} (${i + 1})`}
+              className={`flex shrink-0 items-center rounded-md px-2.5 py-1 transition-colors duration-150 ${p.route.name === route.name ? 'bg-raised text-strong' : 'text-dim hover:bg-raised/60 hover:text-fg'}`}
             >
-              {/* On phones only the icon, so all six tabs fit. */}
-              <n.icon size={17} aria-hidden className="sm:hidden" />
-              <span className="hidden sm:inline">{n.label}</span>
+              {p.label}
             </a>
           ))}
         </nav>
         <ConflictsBadge />
-        {/* Keyboard shortcuts don't apply on phones. */}
         <button
-          className="icon-btn hidden shrink-0 sm:inline-flex"
+          className="icon-btn shrink-0"
           onClick={() => useUi.getState().setDialog('help')}
           title="Keyboard shortcuts (?)"
           aria-label="Keyboard shortcuts"
         >
           <Keyboard size={16} />
         </button>
-        <button
-          className="icon-btn shrink-0"
-          onClick={() => setTheme(THEME_NEXT[theme])}
-          title={`Theme: ${theme === 'system' ? 'auto (follows system)' : theme} — click to change`}
-          aria-label="Change theme"
-        >
-          {THEME_ICON[theme]}
-        </button>
+        {themeButton}
       </header>
       {/* Keyed by page so switching tabs fades the new page in. */}
       <main key={route.name} className="min-h-0 flex-1 animate-fade-in">
@@ -142,6 +132,7 @@ export function App() {
           </Suspense>
         )}
       </main>
+      {phoneTabs && <BottomTabs route={route} />}
       <ItemOverlay />
       <ShortcutDialogs />
       <Toaster />
