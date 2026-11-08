@@ -458,6 +458,11 @@ count in the day's, week's and month's totals like a time slot of that length, b
   yet: once a day has anything logged (a time slot or hours alone), its log
   replaces its plan. They're hatched in the accent colour, where logged
   hours are solid.
+- **Lengths:** a time slot's, and hours logged alone, are written in hours
+  and minutes ("8h 53m"), since they can be any number of minutes; totals (a
+  day, the week, its target, "to go" / "over", the planned hours, the
+  months, the Home card) in whole hours, rounded down ("8h logged of 40h"),
+  to keep them short.
 - **The week** shows the hours logged against its target, with a bar and
   "N h to go" or "N h over", and its planned hours ("24h planned"). The
   bar fills solid for the hours logged, then hatched for the planned ones,

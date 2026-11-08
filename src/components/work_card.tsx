@@ -1,5 +1,5 @@
 import {logAsPlanned} from '../actions';
-import {fmtH} from '../format';
+import {fmtHours} from '../format';
 import {useToday} from '../hooks';
 import {MONDAY, startOfWeek} from '../model/dates';
 import {
@@ -51,7 +51,7 @@ export function WorkCard() {
           {spans.length ? (
             <span className="min-w-0 flex-1 truncate tabular-nums">
               {timed.length > 0 && `${times(timed)} · `}
-              {fmtH(spans.reduce((sum, s) => sum + spanHours(s), 0))} logged
+              {fmtHours(spans.reduce((sum, s) => sum + spanHours(s), 0))} logged
             </span>
           ) : planned.length ? (
             <>
@@ -72,8 +72,8 @@ export function WorkCard() {
         <div className="flex items-center gap-2">
           <span className="text-dim">Week</span>
           <span className="tabular-nums">
-            {fmtH(logged)}
-            {target > 0 && ` of ${fmtH(target)}`}
+            {fmtHours(logged)}
+            {target > 0 && ` of ${fmtHours(target)}`}
           </span>
           {target > 0 && (
             <WorkBar

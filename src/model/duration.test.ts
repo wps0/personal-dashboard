@@ -1,5 +1,5 @@
 import {describe, expect, it} from 'vitest';
-import {fmtDuration} from '../format';
+import {fmtDuration, fmtHours} from '../format';
 import {parseDuration} from './duration';
 
 describe('parseDuration', () => {
@@ -55,5 +55,16 @@ describe('fmtDuration', () => {
   it('reads back what it writes', () => {
     for (const min of [5, 45, 60, 113, 480, 533])
       expect(parseDuration(fmtDuration(min / 60))).toBe(min / 60);
+  });
+});
+
+describe('fmtHours', () => {
+  it('writes whole hours, rounded down', () => {
+    expect(fmtHours(8 + 53 / 60)).toBe('8h');
+    expect(fmtHours(40)).toBe('40h');
+    expect(fmtHours(0.75)).toBe('0h');
+    expect(fmtHours(0)).toBe('0h');
+    // Counted in whole minutes: float noise doesn't lose an hour.
+    expect(fmtHours(7.99999)).toBe('8h');
   });
 });
