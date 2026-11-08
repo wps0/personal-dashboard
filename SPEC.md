@@ -240,8 +240,11 @@ and details, as tabs in the side panel.
 ### 3.4 Calendar (Google-Calendar-like)
 - **Sidebar:** a Create button, a mini month (click a day to jump to it; the
   visible range is tinted), and "My calendars" toggles to show or hide events
-  and each area's sessions (stored per device).
-- **Toolbar:** Today, ‹ ›, the period title, and a view switcher
+  and each area's sessions (stored per device). The toolbar's ☰ hides or
+  shows it: from 1024px it sits beside the calendar and the choice is
+  remembered on the device; narrower (phones too) it opens over the calendar
+  and closes on a tap outside, Esc, or a day picked in it.
+- **Toolbar:** ☰ (the sidebar), Today, ‹ ›, the period title, and a view switcher
   (Day / 3 days / Week / Month). Routes look like `#/calendar/<view>/<date>`.
   Coming to the calendar from another page always opens the **default view**
   (Settings → Calendar, Week by default) at today.
@@ -422,7 +425,7 @@ review new USOS classes 2; page, week and view switching 1–2 keys.
 | Keyboard: check off; event at a set time | 4; 8 | Selection starts on the calendar; `c` fixes the next hour |
 
 Also found: on a phone the calendar layers can't be shown or hidden (the
-sidebar is hidden), and a tap on a short event may hit its resize grip
+sidebar is hidden; since then, the ☰ opens it over the calendar), and a tap on a short event may hit its resize grip
 (seen in emulation).
 
 **The pattern:** Home answers "what's today", but nearly every change happens
