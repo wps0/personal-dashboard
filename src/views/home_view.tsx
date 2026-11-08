@@ -127,7 +127,9 @@ export function HomeView({date}: {date?: ISODate}) {
           />
         </div>
       </div>
-      <div className="flex min-h-0 flex-col gap-2">
+      {/* Below lg the page scrolls, so the cards take the room they need;
+          beside the calendar (lg) they share its height. */}
+      <div className="flex flex-col gap-2 lg:min-h-0">
         <SignInPrompt />
         <UsosBanner />
         <Planned days={days} />
@@ -257,7 +259,7 @@ function Planned({days}: {days: ISODate[]}) {
   );
 
   return (
-    <section className="flex max-h-[55%] min-h-0 flex-col rounded border border-line bg-panel">
+    <section className="flex flex-col rounded border border-line bg-panel lg:max-h-[55%] lg:min-h-0">
       <header className="flex items-center border-b border-line px-2 py-1">
         <span className="label">planned</span>
         {missed > 0 && (
@@ -382,7 +384,7 @@ function Projects() {
   }, [projects, items, allocations]);
 
   return (
-    <section className="flex min-h-0 flex-1 flex-col rounded border border-line bg-panel">
+    <section className="flex flex-col rounded border border-line bg-panel lg:min-h-0 lg:flex-1">
       <header className="flex items-center border-b border-line px-2 py-1">
         <span className="label">projects</span>
         <a
