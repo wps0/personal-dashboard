@@ -296,7 +296,7 @@ const EventChip = memo(function EventChip({event}: {event: CalendarEvent}) {
           onClick={() =>
             !clicksSuppressed() && useUi.getState().openEvent(event.id)
           }
-          className={`block-interactive flex shrink-0 cursor-pointer touch-none items-center gap-1 truncate rounded px-1 text-[11px] ${isDragging ? 'opacity-30' : ''} ${
+          className={`block-interactive flex shrink-0 cursor-pointer touch-manipulation items-center gap-1 truncate rounded px-1 text-[11px] ${isDragging ? 'opacity-30' : ''} ${
             event.allDay ? 'font-medium' : 'hover:bg-raised'
           }`}
           style={event.allDay ? eventStyle(event.color) : undefined}
@@ -348,7 +348,7 @@ const AllocChip = memo(function AllocChip({
       onClick={() =>
         !clicksSuppressed() && useUi.getState().openItem(alloc.itemId)
       }
-      className={`block-interactive flex shrink-0 cursor-pointer touch-none items-center gap-1 truncate rounded border-l-4 px-1 text-[11px] ${isDragging ? 'opacity-30' : ''} ${
+      className={`block-interactive flex shrink-0 cursor-pointer touch-manipulation items-center gap-1 truncate rounded border-l-4 px-1 text-[11px] ${isDragging ? 'opacity-30' : ''} ${
         alloc.done ? 'line-through opacity-60' : ''
       }`}
       style={{

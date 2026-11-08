@@ -352,7 +352,7 @@ const AllocationBlock = memo(function AllocationBlock({
         toggle: () => toggleSession(alloc.id),
         remove: () => removeSession(alloc.id),
       })}
-      className={`block-interactive group flex cursor-grab touch-none items-center gap-1.5 rounded-md border-l-2 bg-raised py-0.5 pr-1 pl-1.5 active:cursor-grabbing ${
+      className={`block-interactive group flex cursor-grab touch-manipulation items-center gap-1.5 rounded-md border-l-2 bg-raised py-0.5 pr-1 pl-1.5 active:cursor-grabbing ${
         isDragging ? 'opacity-30' : ''
       }`}
       style={{borderLeftColor: lookups.color(item)}}
@@ -668,7 +668,7 @@ const BacklogItem = memo(function BacklogItem({
       data-block
       onKeyDown={blockKeys({open: () => openItem(item.id)})}
       onClick={() => openItem(item.id)}
-      className={`flex cursor-grab touch-none items-center gap-1.5 rounded-md border-l-2 px-1.5 py-0.5 transition-[background-color,transform] duration-150 hover:bg-raised active:scale-[0.985] active:cursor-grabbing ${
+      className={`flex cursor-grab touch-manipulation items-center gap-1.5 rounded-md border-l-2 px-1.5 py-0.5 transition-[background-color,transform] duration-150 hover:bg-raised active:scale-[0.985] active:cursor-grabbing ${
         isDragging ? 'opacity-30' : ''
       }`}
       style={{borderLeftColor: lookups.color(item)}}
