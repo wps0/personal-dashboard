@@ -40,7 +40,7 @@ Area            e.g. University, Work, Personal, Side projects
          └─ Allocation[]   { date, start?, plannedHours, done, actualHours }
 
 CalendarEvent   { kind (event | reserved), date, start, end, title, notes, recurrence?, skippedDates[], seriesId?, seriesDate? }   local in v1; Google Calendar in v2
-WorkSpan        { date, start, end, note? }   the work log: time actually worked
+WorkSpan        { date, start, end, note?, hours? }   the work log: time actually worked; hours alone (start and end empty) when logged without a time slot
 ```
 
 - **Groups.** A project's items can be put in named groups, one level deep
@@ -428,8 +428,9 @@ behind a dropdown, Google reconnect in Calendar or Settings).
 
 ### 3.10 Work log (`#/work`)
 The plan is reserved time named as work: reserved events with that label
-(Work by default; Settings → Work log). The work log records what was actually worked: stretches of time
-(start – end) per day, synced like everything else.
+(Work by default; Settings → Work log). The work log records what was actually worked, synced like everything else, in
+two ways that can be mixed on a day: a **time slot** (start – end), or **hours alone** ("8h", no time of day). Hours alone
+count in the day's, week's and month's totals like a time slot of that length, but they aren't drawn on the calendar.
 
 - **The Work page**, a tab of its own (key 5), is one scrolling list of
   weeks, Monday to Sunday like the week journal, that opens on this week
@@ -439,15 +440,19 @@ The plan is reserved time named as work: reserved events with that label
   in it. ‹ › and `j` / `k` jump a week from the one at the top, `t` comes
   back to this one. `#/work/<date>` opens on that date's week.
 - **Each day** lists its planned work ("Planned 09:00–17:00", from the
-  day's reserved events, including one changed on its own that day), its logged stretches with
-  editable start and end and a remove button, and the day's total. A day
-  with nothing logged offers **Log as planned** (its planned work, in one
-  step) and shows its planned hours instead of a total, after a hatched
-  swatch; **+ add** adds a stretch after the last one, or the planned work,
-  or 09:00–17:00.
+  day's reserved events, including one changed on its own that day), what's
+  logged (time slots with editable start and end, hours alone with an
+  editable length such as "7h 30m", each with a remove button), and the
+  day's total. A day with nothing logged offers **Log as planned** (its
+  planned work, in one step) and shows its planned hours instead of a
+  total, after a hatched swatch. **+ time slot** adds one after the last
+  one, or the planned work, or 09:00–17:00. **+ hours** adds hours alone:
+  the day's planned hours, or 8h, or 1h beside other entries, with the
+  field focused to type over it.
 - **Planned hours** are the planned work of the days with nothing logged
-  yet: once a day has a stretch logged, its log replaces its plan. They're
-  hatched in the accent colour, where logged hours are solid.
+  yet: once a day has anything logged (a time slot or hours alone), its log
+  replaces its plan. They're hatched in the accent colour, where logged
+  hours are solid.
 - **The week** shows the hours logged against its target, with a bar and
   "N h to go" or "N h over", and its planned hours ("24h planned"). The
   bar fills solid for the hours logged, then hatched for the planned ones,
@@ -455,11 +460,12 @@ The plan is reserved time named as work: reserved events with that label
   the week has its own: typing one on the page sets it for that week only,
   and "Use the default" removes it. 0 means no target. The month totals of
   the months the week touches are shown too.
-- **On the calendar** (and Home's day), each stretch logged is tinted in
+- **On the calendar** (and Home's day), each time slot logged is tinted in
   the accent colour with a solid left edge, over the hatched reserved time
   it was planned in: planned is hatched, worked is solid. It's
   see-through, so clicks still create events, and its "Worked" label
-  (bottom right) opens its week on the Work page.
+  (bottom right) opens its week on the Work page. Hours logged alone have
+  no time of day, so they aren't drawn.
 - **On Home**, a small card at the bottom right shows today (logged, or
   planned with Log as planned) and the week against its target, with the
   same bar; "edit ↗" opens the Work page.

@@ -11,12 +11,22 @@ import type {CalendarEvent, ISODate, Settings, WorkSpan} from './types';
 /** The label of reserved time that counts as planned work, unless set. */
 export const DEFAULT_WORK_LABEL = 'Work';
 
-/** Hours in a stretch of work. */
-export function spanHours(s: Pick<WorkSpan, 'start' | 'end'>): number {
+/** Whether `s` logs hours alone, without a time of day. */
+export function isHoursOnly(
+  s: Pick<WorkSpan, 'hours'>,
+): s is Pick<WorkSpan, 'hours'> & {hours: number} {
+  return s.hours !== undefined;
+}
+
+/** Hours in a stretch of work, or the hours logged alone. */
+export function spanHours(
+  s: Pick<WorkSpan, 'start' | 'end' | 'hours'>,
+): number {
+  if (isHoursOnly(s)) return s.hours;
   return Math.max(0, toMinutes(s.end) - toMinutes(s.start)) / 60;
 }
 
-/** The stretches logged on `date`, earliest first. */
+/** The entries logged on `date`: hours alone first, then stretches by start. */
 export function spansOn(log: WorkSpan[], date: ISODate): WorkSpan[] {
   return log
     .filter(s => s.date === date)

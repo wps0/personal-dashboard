@@ -56,7 +56,7 @@ import {
   type Item,
   type WorkSpan,
 } from '../model/types';
-import {spansOn} from '../model/work';
+import {isHoursOnly, spansOn} from '../model/work';
 import {href} from '../router';
 import {eventStyle} from '../event_colors';
 import {useStore} from '../store';
@@ -508,7 +508,8 @@ function GridBody({days, hourHeight, scrollToHour, onDayClick}: BodyProps) {
                 timed={day.timed.length ? day.timed : EMPTY}
                 events={day.events.length ? day.events : EMPTY}
                 reserved={reserved.get(d)!}
-                worked={spansOn(workLog, d)}
+                // Hours logged alone have no time of day to draw.
+                worked={spansOn(workLog, d).filter(s => !isHoursOnly(s))}
                 google={googleByDay.get(d)!.timed}
                 hourHeight={hourHeight}
                 lookups={lookups}

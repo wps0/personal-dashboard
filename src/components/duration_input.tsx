@@ -9,6 +9,8 @@ interface Props {
   className?: string;
   title?: string;
   ariaLabel?: string;
+  /** Focused (and its text selected) when it appears. */
+  autoFocus?: boolean;
 }
 
 /**
@@ -23,6 +25,7 @@ function DurationInputImpl({
   className = 'w-16',
   title,
   ariaLabel,
+  autoFocus,
 }: Props) {
   const [text, setText] = useState(fmtDuration(value));
   // Show outside changes to the value (set during render, not in an effect).
@@ -44,6 +47,7 @@ function DurationInputImpl({
       value={text}
       title={title}
       aria-label={ariaLabel ?? title}
+      autoFocus={autoFocus}
       onChange={e => setText(e.target.value)}
       onFocus={e => e.currentTarget.select()}
       onBlur={commit}

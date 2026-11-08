@@ -1,4 +1,10 @@
-import {WORK_WEEKS_AFTER, WORK_WEEKS_BEFORE, WORK_WEEKS_MORE} from '../config';
+import {
+  LOG_HOURS_DEFAULT,
+  LOG_HOURS_MORE,
+  WORK_WEEKS_AFTER,
+  WORK_WEEKS_BEFORE,
+  WORK_WEEKS_MORE,
+} from '../config';
 import {ChevronLeft, ChevronRight, Plus, X} from 'lucide-react';
 import {
   memo,
@@ -13,14 +19,16 @@ import {useShallow} from 'zustand/react/shallow';
 import {
   deleteWorkSpan,
   logAsPlanned,
+  logHours,
   logWork,
   setWeekTarget,
   updateWorkSpan,
 } from '../actions';
+import {DurationInput} from '../components/duration_input';
 import {HoursInput} from '../components/hours_input';
 import {TimeSelect} from '../components/time_select';
 import {WorkBar} from '../components/work_bar';
-import {fmtH} from '../format';
+import {fmtH, fmtWorkSpan} from '../format';
 import {useToday} from '../hooks';
 import {useNavTarget} from '../keyboard';
 import {
@@ -37,6 +45,7 @@ import {
 import {fromMinutes, toMinutes} from '../model/time';
 import type {ISODate, WorkSpan} from '../model/types';
 import {
+  isHoursOnly,
   loggedHours,
   plannedWork,
   spanHours,
@@ -363,7 +372,10 @@ function WeekSummary({monday, days}: {monday: ISODate; days: ISODate[]}) {
   );
 }
 
-/** One day: what was planned, the stretches logged, and the day's total. */
+/**
+ * One day: what was planned, what was logged (stretches with a start and end,
+ * or hours alone), and the day's total.
+ */
 function WorkDay({
   date,
   isToday,
@@ -378,9 +390,11 @@ function WorkDay({
   const total = spans.reduce((sum, s) => sum + spanHours(s), 0);
   const plan = planned.reduce((sum, p) => sum + spanHours(p), 0);
   const label = `${dayName(date)} ${shortDate(date)}`;
+  // Hours just added, to type over.
+  const [fresh, setFresh] = useState<string | null>(null);
   const add = () => {
     // After the last stretch, or the planned work, or a usual day.
-    const last = spans.at(-1);
+    const last = spans.filter(s => !isHoursOnly(s)).at(-1);
     if (last) {
       const start = toMinutes(last.end);
       if (start >= 24 * 60 - 15) return;
@@ -404,9 +418,13 @@ function WorkDay({
         </div>
       </div>
       <div className="flex min-w-0 flex-1 flex-col items-start gap-1">
-        {spans.map(s => (
-          <SpanRow key={s.id} span={s} day={label} />
-        ))}
+        {spans.map(s =>
+          isHoursOnly(s) ? (
+            <HoursRow key={s.id} span={s} day={label} focus={s.id === fresh} />
+          ) : (
+            <SpanRow key={s.id} span={s} day={label} />
+          ),
+        )}
         <div className="flex items-center gap-1">
           {!spans.length && planned.length > 0 && (
             <button className="btn h-7" onClick={() => logAsPlanned(date)}>
@@ -416,9 +434,25 @@ function WorkDay({
           <button
             className="btn-ghost flex items-center gap-1"
             onClick={add}
-            aria-label={`Add a stretch, ${label}`}
+            aria-label={`Add a time slot, ${label}`}
           >
-            <Plus size={13} /> add
+            <Plus size={13} /> time slot
+          </button>
+          <button
+            className="btn-ghost flex items-center gap-1"
+            onClick={() =>
+              // The day's plan, or a usual day; an hour beside other entries.
+              setFresh(
+                logHours(
+                  date,
+                  spans.length ? LOG_HOURS_MORE : plan || LOG_HOURS_DEFAULT,
+                ),
+              )
+            }
+            aria-label={`Add hours, ${label}`}
+            title="Log hours without a time of day"
+          >
+            <Plus size={13} /> hours
           </button>
         </div>
       </div>
@@ -470,14 +504,46 @@ function SpanRow({span, day}: {span: WorkSpan; day: string}) {
       <span className="text-[11px] text-dim tabular-nums">
         {fmtH(spanHours(span))}
       </span>
-      <button
-        className="icon-btn h-6 w-6 hover:!text-danger"
-        aria-label={`Remove ${span.start} – ${span.end}, ${day}`}
-        title="Remove"
-        onClick={() => deleteWorkSpan(span)}
-      >
-        <X size={13} />
-      </button>
+      <RemoveSpan span={span} day={day} />
     </div>
+  );
+}
+
+/** Hours logged alone, without a time of day. */
+function HoursRow({
+  span,
+  day,
+  focus,
+}: {
+  span: WorkSpan & {hours: number};
+  day: string;
+  focus: boolean;
+}) {
+  return (
+    <div className="flex items-center gap-1">
+      <DurationInput
+        value={span.hours}
+        onChange={hours => updateWorkSpan(span.id, {hours})}
+        autoFocus={focus}
+        ariaLabel={`Hours, ${day}`}
+        title="Hours worked, without a time of day"
+        className="w-16"
+      />
+      <span className="text-[11px] text-dim">no time slot</span>
+      <RemoveSpan span={span} day={day} />
+    </div>
+  );
+}
+
+function RemoveSpan({span, day}: {span: WorkSpan; day: string}) {
+  return (
+    <button
+      className="icon-btn h-6 w-6 hover:!text-danger"
+      aria-label={`Remove ${fmtWorkSpan(span)}, ${day}`}
+      title="Remove"
+      onClick={() => deleteWorkSpan(span)}
+    >
+      <X size={13} />
+    </button>
   );
 }

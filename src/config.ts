@@ -26,6 +26,13 @@ export const WORK_WEEKS_BEFORE = 8;
 export const WORK_WEEKS_AFTER = 4;
 /** Weeks added at a time, scrolling near the top or the bottom. */
 export const WORK_WEEKS_MORE = 8;
+/**
+ * "+ hours" on a day with nothing logged or planned starts at this; a day
+ * with a plan starts at its planned hours.
+ */
+export const LOG_HOURS_DEFAULT = 8;
+/** The same on a day that already has something logged. */
+export const LOG_HOURS_MORE = 1;
 
 // Calendar (components/time_grid.tsx, components/month_grid.tsx)
 
