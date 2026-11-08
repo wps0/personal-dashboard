@@ -8,6 +8,7 @@ import {
   plannedWork,
   spanHours,
   spansOn,
+  targetKey,
   weekHours,
   weekPlannedHours,
   weekTarget,
@@ -54,6 +55,19 @@ describe('the work log', () => {
     const settings = {workTarget: 40, weekWorkTargets: {'2026-10-19': 0}};
     expect(weekTarget(settings, '2026-10-12')).toBe(40);
     expect(weekTarget(settings, '2026-10-19')).toBe(0);
+  });
+
+  it('keeps a week’s target under its Monday, whatever day weeks start on', () => {
+    expect(targetKey('2026-10-19')).toBe('2026-10-19'); // a Monday
+    expect(targetKey('2026-10-18')).toBe('2026-10-19'); // Sunday to Saturday
+    expect(targetKey('2026-10-17')).toBe('2026-10-19'); // Saturday to Friday
+    expect(targetKey('2026-10-20')).toBe('2026-10-26'); // Tuesday to Monday
+    // A target set when weeks started on Monday belongs to the week from
+    // Sunday 18 Oct too.
+    const settings = {workTarget: 40, weekWorkTargets: {'2026-10-19': 32}};
+    expect(weekTarget(settings, '2026-10-18')).toBe(32);
+    // Sunday 18 to Saturday 24 Oct: Sunday's 1h and Monday's 8h.
+    expect(weekHours(log, '2026-10-18')).toBe(9);
   });
 });
 

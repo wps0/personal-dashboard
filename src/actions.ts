@@ -21,7 +21,7 @@ import {
   type Scope,
 } from './model/recurrence';
 import {importGroup} from './model/selectors';
-import {plannedWork} from './model/work';
+import {plannedWork, targetKey} from './model/work';
 import {useStore} from './store';
 import {withUndo} from './toast';
 import {meetingHours, taskFromMeeting, type Proposal} from './usos/usos';
@@ -184,11 +184,14 @@ export function deleteWorkSpan(span: WorkSpan) {
   );
 }
 
-/** One week's own target (by its Monday), or `null` for the default. */
-export function setWeekTarget(monday: ISODate, hours: number | null) {
+/**
+ * The own target of the week starting on `start` (kept under its Monday,
+ * see targetKey), or `null` for the default.
+ */
+export function setWeekTarget(start: ISODate, hours: number | null) {
   withUndo(
     'Weekly target changed',
-    () => s().setWeekWorkTarget(monday, hours),
+    () => s().setWeekWorkTarget(targetKey(start), hours),
     {
       quiet: true,
     },
