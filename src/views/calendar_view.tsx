@@ -1,5 +1,11 @@
-import {ChevronLeft, ChevronRight, Plus, RefreshCw} from 'lucide-react';
-import {useEffect, useEffectEvent, useMemo, type ReactNode} from 'react';
+import {ChevronLeft, ChevronRight, Menu, Plus, RefreshCw} from 'lucide-react';
+import {
+  useEffect,
+  useEffectEvent,
+  useMemo,
+  useState,
+  type ReactNode,
+} from 'react';
 import {MiniMonth} from '../components/mini_month';
 import {MonthGrid} from '../components/month_grid';
 import {TimeGrid} from '../components/time_grid';
@@ -78,6 +84,60 @@ function title(view: CalView, days: ISODate[], date: ISODate): string {
     : `${fmt(a, true)} – ${fmt(b, true)}`;
 }
 
+/** Whether the sidebar is hidden on wide screens; per device, like the theme. */
+const SIDEBAR_KEY = 'personal-dashboard/calendar-sidebar';
+
+function readSidebarShown(): boolean {
+  try {
+    return localStorage.getItem(SIDEBAR_KEY) !== 'hidden';
+  } catch {
+    return true;
+  }
+}
+
+/**
+ * The sidebar's ☰: on wide screens it shows or hides the sidebar beside the
+ * calendar (remembered on this device); narrower, the sidebar opens over the
+ * calendar until a tap outside, Esc, or a day picked in it.
+ */
+function useSidebar(): {
+  wide: boolean;
+  open: boolean;
+  toggle(): void;
+  close(): void;
+} {
+  const wide = useMediaQuery('(min-width: 1024px)');
+  const [shown, setShown] = useState(readSidebarShown);
+  const [over, setOver] = useState(false);
+  const open = wide ? shown : over;
+  useEffect(() => {
+    if (wide || !over) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key !== 'Escape') return;
+      e.preventDefault();
+      e.stopPropagation();
+      setOver(false);
+    };
+    addEventListener('keydown', onKey, true);
+    return () => removeEventListener('keydown', onKey, true);
+  }, [wide, over]);
+  return {
+    wide,
+    open,
+    toggle: () => {
+      if (!wide) return setOver(o => !o);
+      setShown(!shown);
+      try {
+        if (shown) localStorage.setItem(SIDEBAR_KEY, 'hidden');
+        else localStorage.removeItem(SIDEBAR_KEY);
+      } catch {
+        // Storage blocked: the choice just won't outlive the tab.
+      }
+    },
+    close: () => setOver(false),
+  };
+}
+
 export function CalendarView({
   view: routeView,
   date: routeDate,
@@ -136,28 +196,59 @@ export function CalendarView({
     },
   });
 
+  const sidebar = useSidebar();
+  // Over the calendar, picking a day or creating closes the sidebar.
+  const fromSidebar = (act: () => void) => () => {
+    act();
+    if (!sidebar.wide) sidebar.close();
+  };
+
   const range: [ISODate, ISODate] =
     view === 'month'
       ? [firstOfMonth(date), addDays(addMonths(date, 1), -1)]
       : [days[0], days[days.length - 1]];
 
   return (
-    <div className="flex h-full">
-      <aside className="hidden w-[248px] shrink-0 flex-col gap-4 overflow-y-auto px-3 py-3 lg:flex">
+    <div className="relative flex h-full">
+      {sidebar.open && !sidebar.wide && (
+        <div
+          aria-hidden
+          className="absolute inset-0 z-30 animate-fade-in bg-black/40"
+          onClick={sidebar.close}
+        />
+      )}
+      <aside
+        id="calendar-sidebar"
+        className={`w-[248px] shrink-0 flex-col gap-4 overflow-y-auto px-3 py-3 ${sidebar.open ? 'flex' : 'hidden'} ${sidebar.wide ? '' : 'absolute inset-y-0 left-0 z-40 animate-from-left bg-panel shadow-2xl'}`}
+      >
         <button
           className="flex h-12 w-fit items-center gap-2 rounded-2xl bg-raised pr-5 pl-4 font-medium text-strong shadow-md ring-1 ring-line hover:brightness-110"
-          onClick={() => {
+          onClick={fromSidebar(() => {
             if (!days.includes(today)) go(view, today);
             useUi.getState().setDraft(nextHourDraft());
-          }}
+          })}
         >
           <Plus size={20} className="text-accent" /> Create
         </button>
-        <MiniMonth selected={date} range={range} onSelect={d => go(view, d)} />
+        <MiniMonth
+          selected={date}
+          range={range}
+          onSelect={d => fromSidebar(() => go(view, d))()}
+        />
         <Layers />
       </aside>
       <div className="flex min-w-0 flex-1 flex-col">
-        <div className="flex shrink-0 items-center gap-2 px-3 py-2">
+        <div className="flex shrink-0 items-center gap-2 px-3 py-2 max-sm:gap-1 max-sm:px-2">
+          <button
+            className="icon-btn shrink-0"
+            onClick={sidebar.toggle}
+            aria-label={sidebar.open ? 'Hide the sidebar' : 'Show the sidebar'}
+            aria-expanded={sidebar.open}
+            aria-controls="calendar-sidebar"
+            title={sidebar.open ? 'Hide the sidebar' : 'Show the sidebar'}
+          >
+            <Menu size={18} />
+          </button>
           <button
             className="btn h-8 rounded-full px-4"
             onClick={() => go(view, today)}
