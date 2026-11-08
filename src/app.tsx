@@ -2,21 +2,24 @@ import {
   BriefcaseBusiness,
   CalendarDays,
   CircleGauge,
+  Ellipsis,
   FolderKanban,
   House,
   Keyboard,
+  Menu,
   Monitor,
   Moon,
   NotebookPen,
   Settings,
   Sun,
+  X,
   type LucideIcon,
 } from 'lucide-react';
 import {ConflictsBadge} from './components/conflicts_badge';
 import {Toaster} from './components/toaster';
 import {ShortcutDialogs} from './components/shortcut_dialogs';
 import {isTyping, useGlobalShortcuts} from './keyboard';
-import {lazy, Suspense, useEffect, type ReactNode} from 'react';
+import {lazy, Suspense, useEffect, useState, type ReactNode} from 'react';
 import {ItemOverlay} from './components/item_overlay';
 import {preloadMarkdown} from './components/markdown';
 import {sampleData} from './model/sample';
@@ -75,8 +78,164 @@ const THEME_ICON: Record<ThemeChoice, ReactNode> = {
   dark: <Moon size={15} />,
 };
 
+// PROTOTYPE ONLY (not for merging): ?nav=bottom|drawer|more picks a phone navigation.
+const PROTO = new URLSearchParams(location.search).get('nav') ?? '';
+
+function PhoneTitle({route}: {route: Route}) {
+  const n = NAV.find(x => x.route.name === route.name)!;
+  return (
+    <span className="flex min-w-0 flex-1 items-center gap-2 text-[16px] font-semibold text-strong sm:hidden">
+      {n.label}
+    </span>
+  );
+}
+
+function BottomTabs({
+  route,
+  items,
+  more,
+}: {
+  route: Route;
+  items: typeof NAV;
+  more?: () => void;
+}) {
+  const cell = (active: boolean) =>
+    `flex flex-col items-center gap-0.5 pt-1.5 pb-1 text-[11px] ${active ? 'text-strong font-medium' : 'text-dim'}`;
+  const pill = (active: boolean) =>
+    `flex h-7 w-14 items-center justify-center rounded-full ${active ? 'bg-accent/20 text-accent' : ''}`;
+  return (
+    <nav
+      aria-label="Pages"
+      className={`grid shrink-0 border-t border-line bg-panel pb-[env(safe-area-inset-bottom)] sm:hidden`}
+      style={{
+        gridTemplateColumns: `repeat(${items.length + (more ? 1 : 0)}, minmax(0, 1fr))`,
+      }}
+    >
+      {items.map(n => {
+        const active = n.route.name === route.name;
+        return (
+          <a key={n.label} href={href(n.route)} className={cell(active)}>
+            <span className={pill(active)}>
+              <n.icon size={20} aria-hidden />
+            </span>
+            {n.label}
+          </a>
+        );
+      })}
+      {more && (
+        <button className={cell(false)} onClick={more}>
+          <span className={pill(false)}>
+            <Ellipsis size={20} aria-hidden />
+          </span>
+          More
+        </button>
+      )}
+    </nav>
+  );
+}
+
+function Drawer({
+  route,
+  onClose,
+  theme,
+  onTheme,
+}: {
+  route: Route;
+  onClose(): void;
+  theme: ThemeChoice;
+  onTheme(): void;
+}) {
+  return (
+    <div className="fixed inset-0 z-50 sm:hidden">
+      <div className="absolute inset-0 bg-black/50" onClick={onClose} />
+      <aside className="absolute inset-y-0 left-0 flex w-72 flex-col bg-panel shadow-2xl">
+        <div className="flex items-center gap-2 border-b border-line px-4 py-3">
+          <CircleGauge size={20} className="text-accent" />
+          <span className="flex-1 text-[16px] font-semibold text-strong">
+            Dashboard
+          </span>
+          <button
+            className="icon-btn"
+            onClick={onClose}
+            aria-label="Close menu"
+          >
+            <X size={18} />
+          </button>
+        </div>
+        <nav aria-label="Pages" className="flex flex-col gap-0.5 p-2">
+          {NAV.map(n => {
+            const active = n.route.name === route.name;
+            return (
+              <a
+                key={n.label}
+                href={href(n.route)}
+                onClick={onClose}
+                className={`flex items-center gap-3 rounded-lg px-3 py-2.5 text-[15px] ${active ? 'bg-accent/15 font-medium text-accent' : 'text-fg'}`}
+              >
+                <n.icon size={19} aria-hidden />
+                {n.label}
+              </a>
+            );
+          })}
+        </nav>
+        <div className="mt-auto border-t border-line p-2">
+          <button
+            className="flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-[15px] text-fg"
+            onClick={onTheme}
+          >
+            {THEME_ICON[theme]} Theme: {theme === 'system' ? 'auto' : theme}
+          </button>
+        </div>
+      </aside>
+    </div>
+  );
+}
+
+function MoreSheet({
+  route,
+  onClose,
+  theme,
+  onTheme,
+}: {
+  route: Route;
+  onClose(): void;
+  theme: ThemeChoice;
+  onTheme(): void;
+}) {
+  return (
+    <div className="fixed inset-0 z-50 sm:hidden">
+      <div className="absolute inset-0 bg-black/50" onClick={onClose} />
+      <div className="absolute inset-x-0 bottom-0 rounded-t-2xl border-t border-line bg-panel p-2 pb-[calc(env(safe-area-inset-bottom)+0.5rem)] shadow-2xl">
+        <div className="mx-auto mb-2 h-1 w-10 rounded-full bg-line" />
+        {NAV.filter(
+          n => n.route.name === 'work' || n.route.name === 'settings',
+        ).map(n => (
+          <a
+            key={n.label}
+            href={href(n.route)}
+            onClick={onClose}
+            className={`flex items-center gap-3 rounded-lg px-3 py-3 text-[15px] ${n.route.name === route.name ? 'bg-accent/15 text-accent' : 'text-fg'}`}
+          >
+            <n.icon size={19} aria-hidden />
+            {n.label}
+          </a>
+        ))}
+        <button
+          className="flex w-full items-center gap-3 rounded-lg px-3 py-3 text-[15px] text-fg"
+          onClick={onTheme}
+        >
+          {THEME_ICON[theme]} Theme: {theme === 'system' ? 'auto' : theme}
+        </button>
+      </div>
+    </div>
+  );
+}
+
 export function App() {
   const route = useRoute();
+  const [menu, setMenu] = useState(
+    new URLSearchParams(location.search).has('open'),
+  );
   const hasAreas = useStore(s => s.data.areas.length > 0);
   const [theme, setTheme] = useTheme();
   useGlobalShortcuts(route);
@@ -88,7 +247,42 @@ export function App() {
 
   return (
     <div className="flex h-full flex-col">
-      <header className="flex shrink-0 items-center gap-1 border-b border-line bg-panel px-2 py-1.5 sm:px-3">
+      {PROTO && (
+        <header className="flex shrink-0 items-center gap-1 border-b border-line bg-panel px-2 py-2 sm:hidden">
+          {PROTO === 'drawer' ? (
+            <button
+              className="icon-btn h-9 w-9"
+              aria-label="Menu"
+              onClick={() => setMenu(true)}
+            >
+              <Menu size={20} />
+            </button>
+          ) : (
+            <CircleGauge size={20} className="mx-1.5 shrink-0 text-accent" />
+          )}
+          <PhoneTitle route={route} />
+          <ConflictsBadge />
+          <button
+            className="icon-btn h-9 w-9"
+            onClick={() => setTheme(THEME_NEXT[theme])}
+            aria-label="Change theme"
+          >
+            {THEME_ICON[theme]}
+          </button>
+          {PROTO === 'bottom' && (
+            <a
+              href={href({name: 'settings'})}
+              className={`icon-btn h-9 w-9 ${route.name === 'settings' ? 'text-accent' : ''}`}
+              aria-label="Settings"
+            >
+              <Settings size={18} />
+            </a>
+          )}
+        </header>
+      )}
+      <header
+        className={`${PROTO ? 'hidden sm:flex' : 'flex'} shrink-0 items-center gap-1 border-b border-line bg-panel px-2 py-1.5 sm:px-3`}
+      >
         <span className="mr-1 flex shrink-0 items-center gap-1.5 text-[14px] font-semibold tracking-tight text-strong sm:mr-3">
           <CircleGauge size={18} className="text-accent" />
           {/* On phones only the icon, so every tab fits. */}
@@ -142,6 +336,34 @@ export function App() {
           </Suspense>
         )}
       </main>
+      {PROTO === 'bottom' && (
+        <BottomTabs route={route} items={NAV.slice(0, 5)} />
+      )}
+      {PROTO === 'more' && (
+        <BottomTabs
+          route={route}
+          items={NAV.filter(n =>
+            ['home', 'week', 'calendar', 'projects'].includes(n.route.name),
+          )}
+          more={() => setMenu(true)}
+        />
+      )}
+      {PROTO === 'drawer' && menu && (
+        <Drawer
+          route={route}
+          onClose={() => setMenu(false)}
+          theme={theme}
+          onTheme={() => setTheme(THEME_NEXT[theme])}
+        />
+      )}
+      {PROTO === 'more' && menu && (
+        <MoreSheet
+          route={route}
+          onClose={() => setMenu(false)}
+          theme={theme}
+          onTheme={() => setTheme(THEME_NEXT[theme])}
+        />
+      )}
       <ItemOverlay />
       <ShortcutDialogs />
       <Toaster />
