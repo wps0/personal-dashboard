@@ -45,10 +45,47 @@ export const useGemini = create<
 /** The parts of a generateContent response that matter here. */
 export interface GenerateResponse {
   candidates?: {
-    content?: {parts?: {text?: string}[]};
+    content?: {parts?: {text?: string; thought?: boolean}[]};
     finishReason?: string;
   }[];
   promptFeedback?: {blockReason?: string};
+}
+
+/**
+ * The stages of a request, in order: loading the Gen AI SDK (only the first
+ * time), waiting for Gemini to start answering (it thinks first, often for
+ * most of the time), receiving the answer, and checking it.
+ */
+export type GeminiStage = 'loading' | 'waiting' | 'receiving' | 'checking';
+
+export interface GeminiProgress {
+  stage: GeminiStage;
+  /** The answer so far: JSON cut off mid-way while it's being received. */
+  received: string;
+}
+
+export interface GeminiOptions {
+  apiKey: string;
+  model: string;
+  /** Told each time the request moves on, and for each piece of the answer. */
+  onProgress?(progress: GeminiProgress): void;
+}
+
+/**
+ * How many objects with `key` the answer so far has started, e.g. the tasks
+ * in it by their "title" fields: a count to show while it's being received.
+ */
+export function countStarted(received: string, key: string): number {
+  return received.split(`"${key}"`).length - 1;
+}
+
+/** The text of a response's first candidate, without thoughts. */
+function answerText(res: GenerateResponse): string {
+  return (
+    res.candidates?.[0]?.content?.parts
+      ?.map(p => (p.thought ? '' : (p.text ?? '')))
+      .join('') ?? ''
+  );
 }
 
 /** Why Gemini stopped early, for the finish reasons that leave no usable answer. */
@@ -73,10 +110,9 @@ export function parseJson(res: GenerateResponse): unknown {
     throw new Error(
       `Gemini refused the text (${res.promptFeedback.blockReason}).`,
     );
-  const c = res.candidates?.[0];
-  const text = c?.content?.parts?.map(p => p.text ?? '').join('') ?? '';
+  const text = answerText(res);
   // The text, if any, is cut off where Gemini stopped.
-  const stopped = finishError(c?.finishReason);
+  const stopped = finishError(res.candidates?.[0]?.finishReason);
   if (stopped) throw new Error(stopped);
   if (!text) throw new Error('Gemini returned no answer.');
   try {
@@ -88,24 +124,27 @@ export function parseJson(res: GenerateResponse): unknown {
 
 /**
  * Asks Gemini for JSON matching `schema` (structured output, temperature 0),
- * with Google's Gen AI SDK, loaded only when needed. `contents` goes to
+ * with Google's Gen AI SDK, loaded only when needed. The answer is streamed,
+ * so `onProgress` can tell which stage the request is at. `contents` goes to
  * Google; the API key is the user's own (Settings → Gemini), sent in a
  * header. Errors come back readable.
  */
 export async function generateJson({
   apiKey,
   model,
+  onProgress,
   system,
   contents,
   schema,
-}: {
-  apiKey: string;
-  model: string;
+}: GeminiOptions & {
   system: string;
   contents: string;
   /** Gemini's response schema (an OpenAPI subset). */
   schema: object;
 }): Promise<unknown> {
+  let received = '';
+  const report = (stage: GeminiStage) => onProgress?.({stage, received});
+  report('loading');
   let sdk: typeof import('@google/genai');
   try {
     sdk = await import('@google/genai');
@@ -117,9 +156,12 @@ export async function generateJson({
   }
   const {GoogleGenAI, ApiError} = sdk;
   const ai = new GoogleGenAI({apiKey});
-  let res: GenerateResponse;
+  // The pieces of the answer, put back together as one response.
+  let finishReason: string | undefined;
+  let blockReason: string | undefined;
   try {
-    res = await ai.models.generateContent({
+    report('waiting');
+    const stream = await ai.models.generateContentStream({
       model,
       contents,
       config: {
@@ -129,6 +171,12 @@ export async function generateJson({
         responseSchema: schema as Schema,
       },
     });
+    for await (const chunk of stream as AsyncIterable<GenerateResponse>) {
+      blockReason ??= chunk.promptFeedback?.blockReason;
+      finishReason = chunk.candidates?.[0]?.finishReason ?? finishReason;
+      received += answerText(chunk);
+      report('receiving');
+    }
   } catch (e) {
     if (!(e instanceof ApiError))
       throw new Error(
@@ -150,14 +198,22 @@ export async function generateJson({
       });
     throw new Error(`Gemini: ${why}`, {cause: e});
   }
-  return parseJson(res);
+  report('checking');
+  return parseJson({
+    candidates: [{content: {parts: [{text: received}]}, finishReason}],
+    promptFeedback: blockReason ? {blockReason} : undefined,
+  });
 }
 
-/** The SDK's error message is the API's JSON error body; this picks out its text. */
+/**
+ * The SDK's error message is the API's JSON error body, after "got status:
+ * …" for an error in the middle of a stream; this picks out its text.
+ */
 function apiErrorMessage(raw: string): string {
   try {
     return (
-      (JSON.parse(raw) as {error?: {message?: string}}).error?.message ?? raw
+      (JSON.parse(raw.slice(raw.indexOf('{'))) as {error?: {message?: string}})
+        .error?.message ?? raw
     );
   } catch {
     return raw;

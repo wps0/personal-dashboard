@@ -14,7 +14,7 @@ import {
   type ItemGroup,
   type ItemInit,
 } from '../model/types';
-import {generateJson} from './gemini';
+import {generateJson, type GeminiOptions} from './gemini';
 
 export interface PromptTask {
   title: string;
@@ -211,7 +211,7 @@ export function itemsFromTasks(
  */
 export async function askForTasks(
   r: PromptRequest,
-  options: {apiKey: string; model: string},
+  options: GeminiOptions,
 ): Promise<PromptResult> {
   return validateTasks(
     await generateJson({

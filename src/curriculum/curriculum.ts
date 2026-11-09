@@ -8,7 +8,12 @@ import {
   CURRICULUM_MAX_LECTURES_PER_TOPIC,
 } from '../config';
 import {ItemKind, type ItemInit} from '../model/types';
-import {generateJson, parseJson, type GenerateResponse} from './gemini';
+import {
+  generateJson,
+  parseJson,
+  type GeminiOptions,
+  type GenerateResponse,
+} from './gemini';
 
 export interface Topic {
   title: string;
@@ -141,7 +146,7 @@ export function parseResponse(res: GenerateResponse): CurriculumResult {
  */
 export async function extractCurriculum(
   text: string,
-  options: {apiKey: string; model: string},
+  options: GeminiOptions,
 ): Promise<CurriculumResult> {
   return validateResult(
     await generateJson({
