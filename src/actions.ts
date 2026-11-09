@@ -343,6 +343,15 @@ export function importClasses(
  * remembered for the project's next import, and appends the course notes,
  * if any, to the project's overview. One undo step.
  */
+/** Adds the tasks made from a prompt (SPEC 5.4) to a project, in one undo step. */
+export function addPromptTasks(projectId: string, items: ItemInit[]) {
+  const n = items.length;
+  withUndo(
+    `Added ${n} ${n === 1 ? 'task' : 'tasks'} from the prompt`,
+    () => void s().addItems(projectId, items),
+  );
+}
+
 export function importCurriculum(
   projectId: string,
   items: ItemInit[],
