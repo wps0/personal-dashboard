@@ -280,10 +280,12 @@ and details, as tabs in the side panel.
     there plus its case where the card saves.
   - **Task** creates a new task, like Google Calendar's Task: a title, a
     project (the one used last, else the first open one) and a kind (Task by
-    default), due on the card's date, with optional notes. With a time, the
-    time is also planned for it as a session (and is its estimate); "All day"
-    makes it a due date only. The card says which ("Due 6 Nov, with
-    10:00–11:00 planned for it (1h)."). One undo step.
+    default), with optional notes, planned on the card's date and **without a
+    due date** (the day is when you'll do it, not when it's due; set one in
+    the task's card). With a time, the time is planned for it as a session
+    (and is its estimate); "All day" plans an untimed session that day (1h, `ALL_DAY_TASK_SESSION_HOURS` in `src/config.ts`)
+    instead. The card says which ("10:00–11:00 on 6 Nov planned for it (1h).
+    No due date."). One undo step.
   - **Time block** plans time for one of your existing tasks: search open tasks by
     title or project (without a query it lists the ones that still need
     time, with the hours left), and Save adds a session at the chosen time.

@@ -44,6 +44,11 @@ export const HOME_HOUR_PX = 44;
 export const ALL_DAY_COLLAPSED_ITEMS = 2;
 /** Entries a month view cell shows before "N more". */
 export const MONTH_CELL_ENTRIES = 3;
+/**
+ * Hours of the untimed session an "All day" new task (the create card's
+ * Task tab) gets on its day. A timed one gets its time instead.
+ */
+export const ALL_DAY_TASK_SESSION_HOURS = 1;
 
 // Settings (views/settings_view.tsx)
 
