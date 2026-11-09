@@ -241,10 +241,14 @@ and details, as tabs in the side panel.
 - **Sidebar:** a Create button, a mini month (click a day to jump to it; the
   visible range is tinted), and "My calendars" toggles to show or hide events
   and each area's sessions (stored per device). The toolbar's ☰ hides or
-  shows it: from 1024px it sits beside the calendar and the choice is
-  remembered on the device; narrower (phones too) it opens over the calendar
-  and closes on a tap outside, Esc, or a day picked in it.
-- **Toolbar:** ☰ (the sidebar), Today, ‹ ›, the period title, and a view switcher
+  shows it, sliding: from 1024px it sits beside the calendar (its width
+  slides, so the days widen smoothly) and the choice is remembered on the
+  device; narrower (phones too) it slides in over the calendar and out again
+  on a tap outside, Esc, or a day picked in it. Hidden, it can't be tabbed
+  into; with reduced motion it doesn't slide.
+- **Toolbar:** across the whole page, as in Google Calendar: ☰ at the far
+  left (above the sidebar, so it stays put), Today, ‹ ›, the period title,
+  and a view switcher
   (Day / 3 days / Week / Month). Routes look like `#/calendar/<view>/<date>`.
   Coming to the calendar from another page always opens the **default view**
   (Settings → Calendar, Week by default) at today.
