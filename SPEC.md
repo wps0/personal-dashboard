@@ -533,6 +533,28 @@ asking for write access.
 - Create and edit events (the local events become Google events).
 - **Time blocks.** Optionally mirror allocations as events in a dedicated
   "Study/Projects" calendar.
+- **Assignment deadlines in their own calendar.** Every task of kind
+  Assignment with a due date is an all-day event on its due date in the
+  calendar set in Settings → Google Calendar. Off until turned on there.
+  - **Kept in step:** a new due date moves the event, and a new title
+    renames it. Clearing the due date, changing the kind or deleting the
+    task removes the event. A done assignment's event stays, marked ✓, as
+    its due chip stays on the app's calendar.
+  - **One way:** the app writes these events and never reads changes back.
+    An edit made in Google is overwritten.
+  - **Least privilege:** `calendar.app.created` lets the app make its own
+    secondary calendars and change events only on them; it can't see or
+    change any other calendar. The scope is asked for only when this is
+    turned on, like `drive.file` for sync (4.3). So "the calendar set in
+    Settings" is one the app created there (**Create calendar**, named
+    "Deadlines" by default). Writing into an existing calendar would need
+    `calendar.events`, which can change every calendar, so it isn't
+    offered.
+  - **No duplicates across devices:** each event carries its task's id (a
+    private extended property). A device brings the calendar in step by
+    listing it, adding what's missing, updating what changed and removing
+    the rest, so nothing has to remember which event is which. Only devices
+    signed in with that permission write; the others leave it alone.
 - Work (corp) calendar is out of scope because the corp account blocks
   third-party OAuth apps.
 
@@ -652,9 +674,9 @@ Google Drive sync.
   - Phone layout fixes (see Devices in 1).
 - **v1.6 — USOS timetable import.** ✅ See 4.2.
 - **v2 — Google.** ✅ Drive sync (4.3). Still to come: Calendar two-way (the
-  local events become Google events, and time blocks go to a
-  "Study/Projects" calendar), Google events in the week journal's day boxes
-  (3.2).
+  local events become Google events, time blocks go to a "Study/Projects"
+  calendar, and assignment deadlines to a calendar of their own, see 4.1),
+  Google events in the week journal's day boxes (3.2).
 - **Next — UX rework (TODO).** Make Home the place where planning happens,
   cutting the counts in 3.9. Ideas, each a small change of its own:
   - A "To plan" backlog on Home with a **Plan ▾** menu (Today / Tomorrow /
