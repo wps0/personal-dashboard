@@ -1,5 +1,6 @@
 import {HOME_HOUR_PX} from '../config';
 import {UsosBanner} from '../components/usos_review';
+import {SignInPrompt} from '../components/signin_prompt';
 import {ChevronDown, ChevronLeft, ChevronRight} from 'lucide-react';
 import {memo, useMemo, useState} from 'react';
 import {MiniMonth} from '../components/mini_month';
@@ -67,6 +68,7 @@ export function HomeView({date}: {date?: ISODate}) {
         </div>
       </div>
       <div className="flex min-h-0 flex-col gap-2">
+        <SignInPrompt />
         <UsosBanner />
         <Planned days={days} />
         <Projects />

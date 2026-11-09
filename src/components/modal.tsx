@@ -5,10 +5,13 @@ export function Modal({
   onClose,
   children,
   width = 'max-w-xl',
+  label,
 }: {
   onClose(): void;
   children: ReactNode;
   width?: string;
+  /** Its name for screen readers. */
+  label?: string;
 }) {
   useEffect(() => {
     // defaultPrevented: a dropdown or popover inside the modal already handled this Esc.
@@ -26,6 +29,7 @@ export function Modal({
       <div
         role="dialog"
         aria-modal="true"
+        aria-label={label}
         className={`scroll-thin max-h-[84vh] w-full ${width} animate-rise-in overflow-y-auto rounded-xl border border-line bg-panel shadow-2xl shadow-black/60`}
       >
         {children}
