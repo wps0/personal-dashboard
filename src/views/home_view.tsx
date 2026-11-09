@@ -1,8 +1,9 @@
-import {HOME_HOUR_PX} from '../config';
+import {HOME_CALENDAR_DEFAULT, HOME_HOUR_PX} from '../config';
 import {UsosBanner} from '../components/usos_review';
 import {SignInPrompt} from '../components/signin_prompt';
 import {ChevronDown, ChevronLeft, ChevronRight} from 'lucide-react';
 import {memo, useMemo, useState} from 'react';
+import {create} from 'zustand';
 import {MiniMonth} from '../components/mini_month';
 import {
   Popover,
@@ -11,15 +12,18 @@ import {
 } from '../components/ui/popover';
 import {ProgressRing} from '../components/progress_ring';
 import {TimeGrid} from '../components/time_grid';
+import {Select} from '../components/ui/select';
 import {WorkCard} from '../components/work_card';
 import {fmtH, URGENCY_CLASS} from '../format';
-import {useLookups, useToday, type Lookups} from '../hooks';
+import {useLookups, useToday, useWeekStart, type Lookups} from '../hooks';
 import {
   addDays,
   countdown,
   dayName,
   isISODate,
   shortDate,
+  startOfWeek,
+  type DayOfWeek,
 } from '../model/dates';
 import {
   allocationsByItem,
@@ -36,28 +40,84 @@ import {nextHourDraft, useUi} from '../ui';
 import {removeSession, toggleSession} from '../actions';
 import {blockKeys} from '../keyboard';
 
-/** Landing page: three days (today by default; ‹ › move a day at a time), what's planned, and how projects stand. */
+/** What Home's calendar shows: a day, three days, or the calendar week. */
+type HomeSpan = 'day' | '3day' | 'week';
+
+const SPAN_OPTIONS = [
+  {value: 'day', label: 'Day'},
+  {value: '3day', label: '3 days'},
+  {value: 'week', label: 'Week'},
+] as const;
+
+/** Per device, like the theme: in localStorage, not in the synced data. */
+const SPAN_KEY = 'personal-dashboard/home-calendar';
+
+function readSpan(): HomeSpan {
+  try {
+    const v = localStorage.getItem(SPAN_KEY);
+    return (
+      SPAN_OPTIONS.find(o => o.value === v)?.value ?? HOME_CALENDAR_DEFAULT
+    );
+  } catch {
+    return HOME_CALENDAR_DEFAULT;
+  }
+}
+
+const useHomeSpan = create<{span: HomeSpan; setSpan(span: HomeSpan): void}>(
+  set => ({
+    span: readSpan(),
+    setSpan: span => {
+      try {
+        localStorage.setItem(SPAN_KEY, span);
+      } catch {
+        // Storage blocked: the choice just won't outlive the tab.
+      }
+      set({span});
+    },
+  }),
+);
+
+/** The days shown from `start`: it and the next two, or the week it's in. */
+function spanDays(
+  span: HomeSpan,
+  start: ISODate,
+  weekStart: DayOfWeek,
+): ISODate[] {
+  if (span === 'day') return [start];
+  if (span === '3day') return [start, addDays(start, 1), addDays(start, 2)];
+  const first = startOfWeek(start, weekStart);
+  return Array.from({length: 7}, (_, i) => addDays(first, i));
+}
+
+/**
+ * Landing page: a day, three days or the week (picked per device; from today
+ * by default, ‹ › move a day at a time, or a week), what's planned on them,
+ * and how projects stand.
+ */
 export function HomeView({date}: {date?: ISODate}) {
   const today = useToday();
+  const weekStart = useWeekStart();
+  const span = useHomeSpan(s => s.span);
   const start = date && isISODate(date) ? date : today;
   const days = useMemo(
-    () => [start, addDays(start, 1), addDays(start, 2)],
-    [start],
+    () => spanDays(span, start, weekStart),
+    [span, start, weekStart],
   );
+  const step = span === 'week' ? 7 : 1;
   useNavTarget({
-    next: () => go(addDays(start, 1), today),
-    prev: () => go(addDays(start, -1), today),
+    next: () => go(addDays(start, step), today),
+    prev: () => go(addDays(start, -step), today),
     today: () => go(today, today),
     goTo: d => go(d, today),
     create: () => {
-      if (start > today || addDays(start, 2) < today) go(today, today);
+      if (!days.includes(today)) go(today, today);
       useUi.getState().setDraft(nextHourDraft());
     },
   });
   return (
     <div className="grid h-full grid-cols-1 gap-2 overflow-y-auto p-2 lg:grid-cols-[minmax(0,1fr)_380px] lg:overflow-hidden">
       <div className="flex h-[70vh] min-h-0 flex-col rounded-lg border border-line bg-panel lg:h-full">
-        <DayNav start={start} today={today} />
+        <DayNav start={start} days={days} span={span} today={today} />
         <div className="min-h-0 flex-1">
           <TimeGrid
             days={days}
@@ -82,32 +142,46 @@ function go(d: ISODate, today: ISODate) {
   navigate({name: 'home', date: d === today ? undefined : d});
 }
 
-function DayNav({start, today}: {start: ISODate; today: ISODate}) {
+function DayNav({
+  start,
+  days,
+  span,
+  today,
+}: {
+  start: ISODate;
+  days: ISODate[];
+  span: HomeSpan;
+  today: ISODate;
+}) {
   const [open, setOpen] = useState(false);
-  const end = addDays(start, 2);
+  const first = days[0];
+  const end = days[days.length - 1];
+  const unit = span === 'week' ? 'week' : 'day';
+  const step = span === 'week' ? 7 : 1;
   return (
     <div className="flex shrink-0 items-center gap-1 border-b border-line px-2 py-1.5">
       <button
         className="btn h-7 rounded-full px-3"
         onClick={() => go(today, today)}
-        disabled={start === today}
+        // A week shows today wherever it is in it; fewer days, as the first.
+        disabled={span === 'week' ? days.includes(today) : start === today}
         title="Today (t)"
       >
         Today
       </button>
       <button
         className="icon-btn"
-        aria-label="Previous day"
-        title="Previous day (k)"
-        onClick={() => go(addDays(start, -1), today)}
+        aria-label={`Previous ${unit}`}
+        title={`Previous ${unit} (k)`}
+        onClick={() => go(addDays(start, -step), today)}
       >
         <ChevronLeft size={18} />
       </button>
       <button
         className="icon-btn"
-        aria-label="Next day"
-        title="Next day (j)"
-        onClick={() => go(addDays(start, 1), today)}
+        aria-label={`Next ${unit}`}
+        title={`Next ${unit} (j)`}
+        onClick={() => go(addDays(start, step), today)}
       >
         <ChevronRight size={18} />
       </button>
@@ -116,13 +190,13 @@ function DayNav({start, today}: {start: ISODate; today: ISODate}) {
           className="flex items-center gap-1 rounded-md px-2 py-0.5 text-strong hover:bg-raised"
           title="Pick a date"
         >
-          {formatRange(start, end)}
+          {first === end ? formatDay(first) : formatRange(first, end)}
           <ChevronDown size={14} className="text-dim" />
         </PopoverTrigger>
         <PopoverContent align="start" className="p-3">
           <MiniMonth
             selected={start}
-            range={[start, end]}
+            range={[first, end]}
             onSelect={d => {
               go(d, today);
               setOpen(false);
@@ -130,8 +204,20 @@ function DayNav({start, today}: {start: ISODate; today: ISODate}) {
           />
         </PopoverContent>
       </Popover>
+      <Select
+        value={span}
+        onChange={v => useHomeSpan.getState().setSpan(v)}
+        options={SPAN_OPTIONS}
+        className="ml-auto h-7 w-24 rounded-full px-3"
+        ariaLabel="Days shown"
+      />
     </div>
   );
+}
+
+/** "Mon, 9 Nov". */
+function formatDay(d: ISODate): string {
+  return `${dayName(d)}, ${shortDate(d)}`;
 }
 
 /** "10 – 12 Oct", or "30 Oct – 1 Nov". */

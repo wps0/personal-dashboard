@@ -69,10 +69,14 @@ WorkSpan        { date, start, end, note?, hours? }   the work log: time actuall
 ## 3. Views
 
 ### 3.0 Home (landing page)
-- A 3-day calendar, starting today by default. ‹ › move it one day at a time,
-  Today jumps back, and the date label opens a mini month
+- A calendar of **Day**, **3 days** or **Week**, picked at its top right and
+  kept per device (localStorage, like the theme: a phone may want fewer days
+  than a desktop); 3 days until picked. Day and 3 days start today by
+  default and ‹ › move them a day at a time; Week is the calendar week
+  holding the start day (weeks start on the day set in Settings) and ‹ ›
+  move it a week. Today jumps back, and the date label opens a mini month
   (`#/home/<start date>`).
-- The planned sessions for the same three days (labelled Yesterday / Today /
+- The planned sessions for the same days (labelled Yesterday / Today /
   Tomorrow where that fits), with checkboxes and a link to the missed ones.
 - A compact project overview (ring, X/Y done, next deadline), sorted by the
   nearest deadline.
