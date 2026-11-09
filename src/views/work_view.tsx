@@ -274,6 +274,7 @@ const WorkWeek = memo(function WorkWeek({
             key={d}
             date={d}
             isToday={d === today}
+            future={d > today}
             spans={spansOn(spans, d)}
             planned={planned[i]}
           />
@@ -381,11 +382,14 @@ function WeekSummary({monday, days}: {monday: ISODate; days: ISODate[]}) {
 function WorkDay({
   date,
   isToday,
+  future,
   spans,
   planned,
 }: {
   date: ISODate;
   isToday: boolean;
+  /** After today: nothing to log as planned yet. */
+  future: boolean;
   spans: WorkSpan[];
   planned: {start: string; end: string}[];
 }) {
@@ -428,7 +432,7 @@ function WorkDay({
           ),
         )}
         <div className="flex items-center gap-1">
-          {!spans.length && planned.length > 0 && (
+          {!spans.length && planned.length > 0 && !future && (
             <button className="btn h-7" onClick={() => logAsPlanned(date)}>
               Log as planned
             </button>
