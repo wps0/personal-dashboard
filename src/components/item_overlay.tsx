@@ -10,6 +10,7 @@ import {HoursInput} from './hours_input';
 import {Markdown} from './markdown';
 import {GroupSelect} from './group_select';
 import {Modal} from './modal';
+import {SuggestSessions} from './suggest_sessions';
 import {countdown, dayName, formatMedium, shortDate} from '../model/dates';
 import {endMinutes, fromMinutes, toMinutes} from '../model/time';
 import {useToday} from '../hooks';
@@ -66,6 +67,8 @@ function ItemDetails({item, onClose}: {item: Item; onClose(): void}) {
     [allAllocs, item.id],
   );
   const [editingNotes, setEditingNotes] = useState(!item.notes);
+  // While the suggestion is open: the time it was opened, in minutes.
+  const [suggestAt, setSuggestAt] = useState<number | null>(null);
   const today = useToday();
   const set = (patch: Partial<Item>) => updateItem(item.id, patch);
   const project = projects.find(p => p.id === item.projectId);
@@ -222,12 +225,32 @@ function ItemDetails({item, onClose}: {item: Item; onClose(): void}) {
             </tbody>
           </table>
         )}
-        <button
-          className="btn-ghost mt-1 text-[11px]"
-          onClick={() => addAllocation(item.id, today, 1)}
-        >
-          + add session today
-        </button>
+        <div className="mt-1 flex flex-wrap gap-1">
+          <button
+            className="btn-ghost text-[11px]"
+            onClick={() => addAllocation(item.id, today, 1)}
+          >
+            + add session today
+          </button>
+          {!isItemDone(item) && suggestAt === null && (
+            <button
+              className="btn-ghost text-[11px]"
+              onClick={() => {
+                const now = new Date();
+                setSuggestAt(now.getHours() * 60 + now.getMinutes());
+              }}
+            >
+              suggest sessions…
+            </button>
+          )}
+        </div>
+        {suggestAt !== null && (
+          <SuggestSessions
+            item={item}
+            now={suggestAt}
+            onClose={() => setSuggestAt(null)}
+          />
+        )}
       </section>
 
       <section className="p-3">

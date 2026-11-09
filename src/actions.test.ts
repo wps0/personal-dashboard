@@ -9,6 +9,7 @@ import {
   foldGroup,
   importClasses,
   importCurriculum,
+  planSessions,
   logAsPlanned,
   logHours,
   logWork,
@@ -289,6 +290,37 @@ describe('importCurriculum', () => {
     expect(data().projects[0].overviewDoc).toBe('## Goals');
     undoLast();
     expect(data().items).toEqual([]);
+  });
+});
+
+describe('planSessions', () => {
+  beforeEach(() => {
+    vi.stubGlobal('window', {setTimeout: () => 0});
+    useStore.getState().replaceAll(emptyData());
+    useToasts.setState({toasts: []});
+    clearHistory();
+  });
+
+  it('plans the suggested sessions, untimed, in one undo step', () => {
+    const area = useStore.getState().addArea('University');
+    const p = useStore.getState().addProject(area, 'OS');
+    const [item] = useStore.getState().addItems(p, [{title: 'Lab 4 report'}]);
+    planSessions(item, [
+      {date: '2026-11-11', hours: 1.75},
+      {date: '2026-11-12', hours: 1.75},
+    ]);
+    const data = () => useStore.getState().data;
+    expect(data().allocations).toMatchObject([
+      {itemId: item, date: '2026-11-11', plannedHours: 1.75},
+      {itemId: item, date: '2026-11-12', plannedHours: 1.75},
+    ]);
+    expect(data().allocations.map(a => a.start)).toEqual([
+      undefined,
+      undefined,
+    ]);
+    expect(useToasts.getState().toasts[0].message).toBe('Planned 2 sessions');
+    undoLast();
+    expect(data().allocations).toEqual([]);
   });
 });
 
