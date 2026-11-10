@@ -491,11 +491,13 @@ count in the day's, week's and month's totals like a time slot of that length, b
   hours are solid.
 - **Lengths:** a time slot's, and hours logged alone, are written in hours
   and minutes ("8h 53m"), since they can be any number of minutes; totals (a
-  day, the week, its target, "to go" / "over", the planned hours, the
-  months, the Home card) in whole hours, rounded down ("8h logged of 40h"),
-  to keep them short.
-- **The week** shows the hours logged against its target, with a bar and
-  "N h to go" or "N h over", and its planned hours ("24h planned"). The
+  day, the week, its target, "remaining" / "unplanned" / "over", the
+  planned hours, the months, the Home card) in whole hours, rounded down
+  ("8h logged of 40h"), to keep them short.
+- **The week** shows the hours logged against its target, with a bar, its
+  planned hours ("24h planned"), and what's left: "28h remaining · 8h
+  unplanned", the hours not logged yet and, of those, the ones no planned
+  work covers (or "N h over" past the target). The
   bar fills solid for the hours logged, then hatched for the planned ones,
   so it shows where the week is heading. The target is the default from Settings unless
   the week has its own (kept under the Monday in the week, so it stays with
