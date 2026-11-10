@@ -17,6 +17,7 @@ import {
 } from 'react';
 import {useShallow} from 'zustand/react/shallow';
 import {
+  carryOver,
   deleteWorkSpan,
   logAsPlanned,
   logHours,
@@ -271,7 +272,7 @@ const WorkWeek = memo(function WorkWeek({
         </span>
         {current && <span className="text-[12px] text-accent">This week</span>}
       </h2>
-      <WeekSummary start={start} days={days} />
+      <WeekSummary start={start} days={days} started={start <= today} />
       <ul className="mt-3">
         {days.map((d, i) => (
           <WorkDay
@@ -292,7 +293,16 @@ const WorkWeek = memo(function WorkWeek({
  * The week's hours against its target (and the planned hours not logged
  * yet), the target itself, and month totals.
  */
-function WeekSummary({start, days}: {start: ISODate; days: ISODate[]}) {
+function WeekSummary({
+  start,
+  days,
+  started,
+}: {
+  start: ISODate;
+  days: ISODate[];
+  /** This week or an earlier one: what's left can move to the next. */
+  started: boolean;
+}) {
   const logged = useStore(s => weekHours(s.data.workLog, start));
   const planned = useStore(s =>
     weekPlannedHours(
@@ -317,6 +327,8 @@ function WeekSummary({start, days}: {start: ISODate; days: ISODate[]}) {
   );
   const balance = logged - target;
   const left = weekLeft(target, logged, planned);
+  // What's left (or over), in whole minutes as the log is.
+  const short = Math.round((target - logged) * 60) / 60;
   return (
     <section
       aria-label="Week's total"
@@ -379,6 +391,17 @@ function WeekSummary({start, days}: {start: ISODate; days: ISODate[]}) {
           </button>
         ) : (
           <span>the default, set in Settings</span>
+        )}
+        {started && target > 0 && short !== 0 && (
+          <button
+            className="text-accent hover:underline"
+            title="Sets this week's target to the hours logged, and next week's by as much the other way"
+            onClick={() => carryOver(start)}
+          >
+            {short > 0
+              ? `Add the ${fmtDuration(short)} to next week`
+              : `Take the ${fmtDuration(-short)} off next week`}
+          </button>
         )}
         <span className="ml-auto">{months}</span>
       </div>
