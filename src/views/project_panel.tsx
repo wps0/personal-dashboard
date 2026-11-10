@@ -52,6 +52,7 @@ import {
 } from '../format';
 import {countdown, shortDate} from '../model/dates';
 import {useToday} from '../hooks';
+import {ProtoItems, usePhone} from '../proto/redesign';
 import {
   actualHours,
   compareOpenFirst,
@@ -98,6 +99,8 @@ export function ProjectPanel({
   percent: number;
 }) {
   const [tab, setTab] = useState<Tab>('items');
+  // PROTOTYPE: phones get the proposed task list and bigger tabs.
+  const phone = usePhone();
   const color = useStore(
     s => s.data.areas.find(a => a.id === project.areaId)?.color ?? '#94a3b8',
   );
@@ -109,19 +112,50 @@ export function ProjectPanel({
         color={color}
         onDetails={() => setTab('details')}
       />
-      <div className="flex shrink-0 gap-1 border-b border-line px-3 py-1">
-        {(['items', 'description', 'log', 'details'] as const).map(t => (
-          <button
-            key={t}
-            className={`label rounded px-1.5 py-0.5 transition-colors duration-150 ${tab === t ? 'bg-raised !text-fg' : 'hover:!text-fg'}`}
-            onClick={() => setTab(t)}
-          >
-            {t === 'log' ? `log (${project.log.length})` : t}
-          </button>
-        ))}
-      </div>
+      {phone ? (
+        <div
+          role="tablist"
+          className="grid shrink-0 grid-cols-4 border-b border-line"
+        >
+          {(
+            [
+              ['items', 'Tasks'],
+              ['description', 'About'],
+              ['log', `Log · ${project.log.length}`],
+              ['details', 'Details'],
+            ] as const
+          ).map(([t, label]) => (
+            <button
+              key={t}
+              role="tab"
+              aria-selected={tab === t}
+              className={`h-11 border-b-2 text-[14px] ${tab === t ? 'border-accent font-semibold text-strong' : 'border-transparent text-dim'}`}
+              onClick={() => setTab(t)}
+            >
+              {label}
+            </button>
+          ))}
+        </div>
+      ) : (
+        <div className="flex shrink-0 gap-1 border-b border-line px-3 py-1">
+          {(['items', 'description', 'log', 'details'] as const).map(t => (
+            <button
+              key={t}
+              className={`label rounded px-1.5 py-0.5 transition-colors duration-150 ${tab === t ? 'bg-raised !text-fg' : 'hover:!text-fg'}`}
+              onClick={() => setTab(t)}
+            >
+              {t === 'log' ? `log (${project.log.length})` : t}
+            </button>
+          ))}
+        </div>
+      )}
       <div key={tab} className="min-h-0 flex-1 animate-fade-in">
-        {tab === 'items' && <ItemsTab project={project} />}
+        {tab === 'items' &&
+          (phone ? (
+            <ProtoItems project={project} />
+          ) : (
+            <ItemsTab project={project} />
+          ))}
         {tab === 'description' && <Description project={project} />}
         {tab === 'log' && <Log project={project} />}
         {tab === 'details' && (

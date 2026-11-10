@@ -17,6 +17,7 @@ import {CalendarView} from './views/calendar_view';
 import {HomeView} from './views/home_view';
 import {WeekView} from './views/week_view';
 import {unreachable} from './unreachable';
+import {ProtoToday, ProtoWeek, usePhone} from './proto/redesign';
 
 // Not needed for the first screen: loaded separately to keep the first load
 // small, then fetched in the background once the app is idle, so opening them
@@ -142,11 +143,21 @@ export function App() {
 }
 
 function Page({route}: {route: Route}) {
+  // PROTOTYPE: phones get the proposed Today and Week.
+  const phone = usePhone();
   switch (route.name) {
     case 'home':
-      return <HomeView date={route.date} />;
+      return phone ? (
+        <ProtoToday date={route.date} />
+      ) : (
+        <HomeView date={route.date} />
+      );
     case 'week':
-      return <WeekView week={route.week} />;
+      return phone ? (
+        <ProtoWeek week={route.week} />
+      ) : (
+        <WeekView week={route.week} />
+      );
     case 'calendar':
       return <CalendarView view={route.view} date={route.date} />;
     case 'projects':

@@ -14,6 +14,7 @@ import {ProgressRing} from '../components/progress_ring';
 import {TimeGrid} from '../components/time_grid';
 import {Select} from '../components/ui/select';
 import {WorkCard} from '../components/work_card';
+import {ToPlanCard} from '../proto/redesign';
 import {fmtH, URGENCY_CLASS} from '../format';
 import {useLookups, useToday, useWeekStart, type Lookups} from '../hooks';
 import {
@@ -131,6 +132,7 @@ export function HomeView({date}: {date?: ISODate}) {
         <SignInPrompt />
         <UsosBanner />
         <Planned days={days} />
+        <ToPlanCard />
         <Projects />
         <WorkCard />
       </div>
