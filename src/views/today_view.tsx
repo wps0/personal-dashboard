@@ -15,7 +15,7 @@ import {
   SectionTitle,
 } from '../components/phone/parts';
 import {SessionRow, ToPlanRow} from '../components/phone/rows';
-import {SignInPrompt} from '../components/signin_prompt';
+import {SignInBanner} from '../components/signin_prompt';
 import {Popover, PopoverAnchor, PopoverContent} from '../components/ui/popover';
 import {UsosBanner} from '../components/usos_review';
 import {WorkCard} from '../components/work_card';
@@ -207,7 +207,7 @@ export function TodayView({date}: {date?: ISODate}) {
       </div>
 
       <div className="mx-3 mt-3 space-y-2 empty:hidden">
-        <SignInPrompt />
+        <SignInBanner />
         <UsosBanner />
         {missed > 0 && isToday && (
           <a
