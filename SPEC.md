@@ -449,8 +449,11 @@ double-clicking one in the project panel, opens an overlay with:
   planning windows) are typed fields with a list, like Google Calendar's:
   type any minute ("9:07", "907", "9.07") and Enter or Tab keeps it, or pick
   from the list in 15-minute steps, which opens on focus scrolled to the
-  current time. An end's list counts from the start and shows the length;
-  an end typed before the start, or text that isn't a time, goes back.
+  current time and moves to what's typed as it's typed. The mouse over the
+  list only highlights: Enter keeps the typed time, unless the arrow keys
+  chose one from the list. An end's list counts from the start and shows
+  the length; an end typed before the start, or text that isn't a time,
+  goes back.
   **An end can be 00:00**, the end of the day: the list's last entry, or
   typed as 0, 00:00, 24 or 24:00. It's stored as 23:59, as before (a time
   of day can't be 24:00), and counted as midnight everywhere (lengths,
