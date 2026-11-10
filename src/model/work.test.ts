@@ -10,6 +10,7 @@ import {
   spansOn,
   targetKey,
   weekHours,
+  weekLeft,
   weekPlannedHours,
   weekTarget,
 } from './work';
@@ -142,5 +143,16 @@ describe('plannedWork', () => {
       }),
     ];
     expect(weekPlannedHours(log, events, '2026-10-12', '')).toBe(32);
+  });
+});
+
+describe('weekLeft', () => {
+  it('is the hours not logged yet, and of those the ones not planned', () => {
+    expect(weekLeft(40, 12, 20)).toEqual({remaining: 28, unplanned: 8});
+    // Planned covers it all.
+    expect(weekLeft(40, 12, 30)).toEqual({remaining: 28, unplanned: 0});
+    // Over the target, or none.
+    expect(weekLeft(40, 42, 0)).toEqual({remaining: 0, unplanned: 0});
+    expect(weekLeft(0, 5, 0)).toEqual({remaining: 0, unplanned: 0});
   });
 });

@@ -51,6 +51,7 @@ import {
   spansOn,
   targetKey,
   weekHours,
+  weekLeft,
   weekPlannedHours,
   weekTarget,
 } from '../model/work';
@@ -315,6 +316,7 @@ function WeekSummary({start, days}: {start: ISODate; days: ISODate[]}) {
       .join(' · '),
   );
   const balance = logged - target;
+  const left = weekLeft(target, logged, planned);
   return (
     <section
       aria-label="Week's total"
@@ -333,15 +335,21 @@ function WeekSummary({start, days}: {start: ISODate; days: ISODate[]}) {
             {fmtHours(planned)} planned
           </span>
         )}
-        {target > 0 && (
-          <span
-            className={`ml-auto tabular-nums ${balance >= 0 ? 'text-accent' : 'text-dim'}`}
-          >
-            {balance >= 0
-              ? `${fmtHours(balance)} over`
-              : `${fmtHours(-balance)} to go`}
-          </span>
-        )}
+        {target > 0 &&
+          (balance >= 0 ? (
+            <span className="ml-auto text-accent tabular-nums">
+              {fmtHours(balance)} over
+            </span>
+          ) : (
+            <span className="ml-auto text-dim tabular-nums">
+              <span className="text-fg">{fmtHours(left.remaining)}</span>{' '}
+              remaining ·{' '}
+              <span className={left.unplanned > 0 ? 'text-fg' : ''}>
+                {fmtHours(left.unplanned)}
+              </span>{' '}
+              unplanned
+            </span>
+          ))}
       </div>
       {target > 0 && (
         <WorkBar

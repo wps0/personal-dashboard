@@ -67,6 +67,19 @@ export function weekTarget(
 }
 
 /**
+ * What's left of a week's target: `remaining`, the hours not logged yet, and
+ * of those `unplanned`, the ones no planned work (not logged yet) covers.
+ */
+export function weekLeft(
+  target: number,
+  logged: number,
+  planned: number,
+): {remaining: number; unplanned: number} {
+  const remaining = Math.max(0, target - logged);
+  return {remaining, unplanned: Math.max(0, remaining - planned)};
+}
+
+/**
  * The planned work on `date`: its reserved events named with the work label
  * (ignoring case), earliest first. Ones past midnight are left out.
  */
