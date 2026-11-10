@@ -222,7 +222,8 @@ export const useStore = create<State>()((set, get) => {
         id,
         areaId,
         name,
-        progressMode: ProgressMode.CHECKLIST,
+        // New projects count hours; older ones keep the mode they were made with.
+        progressMode: ProgressMode.HOURS,
         createdAt: now(),
       });
       update(d => ({projects: [...d.projects, project]}));

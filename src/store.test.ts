@@ -1,5 +1,5 @@
 import {beforeEach, describe, expect, it} from 'vitest';
-import {emptyData, Weekday} from './model/types';
+import {emptyData, ProgressMode, Weekday} from './model/types';
 import {useStore} from './store';
 
 describe('USOS settings in the store', () => {
@@ -148,5 +148,17 @@ describe('area order in the store', () => {
     s().moveArea(uni, 9);
     expect(order()).toEqual(['Work', 'Personal', 'University']);
     expect(s().data.projects.map(p => p.areaId)).toEqual([uni]);
+  });
+});
+
+describe('new projects', () => {
+  beforeEach(() => useStore.getState().replaceAll(emptyData()));
+
+  it('count progress in hours', () => {
+    const s = useStore.getState();
+    const id = s.addProject(s.addArea('University'), 'Operating Systems');
+    expect(
+      useStore.getState().data.projects.find(p => p.id === id)?.progressMode,
+    ).toBe(ProgressMode.HOURS);
   });
 });

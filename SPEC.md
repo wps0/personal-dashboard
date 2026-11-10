@@ -66,6 +66,9 @@ WorkSpan        { date, start, end, note?, hours? }   the work log: time actuall
 - `hours`: sum of `actualHours` / sum of `estimateHours`.
 - `manual`: slider 0–100%.
 
+A new project counts `hours`. Projects made before that kept `checklist`,
+their default then, and stay as they are.
+
 ## 3. Views
 
 ### 3.0 Home (landing page)
