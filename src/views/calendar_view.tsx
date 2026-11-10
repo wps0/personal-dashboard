@@ -69,17 +69,26 @@ function step(view: CalView, date: ISODate, dir: 1 | -1): ISODate {
   return addDays(date, dir * (view === 'day' ? 1 : view === '3day' ? 3 : 7));
 }
 
-/** "October 2026", or "Sep – Oct 2026" when the range spans months. */
-function title(view: CalView, days: ISODate[], date: ISODate): string {
-  if (view === 'month') return formatMonthYear(date);
-  const a = days[0];
-  const b = days[days.length - 1];
-  if (a.slice(0, 7) === b.slice(0, 7)) return formatMonthYear(a);
+/**
+ * "October 2026", or "Sep – Oct 2026" when the range spans months; `short`
+ * (phones) always names months short: "Oct 2026".
+ */
+function title(
+  view: CalView,
+  days: ISODate[],
+  date: ISODate,
+  short = false,
+): string {
   const fmt = (d: ISODate, year: boolean) =>
     new Intl.DateTimeFormat('en-GB', {
       month: 'short',
       ...(year && {year: 'numeric'}),
     }).format(new Date(d + 'T00:00'));
+  if (view === 'month') return short ? fmt(date, true) : formatMonthYear(date);
+  const a = days[0];
+  const b = days[days.length - 1];
+  if (a.slice(0, 7) === b.slice(0, 7))
+    return short ? fmt(a, true) : formatMonthYear(a);
   return a.slice(0, 4) === b.slice(0, 4)
     ? `${fmt(a, false)} – ${fmt(b, true)}`
     : `${fmt(a, true)} – ${fmt(b, true)}`;
@@ -250,8 +259,10 @@ export function CalendarView({
         >
           <ChevronRight size={18} />
         </button>
-        <h1 className="ml-1 text-lg font-normal text-strong">
-          {title(view, days, date)}
+        {/* On phones short, so it fits on one line beside the buttons. */}
+        <h1 className="ml-1 truncate text-lg font-normal whitespace-nowrap text-strong">
+          <span className="max-sm:hidden">{title(view, days, date)}</span>
+          <span className="sm:hidden">{title(view, days, date, true)}</span>
         </h1>
         <Select
           value={view}
