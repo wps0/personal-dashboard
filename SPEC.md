@@ -181,11 +181,17 @@ Each day box is a hybrid of three parts:
     there. Inside the planning window it takes capacity, like an event; sleep
     or work outside the window doesn't. The month view leaves it out.
   - **Can end after midnight:** an end before the start ends the next day
-    (sleep). It's drawn at the end of its day and the start of the next, and
-    edited in its card only.
+    (sleep). It's drawn at the end of its day and the start of the next.
+    Either piece can be dragged: the whole event moves, keeping its length,
+    and may start or stop running past midnight (a block within a day can
+    slide past it too). Each piece's edges resize it, the ones at midnight
+    included: the evening's top dragged down to midnight starts it at 00:00
+    the next day, the morning's bottom dragged up to midnight ends it at
+    00:00, and the edges between the two pieces end it, or start it, on
+    that piece's day. It stays under a day long.
   - **The block's label** (top right, above events) is its handle: drag it
-    to move the block, also to another day; drag the block's top or bottom
-    edge to resize it. Like any repeating event dragged on the calendar,
+    to move the block, also to another day or past midnight; drag the
+    block's top or bottom edge to resize it. Like any repeating event dragged on the calendar,
     that changes that day only. The block itself stays see-through, so
     clicking it still creates an event.
   - **Clicking the label** opens its event card: label, times, Repeat, and
