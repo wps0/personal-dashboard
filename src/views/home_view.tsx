@@ -12,6 +12,7 @@ import {
 } from '../components/ui/popover';
 import {ProgressRing} from '../components/progress_ring';
 import {TimeGrid} from '../components/time_grid';
+import {ToPlanCard} from '../components/to_plan_card';
 import {Select} from '../components/ui/select';
 import {WorkCard} from '../components/work_card';
 import {fmtH, URGENCY_CLASS} from '../format';
@@ -133,6 +134,7 @@ export function HomeView({date}: {date?: ISODate}) {
         <SignInPrompt />
         <UsosBanner />
         <Planned days={days} />
+        <ToPlanCard />
         <Projects />
         <WorkCard />
       </div>
@@ -384,7 +386,7 @@ function Projects() {
   }, [projects, items, allocations]);
 
   return (
-    <section className="flex flex-col rounded border border-line bg-panel lg:min-h-0 lg:flex-1">
+    <section className="flex flex-col rounded border border-line bg-panel lg:min-h-28 lg:flex-1">
       <header className="flex items-center border-b border-line px-2 py-1">
         <span className="label">projects</span>
         <a

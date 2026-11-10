@@ -81,6 +81,15 @@ their default then, and stay as they are.
   (`#/home/<start date>`).
 - The planned sessions for the same days (labelled Yesterday / Today /
   Tomorrow where that fits), with checkboxes and a link to the missed ones.
+- **To plan**, under them: the tasks that still need time (the Week page's
+  backlog, in its order), each with what's due, what's left to plan and its
+  project. **Plan** opens a menu: a length (30m to 3h; the task's usual
+  session at first) and the next seven days, each with the room it has
+  ("1h free", amber when the session wouldn't fit, "full"). Picking a day
+  plans the session there, with a toast that names the day and offers Undo.
+  No dragging, and no trip to the Week page. The title opens the task. The
+  card isn't shown when nothing is left to plan. Where Home scrolls
+  (below 1024px) it shows about six tasks and scrolls within.
 - A compact project overview (ring, X/Y done, next deadline), sorted by the
   nearest deadline.
 - A small work card under it: today's logged work (or the planned work with
