@@ -97,6 +97,8 @@ function TimeSelectImpl({
   // The highlighted option; -1 while what's typed is what counts.
   const [active, setActive] = useState(-1);
   const input = useRef<HTMLInputElement>(null);
+  // The field was tapped with a finger (rather than clicked or tabbed to).
+  const touched = useRef(false);
   const listId = useId();
 
   // The option at or just before a time, to show where it is in the list.
@@ -155,6 +157,9 @@ function TimeSelectImpl({
               ? 'hover:bg-raised focus-within:bg-raised'
               : 'border border-line bg-raised hover:border-dim/50'
           } ${className}`}
+          onPointerDown={e => {
+            touched.current = e.pointerType === 'touch';
+          }}
           onClick={() => {
             input.current?.focus();
             setOpen(true);
@@ -173,19 +178,28 @@ function TimeSelectImpl({
             inputMode="numeric"
             size={1}
             value={text}
-            placeholder={isTime ? undefined : value}
+            // Tapped: the time shows here, and typing starts afresh.
+            placeholder={isTime ? show(value) : value}
             onChange={e => {
               setText(e.target.value);
               setActive(-1);
               setOpen(true);
             }}
             onFocus={e => {
-              e.currentTarget.select();
+              // A finger: no selection (a phone puts handles over the field),
+              // just an empty field with the time as its hint; leaving it
+              // untouched keeps the time.
+              if (touched.current) setText('');
+              else e.currentTarget.select();
+              touched.current = false;
               setOpen(true);
             }}
             onBlur={() => commit(text)}
             onKeyDown={onKeyDown}
-            onPointerDown={e => e.stopPropagation()}
+            onPointerDown={e => {
+              e.stopPropagation();
+              touched.current = e.pointerType === 'touch';
+            }}
             className="min-w-[5ch] flex-1 bg-transparent tabular-nums outline-none placeholder:text-dim"
           />
           <ChevronDown

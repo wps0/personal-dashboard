@@ -386,7 +386,10 @@ double-clicking one in the project panel, opens an overlay with:
   **An end can be 00:00**, the end of the day: the list's last entry, or
   typed as 0, 00:00, 24 or 24:00. It's stored as 23:59, as before (a time
   of day can't be 24:00), and counted as midnight everywhere (lengths,
-  capacity, the work log) and shown as 00:00. Esc
+  capacity, the work log) and shown as 00:00.
+  Tapped with a finger, the field is empty with the time as its hint (a
+  selection would put a phone's handles over it): typing starts afresh, and
+  leaving it untouched keeps the time. Esc
   closes the list without closing the card it's in. Dragging on the
   calendar still snaps to 15 minutes.
 
