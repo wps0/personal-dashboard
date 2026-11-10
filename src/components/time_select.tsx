@@ -8,14 +8,24 @@ import {
   useState,
   type KeyboardEvent,
 } from 'react';
-import {fromMinutes, parseTime, toMinutes} from '../model/time';
+import {
+  endMinutes,
+  fromMinutes,
+  MIDNIGHT_END,
+  parseTime,
+  showEnd,
+  toMinutes,
+} from '../model/time';
 import {Popover, PopoverAnchor, PopoverContent} from './ui/popover';
 
 interface Props {
   /** `HH:MM`; anything else (e.g. "--:--") shows as an empty field with it as the hint. */
   value: string;
   onChange(v: string): void;
-  /** For an end time: only offer times after this, labelled with the duration ("11:00 (1 h)"). */
+  /**
+   * For an end time: only offer times after this, labelled with the duration
+   * ("11:00 (1 h)"), up to 00:00, the end of the day (stored as 23:59).
+   */
   after?: string;
   variant?: 'field' | 'ghost';
   className?: string;
@@ -32,6 +42,16 @@ function duration(min: number): string {
 const TIME = /^\d\d:\d\d$/;
 
 /**
+ * A typed time; as an end, "0", "00:00", "24" and "24:00" are the end of the
+ * day (stored as 23:59), since an end can't come before its start.
+ */
+function typedTime(text: string, end: boolean): string | null {
+  if (end && /^24(:?00)?$/.test(text.replace(/\s+/g, ''))) return MIDNIGHT_END;
+  const t = parseTime(text);
+  return end && t === '00:00' ? MIDNIGHT_END : t;
+}
+
+/**
  * A time of day, like Google Calendar's: type any time ("9:07", "907",
  * "9.07") or pick one from a list in 15-minute steps, which opens as the field
  * is focused, scrolled to the current time. Enter or leaving the field keeps
@@ -46,6 +66,9 @@ function TimeSelectImpl({
   ariaLabel,
 }: Props) {
   const isTime = TIME.test(value);
+  const end = after !== undefined;
+  // An end at the end of the day shows as 00:00.
+  const show = (v: string) => (end ? showEnd(v) : v);
   const options = useMemo(() => {
     const from = after ? toMinutes(after) + 15 : 0;
     const list: {value: string; label: string}[] = [];
@@ -56,15 +79,20 @@ function TimeSelectImpl({
         label: after ? `${t} (${duration(m - toMinutes(after))})` : t,
       });
     }
+    if (after && toMinutes(after) < 24 * 60 - 1)
+      list.push({
+        value: MIDNIGHT_END,
+        label: `00:00 (${duration(24 * 60 - toMinutes(after))})`,
+      });
     return list;
   }, [after]);
   const [open, setOpen] = useState(false);
-  const [text, setText] = useState(isTime ? value : '');
+  const [text, setText] = useState(isTime ? show(value) : '');
   // Show outside changes to the value (set during render, not in an effect).
   const [shown, setShown] = useState(value);
   if (value !== shown) {
     setShown(value);
-    setText(TIME.test(value) ? value : '');
+    setText(TIME.test(value) ? show(value) : '');
   }
   // The highlighted option; -1 while what's typed is what counts.
   const [active, setActive] = useState(-1);
@@ -73,33 +101,33 @@ function TimeSelectImpl({
 
   // The option at or just before a time, to show where it is in the list.
   const near = (t: string) => {
-    const m = toMinutes(t);
-    let i = options.findIndex(o => toMinutes(o.value) > m);
+    const m = endMinutes(t);
+    let i = options.findIndex(o => endMinutes(o.value) > m);
     if (i === -1) i = options.length;
     return Math.max(0, i - 1);
   };
-  const fits = (t: string) => !after || toMinutes(t) > toMinutes(after);
+  const fits = (t: string) => !after || endMinutes(t) > toMinutes(after);
   const close = () => {
     setOpen(false);
     setActive(-1);
   };
   /** Keeps a typed time if it's one; otherwise back to the value. */
   const commit = (typed: string) => {
-    const t = parseTime(typed);
+    const t = typedTime(typed, end);
     if (t && fits(t) && t !== value) onChange(t);
-    else setText(isTime ? value : '');
+    else setText(isTime ? show(value) : '');
     close();
   };
   const pick = (t: string) => {
     if (t !== value) onChange(t);
-    setText(t);
+    setText(show(t));
     close();
     // Done with the field, as Enter in any field here: Ctrl+Z undoes the
     // change again rather than the typing.
     input.current?.blur();
   };
 
-  const typedNear = parseTime(text);
+  const typedNear = typedTime(text, end);
   const nearIndex = near(typedNear ?? (isTime ? value : '09:00'));
 
   const onKeyDown = (e: KeyboardEvent<HTMLInputElement>) => {
@@ -176,7 +204,7 @@ function TimeSelectImpl({
           onCloseAutoFocus={e => e.preventDefault()}
           // Esc closes the list (only: the card it's in stays) and goes back
           // to the value. Radix handles it before the field's own keydown.
-          onEscapeKeyDown={() => setText(isTime ? value : '')}
+          onEscapeKeyDown={() => setText(isTime ? show(value) : '')}
           onInteractOutside={e => {
             // A press on the field itself isn't outside.
             if (input.current?.parentElement?.contains(e.target as Node))

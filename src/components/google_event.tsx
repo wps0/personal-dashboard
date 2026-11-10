@@ -18,7 +18,7 @@ import {
 } from 'react';
 import {shownEndMin, type GEvent} from '../google/events';
 import {blockKeys} from '../keyboard';
-import {fromMinutes} from '../model/time';
+import {endLabel, fromMinutes} from '../model/time';
 import type {ISODate} from '../model/types';
 import {readableOn} from '../format';
 import {sanitizeHtml} from '../sanitize';
@@ -192,7 +192,7 @@ export const GoogleTimedBlock = memo(function GoogleTimedBlock(props: {
           title={ev.title}
           titleClassName={ev.declined ? 'line-through' : ''}
           start={fromMinutes(ev.startMin)}
-          details={`${fromMinutes(ev.startMin)} – ${fromMinutes(Math.min(ev.endMin, 1439))}`}
+          details={`${fromMinutes(ev.startMin)} – ${endLabel(ev.endMin)}`}
         />
       </div>
     </WithCard>

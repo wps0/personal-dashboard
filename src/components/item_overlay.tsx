@@ -11,7 +11,7 @@ import {Markdown} from './markdown';
 import {GroupSelect} from './group_select';
 import {Modal} from './modal';
 import {countdown, dayName, formatMedium, shortDate} from '../model/dates';
-import {fromMinutes, toMinutes} from '../model/time';
+import {endMinutes, fromMinutes, toMinutes} from '../model/time';
 import {useToday} from '../hooks';
 import {
   actualHours,
@@ -346,7 +346,7 @@ function SessionRow({alloc, today}: {alloc: Allocation; today: string}) {
                 after={start}
                 onChange={t =>
                   updateAllocation(alloc.id, {
-                    plannedHours: (toMinutes(t) - toMinutes(start)) / 60,
+                    plannedHours: (endMinutes(t) - toMinutes(start)) / 60,
                   })
                 }
                 variant="ghost"

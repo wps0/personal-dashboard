@@ -192,3 +192,17 @@ describe('plannedInWindow', () => {
     expect(plannedInWindow([session(1, '20:00')], info)).toBe(1);
   });
 });
+
+describe('a planning window until midnight', () => {
+  it('counts whole hours (its end is stored as 23:59)', () => {
+    const rule = create(pb.CapacityRuleSchema, {
+      from: '0000-01-01',
+      windows: Array.from({length: 7}, () => range('20:00', '23:59')),
+      adjustment: 0,
+    });
+    const info = capacityFor('2026-10-12', [rule], {}, [ev('22:00', '23:59')]);
+    expect(info.windowHours).toBe(4);
+    expect(info.occupiedHours).toBe(2);
+    expect(info.total).toBe(2);
+  });
+});

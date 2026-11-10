@@ -4,7 +4,13 @@ import {ALL_DAY_TASK_SESSION_HOURS} from '../config';
 import {eventStyle} from '../event_colors';
 import {withUndo} from '../toast';
 import {formatLong, shortDate} from '../model/dates';
-import {moveStart, moveStartOvernight, toMinutes} from '../model/time';
+import {
+  endMinutes,
+  moveStart,
+  moveStartOvernight,
+  showEnd,
+  toMinutes,
+} from '../model/time';
 import type {CalendarEvent} from '../model/types';
 import {useLookups} from '../hooks';
 import {EventColor, ItemKind} from '../model/types';
@@ -310,8 +316,8 @@ export function DraftEditor() {
             <p className="pl-7 text-[12px] text-dim">
               {draft.allDay
                 ? `Planned for ${shortDate(draft.date)}, without a time (${fmtH(ALL_DAY_TASK_SESSION_HOURS)}).`
-                : `${draft.start}–${draft.end} on ${shortDate(draft.date)} planned for it (${fmtH(
-                    (toMinutes(draft.end) - toMinutes(draft.start)) / 60,
+                : `${draft.start}–${showEnd(draft.end)} on ${shortDate(draft.date)} planned for it (${fmtH(
+                    (endMinutes(draft.end) - toMinutes(draft.start)) / 60,
                   )}).`}{' '}
               No due date.
             </p>

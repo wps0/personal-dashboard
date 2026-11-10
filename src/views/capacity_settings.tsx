@@ -10,7 +10,7 @@ import {fmtH} from '../format';
 import {copyDay, ruleFor, type PlanningWindow} from '../model/capacity';
 import {formatMedium} from '../model/dates';
 import {useToday} from '../hooks';
-import {moveStart, toMinutes} from '../model/time';
+import {endMinutes, moveStart, toMinutes} from '../model/time';
 import {useStore} from '../store';
 
 const WEEKDAYS = [
@@ -81,7 +81,7 @@ export function CapacitySettings() {
             {WEEKDAYS.map((name, i) => {
               const w = rule.windows[i];
               const hours =
-                Math.max(0, toMinutes(w.end) - toMinutes(w.start)) / 60;
+                Math.max(0, endMinutes(w.end) - toMinutes(w.start)) / 60;
               return (
                 <tr key={name} className="border-t border-line align-top">
                   <td className="px-2 py-2 font-medium">{name}</td>
