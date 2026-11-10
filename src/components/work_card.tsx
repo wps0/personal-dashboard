@@ -1,7 +1,7 @@
 import {logAsPlanned} from '../actions';
 import {fmtHours} from '../format';
-import {useToday} from '../hooks';
-import {MONDAY, startOfWeek} from '../model/dates';
+import {useToday, useWeekStart} from '../hooks';
+import {startOfWeek} from '../model/dates';
 import {
   isHoursOnly,
   plannedWork,
@@ -25,10 +25,11 @@ export function WorkCard() {
   // Hours logged alone have no times to list.
   const timed = spans.filter(s => !isHoursOnly(s));
   const planned = plannedWork(events, today, settings.workLabel);
-  const monday = startOfWeek(today, MONDAY);
-  const logged = weekHours(log, monday);
-  const plannedWeek = weekPlannedHours(log, events, monday, settings.workLabel);
-  const target = weekTarget(settings, monday);
+  // The week as on the Work page: from the day set in Settings → Calendar.
+  const start = startOfWeek(today, useWeekStart());
+  const logged = weekHours(log, start);
+  const plannedWeek = weekPlannedHours(log, events, start, settings.workLabel);
+  const target = weekTarget(settings, start);
   const times = (xs: {start: string; end: string}[]) =>
     xs.map(x => `${x.start}–${x.end}`).join(', ');
   return (

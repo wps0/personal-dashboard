@@ -29,13 +29,12 @@ import {HoursInput} from '../components/hours_input';
 import {TimeSelect} from '../components/time_select';
 import {WorkBar} from '../components/work_bar';
 import {fmtDuration, fmtHours, fmtWorkSpan} from '../format';
-import {useToday} from '../hooks';
+import {useToday, useWeekStart} from '../hooks';
 import {useNavTarget} from '../keyboard';
 import {
   addDays,
   dayName,
   isISODate,
-  MONDAY,
   monthKey,
   monthName,
   shortDate,
@@ -50,6 +49,7 @@ import {
   plannedWork,
   spanHours,
   spansOn,
+  targetKey,
   weekHours,
   weekPlannedHours,
   weekTarget,
@@ -66,24 +66,27 @@ interface WeekRange {
   target?: ISODate;
 }
 
-function around(monday: ISODate): WeekRange {
+function around(start: ISODate): WeekRange {
   return {
-    first: addDays(monday, -7 * WORK_WEEKS_BEFORE),
-    last: addDays(monday, 7 * WORK_WEEKS_AFTER),
-    target: monday,
+    first: addDays(start, -7 * WORK_WEEKS_BEFORE),
+    last: addDays(start, 7 * WORK_WEEKS_AFTER),
+    target: start,
   };
 }
 
 /**
- * The work log (SPEC 3.10): weeks, Monday to Sunday, in one scrolling list
+ * The work log (SPEC 3.10): weeks, from the day set in Settings → Calendar
+ * (like the calendar), in one scrolling list
  * that opens on this week and grows both ways as it's scrolled. Each day
  * shows what was worked next to what was planned (reserved time labelled
  * as work), and each week its total against its target.
  */
 export function WorkView({week}: {week?: ISODate}) {
   const today = useToday();
-  const thisWeek = startOfWeek(today, MONDAY);
-  const focus = startOfWeek(week && isISODate(week) ? week : today, MONDAY);
+  // Weeks start on the day set in Settings → Calendar, as in the calendar.
+  const weekStart = useWeekStart();
+  const thisWeek = startOfWeek(today, weekStart);
+  const focus = startOfWeek(week && isISODate(week) ? week : today, weekStart);
   const [range, setRange] = useState(() => around(focus));
   // A link to another week (the route changed) jumps there.
   const [opened, setOpened] = useState(focus);
@@ -97,10 +100,10 @@ export function WorkView({week}: {week?: ISODate}) {
   const anchor = useRef<WeekAtTop | null>(null);
   const growing = useRef(false);
 
-  /** Brings `monday`'s week to the top, if it's rendered. */
-  const place = useCallback((monday: ISODate): boolean => {
+  /** Brings `start`'s week to the top, if it's rendered. */
+  const place = useCallback((start: ISODate): boolean => {
     const s = scroller.current;
-    const el = s?.querySelector<HTMLElement>(`[data-week="${monday}"]`);
+    const el = s?.querySelector<HTMLElement>(`[data-week="${start}"]`);
     if (!s || !el) return false;
     s.scrollTop +=
       el.getBoundingClientRect().top -
@@ -111,10 +114,10 @@ export function WorkView({week}: {week?: ISODate}) {
   }, []);
   const show = useCallback(
     (d: ISODate) => {
-      const monday = startOfWeek(d, MONDAY);
-      if (!place(monday)) setRange(around(monday));
+      const start = startOfWeek(d, weekStart);
+      if (!place(start)) setRange(around(start));
     },
-    [place],
+    [place, weekStart],
   );
   /** The week at the top of the view, under the toolbar. */
   const inView = (): ISODate => weekAtTop(scroller.current)?.week ?? focus;
@@ -201,7 +204,7 @@ export function WorkView({week}: {week?: ISODate}) {
           </button>
         </div>
         {weeks.map(m => (
-          <WorkWeek key={m} monday={m} today={today} current={m === thisWeek} />
+          <WorkWeek key={m} start={m} today={today} current={m === thisWeek} />
         ))}
       </div>
     </div>
@@ -234,40 +237,40 @@ function weekAtTop(
 
 /** One week: its heading, its total against its target, and its days. */
 const WorkWeek = memo(function WorkWeek({
-  monday,
+  start,
   today,
   current,
 }: {
-  monday: ISODate;
+  start: ISODate;
   today: ISODate;
   current: boolean;
 }) {
-  const sunday = addDays(monday, 6);
+  const end = addDays(start, 6);
   const spans = useStore(
     useShallow(s =>
-      s.data.workLog.filter(w => w.date >= monday && w.date <= sunday),
+      s.data.workLog.filter(w => w.date >= start && w.date <= end),
     ),
   );
   const events = useStore(s => s.data.events);
   const label = useStore(s => s.data.settings.workLabel);
   const days = useMemo(
-    () => Array.from({length: 7}, (_, i) => addDays(monday, i)),
-    [monday],
+    () => Array.from({length: 7}, (_, i) => addDays(start, i)),
+    [start],
   );
   const planned = useMemo(
     () => days.map(d => plannedWork(events, d, label)),
     [days, events, label],
   );
-  const heading = `W${weekNumber(monday)} · ${shortDate(monday)} – ${shortDate(sunday)}`;
+  const heading = `W${weekNumber(start)} · ${shortDate(start)} – ${shortDate(end)}`;
   return (
-    <section data-week={monday} aria-label={heading} className="pt-3">
+    <section data-week={start} aria-label={heading} className="pt-3">
       <h2 className="sticky top-12 z-10 flex items-baseline gap-2 bg-bg py-1.5 tabular-nums">
         <span className={current ? 'font-medium text-accent' : 'text-strong'}>
           {heading}
         </span>
         {current && <span className="text-[12px] text-accent">This week</span>}
       </h2>
-      <WeekSummary monday={monday} days={days} />
+      <WeekSummary start={start} days={days} />
       <ul className="mt-3">
         {days.map((d, i) => (
           <WorkDay
@@ -288,19 +291,19 @@ const WorkWeek = memo(function WorkWeek({
  * The week's hours against its target (and the planned hours not logged
  * yet), the target itself, and month totals.
  */
-function WeekSummary({monday, days}: {monday: ISODate; days: ISODate[]}) {
-  const logged = useStore(s => weekHours(s.data.workLog, monday));
+function WeekSummary({start, days}: {start: ISODate; days: ISODate[]}) {
+  const logged = useStore(s => weekHours(s.data.workLog, start));
   const planned = useStore(s =>
     weekPlannedHours(
       s.data.workLog,
       s.data.events,
-      monday,
+      start,
       s.data.settings.workLabel,
     ),
   );
-  const target = useStore(s => weekTarget(s.data.settings, monday));
+  const target = useStore(s => weekTarget(s.data.settings, start));
   const own = useStore(
-    s => s.data.settings.weekWorkTargets[monday] !== undefined,
+    s => s.data.settings.weekWorkTargets[targetKey(start)] !== undefined,
   );
   const workTarget = useStore(s => s.data.settings.workTarget);
   const months = useStore(s =>
@@ -354,7 +357,7 @@ function WeekSummary({monday, days}: {monday: ISODate; days: ISODate[]}) {
           Week's target
           <HoursInput
             value={target}
-            onChange={h => setWeekTarget(monday, h ?? 0)}
+            onChange={h => setWeekTarget(start, h ?? 0)}
             className="field w-14"
           />
           h
@@ -362,7 +365,7 @@ function WeekSummary({monday, days}: {monday: ISODate; days: ISODate[]}) {
         {own ? (
           <button
             className="text-accent hover:underline"
-            onClick={() => setWeekTarget(monday, null)}
+            onClick={() => setWeekTarget(start, null)}
           >
             Use the default ({fmtHours(workTarget)})
           </button>

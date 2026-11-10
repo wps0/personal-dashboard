@@ -464,7 +464,8 @@ two ways that can be mixed on a day: a **time slot** (start – end), or **hours
 count in the day's, week's and month's totals like a time slot of that length, but they aren't drawn on the calendar.
 
 - **The Work page**, a tab of its own (key 5), is one scrolling list of
-  weeks, Monday to Sunday like the week journal, that opens on this week
+  weeks, starting on the day set in Settings → Calendar (like the calendar;
+  Home's work card counts the same week), that opens on this week
   (its heading at the top, marked "This week"). Earlier weeks are above it
   and later ones below; more load as you scroll near either end, without
   moving what's in view. Each week's heading stays at the top while you're
@@ -494,7 +495,8 @@ count in the day's, week's and month's totals like a time slot of that length, b
   "N h to go" or "N h over", and its planned hours ("24h planned"). The
   bar fills solid for the hours logged, then hatched for the planned ones,
   so it shows where the week is heading. The target is the default from Settings unless
-  the week has its own: typing one on the page sets it for that week only,
+  the week has its own (kept under the Monday in the week, so it stays with
+  its week when the week start changes): typing one on the page sets it for that week only,
   and "Use the default" removes it. 0 means no target. The month totals of
   the months the week touches are shown too.
 - **On the calendar** (and Home's day), each time slot logged is tinted in

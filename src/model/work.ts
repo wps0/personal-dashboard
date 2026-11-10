@@ -3,7 +3,7 @@
  * work they're compared with (reserved time labelled as work), and weekly
  * targets.
  */
-import {addDays} from './dates';
+import {addDays, MONDAY, startOfWeek} from './dates';
 import {reservedByDay} from './reserved';
 import {toMinutes} from './time';
 import type {CalendarEvent, ISODate, Settings, WorkSpan} from './types';
@@ -44,17 +44,26 @@ export function loggedHours(
     .reduce((sum, s) => sum + spanHours(s), 0);
 }
 
-/** Hours logged in the week starting on `monday`. */
-export function weekHours(log: WorkSpan[], monday: ISODate): number {
-  return loggedHours(log, monday, addDays(monday, 6));
+/** Hours logged in the week (seven days) starting on `start`. */
+export function weekHours(log: WorkSpan[], start: ISODate): number {
+  return loggedHours(log, start, addDays(start, 6));
+}
+
+/**
+ * Where a week's own target is kept: under the Monday in the week starting
+ * on `start`. Weeks used to start on Monday, so targets set then still
+ * belong to the same week whatever day weeks start on now.
+ */
+export function targetKey(start: ISODate): ISODate {
+  return startOfWeek(addDays(start, 6), MONDAY);
 }
 
 /** The week's target in hours: its own, if set, else the default; 0 for none. */
 export function weekTarget(
   settings: Pick<Settings, 'workTarget' | 'weekWorkTargets'>,
-  monday: ISODate,
+  start: ISODate,
 ): number {
-  return settings.weekWorkTargets[monday] ?? settings.workTarget;
+  return settings.weekWorkTargets[targetKey(start)] ?? settings.workTarget;
 }
 
 /**
@@ -74,18 +83,18 @@ export function plannedWork(
 }
 
 /**
- * Hours of planned work in the week starting on `monday` on the days nothing
+ * Hours of planned work in the week starting on `start` on the days nothing
  * is logged yet: once a day has a stretch logged, its log replaces its plan.
  */
 export function weekPlannedHours(
   log: WorkSpan[],
   events: CalendarEvent[],
-  monday: ISODate,
+  start: ISODate,
   label: string,
 ): number {
   let sum = 0;
   for (let i = 0; i < 7; i++) {
-    const date = addDays(monday, i);
+    const date = addDays(start, i);
     if (log.some(s => s.date === date)) continue;
     for (const p of plannedWork(events, date, label)) sum += spanHours(p);
   }
