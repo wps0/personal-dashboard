@@ -17,6 +17,7 @@ import {href} from '../router';
 import {useStore} from '../store';
 import {useUi} from '../ui';
 import {DateField} from './date_field';
+import {GeminiStatus, useGeminiProgress} from './gemini_status';
 import {HoursInput} from './hours_input';
 import {Modal} from './modal';
 import {Select} from './ui/select';
@@ -54,6 +55,7 @@ export function PromptTasks() {
   const [change, setChange] = useState('');
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
+  const {progress, onProgress, clear} = useGeminiProgress();
   const close = () => useUi.getState().setDialog(null);
   if (!project) return null;
   const groups = project.groups;
@@ -65,7 +67,7 @@ export function PromptTasks() {
     try {
       const result = await askForTasks(
         {request, material, projectName: project.name, groups, today, revise},
-        {apiKey, model},
+        {apiKey, model, onProgress},
       );
       if (!result.tasks.length)
         throw new Error(
@@ -78,9 +80,13 @@ export function PromptTasks() {
       setError((e as Error).message);
     } finally {
       setBusy(false);
+      clear();
     }
   };
   const ticked = rows?.filter(r => r.on) ?? [];
+  const status = busy && progress && (
+    <GeminiStatus progress={progress} field="title" items={['task', 'tasks']} />
+  );
   const edit = (i: number, patch: Partial<Row>) =>
     setRows(rs => rs && rs.map((r, j) => (j === i ? {...r, ...patch} : r)));
 
@@ -128,6 +134,7 @@ export function PromptTasks() {
                 disabled={busy}
               />
             </label>
+            {status}
             {error && (
               <p role="alert" className="text-[12px] text-danger">
                 {error}
@@ -269,6 +276,7 @@ export function PromptTasks() {
                 {busy ? 'Asking Gemini…' : 'Revise'}
               </button>
             </form>
+            {status}
             {error && (
               <p role="alert" className="text-[12px] text-danger">
                 {error}

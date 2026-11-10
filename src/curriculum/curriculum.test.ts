@@ -235,7 +235,8 @@ describe('lectureNumber', () => {
 describe('extractCurriculum', () => {
   it('asks Gemini for structured JSON at temperature 0, with the key in a header', async () => {
     const fetchMock = vi.fn<typeof fetch>(
-      async () => new Response(JSON.stringify(reply(ex2.expected))),
+      async () =>
+        new Response(`data: ${JSON.stringify(reply(ex2.expected))}\n\n`),
     );
     vi.stubGlobal('fetch', fetchMock);
     const out = await extractCurriculum(ex2.text, {
@@ -245,7 +246,7 @@ describe('extractCurriculum', () => {
     expect(out.topics).toHaveLength(17);
     const [url, init = {}] = fetchMock.mock.calls[0];
     expect(url).toBe(
-      'https://generativelanguage.googleapis.com/v1beta/models/gemini-flash-latest:generateContent',
+      'https://generativelanguage.googleapis.com/v1beta/models/gemini-flash-latest:streamGenerateContent?alt=sse',
     );
     expect(new Headers(init.headers).get('x-goog-api-key')).toBe('AIza-test');
     expect(String(url)).not.toContain('AIza');

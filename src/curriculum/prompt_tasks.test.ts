@@ -190,9 +190,9 @@ describe('askForTasks', () => {
     const fetchMock = vi.fn<typeof fetch>(
       async () =>
         new Response(
-          JSON.stringify({
+          `data: ${JSON.stringify({
             candidates: [{content: {parts: [{text: JSON.stringify(answer)}]}}],
-          }),
+          })}\n\n`,
         ),
     );
     vi.stubGlobal('fetch', fetchMock);
@@ -209,7 +209,7 @@ describe('askForTasks', () => {
     expect(out.tasks.map(t => t.title)).toEqual(['Lecture 1']);
     const [url, init = {}] = fetchMock.mock.calls[0];
     expect(url).toBe(
-      'https://generativelanguage.googleapis.com/v1beta/models/gemini-flash-latest:generateContent',
+      'https://generativelanguage.googleapis.com/v1beta/models/gemini-flash-latest:streamGenerateContent?alt=sse',
     );
     expect(new Headers(init.headers).get('x-goog-api-key')).toBe('AIza-test');
     const body = JSON.parse(init.body as string);

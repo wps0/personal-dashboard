@@ -761,8 +761,9 @@ Sample inputs and the output we expect from them live in
    project's description under "Course notes".
 
 **Gemini call**
-- Endpoint: `models/<model>:generateContent`, with a current Gemini Flash
-  model that is configurable in Settings.
+- Endpoint: `models/<model>:streamGenerateContent` (the answer streamed, so
+  the dialog can show how far it got), with a current Gemini Flash model
+  that is configurable in Settings.
 - Use structured output: `responseMimeType: 'application/json'` plus a
   `responseSchema`.
 - Temperature 0.
@@ -771,6 +772,13 @@ Sample inputs and the output we expect from them live in
   synced. It is sent in the `x-goog-api-key` header, not the URL. The API
   accepts browser (CORS) requests, so no proxy is needed.
 - The pasted text is sent to Google. Say so in the import dialog.
+- **Request status**: while it runs, the dialog shows its stages in a row,
+  the current one with a spinner: *Loading the client* (the Gen AI SDK, the
+  first time only), *Gemini is thinking* with the seconds so far (usually
+  most of the wait), *Receiving the answer* with the topics so far ("3
+  topics so far", counted by their `title` fields in the partial JSON), and
+  *Checking it*. An error replaces them. The prompt dialog (5.4) shows the
+  same, counting tasks, also for a revision.
 
 Response schema:
 
