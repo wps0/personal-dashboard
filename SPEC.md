@@ -404,6 +404,12 @@ double-clicking one in the project panel, opens an overlay with:
   data from just before the action, but only if nothing changed since, so it
   can never drop later edits. This replaces confirm dialogs, except for
   deleting a project or area and for import/reset.
+- **The undo bar** (touch screens, where there's no Ctrl+Z): the latest
+  change with **Undo**, at the bottom, also for the changes a toast doesn't
+  announce (a drag, a resize, ticking a session off). It stays until the
+  next change, its ×, or another page, rather than a few seconds: a slip on
+  a phone is often noticed late. Undo toasts aren't shown there, so there's
+  one Undo, not two.
 - Everything respects `prefers-reduced-motion`.
 
 ### 3.7 Theme

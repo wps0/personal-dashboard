@@ -37,7 +37,12 @@ function s() {
 }
 
 export function toggleSession(id: string) {
-  withUndo('Session updated', () => s().toggleAllocation(id), {quiet: true});
+  const done = s().data.allocations.find(a => a.id === id)?.done;
+  withUndo(
+    done ? 'Session marked not done' : 'Session marked done',
+    () => s().toggleAllocation(id),
+    {quiet: true},
+  );
 }
 
 export function updateSession(

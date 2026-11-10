@@ -7,6 +7,8 @@ interface Toast {
   id: number;
   message: string;
   action?: {label: string; run(): void};
+  /** Its action undoes a change: on touch screens the undo bar offers that. */
+  undo?: boolean;
 }
 
 interface ToastState {
@@ -36,13 +38,35 @@ export function toast(message: string, action?: Toast['action']) {
 }
 
 /** One undoable step: the data just before and just after it. */
-interface Step {
+export interface Step {
   message: string;
   before: AppData;
   after: AppData;
 }
 
 const history: Step[] = [];
+
+/**
+ * The latest undoable step, quiet ones too, for the undo bar on touch screens
+ * (components/undo_bar.tsx): there's no Ctrl+Z there. Null once it's undone
+ * or dismissed.
+ */
+export const useLastStep = create<{step: Step | null}>()(() => ({step: null}));
+
+export function dismissLastStep() {
+  useLastStep.setState({step: null});
+}
+
+/** Undoes `step`, which must still be the latest one. */
+export function undoStep(step: Step) {
+  if (history[history.length - 1] !== step) {
+    dismissLastStep();
+    toast('Can’t undo: something changed since');
+    return;
+  }
+  history.pop();
+  restore(step);
+}
 
 /**
  * Undoes the most recent step (Ctrl+Z). A step is only undone while the data is
@@ -60,6 +84,7 @@ export function undoLast(): boolean {
 }
 
 function restore(step: Step): boolean {
+  dismissLastStep();
   if (useStore.getState().data !== step.after) {
     history.length = 0; // older steps are stale too
     toast('Can’t undo: something changed since');
@@ -87,22 +112,18 @@ export function withUndo(
   const step = {message, before, after};
   history.push(step);
   if (history.length > UNDO_STEPS) history.shift();
+  useLastStep.setState({step});
   if (quiet) return;
-  toast(message, {
-    label: 'Undo',
-    run: () => {
-      // The toast undoes its own step, which must still be the latest one.
-      if (history[history.length - 1] !== step) {
-        toast('Can’t undo: something changed since');
-        return;
-      }
-      history.pop();
-      restore(step);
-    },
+  useToasts.getState().push({
+    message,
+    undo: true,
+    // The toast undoes its own step, which must still be the latest one.
+    action: {label: 'Undo', run: () => undoStep(step)},
   });
 }
 
 /** For tests. */
 export function clearHistory() {
   history.length = 0;
+  dismissLastStep();
 }
