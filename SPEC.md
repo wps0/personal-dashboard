@@ -680,10 +680,11 @@ Google Drive sync.
   more card metrics (at-risk indicator, hours this week, backlog count),
   search, multi-day all-day events drawn as one spanning bar.
 - **Long-term.**
-  - Moodle integration: deadlines from Moodle's calendar export, read like
-    the USOS timetable (through Google Calendar), as assignment tasks after
-    a review; not the web-service API, whose token isn't read-only.
-    Research and plan in `docs/moodle.md`.
+  - Moodle integration (moodle.mimuw.edu.pl): deadlines still to do from
+    Moodle's web-service API with your app token (kept on the device, read
+    functions only), as assignment tasks after a review; the calendar
+    export through Google Calendar as the read-only fallback. Research and
+    plan in `docs/moodle.md`.
   - ✅ Curriculum import: turn a course description pasted from USOS into
     class items, with Google Gemini doing the extraction (see 5.2).
   - Phone app (React Native, Expo), alongside the PWA: a home-screen widget,
