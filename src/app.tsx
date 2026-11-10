@@ -12,9 +12,11 @@ import {PAGES, usePhoneNav} from './nav';
 import {href, navigate, useRoute, type Route} from './router';
 import {useStore} from './store';
 import {useTheme, type ThemeChoice} from './theme';
+import {useMediaQuery} from './hooks';
 import {useUi} from './ui';
 import {CalendarView} from './views/calendar_view';
 import {HomeView} from './views/home_view';
+import {TodayView} from './views/today_view';
 import {WeekView} from './views/week_view';
 import {unreachable} from './unreachable';
 
@@ -144,7 +146,7 @@ export function App() {
 function Page({route}: {route: Route}) {
   switch (route.name) {
     case 'home':
-      return <HomeView date={route.date} />;
+      return <Home date={route.date} />;
     case 'week':
       return <WeekView week={route.week} />;
     case 'calendar':
@@ -158,6 +160,12 @@ function Page({route}: {route: Route}) {
     default:
       return unreachable(route);
   }
+}
+
+/** Home: on a phone the day as an agenda, elsewhere the calendar with its cards. */
+function Home({date}: {date?: string}) {
+  const phone = useMediaQuery('(max-width: 639px)');
+  return phone ? <TodayView date={date} /> : <HomeView date={date} />;
 }
 
 /**
