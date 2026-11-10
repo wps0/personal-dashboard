@@ -450,3 +450,69 @@ describe('taskFromMeeting', () => {
     });
   });
 });
+
+describe('seminars', () => {
+  // SEM and SEM-MGR classes go the same way as lectures: read from either
+  // source, proposed for the project whose pattern matches the course.
+  const semIcs = ics(
+    [
+      'BEGIN:VEVENT',
+      'UID:usos-sem',
+      'SUMMARY:SEM - Systemy rozproszone',
+      'DTSTART;TZID=Europe/Warsaw:20261013T161500',
+      'DTEND;TZID=Europe/Warsaw:20261013T174500',
+      'RRULE:FREQ=WEEKLY;INTERVAL=2;COUNT=3',
+      'END:VEVENT',
+      'BEGIN:VEVENT',
+      'UID:usos-semmgr',
+      'SUMMARY:SEM-MGR - Dane\\, strumienie\\, rozpraszanie',
+      'DTSTART;TZID=Europe/Warsaw:20261015T120000',
+      'DTEND;TZID=Europe/Warsaw:20261015T150000',
+      'END:VEVENT',
+    ].join('\r\n'),
+  );
+
+  it('are read from iCal, repeats included', () => {
+    const {meetings, warnings} = meetingsFromICal(semIcs);
+    expect(warnings).toEqual([]);
+    expect(
+      meetings.map(m => `${m.type} ${m.date} ${m.start}–${m.end}`),
+    ).toEqual([
+      'SEM 2026-10-13 16:15–17:45',
+      'SEM 2026-10-27 16:15–17:45',
+      'SEM 2026-11-10 16:15–17:45',
+      'SEM-MGR 2026-10-15 12:00–15:00',
+    ]);
+  });
+
+  it('are read from Google Calendar', () => {
+    expect(
+      meetingsFromGoogle([
+        {
+          id: 'g',
+          iCalUID: 'usos-sem',
+          summary: 'SEM - Systemy rozproszone',
+          start: {dateTime: '2026-10-13T16:15:00+02:00'},
+          end: {dateTime: '2026-10-13T17:45:00+02:00'},
+        },
+      ]),
+    ).toMatchObject([{type: 'SEM', course: 'Systemy rozproszone'}]);
+  });
+
+  it('are proposed for the matching project', () => {
+    const out = proposeImports(
+      meetingsFromICal(semIcs).meetings,
+      [
+        {projectId: 'p-dist', pattern: 'rozproszone'},
+        {projectId: 'p-data', pattern: 'strumienie'},
+      ],
+      new Set(),
+    );
+    expect(out.map(p => `${p.projectId} ${p.meeting.type}`)).toEqual([
+      'p-dist SEM',
+      'p-data SEM-MGR',
+      'p-dist SEM',
+      'p-dist SEM',
+    ]);
+  });
+});
