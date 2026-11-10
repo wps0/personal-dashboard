@@ -51,7 +51,7 @@ import {
   URGENCY_CLASS,
 } from '../format';
 import {countdown, shortDate} from '../model/dates';
-import {useMediaQuery, useToday} from '../hooks';
+import {useLatest, useMediaQuery, useToday} from '../hooks';
 import {ProjectTasks} from '../components/phone/project_tasks';
 import {
   actualHours,
@@ -225,8 +225,6 @@ function Header({
   );
 }
 
-const NO_ALLOCS: Allocation[] = [];
-
 /** What a drag in the item list carries: a group's grip, or a task's row. */
 type DragData = {kind: 'group'; index: number} | {kind: 'item'; id: string};
 /** A group's rows, where a drag can land ('' for "No group"); `index` is its place in the order. */
@@ -305,12 +303,23 @@ function ItemsTab({project}: {project: Project}) {
       allItems.filter(i => i.projectId === project.id).sort(compareOpenFirst),
     [allItems, project.id],
   );
-  const allocs = useMemo(() => {
+  // Each task's spent and planned hours, as numbers: rows compare them by
+  // value, so a new list of sessions doesn't redraw every row.
+  const hours = useMemo(() => {
     const ids = new Set(items.map(i => i.id));
     const m = new Map<string, Allocation[]>();
     for (const a of allocations)
-      if (ids.has(a.itemId)) m.set(a.itemId, [...(m.get(a.itemId) ?? []), a]);
-    return m;
+      if (ids.has(a.itemId)) {
+        const list = m.get(a.itemId);
+        if (list) list.push(a);
+        else m.set(a.itemId, [a]);
+      }
+    return new Map(
+      [...m].map(([id, list]) => [
+        id,
+        {spent: actualHours(list), planned: plannedHours(list)},
+      ]),
+    );
   }, [items, allocations]);
   // Items by group id; '' for no group, which includes a group that's gone.
   const byGroup = useMemo(() => {
@@ -335,6 +344,9 @@ function ItemsTab({project}: {project: Project}) {
       (hideDone ? l.filter(i => !isItemDone(i)) : l).map(i => i.id),
     );
   }, [byGroup, groups, project.ungroupedCollapsed, hideDone]);
+  // Stable, so adding a task doesn't redraw every row: the list is read when
+  // a row is clicked.
+  const listedNow = useLatest(listed);
   const select = useCallback(
     (id: string, how: Selecting) =>
       setSelection(s => {
@@ -349,6 +361,7 @@ function ItemsTab({project}: {project: Project}) {
               : [...cur.ids, id],
             anchor: id,
           };
+        const listed = listedNow.current;
         const from = cur.anchor ? listed.indexOf(cur.anchor) : -1;
         const to = listed.indexOf(id);
         if (how === 'only' || from < 0 || to < 0)
@@ -357,7 +370,7 @@ function ItemsTab({project}: {project: Project}) {
         const [lo, hi] = from < to ? [from, to] : [to, from];
         return {...base, ids: listed.slice(lo, hi + 1), anchor: cur.anchor};
       }),
-    [project.id, listed],
+    [project.id, listedNow],
   );
   const rows = (list: Item[]) =>
     shown(list).map(item => (
@@ -365,7 +378,8 @@ function ItemsTab({project}: {project: Project}) {
         key={item.id}
         item={item}
         groups={groups}
-        allocs={allocs.get(item.id) ?? NO_ALLOCS}
+        spent={hours.get(item.id)?.spent ?? 0}
+        planned={hours.get(item.id)?.planned ?? 0}
         today={today}
         selected={selected.has(item.id)}
         lifted={drag?.kind === 'items' && drag.ids.includes(item.id)}
@@ -485,7 +499,9 @@ function ItemsTab({project}: {project: Project}) {
           onDragCancel={() => setDrag(null)}
         >
           <DragCancel />
-          <table className="w-full table-fixed border-collapse">
+          {/* Its own layer: typing above it or a hover elsewhere doesn't
+              repaint the whole list. */}
+          <table className="w-full table-fixed border-collapse will-change-transform">
             <colgroup>
               <col className="w-28 @md:w-32" />
               <col />
@@ -942,7 +958,8 @@ function onControl(target: EventTarget): boolean {
 const ItemRow = memo(function ItemRow({
   item,
   groups,
-  allocs,
+  spent,
+  planned,
   today,
   selected,
   lifted,
@@ -950,7 +967,9 @@ const ItemRow = memo(function ItemRow({
 }: {
   item: Item;
   groups: ItemGroup[];
-  allocs: Allocation[];
+  /** Hours: spent on done sessions, and planned. */
+  spent: number;
+  planned: number;
   today: string;
   /** Selected, to drag along with the others. */
   selected: boolean;
@@ -961,7 +980,6 @@ const ItemRow = memo(function ItemRow({
   const openItem = useUi(s => s.openItem);
   const {updateItem} = useStore.getState();
   const done = isItemDone(item);
-  const planned = plannedHours(allocs);
   // The whole row drags (onto a group), except from a text field.
   const {setNodeRef, listeners} = useDraggable({
     id: item.id,
@@ -997,7 +1015,8 @@ const ItemRow = memo(function ItemRow({
       // opens it.
       onClick={e => !onControl(e.target) && onSelect(item.id, 'only')}
       onDoubleClick={e => !onControl(e.target) && openItem(item.id)}
-      className={`group border-b border-line/50 transition-colors duration-150 ${selected ? 'bg-accent/15' : 'hover:bg-raised/50'} ${lifted ? 'opacity-50' : ''} ${done ? 'text-dim' : ''}`}
+      // No colour transition: on a long list each one repaints it for a while.
+      className={`group border-b border-line/50 ${selected ? 'bg-accent/15' : 'hover:bg-raised/50'} ${lifted ? 'opacity-50' : ''} ${done ? 'text-dim' : ''}`}
     >
       <td className="px-1 py-0.5">
         <StatusSelect
@@ -1070,9 +1089,7 @@ const ItemRow = memo(function ItemRow({
         />
       </td>
       <td className="px-1 py-0.5 text-right tabular-nums text-[11px] text-dim @max-md:invisible @max-md:overflow-hidden @max-md:px-0">
-        {planned > 0
-          ? `${fmtNum(actualHours(allocs))}/${fmtNum(planned)}`
-          : '–'}
+        {planned > 0 ? `${fmtNum(spent)}/${fmtNum(planned)}` : '–'}
       </td>
       <td className="px-1 py-0.5 text-right">
         <button
@@ -1166,7 +1183,9 @@ function AddItem({
           aria-label={`New item in ${group.name}`}
           value={title}
           onChange={e => setTitle(e.target.value)}
-          onKeyDown={e => e.key === 'Enter' && submit()}
+          onKeyDown={e =>
+            e.key === 'Enter' && !e.nativeEvent.isComposing && submit()
+          }
         />
       </div>
     );
@@ -1185,7 +1204,11 @@ function AddItem({
         placeholder="New item… (Enter)"
         value={title}
         onChange={e => setTitle(e.target.value)}
-        onKeyDown={e => e.key === 'Enter' && submit()}
+        // Not while a word is being composed (phone keyboards, IMEs): it
+        // would add the title without it.
+        onKeyDown={e =>
+          e.key === 'Enter' && !e.nativeEvent.isComposing && submit()
+        }
       />
       <DateField
         optional
