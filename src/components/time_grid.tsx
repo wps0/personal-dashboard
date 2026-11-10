@@ -41,7 +41,16 @@ import {
 import {plannedInWindow} from '../model/capacity';
 import {dayName} from '../model/dates';
 import {eventsByDay, shownEvent} from '../model/recurrence';
-import {isReserved, reservedByDay, type ReservedSpan} from '../model/reserved';
+import {
+  edgeLimits,
+  isReserved,
+  movedReserved,
+  reservedByDay,
+  reservedLength,
+  resizedReserved,
+  type ReservedSpan,
+  type ReservedTimes,
+} from '../model/reserved';
 import {dueByDay, isItemDone} from '../model/selectors';
 import {
   endLabel,
@@ -126,8 +135,9 @@ const DAY_MIN = 24 * 60;
 function dragLength(drag: Drag): number {
   if (drag.kind === 'alloc') return Math.round(drag.alloc.plannedHours * 60);
   if (drag.kind === 'reserved') {
-    const {start, end} = drag.span;
-    return (end === DAY_MIN - 1 ? DAY_MIN : end) - start;
+    // The whole event, or the part after midnight when that's what's held.
+    const {start, end, tail, event} = drag.span;
+    return tail ? end - start : reservedLength(event);
   }
   const {allDay, start, end} = drag.event;
   if (allDay) return 60;
@@ -169,7 +179,11 @@ export function TimeGrid({
     if (!col) return null;
     const top =
       pointerY.current - grab.current - col.getBoundingClientRect().top;
-    const latest = Math.floor((DAY_MIN - dragLength(drag)) / 15) * 15;
+    // Reserved time may run past midnight; anything else stays in its day.
+    const latest =
+      drag.kind === 'reserved'
+        ? DAY_MIN - 15
+        : Math.floor((DAY_MIN - dragLength(drag)) / 15) * 15;
     return Math.max(0, Math.min(latest, snap((top / hourHeight) * 60)));
   };
   const updatePreview = () => {
@@ -242,14 +256,11 @@ export function TimeGrid({
     if (drag.kind === 'alloc') {
       updateSession(drag.alloc.id, {date, start: fromMinutes(start)});
     } else if (drag.kind === 'reserved') {
-      // Only that day, like any repeating event dragged on the calendar.
+      // Only that day, like any repeating event dragged on the calendar. The
+      // whole event moves, past midnight if that's where it goes.
       updateEvent(
         drag.span.key,
-        {
-          date,
-          start: fromMinutes(start),
-          end: fromMinutes(Math.min(start + dragLength(drag), DAY_MIN - 1)),
-        },
+        movedReserved(drag.span, date, start),
         'Reserved time moved',
       );
     } else {
@@ -953,8 +964,9 @@ function WorkedBlock({span, hourHeight}: {span: WorkSpan; hourHeight: number}) {
  * Reserved time (a reserved event, e.g. Work): hatched and see-through, so
  * clicks on it still create events. Its label is the handle: drag it to move
  * the block (to another day too), click it for its card; its top and bottom
- * edges resize it. On a repeating one, these change that day only. Ones past
- * midnight (sleep) are edited in the card only.
+ * edges resize it. On a repeating one, these change that day only. One past
+ * midnight (sleep) is drawn in two pieces: either moves the whole of it, and
+ * the edges at midnight move too (see model/reserved).
  */
 const ReservedBlock = memo(function ReservedBlock({
   span,
@@ -966,18 +978,20 @@ const ReservedBlock = memo(function ReservedBlock({
   // The part after midnight opens the card from the day it starts on.
   const open = useUi(s => s.openEventId === span.key) && !span.tail;
   const [anchor, beside] = useBeside(open);
-  const movable = !span.wraps;
   const {attributes, listeners, setNodeRef, isDragging} = useDraggable({
     id: `reserved:${span.key}:${span.start}`,
     data: {kind: 'reserved', span} satisfies Drag,
-    disabled: !movable,
   });
-  const {preview, top, bottom} = useEdges(span, hourHeight, (start, end) =>
-    updateEvent(
-      span.key,
-      {start: fromMinutes(start), end: fromMinutes(end)},
-      'Reserved time resized',
-    ),
+  const {preview, top, bottom} = useEdges(
+    span,
+    hourHeight,
+    edgeLimits(span),
+    (edge, at) =>
+      updateEvent(
+        span.key,
+        resizedReserved(span, edge, at),
+        'Reserved time resized',
+      ),
   );
   const start = preview?.start ?? span.start;
   const end = preview?.end ?? span.end;
@@ -991,30 +1005,23 @@ const ReservedBlock = memo(function ReservedBlock({
         height: ((end - start) / 60) * hourHeight,
       }}
     >
-      {movable && (
-        <div
-          {...top}
-          aria-hidden
-          className="pointer-events-auto absolute inset-x-0 top-0 h-1.5 cursor-ns-resize touch-none"
-        />
-      )}
+      <div
+        {...top}
+        aria-hidden
+        className="pointer-events-auto absolute inset-x-0 top-0 h-1.5 cursor-ns-resize touch-none"
+      />
       <Popover
         open={open}
         onOpenChange={o => !o && useUi.getState().openEvent(null)}
       >
         <PopoverAnchor asChild ref={anchor}>
           <button
-            // Only movable blocks are draggables: a disabled draggable would
-            // announce this working button as disabled.
-            ref={movable ? setNodeRef : undefined}
-            {...(movable && {...attributes, ...listeners})}
+            ref={setNodeRef}
+            {...attributes}
+            {...listeners}
             data-block
             aria-label={`${label}, reserved ${span.event.start} – ${span.event.end}`}
-            title={
-              movable
-                ? 'Reserved time: drag to move, drag its edges to resize, click to edit'
-                : 'Reserved time: click to edit'
-            }
+            title="Reserved time: drag to move, drag its edges to resize (past midnight too), click to edit"
             onClick={() => !clicksSuppressed() && openCard()}
             onKeyDown={blockKeys({
               open: openCard,
@@ -1022,10 +1029,15 @@ const ReservedBlock = memo(function ReservedBlock({
             })}
             // Above events (which start at the left), so a meeting at the
             // start of the block doesn't cover it.
-            className={`block-interactive pointer-events-auto absolute top-1.5 right-1.5 z-[15] max-w-[calc(100%-0.75rem)] touch-none truncate rounded bg-panel/80 px-1 text-[10px] text-dim hover:bg-raised hover:text-fg ${movable ? 'cursor-grab' : 'cursor-pointer'}`}
+            className="block-interactive pointer-events-auto absolute top-1.5 right-1.5 z-[15] max-w-[calc(100%-0.75rem)] cursor-grab touch-none truncate rounded bg-panel/80 px-1 text-[10px] text-dim hover:bg-raised hover:text-fg"
           >
             {label}
-            {preview && ` · ${fromMinutes(start)} – ${endLabel(end)}`}
+            {preview &&
+              ` · ${timesLabel(
+                preview.start !== span.start
+                  ? resizedReserved(span, 'start', preview.start)
+                  : resizedReserved(span, 'end', preview.end),
+              )}`}
           </button>
         </PopoverAnchor>
         {open && (
@@ -1034,13 +1046,11 @@ const ReservedBlock = memo(function ReservedBlock({
           </PopoverContent>
         )}
       </Popover>
-      {movable && (
-        <div
-          {...bottom}
-          aria-hidden
-          className="pointer-events-auto absolute inset-x-0 bottom-0 h-1.5 cursor-ns-resize touch-none"
-        />
-      )}
+      <div
+        {...bottom}
+        aria-hidden
+        className="pointer-events-auto absolute inset-x-0 bottom-0 h-1.5 cursor-ns-resize touch-none"
+      />
     </div>
   );
 }, sameProps);
@@ -1049,10 +1059,21 @@ const ReservedBlock = memo(function ReservedBlock({
  * Dragging a reserved block's top or bottom edge, in 15-minute steps: the
  * new span while dragging, committed on release (if it changed).
  */
+/** "23:00 – 07:00": a reserved event's times as they'd be, for a preview. */
+function timesLabel({start, end}: ReservedTimes): string {
+  return `${start} – ${showEnd(end)}`;
+}
+
+/** The times of a reserved event dropped with this piece at `start` on `date`. */
+function reservedRange(span: ReservedSpan, date: ISODate, start: number) {
+  return timesLabel(movedReserved(span, date, start));
+}
+
 function useEdges(
   span: {start: number; end: number},
   hourHeight: number,
-  commit: (start: number, end: number) => void,
+  limits: Record<'start' | 'end', [number, number]>,
+  commit: (edge: 'start' | 'end', at: number) => void,
 ) {
   const [preview, setPreview] = useState<{start: number; end: number} | null>(
     null,
@@ -1064,14 +1085,13 @@ function useEdges(
       const target = e.currentTarget;
       target.setPointerCapture(e.pointerId);
       const col = target.closest('[data-col]')!.getBoundingClientRect();
+      const [lo, hi] = limits[edge];
       const at = (y: number) => {
         const m = snap(((y - col.top) / hourHeight) * 60);
+        const to = Math.max(lo, Math.min(hi, m));
         return edge === 'start'
-          ? {start: Math.max(0, Math.min(span.end - 15, m)), end: span.end}
-          : {
-              start: span.start,
-              end: Math.min(DAY_MIN - 1, Math.max(span.start + 15, m)),
-            };
+          ? {start: to, end: span.end}
+          : {start: span.start, end: to};
       };
       const move = (ev: PointerEvent) => setPreview(at(ev.clientY));
       const finish = (ev: PointerEvent | null) => {
@@ -1085,7 +1105,7 @@ function useEdges(
         if (!ev) return; // cancelled: keep the old span
         const next = at(ev.clientY);
         if (next.start !== span.start || next.end !== span.end)
-          commit(next.start, next.end);
+          commit(edge, edge === 'start' ? next.start : next.end);
       };
       const up = (ev: PointerEvent) => finish(ev);
       const cancel = () => finish(null);
@@ -1407,8 +1427,8 @@ function DropPreview({
         className="reserved pointer-events-none absolute right-0 left-0 z-30 rounded-md px-1 pt-1.5 text-[10px] text-dim ring-2 ring-accent/60"
         style={{top: (start / 60) * hourHeight, height}}
       >
-        {drag.span.event.title || 'Reserved'} · {fromMinutes(start)} –{' '}
-        {fromMinutes(end)}
+        {drag.span.event.title || 'Reserved'} ·{' '}
+        {reservedRange(drag.span, date, start)}
       </div>
     );
   const item = drag.kind === 'alloc' ? lookups.item(drag.alloc.itemId) : null;
