@@ -57,10 +57,9 @@ export function planSession(
   date: string,
   hours: number,
   message = 'Planned',
+  {quiet = true} = {},
 ) {
-  withUndo(message, () => s().addAllocation(itemId, date, hours), {
-    quiet: true,
-  });
+  withUndo(message, () => s().addAllocation(itemId, date, hours), {quiet});
 }
 
 export function removeSession(id: string, message = 'Removed from plan') {
