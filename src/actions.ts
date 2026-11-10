@@ -20,7 +20,7 @@ import {
   type EventPatch,
   type Scope,
 } from './model/recurrence';
-import {importGroup} from './model/selectors';
+import {importGroup, statusLabel} from './model/selectors';
 import {plannedWork, targetKey} from './model/work';
 import {useStore} from './store';
 import {withUndo} from './toast';
@@ -205,6 +205,24 @@ export function setWeekTarget(start: ISODate, hours: number | null) {
     {
       quiet: true,
     },
+  );
+}
+
+/**
+ * Moves a task on with one tap: to do → in progress → done → to do. Quiet,
+ * so a slip is undone from the undo bar (or with Ctrl+Z).
+ */
+export function advanceStatus(item: Item) {
+  const next =
+    item.status === ItemStatus.TODO
+      ? ItemStatus.DOING
+      : item.status === ItemStatus.DOING
+        ? ItemStatus.DONE
+        : ItemStatus.TODO;
+  withUndo(
+    `“${item.title}”: ${statusLabel(next).toLowerCase()}`,
+    () => s().updateItem(item.id, {status: next}),
+    {quiet: true},
   );
 }
 

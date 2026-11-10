@@ -51,7 +51,8 @@ import {
   URGENCY_CLASS,
 } from '../format';
 import {countdown, shortDate} from '../model/dates';
-import {useToday} from '../hooks';
+import {useMediaQuery, useToday} from '../hooks';
+import {ProjectTasks} from '../components/phone/project_tasks';
 import {
   actualHours,
   compareOpenFirst,
@@ -98,6 +99,8 @@ export function ProjectPanel({
   percent: number;
 }) {
   const [tab, setTab] = useState<Tab>('items');
+  // Phones get tabs and a task list sized for a thumb.
+  const phone = useMediaQuery('(max-width: 639px)');
   const color = useStore(
     s => s.data.areas.find(a => a.id === project.areaId)?.color ?? '#94a3b8',
   );
@@ -109,19 +112,50 @@ export function ProjectPanel({
         color={color}
         onDetails={() => setTab('details')}
       />
-      <div className="flex shrink-0 gap-1 border-b border-line px-3 py-1">
-        {(['items', 'description', 'log', 'details'] as const).map(t => (
-          <button
-            key={t}
-            className={`label rounded px-1.5 py-0.5 transition-colors duration-150 ${tab === t ? 'bg-raised !text-fg' : 'hover:!text-fg'}`}
-            onClick={() => setTab(t)}
-          >
-            {t === 'log' ? `log (${project.log.length})` : t}
-          </button>
-        ))}
-      </div>
+      {phone ? (
+        <div
+          role="tablist"
+          className="grid shrink-0 grid-cols-4 border-b border-line"
+        >
+          {(
+            [
+              ['items', 'Tasks'],
+              ['description', 'About'],
+              ['log', `Log · ${project.log.length}`],
+              ['details', 'Details'],
+            ] as const
+          ).map(([t, label]) => (
+            <button
+              key={t}
+              role="tab"
+              aria-selected={tab === t}
+              className={`h-11 border-b-2 text-[14px] ${tab === t ? 'border-accent font-semibold text-strong' : 'border-transparent text-dim'}`}
+              onClick={() => setTab(t)}
+            >
+              {label}
+            </button>
+          ))}
+        </div>
+      ) : (
+        <div className="flex shrink-0 gap-1 border-b border-line px-3 py-1">
+          {(['items', 'description', 'log', 'details'] as const).map(t => (
+            <button
+              key={t}
+              className={`label rounded px-1.5 py-0.5 transition-colors duration-150 ${tab === t ? 'bg-raised !text-fg' : 'hover:!text-fg'}`}
+              onClick={() => setTab(t)}
+            >
+              {t === 'log' ? `log (${project.log.length})` : t}
+            </button>
+          ))}
+        </div>
+      )}
       <div key={tab} className="min-h-0 flex-1 animate-fade-in">
-        {tab === 'items' && <ItemsTab project={project} />}
+        {tab === 'items' &&
+          (phone ? (
+            <ProjectTasks project={project} />
+          ) : (
+            <ItemsTab project={project} />
+          ))}
         {tab === 'description' && <Description project={project} />}
         {tab === 'log' && <Log project={project} />}
         {tab === 'details' && (
@@ -160,10 +194,10 @@ function Header({
           <InlineText
             value={project.name}
             onChange={name => set({name})}
-            className="w-full text-base font-semibold text-strong"
+            className="w-full text-base font-semibold text-strong max-sm:h-10 max-sm:text-[18px]"
           />
           <button
-            className="flex max-w-full items-center gap-1.5 truncate px-1 text-[12px] text-dim hover:text-fg"
+            className="flex max-w-full items-center gap-1.5 truncate px-1 text-[12px] text-dim hover:text-fg max-sm:min-h-10 max-sm:text-[14px]"
             onClick={onDetails}
             title="Project details"
           >
@@ -179,7 +213,7 @@ function Header({
         </div>
         <a
           href={href({name: 'projects'})}
-          className="btn-ghost text-base"
+          className="btn-ghost text-base max-sm:flex max-sm:h-11 max-sm:w-11 max-sm:items-center max-sm:justify-center max-sm:text-[22px]"
           title="Close (Esc)"
           aria-label="Close"
         >

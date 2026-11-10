@@ -53,6 +53,11 @@ export function kindBadge(kind: ItemKind): string {
   return KINDS[kind]?.badge ?? '?';
 }
 
+/** An item kind in a word: "Assignment"; "Other" for none or one this version doesn't know. */
+export function kindName(kind: ItemKind): string {
+  return KINDS[kind]?.name ?? 'Other';
+}
+
 /** The kinds you can pick for an item, for a Select. */
 export const KIND_OPTIONS = [
   ItemKind.CLASS,
