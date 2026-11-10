@@ -3,6 +3,7 @@ import {beforeEach, describe, expect, it, vi} from 'vitest';
 import {
   addGroup,
   addReserved,
+  advanceStatus,
   deleteGroup,
   deleteWorkSpan,
   foldGroup,
@@ -386,5 +387,34 @@ describe('the work log', () => {
     });
     setWeekTarget('2026-10-12', null);
     expect(useStore.getState().data.settings.weekWorkTargets).toEqual({});
+  });
+});
+
+describe('advanceStatus', () => {
+  beforeEach(() => {
+    vi.stubGlobal('window', {setTimeout: () => 0});
+    useStore.getState().replaceAll(emptyData());
+    useToasts.setState({toasts: []});
+    clearHistory();
+  });
+
+  it('moves a task on: to do, in progress, done, to do; each undoable, quietly', () => {
+    const area = useStore.getState().addArea('University');
+    const p = useStore.getState().addProject(area, 'OS');
+    useStore.getState().addItems(p, [{title: 'Lab 4'}]);
+    const item = () => useStore.getState().data.items[0];
+    const statuses = [];
+    for (let i = 0; i < 3; i++) {
+      advanceStatus(item());
+      statuses.push(item().status);
+    }
+    expect(statuses).toEqual([
+      pb.ItemStatus.DOING,
+      pb.ItemStatus.DONE,
+      pb.ItemStatus.TODO,
+    ]);
+    expect(useToasts.getState().toasts).toEqual([]);
+    undoLast();
+    expect(item().status).toBe(pb.ItemStatus.DONE);
   });
 });

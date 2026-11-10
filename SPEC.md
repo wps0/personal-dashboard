@@ -18,7 +18,7 @@ See README.md for running and deploying it.
 | Storage (v1) | Browser storage (IndexedDB), as protobuf binary (see Data schema in 6). Settings → Data exports protobuf's JSON form (readable) or the protobuf binary (`.binpb`, exactly as stored and as on Drive); Import takes either, telling them apart by content (JSON starts with `{`), and upgrades older schema versions as it reads. |
 | Storage (v2) | ✅ IndexedDB stays the local copy on every device; Drive sync (4.3) keeps a protobuf file in the user's Google Drive in step with it (`drive.file` scope — the app sees only files it creates). |
 | Auth | Google sign-in (Google Identity Services token model, browser only, no refresh tokens) with an OAuth Client ID from a GCP project the user owns, in "testing" mode. It asks only for what's on: read-only Calendar access while the calendar is connected (4.1), and `drive.file` while Drive sync is on (4.3); each token carries just those. The access token lives in `sessionStorage` and expires after an hour (Reconnect). |
-| Devices | Desktop-first, phone usable. Below 640px: a header with the page's name, and the pages either as tabs along the bottom (Home, Week, Projects, Calendar, Work, with Settings at the top right; the default) or in a menu (☰) that opens a drawer listing all six, chosen in Settings → App for this device only (kept in localStorage, like the theme); toasts sit above the tabs; Home is Today, an agenda (3.0); the calendar opens in 3-day view when the default is Week; an event's card and the create card open as a sheet at the top of the screen, no taller than what the keyboard leaves visible (beside their block, the keyboard pushed them about and covered them); Settings rows stack, and the week journal is a list of days with tabs for the backlog and month notes (3.2). From 640px to 1024px Home scrolls: the calendar, then the planned sessions, projects and work cards at full length (beside the calendar, from 1024px, they share its height). Installable as an app (PWA; Settings → App), and usable offline after the first visit (a service worker caches the app's own files only, never API calls). |
+| Devices | Desktop-first, phone usable. Below 640px: a header with the page's name, and the pages either as tabs along the bottom (Home, Week, Projects, Calendar, Work, with Settings at the top right; the default) or in a menu (☰) that opens a drawer listing all six, chosen in Settings → App for this device only (kept in localStorage, like the theme); toasts sit above the tabs; Home is Today, an agenda (3.0); the calendar opens in 3-day view when the default is Week; an event's card and the create card open as a sheet at the top of the screen, no taller than what the keyboard leaves visible (beside their block, the keyboard pushed them about and covered them); Settings rows stack, and the week journal is a list of days with tabs for the backlog and month notes (3.2); a project's tasks are a list (3.3). From 640px to 1024px Home scrolls: the calendar, then the planned sessions, projects and work cards at full length (beside the calendar, from 1024px, they share its height). Installable as an app (PWA; Settings → App), and usable offline after the first visit (a service worker caches the app's own files only, never API calls). |
 | Stack | React + TypeScript 6.0 + Vite, Tailwind CSS, dnd-kit (drag and drop), Zustand (state), Radix Popover. TypeScript stays on 6.0 (the last release with a JavaScript API) until ESLint's TypeScript support handles 7. |
 | Visual style | Dense, dark-first dev-tool look (Linear/Grafana-like): compact, monospace accents. |
 
@@ -258,9 +258,23 @@ and details, as tabs in the side panel.
   type; double-click works too. An empty description is only a small
   "+ Add a description" link. The description tab keeps the full-height
   editor.
-- On narrow panels (phones, or a wide project list) the items table drops
-  its estimate and spent/plan columns, which the task overlay shows, and
-  long titles are cut short, so the table never scrolls sideways.
+- On narrow panels (a wide project list) the items table drops its estimate
+  and spent/plan columns, which the task overlay shows, and long titles are
+  cut short, so the table never scrolls sideways.
+- **On phones (below 640px)** the tabs are words across the width (Tasks,
+  About, Log · N, Details), and the items are a list, not the table:
+  - **One tap opens a task.** Its row is the title and a line in words: the
+    kind ("Assignment"), "due in 3d" or "held 12 Nov", and the hours with
+    units ("1h 30m of 4h").
+  - **The circle left of the title moves it on:** to do → in progress →
+    done → to do. Each tap is one undo step, offered in the undo bar (3.6).
+  - **Done tasks fold** under "Done · N" at the end of their list.
+  - **Adding needs only a title** (Enter or +). The options button next to
+    the field opens the kind, due date, estimate and group.
+  - **Groups** fold as on desktop. A group's ⋯ opens a sheet: rename, move
+    up or down, delete (its tasks stay). "group" above the list adds one. A
+    task changes group in its card.
+  - Selecting several tasks and dragging are left to wider screens.
 - **Groups** (folders for items, e.g. all classes of a course). Each group is
   a collapsible header with its name (click to rename), item count and
   done/total, in the project's group order. Items in no group come first,
