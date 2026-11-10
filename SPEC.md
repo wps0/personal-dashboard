@@ -456,6 +456,10 @@ Also found: on a phone the calendar layers can't be shown or hidden (the
 sidebar is hidden; since then, the ☰ opens it over the calendar), and a tap on a short event may hit its resize grip
 (seen in emulation).
 
+A research-based review followed in November 2026 (heuristics, measured
+tap targets, text sizes, contrast and tooltips on a phone and a desktop,
+walkthroughs, sources): `docs/ux_review.md`.
+
 **The pattern:** Home answers "what's today", but nearly every change happens
 somewhere else (backlog and day notes on Week, the log in the panel, status
 behind a dropdown, Google reconnect in Calendar or Settings).
