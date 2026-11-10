@@ -316,7 +316,7 @@ const EventChip = memo(function EventChip({event}: {event: CalendarEvent}) {
         </div>
       </PopoverAnchor>
       {open && (
-        <PopoverContent side="right" align="start">
+        <PopoverContent sheet side="right" align="start">
           <EventEditor eventId={event.id} />
         </PopoverContent>
       )}
@@ -378,7 +378,7 @@ function DraftChip() {
           {look.title}
         </div>
       </PopoverAnchor>
-      <PopoverContent side="right" align="start">
+      <PopoverContent sheet side="right" align="start">
         <DraftEditor />
       </PopoverContent>
     </Popover>

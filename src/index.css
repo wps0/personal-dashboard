@@ -453,3 +453,35 @@
     z-index: 25;
   }
 }
+
+/*
+ * Phones: an event's card and the create card as a sheet at the top of the
+ * screen (PopoverContent's `sheet`), as wide as it and no taller than what's
+ * visible above the keyboard (--visible-height, see main.tsx). Anchored
+ * beside its block, the card was pushed about, and under the keyboard, as
+ * it opened. !important: Radix positions the wrapper with inline styles.
+ */
+@media (max-width: 639px) {
+  [data-radix-popper-content-wrapper]:has(> [data-sheet]) {
+    position: fixed !important;
+    top: calc(env(safe-area-inset-top, 0px) + 8px) !important;
+    right: 8px !important;
+    left: 8px !important;
+    min-width: 0 !important;
+    transform: none !important;
+    translate: none !important;
+  }
+  [data-sheet] {
+    max-height: calc(var(--visible-height, 100dvh) - 16px);
+    overflow-y: auto;
+    overscroll-behavior: contain;
+  }
+  [data-sheet] > * {
+    width: auto !important;
+    max-width: none !important;
+  }
+  /* It stays put: no grip to move it by. */
+  [data-sheet] button[aria-label^='Move'] {
+    visibility: hidden;
+  }
+}

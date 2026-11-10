@@ -32,12 +32,22 @@ export function useBeside(open: boolean, cardWidth = CARD_WIDTH) {
       fits ? GAP : Math.max(-(cardWidth + 2 * GAP), EDGE - r.right),
     );
   }, [open, cardWidth]);
-  const placement = {side: 'right', align: 'start', sideOffset} as const;
+  const placement = {
+    side: 'right',
+    align: 'start',
+    sideOffset,
+    sheet: true,
+  } as const;
   return [anchor, placement] as const;
 }
 
 /**
  * Floating card: portalled, flips and shifts to stay on screen, animates in/out.
+ *
+ * A `sheet` (an event's card, the create card) is shown on phones as a sheet
+ * at the top of the screen instead, as wide as it and no taller than what the
+ * keyboard leaves visible: a card beside its block got pushed about, and
+ * under the keyboard, as it opened (see `.sheet` in index.css).
  *
  * On open, focus goes to an element marked `data-autofocus` (or the card itself)
  * with `preventScroll`: Radix's default focus runs before the card is positioned,
@@ -46,13 +56,15 @@ export function useBeside(open: boolean, cardWidth = CARD_WIDTH) {
 export function PopoverContent({
   className = '',
   onOpenAutoFocus,
+  sheet,
   ...props
-}: ComponentProps<typeof RP.Content>) {
+}: ComponentProps<typeof RP.Content> & {sheet?: boolean}) {
   return (
     <RP.Portal>
       <RP.Content
         sideOffset={6}
         collisionPadding={EDGE}
+        data-sheet={sheet || undefined}
         {...props}
         onOpenAutoFocus={e => {
           onOpenAutoFocus?.(e);
