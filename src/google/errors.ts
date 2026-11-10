@@ -23,7 +23,7 @@ export class GoogleApiError extends Error {
 }
 
 /** The Google API a request went to; errors name it and link to its settings. */
-export type Service = 'calendar' | 'drive';
+export type Service = 'calendar' | 'drive' | 'tasks';
 
 const SERVICES: Record<
   Service,
@@ -44,6 +44,14 @@ const SERVICES: Record<
     permission:
       'Drive access is missing. Turn sync off and on again, and allow access to the files the app creates.',
     notFound: 'The sync file wasn’t found in Google Drive.',
+  },
+  tasks: {
+    name: 'Google Tasks',
+    enableUrl:
+      'https://console.cloud.google.com/apis/library/tasks.googleapis.com',
+    permission:
+      'Access to Google Tasks is missing. Hide them and show them again, and allow access.',
+    notFound: 'Task list not found. Was it deleted?',
   },
 };
 

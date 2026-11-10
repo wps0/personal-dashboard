@@ -31,6 +31,9 @@ import {eventStyle} from '../event_colors';
 import {useStore} from '../store';
 import {draftAt, useUi} from '../ui';
 import {DueChip} from './due_chip';
+import {GoogleTaskChip} from './google_task';
+import {useGoogleTasks} from '../google/use_google_tasks';
+import type {GTask} from '../google/tasks';
 import {DraftEditor, EventEditor, useDraftLook} from './event_editor';
 import {GoogleChip, useCloseMissingCard} from './google_event';
 import {useGoogleEvents} from '../google/use_google_events';
@@ -50,8 +53,9 @@ type Entry =
   | {kind: 'event'; event: CalendarEvent}
   | {kind: 'alloc'; alloc: Allocation}
   | {kind: 'google'; ev: GEvent};
-/** What a cell lists: draggable entries, and tasks due that day. */
-type CellEntry = Entry | {kind: 'due'; item: Item};
+/** What a cell lists: draggable entries, and tasks due that day (its own, Google's). */
+type CellEntry =
+  Entry | {kind: 'due'; item: Item} | {kind: 'gtask'; task: GTask};
 
 /** Month view: 6×7 cells with events and planned sessions; drag entries between days. */
 export function MonthGrid({
@@ -121,6 +125,7 @@ function MonthBody({
 
   const google = useGoogleEvents(days);
   useCloseMissingCard(google);
+  const googleTasks = useGoogleTasks(days);
   const byDay = useMemo(() => {
     const want = new Set(days);
     const m = new Map<ISODate, CellEntry[]>(days.map(d => [d, []]));
@@ -140,25 +145,41 @@ function MonthBody({
     }
     for (const [d, due] of dueByDay(days, {items, projects}, hidden))
       for (const item of due) m.get(d)!.push({kind: 'due', item});
-    // All-day first, then deadlines, then by time, then untimed sessions.
+    for (const [d, list] of googleTasks)
+      if (want.has(d))
+        for (const task of list) m.get(d)!.push({kind: 'gtask', task});
+    // All-day first, then deadlines (own, then Google's), then by time, then
+    // untimed sessions.
     const key = (x: CellEntry) =>
       x.kind === 'due'
         ? '01'
-        : x.kind === 'google'
-          ? x.ev.allDay
-            ? '0'
-            : `1${fromMinutes(x.ev.startMin)}`
-          : x.kind === 'event'
-            ? x.event.allDay
+        : x.kind === 'gtask'
+          ? '02'
+          : x.kind === 'google'
+            ? x.ev.allDay
               ? '0'
-              : `1${x.event.start}`
-            : x.alloc.start
-              ? `1${x.alloc.start}`
-              : '2';
+              : `1${fromMinutes(x.ev.startMin)}`
+            : x.kind === 'event'
+              ? x.event.allDay
+                ? '0'
+                : `1${x.event.start}`
+              : x.alloc.start
+                ? `1${x.alloc.start}`
+                : '2';
     for (const list of m.values())
       list.sort((a, b) => key(a).localeCompare(key(b)));
     return m;
-  }, [days, events, allocations, items, projects, hidden, lookups, google]);
+  }, [
+    days,
+    events,
+    allocations,
+    items,
+    projects,
+    hidden,
+    lookups,
+    google,
+    googleTasks,
+  ]);
 
   return (
     <div className="flex h-full min-h-0 flex-col overflow-hidden select-none">
@@ -251,6 +272,12 @@ const Cell = memo(function Cell({
             item={x.item}
             lookups={lookups}
             today={today}
+            variant="month"
+          />
+        ) : x.kind === 'gtask' ? (
+          <GoogleTaskChip
+            key={`gtask:${x.task.key}`}
+            task={x.task}
             variant="month"
           />
         ) : x.kind === 'google' ? (

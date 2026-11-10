@@ -20,6 +20,13 @@ export const SCOPES = [
  */
 export const DRIVE_SCOPE = 'https://www.googleapis.com/auth/drive.file';
 
+/**
+ * Google Tasks, read-only, requested only while it's shown (Settings → Google
+ * Calendar, or the calendar's sidebar): to show tasks with a due date on the
+ * calendar. Never needed for anything else.
+ */
+export const TASKS_SCOPE = 'https://www.googleapis.com/auth/tasks.readonly';
+
 const PREFS_KEY = 'personal-dashboard/google';
 const TOKEN_KEY = 'personal-dashboard/google-token';
 const GIS_SRC = 'https://accounts.google.com/gsi/client';
@@ -70,6 +77,8 @@ interface Prefs {
   driveSync: boolean;
   /** Google Calendar is on for this device: only then are its scopes requested. */
   calendar: boolean;
+  /** Google Tasks are shown on this device: only then is their scope requested. */
+  tasks: boolean;
 }
 
 interface GoogleState extends Prefs {
@@ -85,6 +94,8 @@ interface GoogleState extends Prefs {
   disconnectCalendar(): void;
   /** Turns Drive sync on (asking Google for Drive access) or off. */
   setDriveSync(on: boolean): void;
+  /** Shows Google Tasks (asking Google for read access to them) or stops. */
+  setTasks(on: boolean): void;
   toggleCalendar(id: string): void;
   signIn(): Promise<void>;
   signOut(): void;
@@ -105,13 +116,25 @@ export function calendarConnected(s: {status: Status; calendar: boolean}) {
   return s.status === 'signed-in' && s.calendar;
 }
 
+/** Whether the token is still good and carries `scope`. */
+function hasScope(t: Token | undefined, scope: string) {
+  return (
+    !!t && t.expiresAt > Date.now() && !!t.scope?.split(' ').includes(scope)
+  );
+}
+
 /** Whether the token can be used for Drive sync. */
 export function hasDriveAccess(t: Token | undefined) {
-  return (
-    !!t &&
-    t.expiresAt > Date.now() &&
-    !!t.scope?.split(' ').includes(DRIVE_SCOPE)
-  );
+  return hasScope(t, DRIVE_SCOPE);
+}
+
+/** Whether Google Tasks are on and the token can read them. */
+export function tasksConnected(s: {
+  status: Status;
+  tasks: boolean;
+  token?: Token;
+}) {
+  return s.status === 'signed-in' && s.tasks && hasScope(s.token, TASKS_SCOPE);
 }
 
 function loadPrefs(): Prefs {
@@ -121,6 +144,7 @@ function loadPrefs(): Prefs {
     consented: false,
     driveSync: false,
     calendar: false,
+    tasks: false,
   };
   try {
     const stored = JSON.parse(localStorage.getItem(PREFS_KEY) ?? '{}');
@@ -198,7 +222,7 @@ export const useGoogle = create<GoogleState>()((set, get) => {
    * for access that token lacks.
    */
   const keepSession = (error?: string) => {
-    const {token, calendar, driveSync} = get();
+    const {token, calendar, driveSync, tasks} = get();
     if (!token || token.expiresAt <= Date.now()) {
       set({status: token ? 'expired' : 'signed-out', error});
       return;
@@ -208,6 +232,7 @@ export const useGoogle = create<GoogleState>()((set, get) => {
       ...(calendar &&
         !SCOPES.every(s => granted.includes(s)) && {calendar: false}),
       ...(driveSync && !granted.includes(DRIVE_SCOPE) && {driveSync: false}),
+      ...(tasks && !granted.includes(TASKS_SCOPE) && {tasks: false}),
     });
     set({status: 'signed-in', error});
   };
@@ -238,7 +263,15 @@ export const useGoogle = create<GoogleState>()((set, get) => {
       // Ask for Drive access unless this token already has it.
       if (on && !hasDriveAccess(get().token)) void get().signIn();
       // Nothing uses Google any more: give the access back.
-      else if (!on && !get().calendar && get().token) get().signOut();
+      else if (!on && !get().calendar && !get().tasks && get().token)
+        get().signOut();
+    },
+
+    setTasks: on => {
+      prefs({tasks: on});
+      if (on && !hasScope(get().token, TASKS_SCOPE)) void get().signIn();
+      else if (!on && !get().calendar && !get().driveSync && get().token)
+        get().signOut();
     },
 
     toggleCalendar: id => {
@@ -251,8 +284,8 @@ export const useGoogle = create<GoogleState>()((set, get) => {
     },
 
     signIn: async () => {
-      const {clientId, consented, driveSync, calendar} = get();
-      if (!calendar && !driveSync) return;
+      const {clientId, consented, driveSync, calendar, tasks} = get();
+      if (!calendar && !driveSync && !tasks) return;
       if (!clientId) {
         set({
           status: 'error',
@@ -263,10 +296,11 @@ export const useGoogle = create<GoogleState>()((set, get) => {
       set({status: 'signing-in', error: undefined});
       try {
         const gis = await loadGis();
-        // Only what's in use: the calendar's scopes, Drive's, or both.
+        // Only what's in use: the calendar's scopes, Drive's, Tasks'.
         const wanted = [
           ...(calendar ? SCOPES : []),
           ...(driveSync ? [DRIVE_SCOPE] : []),
+          ...(tasks ? [TASKS_SCOPE] : []),
         ];
         const scope = wanted.join(' ');
         const client = gis.accounts.oauth2.initTokenClient({
@@ -288,11 +322,15 @@ export const useGoogle = create<GoogleState>()((set, get) => {
             const noDrive =
               driveSync &&
               !gis.accounts.oauth2.hasGrantedAllScopes(r, DRIVE_SCOPE);
+            const noTasks =
+              tasks && !gis.accounts.oauth2.hasGrantedAllScopes(r, TASKS_SCOPE);
             const error = [
               noCalendar &&
                 'Both calendar permissions are needed (events and the calendar list), so the calendar stays off. Connect it again and keep both ticked.',
               noDrive &&
                 'Drive access wasn’t allowed, so Drive sync stays off.',
+              noTasks &&
+                'Access to Google Tasks wasn’t allowed, so they stay hidden.',
             ]
               .filter(Boolean)
               .join(' ');
@@ -300,8 +338,13 @@ export const useGoogle = create<GoogleState>()((set, get) => {
               consented: true,
               ...(noCalendar && {calendar: false}),
               ...(noDrive && {driveSync: false}),
+              ...(noTasks && {tasks: false}),
             });
-            if ((!calendar || noCalendar) && (!driveSync || noDrive)) {
+            if (
+              (!calendar || noCalendar) &&
+              (!driveSync || noDrive) &&
+              (!tasks || noTasks)
+            ) {
               // Nothing usable was allowed.
               set({status: 'error', error});
               return;

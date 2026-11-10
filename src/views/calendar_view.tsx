@@ -27,6 +27,7 @@ import {href, navigate, type CalView} from '../router';
 import {calendarConnected, useGoogle} from '../google/auth';
 import {useGoogleCalendars} from '../google/calendars';
 import {clearGoogleCache} from '../google/use_google_events';
+import {clearGoogleTasks, TASKS_LAYER} from '../google/use_google_tasks';
 import {GoogleErrorNotice} from '../components/google_error_notice';
 import {useStore} from '../store';
 import {nextHourDraft, useUi} from '../ui';
@@ -421,13 +422,18 @@ function GoogleLayers() {
       </div>
     );
   }
-  const rows = g.calendars
-    .filter(c => g.selected.includes(c.id))
-    .map(c => ({
-      key: `g:${c.id}`,
-      name: c.summaryOverride ?? c.summary,
-      color: c.backgroundColor ?? '#8ab4f8',
-    }));
+  const rows = [
+    ...g.calendars
+      .filter(c => g.selected.includes(c.id))
+      .map(c => ({
+        key: `g:${c.id}`,
+        name: c.summaryOverride ?? c.summary,
+        color: c.backgroundColor ?? '#8ab4f8',
+      })),
+    ...(g.tasks
+      ? [{key: TASKS_LAYER, name: 'Tasks', color: 'var(--color-accent)'}]
+      : []),
+  ];
   return (
     <div className="space-y-2">
       <GoogleErrorNotice compact />
@@ -439,12 +445,24 @@ function GoogleLayers() {
             className="icon-btn h-6 w-6"
             title="Refresh from Google"
             aria-label="Refresh from Google"
-            onClick={clearGoogleCache}
+            onClick={() => {
+              clearGoogleCache();
+              clearGoogleTasks();
+            }}
           >
             <RefreshCw size={13} />
           </button>
         }
       />
+      {!g.tasks && (
+        <button
+          className="block px-1 text-[12px] text-accent hover:underline"
+          onClick={() => g.setTasks(true)}
+          title="Tasks with a due date, on their day, read-only (asks Google for access to read them)"
+        >
+          Show Google Tasks…
+        </button>
+      )}
     </div>
   );
 }

@@ -537,6 +537,19 @@ asking for write access.
   not found, rate limited, offline…) with a link to fix them where Google
   gives one, and a Retry button. Rate limits and server errors are retried
   3 times with backoff. One failing calendar doesn't hide the others.
+- **Google Tasks** (off until turned on: Settings → Google Calendar, or
+  "Show Google Tasks…" in the calendar's sidebar). Tasks with a due date,
+  from every list, show on their day in the all-day row and month cells,
+  next to the app's own deadlines: a circle, ticked and struck through once
+  done. Clicking one opens a read-only card (due date, notes, list, a link
+  to it in Google Tasks). The sidebar's "Tasks" layer hides them.
+  - **Scope:** `tasks.readonly`, asked for only while they're shown (like
+    `drive.file` for sync), so connecting the calendar never asks for it. If
+    it's refused, they stay hidden and the rest keeps working. GET only.
+  - **Due dates** are dates only (Google keeps no time of day), taken as
+    they are, not moved by the time zone. Undated tasks aren't shown.
+  - Fetched per visible range like events (5 minutes fresh, Refresh
+    reloads them); the Cloud project needs the Google Tasks API enabled.
 
 **Later (v2): two-way.**
 - Create and edit events (the local events become Google events).

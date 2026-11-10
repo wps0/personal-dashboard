@@ -39,7 +39,7 @@ type GoogleState = ReturnType<typeof useGoogle.getState>;
 
 function signedOut(g: GoogleState): boolean {
   return (
-    (g.calendar || g.driveSync) &&
+    (g.calendar || g.driveSync || g.tasks) &&
     g.status !== 'signed-in' &&
     g.status !== 'signing-in'
   );
