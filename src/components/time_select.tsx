@@ -94,8 +94,10 @@ function TimeSelectImpl({
     setShown(value);
     setText(TIME.test(value) ? show(value) : '');
   }
-  // The highlighted option; -1 while what's typed is what counts.
+  // The option picked with the arrow keys; -1 while what's typed is what
+  // counts. The mouse only highlights (`hover`), so Enter keeps what's typed.
   const [active, setActive] = useState(-1);
+  const [hover, setHover] = useState(-1);
   const input = useRef<HTMLInputElement>(null);
   const listId = useId();
 
@@ -110,6 +112,7 @@ function TimeSelectImpl({
   const close = () => {
     setOpen(false);
     setActive(-1);
+    setHover(-1);
   };
   /** Keeps a typed time if it's one; otherwise back to the value. */
   const commit = (typed: string) => {
@@ -129,6 +132,8 @@ function TimeSelectImpl({
 
   const typedNear = typedTime(text, end);
   const nearIndex = near(typedNear ?? (isTime ? value : '09:00'));
+  // While a time is typed, the list moves to it.
+  const follow = typedNear && text !== show(value) ? near(typedNear) : -1;
 
   const onKeyDown = (e: KeyboardEvent<HTMLInputElement>) => {
     if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
@@ -218,8 +223,10 @@ function TimeSelectImpl({
             options={options}
             value={value}
             near={nearIndex}
+            follow={follow}
             active={active}
-            onHover={setActive}
+            hover={hover}
+            onHover={setHover}
             onPick={pick}
           />
         </PopoverContent>
@@ -235,7 +242,9 @@ function TimeList({
   options,
   value,
   near,
+  follow,
   active,
+  hover,
   onHover,
   onPick,
 }: {
@@ -245,7 +254,12 @@ function TimeList({
   value: string;
   /** The option to show in the middle when it opens. */
   near: number;
+  /** The option at or before the time typed so far, to scroll to; -1 for none. */
+  follow: number;
+  /** Picked with the arrow keys. */
   active: number;
+  /** Under the mouse: highlighted only. */
+  hover: number;
   onHover(i: number): void;
   onPick(t: string): void;
 }) {
@@ -270,8 +284,16 @@ function TimeList({
     });
     observer.observe(el);
     return () => observer.disconnect();
-    // Only as it opens: typing then moves the highlight, not the list.
+    // Only as it opens; then typing (below) and the arrow keys move it.
   }, []);
+  useLayoutEffect(() => {
+    const el = list.current;
+    const option =
+      follow >= 0 && el?.querySelector<HTMLElement>(`[data-index="${follow}"]`);
+    if (el && option)
+      el.scrollTop =
+        option.offsetTop - (el.clientHeight - option.offsetHeight) / 2;
+  }, [follow]);
   useLayoutEffect(() => {
     if (active >= 0)
       list.current
@@ -298,9 +320,12 @@ function TimeList({
           data-index={i}
           data-near={i === near || undefined}
           onMouseEnter={() => onHover(i)}
+          onMouseLeave={() => onHover(-1)}
           onClick={() => onPick(o.value)}
           className={`flex cursor-pointer items-center rounded-md py-1.5 pr-8 pl-2.5 tabular-nums select-none ${
-            i === active || (active < 0 && o.value === value) ? 'bg-raised' : ''
+            i === active || i === hover || (active < 0 && o.value === value)
+              ? 'bg-raised'
+              : ''
           } ${o.value === value ? 'font-medium text-strong' : ''}`}
         >
           {o.label}
