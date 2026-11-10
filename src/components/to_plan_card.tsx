@@ -115,7 +115,7 @@ export function ToPlanCard() {
   return (
     <section
       aria-label="To plan"
-      className="flex max-h-[25%] min-h-24 flex-col rounded border border-line bg-panel"
+      className="flex max-h-80 flex-col rounded border border-line bg-panel lg:max-h-[25%] lg:min-h-24"
     >
       <header className="flex items-center border-b border-line px-2 py-1">
         <span className="label">to plan</span>

@@ -18,7 +18,7 @@ See README.md for running and deploying it.
 | Storage (v1) | Browser storage (IndexedDB), as protobuf binary (see Data schema in 6). Settings → Data exports protobuf's JSON form (readable) or the protobuf binary (`.binpb`, exactly as stored and as on Drive); Import takes either, telling them apart by content (JSON starts with `{`), and upgrades older schema versions as it reads. |
 | Storage (v2) | ✅ IndexedDB stays the local copy on every device; Drive sync (4.3) keeps a protobuf file in the user's Google Drive in step with it (`drive.file` scope — the app sees only files it creates). |
 | Auth | Google sign-in (Google Identity Services token model, browser only, no refresh tokens) with an OAuth Client ID from a GCP project the user owns, in "testing" mode. It asks only for what's on: read-only Calendar access while the calendar is connected (4.1), and `drive.file` while Drive sync is on (4.3); each token carries just those. The access token lives in `sessionStorage` and expires after an hour (Reconnect). |
-| Devices | Desktop-first, phone usable. Below 640px: a header with the page's name, and the pages either as tabs along the bottom (Home, Week, Projects, Calendar, Work, with Settings at the top right; the default) or in a menu (☰) that opens a drawer listing all six, chosen in Settings → App for this device only (kept in localStorage, like the theme); toasts sit above the tabs; Home is Today, an agenda (3.0); the calendar opens in 3-day view when the default is Week, Settings rows stack, and the week journal's days stack into a list. Installable as an app (PWA; Settings → App), and usable offline after the first visit (a service worker caches the app's own files only, never API calls). |
+| Devices | Desktop-first, phone usable. Below 640px: a header with the page's name, and the pages either as tabs along the bottom (Home, Week, Projects, Calendar, Work, with Settings at the top right; the default) or in a menu (☰) that opens a drawer listing all six, chosen in Settings → App for this device only (kept in localStorage, like the theme); toasts sit above the tabs; Home is Today, an agenda (3.0); the calendar opens in 3-day view when the default is Week, Settings rows stack, and the week journal's days stack into a list. From 640px to 1024px Home scrolls: the calendar, then the planned sessions, projects and work cards at full length (beside the calendar, from 1024px, they share its height). Installable as an app (PWA; Settings → App), and usable offline after the first visit (a service worker caches the app's own files only, never API calls). |
 | Stack | React + TypeScript 6.0 + Vite, Tailwind CSS, dnd-kit (drag and drop), Zustand (state), Radix Popover. TypeScript stays on 6.0 (the last release with a JavaScript API) until ESLint's TypeScript support handles 7. |
 | Visual style | Dense, dark-first dev-tool look (Linear/Grafana-like): compact, monospace accents. |
 
@@ -88,7 +88,8 @@ their default then, and stay as they are.
   ("1h free", amber when the session wouldn't fit, "full"). Picking a day
   plans the session there, with a toast that names the day and offers Undo.
   No dragging, and no trip to the Week page. The title opens the task. The
-  card isn't shown when nothing is left to plan.
+  card isn't shown when nothing is left to plan. Where Home scrolls
+  (below 1024px) it shows about six tasks and scrolls within.
 - A compact project overview (ring, X/Y done, next deadline), sorted by the
   nearest deadline.
 - A small work card under it: today's logged work (or the planned work with
