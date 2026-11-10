@@ -1,11 +1,13 @@
 /**
- * @fileoverview Asking a signed-out device to sign in to Google again, on
- * Home: a popup when Home opens signed out; after "Not now", a banner until
- * the device signs in. Only for a device that uses Google (Calendar or Drive
- * sync): one that never did isn't asked.
+ * @fileoverview Asking a signed-out device to sign in to Google again: a
+ * popup on whatever page is open when the signed-out spell starts (opening
+ * the app signed out, or a session ending), then, after "Not now", a banner
+ * on Home until the device signs in. Only for a device that uses Google
+ * (Calendar or Drive sync): one that never did isn't asked.
  */
 import {LogIn, X} from 'lucide-react';
-import {useEffect, useState} from 'react';
+import {useEffect} from 'react';
+import {create} from 'zustand';
 import {useGoogle} from '../google/auth';
 import {Modal} from './modal';
 
@@ -26,14 +28,18 @@ function readStage(): Stage {
   }
 }
 
-function writeStage(stage: Stage) {
-  try {
-    if (stage === 'popup') sessionStorage.removeItem(KEY);
-    else sessionStorage.setItem(KEY, stage);
-  } catch {
-    // Storage blocked: it just asks again next time.
-  }
-}
+const useStage = create<{stage: Stage; to(stage: Stage): void}>(set => ({
+  stage: readStage(),
+  to: stage => {
+    try {
+      if (stage === 'popup') sessionStorage.removeItem(KEY);
+      else sessionStorage.setItem(KEY, stage);
+    } catch {
+      // Storage blocked: it just asks again next time.
+    }
+    set({stage});
+  },
+}));
 
 type GoogleState = ReturnType<typeof useGoogle.getState>;
 
@@ -47,67 +53,67 @@ function signedOut(g: GoogleState): boolean {
 
 const PAUSED = 'Your Google Calendar events and Drive sync are paused.';
 
+function signIn() {
+  void useGoogle.getState().signIn();
+}
+
 /**
- * Home's sign-in prompt, where its banner goes (the popup overlays the
- * page). The popup only shows if Home opened signed out: signed out later,
- * while here (sessions last an hour), it's the banner.
+ * The popup, on every page (it's in the app's frame): when the app opens
+ * signed out, and when a session ends while it's open (they last an hour).
  */
-export function SignInPrompt() {
+export function SignInPopup() {
   const out = useGoogle(signedOut);
   const signedIn = useGoogle(s => s.status === 'signed-in');
-  const [openedOut] = useState(() => signedOut(useGoogle.getState()));
-  // Re-read the stage after a change to it.
-  const [, changed] = useState(0);
+  const stage = useStage(s => s.stage);
   // Signed in: the next signed-out spell starts with the popup again.
   useEffect(() => {
-    if (signedIn) writeStage('popup');
+    if (signedIn) useStage.getState().to('popup');
   }, [signedIn]);
-  if (!out) return null;
-  const stage = readStage();
-  const to = (next: Stage) => {
-    writeStage(next);
-    changed(n => n + 1);
-  };
-  const signIn = () => void useGoogle.getState().signIn();
-
-  if (stage === 'popup' && openedOut)
-    return (
-      <Modal
-        onClose={() => to('banner')}
-        width="max-w-sm"
-        label="Signed out of Google"
-      >
-        <div className="p-5">
-          <div className="mb-3 flex h-10 w-10 items-center justify-center rounded-full bg-accent/15 text-accent">
-            <LogIn size={20} aria-hidden />
-          </div>
-          <h2 className="text-[16px] font-semibold text-strong">
-            You're signed out of Google
-          </h2>
-          <p className="mt-1 text-[13px] text-dim">
-            {PAUSED} Google ends a session after an hour; signing in again picks
-            up where you left off.
-          </p>
-          <div className="mt-4 flex justify-end gap-2">
-            <button className="btn-ghost" onClick={() => to('banner')}>
-              Not now
-            </button>
-            <button
-              autoFocus
-              className="btn border-accent bg-accent text-on-accent"
-              onClick={() => {
-                // Should it not work out, the banner stays.
-                to('banner');
-                signIn();
-              }}
-            >
-              Sign in with Google
-            </button>
-          </div>
+  if (!out || stage !== 'popup') return null;
+  const to = useStage.getState().to;
+  return (
+    <Modal
+      onClose={() => to('banner')}
+      width="max-w-sm"
+      label="Signed out of Google"
+    >
+      <div className="p-5">
+        <div className="mb-3 flex h-10 w-10 items-center justify-center rounded-full bg-accent/15 text-accent">
+          <LogIn size={20} aria-hidden />
         </div>
-      </Modal>
-    );
-  if (stage === 'hidden') return null;
+        <h2 className="text-[16px] font-semibold text-strong">
+          You're signed out of Google
+        </h2>
+        <p className="mt-1 text-[13px] text-dim">
+          {PAUSED} Google ends a session after an hour; signing in again picks
+          up where you left off.
+        </p>
+        <div className="mt-4 flex justify-end gap-2">
+          <button className="btn-ghost" onClick={() => to('banner')}>
+            Not now
+          </button>
+          <button
+            autoFocus
+            className="btn border-accent bg-accent text-on-accent"
+            onClick={() => {
+              // Should it not work out, the banner stays.
+              to('banner');
+              signIn();
+            }}
+          >
+            Sign in with Google
+          </button>
+        </div>
+      </div>
+    </Modal>
+  );
+}
+
+/** Home's banner, after the popup's "Not now", until the device signs in. */
+export function SignInBanner() {
+  const out = useGoogle(signedOut);
+  const stage = useStage(s => s.stage);
+  if (!out || stage !== 'banner') return null;
   return (
     <div
       role="status"
@@ -125,7 +131,7 @@ export function SignInPrompt() {
         className="icon-btn h-7 w-7"
         aria-label="Hide until next time"
         title="Hide until next time"
-        onClick={() => to('hidden')}
+        onClick={() => useStage.getState().to('hidden')}
       >
         <X size={14} />
       </button>

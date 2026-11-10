@@ -95,13 +95,15 @@ their default then, and stay as they are.
 - A small work card under it: today's logged work (or the planned work with
   **Log as planned**) and the week's hours against its target (SPEC 3.10).
 - **Signed out of Google** (on a device that uses Calendar or Drive sync, not
-  one that never did): opening Home shows a popup, "You're signed out of
-  Google", with **Sign in with Google** and **Not now**. After Not now (or
-  Esc, or a click outside), or a sign-in that didn't work out, a banner above
-  the planned sessions takes over until the device signs in; its × hides it
-  for the rest of this tab. Signed out while on Home (sessions last an hour),
-  it's the banner, not a popup. Signing in starts over: the next spell opens
-  with the popup again.
+  one that never did): a popup, "You're signed out of Google", with **Sign
+  in with Google** and **Not now**, on whatever page is open. It comes when
+  the app opens signed out, and when a session ends while it's open:
+  sessions last an hour, and the app ends one when its token runs out, not
+  only at its next call to Google. After Not now (or Esc, or a click
+  outside), or a sign-in that didn't work out, a banner above Home's planned
+  sessions takes over until the device signs in; its × hides it for the
+  rest of this tab. Signing in starts over: the next spell opens with the
+  popup again.
 
 **On phones (below 640px), Home is Today**, an agenda, not the grid (three
 narrow columns told little and were hard to tap; the grid is on the Calendar

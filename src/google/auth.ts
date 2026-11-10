@@ -419,3 +419,24 @@ export const useGoogle = create<GoogleState>()((set, get) => {
     },
   };
 });
+
+/**
+ * Ends the session when its token runs out, so the app shows it (the sign-in
+ * popup) on whatever page is open, not only at its next call to Google.
+ */
+let expiryTimer: ReturnType<typeof setTimeout> | undefined;
+function watchExpiry(token: Token | undefined) {
+  clearTimeout(expiryTimer);
+  if (!token) return;
+  expiryTimer = setTimeout(
+    () => {
+      const {token: now, markExpired} = useGoogle.getState();
+      if (now?.value === token.value) markExpired();
+    },
+    Math.max(0, token.expiresAt - Date.now()),
+  );
+}
+watchExpiry(useGoogle.getState().token);
+useGoogle.subscribe((s, prev) => {
+  if (s.token !== prev.token) watchExpiry(s.token);
+});
