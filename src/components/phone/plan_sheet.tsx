@@ -6,7 +6,7 @@ import {
   removeSession,
   updateSession,
 } from '../../actions';
-import {PLAN_DAYS, PLAN_LENGTHS} from '../../config';
+import {DAY_PLAN_ROWS, PLAN_DAYS, PLAN_LENGTHS} from '../../config';
 import {fmtDuration} from '../../format';
 import {useFreeHours, useToday} from '../../hooks';
 import {addDays} from '../../model/dates';
@@ -189,6 +189,70 @@ export function SessionSheet({
           Remove from the plan
         </button>
       </div>
+    </Sheet>
+  );
+}
+
+/**
+ * Planning onto a day from the day's side: the tasks that still need time,
+ * a tap plans one there.
+ */
+export function DayPlanSheet({day, onClose}: {day: ISODate; onClose(): void}) {
+  const today = useToday();
+  const days = useMemo(() => [day], [day]);
+  const room = useFreeHours(days).get(day) ?? 0;
+  const items = useStore(s => s.data.items);
+  const allocations = useStore(s => s.data.allocations);
+  const projects = useStore(s => s.data.projects);
+  const backlog = useMemo(
+    () => backlogItems({items, allocations, projects}, today),
+    [items, allocations, projects, today],
+  );
+  const on = relativeDay(day, today).replace(/^T/, 't');
+  return (
+    <Sheet
+      title={`Plan for ${on}`}
+      subtitle={room > 0 ? `${fmtDuration(room)} free` : 'The day is full'}
+      onClose={onClose}
+    >
+      {backlog.length === 0 && (
+        <p className="py-3 text-dim">Nothing is waiting to be planned.</p>
+      )}
+      <ul className="-mx-2">
+        {backlog.slice(0, DAY_PLAN_ROWS).map(({item, remaining}) => {
+          const hours = defaultAllocationHours(remaining);
+          return (
+            <li key={item.id}>
+              <button
+                className="flex min-h-12 w-full items-center gap-3 rounded-lg px-2 py-1 text-left active:bg-raised"
+                onClick={() => {
+                  planSession(
+                    item.id,
+                    day,
+                    hours,
+                    `Planned “${item.title}” for ${on}`,
+                  );
+                  onClose();
+                }}
+              >
+                <span className="min-w-0 flex-1">
+                  <span className="block truncate text-strong">
+                    {item.title}
+                  </span>
+                  <span className="block truncate text-[13px] text-dim">
+                    {projects.find(p => p.id === item.projectId)?.name}
+                  </span>
+                </span>
+                <span
+                  className={`text-[13px] tabular-nums ${room >= hours ? 'text-ok' : 'text-warn'}`}
+                >
+                  {fmtDuration(hours)}
+                </span>
+              </button>
+            </li>
+          );
+        })}
+      </ul>
     </Sheet>
   );
 }
