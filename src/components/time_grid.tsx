@@ -67,6 +67,9 @@ import {useStore} from '../store';
 import {draftAt, useUi} from '../ui';
 import {CapacityBadge} from './capacity_badge';
 import {DueChip} from './due_chip';
+import {GoogleTaskChip} from './google_task';
+import {useGoogleTasks} from '../google/use_google_tasks';
+import type {GTask} from '../google/tasks';
 import {
   GoogleChip,
   GoogleTimedBlock,
@@ -327,6 +330,7 @@ function GridBody({days, hourHeight, scrollToHour, onDayClick}: BodyProps) {
   const reserved = useMemo(() => reservedByDay(events, days), [events, days]);
 
   const google = useGoogleEvents(days);
+  const googleTasks = useGoogleTasks(days);
   useCloseMissingCard(google);
   const googleByDay = useMemo(() => {
     const m = new Map<ISODate, {timed: GEvent[]; allDay: GEvent[]}>();
@@ -477,6 +481,7 @@ function GridBody({days, hourHeight, scrollToHour, onDayClick}: BodyProps) {
             allocs={byDay.get(d)!.untimed}
             events={byDay.get(d)!.allDay}
             google={allDay.singles.get(d)!}
+            tasks={googleTasks.get(d) ?? EMPTY}
             due={due.get(d)!}
             today={today}
             lookups={lookups}
@@ -562,6 +567,8 @@ const Strip = memo(function Strip(props: {
   allocs: Allocation[];
   events: CalendarEvent[];
   google: GEvent[];
+  /** Google Tasks due this day. */
+  tasks: GTask[];
   /** Tasks due this day. */
   due: Item[];
   today: ISODate;
@@ -575,6 +582,7 @@ const Strip = memo(function Strip(props: {
     allocs,
     events,
     google,
+    tasks,
     due,
     today,
     lookups,
@@ -593,6 +601,9 @@ const Strip = memo(function Strip(props: {
         today={today}
         variant="strip"
       />
+    )),
+    ...tasks.map(t => (
+      <GoogleTaskChip key={`gtask:${t.key}`} task={t} variant="strip" />
     )),
     ...allocs.map(a => <StripChip key={a.id} alloc={a} lookups={lookups} />),
   ];

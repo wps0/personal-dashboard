@@ -1,7 +1,13 @@
 import {Lock, LogOut, RefreshCw} from 'lucide-react';
-import {calendarConnected, useGoogle, SCOPES} from '../google/auth';
+import {
+  calendarConnected,
+  useGoogle,
+  SCOPES,
+  TASKS_SCOPE,
+} from '../google/auth';
 import {useGoogleCalendars} from '../google/calendars';
 import {clearGoogleCache} from '../google/use_google_events';
+import {clearGoogleTasks} from '../google/use_google_tasks';
 import {BufferedInput} from './buffered';
 import {GoogleErrorNotice} from './google_error_notice';
 
@@ -86,6 +92,7 @@ export function GoogleSettings() {
               className="btn"
               onClick={() => (
                 clearGoogleCache(),
+                clearGoogleTasks(),
                 useGoogle.setState({calendars: []})
               )}
               title="Reload calendars and events"
@@ -120,6 +127,25 @@ export function GoogleSettings() {
       </div>
 
       <GoogleErrorNotice />
+
+      <label className="flex w-fit cursor-pointer items-start gap-2 rounded-md px-1 py-1 hover:bg-raised">
+        <input
+          type="checkbox"
+          className="mt-0.5"
+          checked={g.tasks}
+          disabled={!g.clientId || g.status === 'signing-in'}
+          onChange={e => g.setTasks(e.target.checked)}
+        />
+        <span>
+          Google Tasks on the calendar
+          <span className="block text-[12px] text-dim">
+            Tasks with a due date, on their day, read-only. Asks Google for{' '}
+            <code className="text-fg">{TASKS_SCOPE.split('/').pop()}</code> only
+            while this is on. Your Google Cloud project needs the{' '}
+            <b>Google Tasks API</b> enabled.
+          </span>
+        </span>
+      </label>
 
       {connected && g.calendars.length > 0 && (
         <div>

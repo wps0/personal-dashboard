@@ -47,7 +47,14 @@ vi.stubGlobal('window', {
   },
 });
 
-const {DRIVE_SCOPE, SCOPES, hasDriveAccess, useGoogle} = await import('./auth');
+const {
+  DRIVE_SCOPE,
+  SCOPES,
+  TASKS_SCOPE,
+  hasDriveAccess,
+  tasksConnected,
+  useGoogle,
+} = await import('./auth');
 
 describe('Drive access in the Google sign-in', () => {
   beforeEach(() => {
@@ -187,5 +194,50 @@ describe('Calendar preference', () => {
     expect(await fresh({clientId: 'id'})).toBe(false);
     expect(await fresh({consented: true, calendar: false})).toBe(false);
     store.delete(key);
+  });
+});
+
+describe('Google Tasks in the sign-in', () => {
+  beforeEach(() => {
+    requested = '';
+    grant = s => s;
+    useGoogle.setState({
+      clientId: 'id',
+      driveSync: false,
+      calendar: true,
+      tasks: false,
+      status: 'signed-out',
+      token: undefined,
+      error: undefined,
+    });
+  });
+
+  it('asks for read access to tasks only when they are turned on', async () => {
+    await useGoogle.getState().signIn();
+    expect(requested).not.toContain(TASKS_SCOPE);
+    expect(TASKS_SCOPE).toMatch(/tasks\.readonly$/);
+    useGoogle.getState().setTasks(true);
+    await vi.waitFor(() => expect(requested).toContain(TASKS_SCOPE));
+    expect(requested.split(' ').sort()).toEqual(
+      [...SCOPES, TASKS_SCOPE].sort(),
+    );
+    expect(tasksConnected(useGoogle.getState())).toBe(true);
+  });
+
+  it('keeps the calendar and hides tasks if their access is refused', async () => {
+    grant = s => s.replace(TASKS_SCOPE, '').trim();
+    useGoogle.getState().setTasks(true);
+    await vi.waitFor(() =>
+      expect(useGoogle.getState().status).toBe('signed-in'),
+    );
+    expect(useGoogle.getState()).toMatchObject({tasks: false, calendar: true});
+    expect(useGoogle.getState().error).toMatch(/Google Tasks wasn’t allowed/);
+  });
+
+  it('works on its own, without the calendar or sync', async () => {
+    useGoogle.setState({calendar: false});
+    useGoogle.getState().setTasks(true);
+    await vi.waitFor(() => expect(requested).toBe(TASKS_SCOPE));
+    expect(useGoogle.getState().status).toBe('signed-in');
   });
 });
