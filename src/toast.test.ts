@@ -1,7 +1,15 @@
 import {beforeEach, describe, expect, it, vi} from 'vitest';
 import {emptyData} from './model/types';
 import {useStore} from './store';
-import {clearHistory, undoLast, useToasts, withUndo} from './toast';
+import {
+  clearHistory,
+  dismissLastStep,
+  undoLast,
+  undoStep,
+  useLastStep,
+  useToasts,
+  withUndo,
+} from './toast';
 
 function titles() {
   return useStore.getState().data.events.map(e => e.title);
@@ -57,5 +65,52 @@ describe('undo history', () => {
       .toasts.find(t => t.message === 'b')!
       .action!.run();
     expect(titles()).toEqual(['A']);
+  });
+});
+
+describe('the latest step, for the undo bar', () => {
+  beforeEach(() => {
+    vi.stubGlobal('window', {setTimeout: () => 0});
+    useStore.getState().replaceAll(emptyData());
+    useToasts.setState({toasts: []});
+    clearHistory();
+  });
+  const last = () => useLastStep.getState().step;
+
+  it('is kept for quiet changes too, and undone from the bar', () => {
+    withUndo('Session moved', () => add('A'), {quiet: true});
+    expect(useToasts.getState().toasts).toEqual([]);
+    expect(last()?.message).toBe('Session moved');
+    undoStep(last()!);
+    expect(titles()).toEqual([]);
+    expect(last()).toBeNull();
+  });
+
+  it('is replaced by the next change, and gone after Ctrl+Z or a dismissal', () => {
+    withUndo('a', () => add('A'));
+    withUndo('b', () => add('B'), {quiet: true});
+    expect(last()?.message).toBe('b');
+    undoLast();
+    expect(last()).toBeNull();
+    withUndo('c', () => add('C'));
+    dismissLastStep();
+    expect(last()).toBeNull();
+    // Still undoable with Ctrl+Z.
+    undoLast();
+    expect(titles()).toEqual(['A']);
+  });
+
+  it('refuses a step that is no longer the latest', () => {
+    withUndo('a', () => add('A'));
+    const first = last()!;
+    withUndo('b', () => add('B'));
+    undoStep(first);
+    expect(titles()).toEqual(['A', 'B']);
+    expect(useToasts.getState().toasts.at(-1)?.message).toMatch(/Can’t undo/);
+  });
+
+  it('marks undo toasts, so touch screens can leave them to the bar', () => {
+    withUndo('a', () => add('A'));
+    expect(useToasts.getState().toasts[0]).toMatchObject({undo: true});
   });
 });
