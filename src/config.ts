@@ -34,6 +34,14 @@ export const LOG_HOURS_DEFAULT = 8;
 /** The same on a day that already has something logged. */
 export const LOG_HOURS_MORE = 1;
 
+// Home (views/home_view.tsx)
+
+/**
+ * What Home's calendar shows on a device that hasn't picked: 'day', '3day'
+ * (from the start day) or 'week' (the calendar week).
+ */
+export const HOME_CALENDAR_DEFAULT = '3day';
+
 // Calendar (components/time_grid.tsx, components/month_grid.tsx)
 
 /** Height of an hour in the calendar's time grid, in pixels. */
