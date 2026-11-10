@@ -18,7 +18,7 @@ See README.md for running and deploying it.
 | Storage (v1) | Browser storage (IndexedDB), as protobuf binary (see Data schema in 6). Settings → Data exports protobuf's JSON form (readable) or the protobuf binary (`.binpb`, exactly as stored and as on Drive); Import takes either, telling them apart by content (JSON starts with `{`), and upgrades older schema versions as it reads. |
 | Storage (v2) | ✅ IndexedDB stays the local copy on every device; Drive sync (4.3) keeps a protobuf file in the user's Google Drive in step with it (`drive.file` scope — the app sees only files it creates). |
 | Auth | Google sign-in (Google Identity Services token model, browser only, no refresh tokens) with an OAuth Client ID from a GCP project the user owns, in "testing" mode. It asks only for what's on: read-only Calendar access while the calendar is connected (4.1), and `drive.file` while Drive sync is on (4.3); each token carries just those. The access token lives in `sessionStorage` and expires after an hour (Reconnect). |
-| Devices | Desktop-first, phone usable. Below 640px: a header with the page's name, and the pages either as tabs along the bottom (Home, Week, Projects, Calendar, Work, with Settings at the top right; the default) or in a menu (☰) that opens a drawer listing all six, chosen in Settings → App for this device only (kept in localStorage, like the theme); toasts sit above the tabs; the calendar opens in 3-day view when the default is Week; an event's card and the create card open as a sheet at the top of the screen, no taller than what the keyboard leaves visible (beside their block, the keyboard pushed them about and covered them); Settings rows stack, the week journal's days stack into a list, and Home scrolls: the calendar, then the planned sessions, projects and work cards at full length (beside the calendar, from 1024px, they share its height). Installable as an app (PWA; Settings → App), and usable offline after the first visit (a service worker caches the app's own files only, never API calls). |
+| Devices | Desktop-first, phone usable. Below 640px: a header with the page's name, and the pages either as tabs along the bottom (Home, Week, Projects, Calendar, Work, with Settings at the top right; the default) or in a menu (☰) that opens a drawer listing all six, chosen in Settings → App for this device only (kept in localStorage, like the theme); toasts sit above the tabs; Home is Today, an agenda (3.0); the calendar opens in 3-day view when the default is Week; an event's card and the create card open as a sheet at the top of the screen, no taller than what the keyboard leaves visible (beside their block, the keyboard pushed them about and covered them); Settings rows stack, and the week journal's days stack into a list. From 640px to 1024px Home scrolls: the calendar, then the planned sessions, projects and work cards at full length (beside the calendar, from 1024px, they share its height). Installable as an app (PWA; Settings → App), and usable offline after the first visit (a service worker caches the app's own files only, never API calls). |
 | Stack | React + TypeScript 6.0 + Vite, Tailwind CSS, dnd-kit (drag and drop), Zustand (state), Radix Popover. TypeScript stays on 6.0 (the last release with a JavaScript API) until ESLint's TypeScript support handles 7. |
 | Visual style | Dense, dark-first dev-tool look (Linear/Grafana-like): compact, monospace accents. |
 
@@ -93,6 +93,30 @@ their default then, and stay as they are.
   for the rest of this tab. Signed out while on Home (sessions last an hour),
   it's the banner, not a popup. Signing in starts over: the next spell opens
   with the popup again.
+
+**On phones (below 640px), Home is Today**, an agenda, not the grid (three
+narrow columns told little and were hard to tap; the grid is on the Calendar
+tab):
+- **The day** in the header ("Today", "Tomorrow", "Thu 12 Nov") with its
+  plan in words and a bar ("1h planned of 1h 30m"), and a strip of the
+  week's days to switch (a dot marks days with sessions; ‹ › move a week).
+- **Schedule:** what's at a set time, in order: events, Google events,
+  reserved time within the day (work; not sleep, which runs past midnight)
+  and time blocks, with a line for now and what's over faded. All-day
+  events and tasks due that day come first. A tap opens the event's card,
+  at the top of the screen, or the task.
+- **Any time today:** the sessions planned without a time.
+- **Sessions** have a tick box (24px in a 44px target), their length with
+  its unit, and **⋯**: a sheet from the bottom to change the length, move
+  it to another day, complete the whole task or remove it.
+- **To plan:** the first tasks that still need time, each with **Plan**: a
+  sheet with lengths (30m to 3h) and the next seven days, each with the room
+  it has ("1h free", amber when the session wouldn't fit, "full"). No
+  dragging. "all N" goes to the Week page.
+- **+** (bottom right) opens the create card for the day shown.
+- The missed-sessions notice, the USOS and sign-in banners and the work
+  card, as on desktop.
+- Every change shows in the undo bar (3.6).
 
 ### 3.1 Projects pane view
 A grid of project cards, grouped by area. Clicking a card opens the project's
@@ -1039,7 +1063,8 @@ Same Gemini key, model and privacy note as 5.2.
     exports may still contain them, and the JSON import rejects keys it
     doesn't know, so that change keeps such files importable.
 - **Numbers to tune** live in `src/config.ts`: list lengths (backlog,
-  missed sessions, Work page weeks), calendar sizes, toast and undo lengths,
+  missed sessions, Work page weeks), calendar sizes, the Plan sheet's
+  lengths and days, toast and undo lengths,
   save and sync timings, cache times and limits on what's read. Sizes tied
   to a CSS class, the schema version and lookup tables stay next to their
   code.

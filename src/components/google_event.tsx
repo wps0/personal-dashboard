@@ -99,7 +99,7 @@ function Row({icon, children}: {icon: ReactNode; children: ReactNode}) {
 }
 
 /** Wraps a block in its read-only popover; Enter/e opens it from the keyboard. */
-function WithCard({ev, children}: {ev: GEvent; children: ReactElement}) {
+export function WithCard({ev, children}: {ev: GEvent; children: ReactElement}) {
   const open = useUi(s => s.openGoogleKey === ev.key);
   const [anchor, beside] = useBeside(open, CARD_WIDTH);
   return (

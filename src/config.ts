@@ -42,6 +42,15 @@ export const LOG_HOURS_MORE = 1;
  */
 export const HOME_CALENDAR_DEFAULT = '3day';
 
+// Phones (views/today_view.tsx, components/phone/)
+
+/** The lengths the Plan sheet offers for a session, in hours. */
+export const PLAN_LENGTHS = [0.5, 1, 1.5, 2, 3];
+/** The days the Plan sheet offers, from today on. */
+export const PLAN_DAYS = 7;
+/** Tasks to plan shown on Today; the rest are a tap away. */
+export const TODAY_TO_PLAN_ROWS = 3;
+
 // Calendar (components/time_grid.tsx, components/month_grid.tsx)
 
 /** Height of an hour in the calendar's time grid, in pixels. */
