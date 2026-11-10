@@ -537,7 +537,7 @@ function OffscreenDraft() {
   return (
     <Popover open onOpenChange={o => !o && useUi.getState().setDraft(null)}>
       <PopoverAnchor className="absolute top-2 right-1/2 h-0 w-0" />
-      <PopoverContent side="bottom">
+      <PopoverContent sheet side="bottom">
         <DraftEditor />
       </PopoverContent>
     </Popover>
@@ -549,7 +549,7 @@ function OffscreenEvent({eventId}: {eventId: string}) {
   return (
     <Popover open onOpenChange={o => !o && useUi.getState().openEvent(null)}>
       <PopoverAnchor className="absolute top-2 right-1/2 h-0 w-0" />
-      <PopoverContent side="bottom">
+      <PopoverContent sheet side="bottom">
         <EventEditor eventId={eventId} />
       </PopoverContent>
     </Popover>
@@ -692,7 +692,7 @@ const AllDayChip = memo(function AllDayChip({event}: {event: CalendarEvent}) {
         </div>
       </PopoverAnchor>
       {open && (
-        <PopoverContent side="bottom" align="start">
+        <PopoverContent sheet side="bottom" align="start">
           <EventEditor eventId={event.id} />
         </PopoverContent>
       )}
@@ -755,7 +755,7 @@ function DraftChip() {
           {look.title}
         </div>
       </PopoverAnchor>
-      <PopoverContent side="bottom" align="start">
+      <PopoverContent sheet side="bottom" align="start">
         <DraftEditor />
       </PopoverContent>
     </Popover>

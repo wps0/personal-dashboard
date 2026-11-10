@@ -14,6 +14,23 @@ import {setUpSync} from './sync/setup';
 
 const storage = new IndexedDbStorage();
 setUpPwa();
+trackVisibleHeight();
+
+/**
+ * The height of what's visible, which a phone's keyboard shrinks, as
+ * --visible-height: sheets (index.css) stay above the keyboard.
+ */
+function trackVisibleHeight() {
+  const vv = window.visualViewport;
+  if (!vv) return;
+  const set = () =>
+    document.documentElement.style.setProperty(
+      '--visible-height',
+      `${Math.round(vv.height)}px`,
+    );
+  vv.addEventListener('resize', set);
+  set();
+}
 
 async function boot() {
   const root = createRoot(document.getElementById('root')!);
