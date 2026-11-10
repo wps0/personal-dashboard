@@ -17,6 +17,7 @@ import {useUi} from './ui';
 import {CalendarView} from './views/calendar_view';
 import {HomeView} from './views/home_view';
 import {TodayView} from './views/today_view';
+import {WeekPhoneView} from './views/week_phone_view';
 import {WeekView} from './views/week_view';
 import {unreachable} from './unreachable';
 
@@ -148,7 +149,7 @@ function Page({route}: {route: Route}) {
     case 'home':
       return <Home date={route.date} />;
     case 'week':
-      return <WeekView week={route.week} />;
+      return <Week week={route.week} />;
     case 'calendar':
       return <CalendarView view={route.view} date={route.date} />;
     case 'projects':
@@ -166,6 +167,12 @@ function Page({route}: {route: Route}) {
 function Home({date}: {date?: string}) {
   const phone = useMediaQuery('(max-width: 639px)');
   return phone ? <TodayView date={date} /> : <HomeView date={date} />;
+}
+
+/** The week journal: on a phone its days as a list, elsewhere the grid of day boxes. */
+function Week({week}: {week?: string}) {
+  const phone = useMediaQuery('(max-width: 639px)');
+  return phone ? <WeekPhoneView week={week} /> : <WeekView week={week} />;
 }
 
 /**

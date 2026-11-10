@@ -48,6 +48,8 @@ export const HOME_CALENDAR_DEFAULT = '3day';
 export const PLAN_LENGTHS = [0.5, 1, 1.5, 2, 3];
 /** The days the Plan sheet offers, from today on. */
 export const PLAN_DAYS = 7;
+/** Tasks offered when planning from a day's side (the Week page's "+ plan"). */
+export const DAY_PLAN_ROWS = 30;
 /** Tasks to plan shown on Today; the rest are a tap away. */
 export const TODAY_TO_PLAN_ROWS = 3;
 
