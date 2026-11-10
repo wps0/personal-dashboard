@@ -1,6 +1,6 @@
 import {HOME_CALENDAR_DEFAULT, HOME_HOUR_PX} from '../config';
 import {UsosBanner} from '../components/usos_review';
-import {SignInPrompt} from '../components/signin_prompt';
+import {SignInBanner} from '../components/signin_prompt';
 import {ChevronDown, ChevronLeft, ChevronRight} from 'lucide-react';
 import {memo, useMemo, useState} from 'react';
 import {create} from 'zustand';
@@ -130,7 +130,7 @@ export function HomeView({date}: {date?: ISODate}) {
       {/* Below lg the page scrolls, so the cards take the room they need;
           beside the calendar (lg) they share its height. */}
       <div className="flex flex-col gap-2 lg:min-h-0">
-        <SignInPrompt />
+        <SignInBanner />
         <UsosBanner />
         <Planned days={days} />
         <Projects />

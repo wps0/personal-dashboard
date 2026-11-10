@@ -241,3 +241,24 @@ describe('Google Tasks in the sign-in', () => {
     expect(useGoogle.getState().status).toBe('signed-in');
   });
 });
+
+describe('the session', () => {
+  it('ends when its token runs out, without waiting for a call to Google', () => {
+    vi.useFakeTimers();
+    try {
+      useGoogle.setState({
+        status: 'signed-in',
+        token: {value: 'ends', expiresAt: Date.now() + 60_000, scope: ''},
+      });
+      vi.advanceTimersByTime(59_000);
+      expect(useGoogle.getState().status).toBe('signed-in');
+      vi.advanceTimersByTime(2_000);
+      expect(useGoogle.getState()).toMatchObject({
+        status: 'expired',
+        token: undefined,
+      });
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+});

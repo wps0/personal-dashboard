@@ -2,6 +2,7 @@ import {CircleGauge, Keyboard, Monitor, Moon, Sun} from 'lucide-react';
 import {ConflictsBadge} from './components/conflicts_badge';
 import {BottomTabs, PhoneHeader} from './components/phone_nav';
 import {Toaster} from './components/toaster';
+import {SignInPopup} from './components/signin_prompt';
 import {ShortcutDialogs} from './components/shortcut_dialogs';
 import {isTyping, useGlobalShortcuts} from './keyboard';
 import {lazy, Suspense, useEffect, type ReactNode} from 'react';
@@ -134,6 +135,7 @@ export function App() {
       </main>
       {phoneTabs && <BottomTabs route={route} />}
       <ItemOverlay />
+      <SignInPopup />
       <ShortcutDialogs />
       <Toaster />
       <EscapeClosesProject route={route} />
