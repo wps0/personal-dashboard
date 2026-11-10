@@ -416,7 +416,8 @@ function WorkDay({
       aria-label={label}
       className="flex flex-wrap items-start gap-x-3 gap-y-1 border-b border-line py-2.5"
     >
-      <div className="w-28 shrink-0">
+      {/* Phones: the day and its total on one line, the buttons below. */}
+      <div className="w-28 shrink-0 max-sm:flex-1">
         <div className={isToday ? 'font-medium text-accent' : 'text-strong'}>
           {label}
         </div>
@@ -426,7 +427,7 @@ function WorkDay({
             : 'Nothing planned'}
         </div>
       </div>
-      <div className="flex min-w-0 flex-1 flex-col items-start gap-1">
+      <div className="flex min-w-0 flex-1 flex-col items-start gap-1 max-sm:order-last max-sm:basis-full">
         {spans.map(s =>
           isHoursOnly(s) ? (
             <HoursRow key={s.id} span={s} day={label} focus={s.id === fresh} />
@@ -434,7 +435,7 @@ function WorkDay({
             <SpanRow key={s.id} span={s} day={label} />
           ),
         )}
-        <div className="flex items-center gap-1">
+        <div className="flex flex-wrap items-center gap-1 whitespace-nowrap">
           {!spans.length && planned.length > 0 && !future && (
             <button className="btn h-7" onClick={() => logAsPlanned(date)}>
               Log as planned
