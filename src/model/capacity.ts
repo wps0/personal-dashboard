@@ -1,7 +1,7 @@
 import {create} from '@bufbuild/protobuf';
 import * as pb from '../gen/dashboard/data_pb';
 import {weekdayIndex} from './dates';
-import {toMinutes} from './time';
+import {endMinutes, toMinutes} from './time';
 import type {Allocation, CalendarEvent, ISODate} from './types';
 
 /** A time range, e.g. a planning window. */
@@ -83,12 +83,12 @@ export function occupiedSpans(
   events: CalendarEvent[],
 ): Span[] {
   const ws = toMinutes(window.start);
-  const we = toMinutes(window.end);
+  const we = endMinutes(window.end);
   const spans = events
     .filter(e => !e.allDay)
     .map((e): Span => [
       Math.max(ws, toMinutes(e.start)),
-      Math.min(we, toMinutes(e.end)),
+      Math.min(we, endMinutes(e.end)),
     ])
     .filter(([s, e]) => e > s)
     .sort((a, b) => a[0] - b[0]);
@@ -125,7 +125,7 @@ export function capacityFor(
   const rule = ruleFor(rules, date);
   const window = rule.windows[weekdayIndex(date)];
   const windowHours =
-    Math.max(0, toMinutes(window.end) - toMinutes(window.start)) / 60;
+    Math.max(0, endMinutes(window.end) - toMinutes(window.start)) / 60;
   // An event on reserved time takes that time once.
   const occupied = occupiedSpans(window, [...eventsOfDay, ...reservedOfDay]);
   const occupiedHours = occupied.reduce((sum, [s, e]) => sum + e - s, 0) / 60;
@@ -157,7 +157,7 @@ export function plannedInWindow(
   {window, occupied}: Pick<CapacityInfo, 'window' | 'occupied'>,
 ): number {
   const from = toMinutes(window.start);
-  const to = toMinutes(window.end);
+  const to = endMinutes(window.end);
   const overlap = (a: number, b: number, s: number, e: number) =>
     Math.max(0, Math.min(b, e) - Math.max(a, s));
   return allocs.reduce((sum, a) => {

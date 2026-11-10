@@ -8,7 +8,7 @@
 import * as pb from '../gen/dashboard/data_pb';
 import {addDays} from './dates';
 import {eventsByDay} from './recurrence';
-import {toMinutes} from './time';
+import {endMinutes, toMinutes} from './time';
 import type {CalendarEvent, ISODate} from './types';
 
 const DAY_MIN = 24 * 60;
@@ -43,7 +43,7 @@ export function reservedByDay(
   for (const [d, list] of shown)
     for (const event of list) {
       const start = toMinutes(event.start);
-      const end = toMinutes(event.end);
+      const end = endMinutes(event.end);
       const piece = {key: event.id, event, start, end, wraps: false};
       if (end > start) {
         m.get(d)?.push({...piece, tail: false});

@@ -11,6 +11,27 @@ export function fromMinutes(min: number): string {
 }
 
 /**
+ * An end time at midnight, the end of its day, as it's stored: a time of day
+ * can't be 24:00, so 23:59 stands for it. Shown and typed as 00:00.
+ */
+export const MIDNIGHT_END = '23:59';
+
+/** An end time in minutes since midnight: the day's end (23:59) is 24 × 60. */
+export function endMinutes(end: string): number {
+  return end === MIDNIGHT_END ? 24 * 60 : toMinutes(end);
+}
+
+/** An end time as shown: "00:00" for the day's end, stored as 23:59. */
+export function showEnd(end: string): string {
+  return end === MIDNIGHT_END ? '00:00' : end;
+}
+
+/** Minutes since midnight as a shown end time: the day's end is "00:00". */
+export function endLabel(min: number): string {
+  return min >= 24 * 60 - 1 ? '00:00' : fromMinutes(min);
+}
+
+/**
  * A time of day as typed: "9", "930", "0930", "9:30", "09:30" or "9.30".
  * `HH:MM`, or null if it isn't a time of day.
  */
@@ -32,8 +53,7 @@ export function moveStart(
   range: {start: string; end: string},
   start: string,
 ): {start: string; end: string} {
-  const end = range.end === '23:59' ? 24 * 60 : toMinutes(range.end);
-  const len = Math.max(15, end - toMinutes(range.start));
+  const len = Math.max(15, endMinutes(range.end) - toMinutes(range.start));
   return {start, end: fromMinutes(toMinutes(start) + len)};
 }
 

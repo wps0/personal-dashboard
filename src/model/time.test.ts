@@ -1,9 +1,12 @@
 import {describe, expect, it} from 'vitest';
 import {
+  endLabel,
+  endMinutes,
   fromMinutes,
   layoutSpans,
   moveStart,
   parseTime,
+  showEnd,
   slotRange,
   snap,
   toMinutes,
@@ -120,5 +123,24 @@ describe('parseTime', () => {
       '-1',
     ])
       expect(parseTime(typed), typed).toBeNull();
+  });
+});
+
+describe('an end at midnight', () => {
+  it('is stored as 23:59, counted as 24:00 and shown as 00:00', () => {
+    expect(endMinutes('23:59')).toBe(24 * 60);
+    expect(endMinutes('17:30')).toBe(17 * 60 + 30);
+    expect(showEnd('23:59')).toBe('00:00');
+    expect(showEnd('17:30')).toBe('17:30');
+    expect(endLabel(24 * 60)).toBe('00:00');
+    expect(endLabel(24 * 60 - 1)).toBe('00:00');
+    expect(endLabel(23 * 60)).toBe('23:00');
+  });
+
+  it('keeps a whole length when the start moves', () => {
+    expect(moveStart({start: '23:00', end: '23:59'}, '22:00')).toEqual({
+      start: '22:00',
+      end: '23:00',
+    });
   });
 });

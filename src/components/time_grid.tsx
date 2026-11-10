@@ -44,8 +44,11 @@ import {eventsByDay, shownEvent} from '../model/recurrence';
 import {isReserved, reservedByDay, type ReservedSpan} from '../model/reserved';
 import {dueByDay, isItemDone} from '../model/selectors';
 import {
+  endLabel,
+  endMinutes,
   fromMinutes,
   layoutSpans,
+  showEnd,
   slotRange,
   snap,
   toMinutes,
@@ -125,7 +128,7 @@ function dragLength(drag: Drag): number {
   }
   const {allDay, start, end} = drag.event;
   if (allDay) return 60;
-  return (end === '23:59' ? DAY_MIN : toMinutes(end)) - toMinutes(start);
+  return endMinutes(end) - toMinutes(start);
 }
 
 function clientY(e: Event | null): number {
@@ -1011,7 +1014,7 @@ const ReservedBlock = memo(function ReservedBlock({
             className={`block-interactive pointer-events-auto absolute top-1.5 right-1.5 z-[15] max-w-[calc(100%-0.75rem)] touch-none truncate rounded bg-panel/80 px-1 text-[10px] text-dim hover:bg-raised hover:text-fg ${movable ? 'cursor-grab' : 'cursor-pointer'}`}
           >
             {label}
-            {preview && ` · ${fromMinutes(start)} – ${fromMinutes(end)}`}
+            {preview && ` · ${fromMinutes(start)} – ${endLabel(end)}`}
           </button>
         </PopoverAnchor>
         {open && (
@@ -1106,7 +1109,7 @@ function SelectionGhost({
         color: 'var(--color-on-block)',
       }}
     >
-      {fromMinutes(lo)} – {fromMinutes(hi)}
+      {fromMinutes(lo)} – {endLabel(hi)}
     </div>
   );
 }
@@ -1134,7 +1137,7 @@ function DraftBlock({hourHeight}: {hourHeight: number}) {
             height={height}
             title={look.title}
             start={draft.start}
-            details={`${draft.start} – ${draft.end}`}
+            details={`${draft.start} – ${showEnd(draft.end)}`}
           />
         </div>
       </PopoverAnchor>
@@ -1246,7 +1249,7 @@ const EventBlock = memo(function EventBlock({
   const {previewEnd, handleProps} = useResize(start, hourHeight, end =>
     updateEvent(event.id, {end: fromMinutes(end)}, 'Event resized'),
   );
-  const end = previewEnd ?? toMinutes(event.end);
+  const end = previewEnd ?? endMinutes(event.end);
   const height = ((end - start) / 60) * hourHeight;
   const [anchor, beside] = useBeside(open);
 
@@ -1280,7 +1283,7 @@ const EventBlock = memo(function EventBlock({
             height={height}
             title={event.title}
             start={event.start}
-            details={`${event.start} – ${fromMinutes(end)}`}
+            details={`${event.start} – ${endLabel(end)}`}
           />
           <div
             {...handleProps}
@@ -1355,7 +1358,7 @@ const AllocBlock = memo(function AllocBlock(props: {
         }
         titleClassName="text-strong"
         start={alloc.start!}
-        details={`${alloc.start} – ${fromMinutes(end)} · ${
+        details={`${alloc.start} – ${endLabel(end)} · ${
           item ? (lookups.project(item.projectId)?.name ?? '') : ''
         }`}
       />
@@ -1420,7 +1423,7 @@ function DropPreview({
         height={height}
         title={title}
         start={fromMinutes(start)}
-        details={`${fromMinutes(start)} – ${fromMinutes(end)}`}
+        details={`${fromMinutes(start)} – ${endLabel(end)}`}
       />
     </div>
   );

@@ -8,6 +8,7 @@ import {href} from '../router';
 import {useStore} from '../store';
 import {HoursInput} from './hours_input';
 import {Popover, PopoverContent, PopoverTrigger} from './ui/popover';
+import {showEnd} from '../model/time';
 
 function signed(n: number) {
   return n > 0 ? `+${fmtH(n)}` : n < 0 ? `−${fmtH(-n)}` : '±0h';
@@ -44,7 +45,7 @@ function CapacityBadgeImpl({
         </div>
         <dl className="grid grid-cols-[1fr_auto] gap-x-3 gap-y-1 tabular-nums">
           <dt className="text-dim">
-            Planning window {info.window.start}–{info.window.end}
+            Planning window {info.window.start}–{showEnd(info.window.end)}
           </dt>
           <dd>{fmtH(info.windowHours)}</dd>
           <dt

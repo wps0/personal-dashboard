@@ -41,7 +41,7 @@ import {
   startOfWeek,
   weekNumber,
 } from '../model/dates';
-import {fromMinutes, toMinutes} from '../model/time';
+import {fromMinutes, showEnd, toMinutes} from '../model/time';
 import type {ISODate, WorkSpan} from '../model/types';
 import {
   isHoursOnly,
@@ -422,7 +422,7 @@ function WorkDay({
         </div>
         <div className="text-[11px] text-dim">
           {planned.length
-            ? `Planned ${planned.map(p => `${p.start}–${p.end}`).join(', ')}`
+            ? `Planned ${planned.map(p => `${p.start}–${showEnd(p.end)}`).join(', ')}`
             : 'Nothing planned'}
         </div>
       </div>

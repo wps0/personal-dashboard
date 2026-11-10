@@ -382,7 +382,11 @@ double-clicking one in the project panel, opens an overlay with:
   type any minute ("9:07", "907", "9.07") and Enter or Tab keeps it, or pick
   from the list in 15-minute steps, which opens on focus scrolled to the
   current time. An end's list counts from the start and shows the length;
-  an end typed before the start, or text that isn't a time, goes back. Esc
+  an end typed before the start, or text that isn't a time, goes back.
+  **An end can be 00:00**, the end of the day: the list's last entry, or
+  typed as 0, 00:00, 24 or 24:00. It's stored as 23:59, as before (a time
+  of day can't be 24:00), and counted as midnight everywhere (lengths,
+  capacity, the work log) and shown as 00:00. Esc
   closes the list without closing the card it's in. Dragging on the
   calendar still snaps to 15 minutes.
 

@@ -28,6 +28,8 @@ describe('the work log', () => {
 
   it('adds up hours per day, range and week', () => {
     expect(spanHours(log[0])).toBe(4.5);
+    // Until midnight (stored as 23:59): whole hours.
+    expect(spanHours(span('m', '2026-10-12', '20:00', '23:59'))).toBe(4);
     expect(spansOn(log, '2026-10-12').map(s => s.id)).toEqual(['a', 'b']);
     expect(loggedHours(log, '2026-10-12', '2026-10-12')).toBe(7.75);
     // Monday 12 Oct to Sunday 18 Oct.

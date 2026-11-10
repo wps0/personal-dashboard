@@ -14,6 +14,7 @@ import {
 import {href} from '../router';
 import {useStore} from '../store';
 import {WorkBar} from './work_bar';
+import {showEnd} from '../model/time';
 
 /** Home's small work card: today's work, logged or planned, and the week against its target. */
 export function WorkCard() {
@@ -31,7 +32,7 @@ export function WorkCard() {
   const plannedWeek = weekPlannedHours(log, events, start, settings.workLabel);
   const target = weekTarget(settings, start);
   const times = (xs: {start: string; end: string}[]) =>
-    xs.map(x => `${x.start}–${x.end}`).join(', ');
+    xs.map(x => `${x.start}–${showEnd(x.end)}`).join(', ');
   return (
     <section
       aria-label="Work"

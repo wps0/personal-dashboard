@@ -25,6 +25,7 @@ import {plannedWork, targetKey} from './model/work';
 import {useStore} from './store';
 import {withUndo} from './toast';
 import {meetingHours, taskFromMeeting, type Proposal} from './usos/usos';
+import {showEnd} from './model/time';
 
 /**
  * User-level operations, all undoable with Ctrl+Z. Direct manipulation (drag,
@@ -128,7 +129,7 @@ export function deleteEvent(e: CalendarEvent, scope: Scope = 'this') {
 export function addReserved(
   r: Pick<CalendarEvent, 'date' | 'start' | 'end' | 'title' | 'recurrence'>,
 ) {
-  withUndo(`Reserved ${r.start} – ${r.end}`, () =>
+  withUndo(`Reserved ${r.start} – ${showEnd(r.end)}`, () =>
     s().addEvent({...r, kind: pb.EventKind.RESERVED}),
   );
 }
@@ -136,7 +137,7 @@ export function addReserved(
 /** Logs a stretch of work on `date`. */
 export function logWork(date: ISODate, start: string, end: string) {
   withUndo(
-    `Logged ${start} – ${end}`,
+    `Logged ${start} – ${showEnd(end)}`,
     () => void s().addWorkSpan(date, start, end),
     {quiet: true},
   );

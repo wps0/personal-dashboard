@@ -5,7 +5,7 @@
  */
 import {addDays, MONDAY, startOfWeek} from './dates';
 import {reservedByDay} from './reserved';
-import {toMinutes} from './time';
+import {endMinutes, toMinutes} from './time';
 import type {CalendarEvent, ISODate, Settings, WorkSpan} from './types';
 
 /** The label of reserved time that counts as planned work, unless set. */
@@ -23,7 +23,7 @@ export function spanHours(
   s: Pick<WorkSpan, 'start' | 'end' | 'hours'>,
 ): number {
   if (isHoursOnly(s)) return s.hours;
-  return Math.max(0, toMinutes(s.end) - toMinutes(s.start)) / 60;
+  return Math.max(0, endMinutes(s.end) - toMinutes(s.start)) / 60;
 }
 
 /** The entries logged on `date`: hours alone first, then stretches by start. */
