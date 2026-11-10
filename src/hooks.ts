@@ -7,7 +7,11 @@ import {
   useSyncExternalStore,
 } from 'react';
 import * as pb from './gen/dashboard/data_pb';
-import {capacityFor, type CapacityInfo} from './model/capacity';
+import {
+  capacityFor,
+  plannedInWindow,
+  type CapacityInfo,
+} from './model/capacity';
 import {todayISO, type DayOfWeek} from './model/dates';
 import {eventsByDay} from './model/recurrence';
 import {isReserved, reservedByDay} from './model/reserved';
@@ -122,6 +126,29 @@ export function useCapacities(days: ISODate[]): Map<ISODate, CapacityInfo> {
       ]),
     );
   }, [days, events, settings, google]);
+}
+
+/**
+ * The hours still free to plan on each of `days`: the day's capacity less
+ * what's planned on it.
+ */
+export function useFreeHours(days: ISODate[]): Map<ISODate, number> {
+  const allocations = useStore(s => s.data.allocations);
+  const capacities = useCapacities(days);
+  return useMemo(
+    () =>
+      new Map(
+        days.map(d => {
+          const c = capacities.get(d)!;
+          const planned = plannedInWindow(
+            allocations.filter(a => a.date === d),
+            c,
+          );
+          return [d, Math.max(0, c.total - planned)];
+        }),
+      ),
+    [days, allocations, capacities],
+  );
 }
 
 /** Animation class for a change of the first visible day (or period): content slides in from the side we moved toward. */
