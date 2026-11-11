@@ -442,10 +442,6 @@ double-clicking one in the project panel, opens an overlay with:
   journal); dates in this card leave out the year when it's this year's.
   Lengths here (planned, actual, spent / planned / left) are written in hours
   and minutes ("1h 53m") and typed as "1h 53m", "45m", "1:53" or "1.5";
-- **suggest sessions…** (open tasks): the hours it has left to plan (its
-  estimate less spent and planned hours, missed sessions included, as in
-  the backlog), spread backward from its due date, shown for review below
-  the sessions (see Suggested sessions below);
 - markdown notes;
 - mark complete and open project, with **Close** in the bottom-right corner;
   delete is the trash icon next to × at the top, as in the event card (with
@@ -469,27 +465,6 @@ double-clicking one in the project panel, opens an overlay with:
   leaving it untouched keeps the time. Esc
   closes the list without closing the card it's in. Dragging on the
   calendar still snaps to 15 minutes.
-
-**Suggested sessions** (`model/suggest.ts`). A backward-from-deadline
-spread of untimed sessions, nothing added until you say so:
-- **Days:** from today, or from six weeks before the due date if that's
-  later, to the day before it (on the day itself it's due). A task due today
-  or earlier, or with no due date, says so instead.
-- **Free time** per day: its capacity (3.2) less what's planned on it, every
-  task's, in quarter hours. Today counts only what's left of its planning
-  window.
-- **The spread:** each day, the latest first, gets a session of the same
-  length, at most 2h (5h is 1h 45m, 1h 45m and 1h 30m), as far as its free
-  time allows; a day with less than 30 minutes free gets none. If that
-  isn't enough, the free time left is filled, again the latest days first,
-  and whatever still doesn't fit is shown ("3h don't fit in the free time
-  before then").
-- **Review:** the hours to plan (editable; a task without an estimate starts
-  at 0h), and one row per day with its length and the day's free time.
-  Unticking a day skips it, and its hours move to other days. **Add N
-  sessions** plans them in one undoable step.
-- The numbers (2h, 30 minutes, quarter hours, six weeks) are in
-  `src/config.ts`.
 
 ### 3.6 Feedback and motion
 - Every interactive element has hover and press states, and buttons press in
@@ -837,9 +812,7 @@ Google Drive sync.
   Enforce HTTPS), and authorise only that origin in the OAuth client. Until
   then it must stay the account's only Pages site (see 6). Moving changes the
   origin, so each device starts empty there: sync from Drive, or export first.
-- ✅ **Suggested scheduling:** a backward-from-deadline spread, per task
-  (3.5).
-- **Later.** Timers,
+- **Later.** Suggested scheduling (a backward-from-deadline spread), timers,
   more card metrics (at-risk indicator, hours this week, backlog count),
   search, multi-day all-day events drawn as one spanning bar.
 - **Long-term.**
@@ -1143,7 +1116,7 @@ Same Gemini key, model and privacy note as 5.2.
     doesn't know, so that change keeps such files importable.
 - **Numbers to tune** live in `src/config.ts`: list lengths (backlog,
   missed sessions, Work page weeks), calendar sizes, the Plan sheet's
-  lengths and days, suggested sessions, toast and undo lengths,
+  lengths and days, toast and undo lengths,
   save and sync timings, cache times and limits on what's read. Sizes tied
   to a CSS class, the schema version and lookup tables stay next to their
   code.

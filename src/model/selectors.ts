@@ -38,17 +38,6 @@ export function actualHours(allocs: Allocation[]): number {
   );
 }
 
-/**
- * Hours given to a task so far: spent on done sessions, planned on open ones.
- * Missed sessions count as planned: they wait in the overdue tray.
- */
-export function committedHours(allocs: Allocation[]): number {
-  return allocs.reduce(
-    (s, a) => s + (a.done ? (a.actualHours ?? a.plannedHours) : a.plannedHours),
-    0,
-  );
-}
-
 export function allocationsByItem(
   data: Pick<AppData, 'allocations'>,
 ): Map<string, Allocation[]> {
@@ -144,7 +133,13 @@ export function backlogItems(
     if (isItemDone(item) || !activeProjects.has(item.projectId)) continue;
     const list = allocs.get(item.id) ?? [];
     if (item.estimateHours != null && item.estimateHours > 0) {
-      const remaining = item.estimateHours - committedHours(list);
+      // Missed slices still count as planned: they wait in the overdue tray, not here.
+      const committed = list.reduce(
+        (s, a) =>
+          s + (a.done ? (a.actualHours ?? a.plannedHours) : a.plannedHours),
+        0,
+      );
+      const remaining = item.estimateHours - committed;
       if (remaining > 0) out.push({item, remaining});
     } else if (!list.some(a => a.date >= today || !a.done)) {
       out.push({item});

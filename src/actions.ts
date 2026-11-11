@@ -63,17 +63,6 @@ export function planSession(
   withUndo(message, () => s().addAllocation(itemId, date, hours), {quiet});
 }
 
-/** Plans a task's suggested sessions (untimed), in one undoable step. */
-export function planSessions(
-  itemId: string,
-  sessions: readonly {date: ISODate; hours: number}[],
-) {
-  const n = sessions.length;
-  withUndo(`Planned ${n} ${n === 1 ? 'session' : 'sessions'}`, () => {
-    for (const x of sessions) s().addAllocation(itemId, x.date, x.hours);
-  });
-}
-
 export function removeSession(id: string, message = 'Removed from plan') {
   withUndo(message, () => s().deleteAllocation(id));
 }

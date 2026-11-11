@@ -53,20 +53,6 @@ export const DAY_PLAN_ROWS = 30;
 /** Tasks to plan shown on Today; the rest are a tap away. */
 export const TODAY_TO_PLAN_ROWS = 3;
 
-// Suggested sessions (model/suggest.ts, components/suggest_sessions.tsx)
-
-/**
- * The longest session a suggestion gives a day while there's room on other
- * days; past that, the free time left is filled, the latest days first.
- */
-export const SUGGEST_SESSION_MAX_HOURS = 2;
-/** A day with less free time than this gets no new session. */
-export const SUGGEST_SESSION_MIN_HOURS = 0.5;
-/** Suggested lengths are in steps of this many minutes (the last one aside). */
-export const SUGGEST_STEP_MINUTES = 15;
-/** How far before the due date a suggestion looks for free time. */
-export const SUGGEST_DAYS_BACK = 42;
-
 // Calendar (components/time_grid.tsx, components/month_grid.tsx)
 
 /** Height of an hour in the calendar's time grid, in pixels. */
