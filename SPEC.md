@@ -932,8 +932,9 @@ Sample inputs and the output we expect from them live in
    project's description under "Course notes".
 
 **Gemini call**
-- Endpoint: `models/<model>:generateContent`, with a current Gemini Flash
-  model that is configurable in Settings.
+- Endpoint: `models/<model>:streamGenerateContent` (the answer streamed, so
+  the dialog can show how far it got), with a current Gemini Flash model
+  that is configurable in Settings.
 - Use structured output: `responseMimeType: 'application/json'` plus a
   `responseSchema`.
 - Temperature 0.
@@ -942,6 +943,13 @@ Sample inputs and the output we expect from them live in
   synced. It is sent in the `x-goog-api-key` header, not the URL. The API
   accepts browser (CORS) requests, so no proxy is needed.
 - The pasted text is sent to Google. Say so in the import dialog.
+- **Request status**: while it runs, the dialog shows its stages in a row,
+  the current one with a spinner: *Loading the client* (the Gen AI SDK, the
+  first time only), *Gemini is thinking* with the seconds so far (usually
+  most of the wait), *Receiving the answer* with the topics so far ("3
+  topics so far", counted by their `title` fields in the partial JSON), and
+  *Checking it*. An error replaces them. The prompt dialog (5.4) shows the
+  same, counting tasks, also for a revision.
 
 Response schema:
 
@@ -1072,28 +1080,30 @@ gallery. The app doesn't take photos itself.
 location, a copy on the device, iPhone, attaching photos to tasks, PDF export. Other files (e.g.
 PDF slides) maybe later.
 
-### 5.4 Tasks from a prompt (planned)
-
-Agreed design; not built yet.
+### 5.4 Tasks from a prompt ✅
 
 A general form of the curriculum import (5.2).
 
-1. In the project panel, **from a prompt…** opens a dialog.
-2. You say what you want, for example "one task per lecture below, 2h
-   each, due the day before the next one" or "the problem sets in this
-   list, due Fridays".
-3. You paste any material: a curriculum, a list of lectures, an assignment
-   schedule.
-4. The LLM returns tasks as structured JSON: title, kind, due date,
-   estimate, group and notes, plus warnings.
-5. They're shown in the review dialog the curriculum import already has.
-   There you edit or untick rows, or ask for changes in words ("estimates
-   1h", "drop the labs") and get a revised list. The request sends the
-   current list along with the change.
-6. Confirming adds them as tasks in one undoable step; nothing is added
-   before that.
+1. In the project panel: Details → **From a prompt…** opens a dialog.
+2. You say what you want ("one task per lecture below, 2h each, due the day
+   before the next one", "the problem sets in this list, due Fridays") and
+   paste any material: a curriculum, a list of lectures, an assignment
+   schedule (optional).
+3. Gemini returns tasks as structured JSON: title, kind (CLASS, ASSIGNMENT,
+   EXAM, TASK, OTHER), due date, estimate, group (one of the project's, by
+   name) and notes, plus warnings. The message gives it today's date and
+   weekday (for relative dates), the project's name and its groups.
+4. **Review**: every task as a row to edit (title, kind, due date, estimate,
+   group, notes) or untick, with the warnings above. **Ask for changes** in
+   words ("estimates 1h", "drop the labs"): the ticked tasks, as edited, go
+   along with the change, and the whole revised list comes back.
+5. **Add N tasks** adds them in one undoable step; nothing is added before.
 
-Same Gemini key, model and privacy note as 5.2.
+The answer is checked and tidied: an unknown kind is a task, a date that
+isn't one or an estimate over 40 h is dropped, a group the project doesn't
+have is none, and an answer with more than 200 tasks
+(`PROMPT_TASKS_MAX`) is cut, with a warning. Same Gemini key, model and
+privacy note as 5.2 (the call is shared: `curriculum/gemini.ts`).
 
 ## 6. Engineering
 

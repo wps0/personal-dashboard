@@ -16,6 +16,7 @@ import {importGroup} from '../model/selectors';
 import {href} from '../router';
 import {useStore} from '../store';
 import {useUi} from '../ui';
+import {GeminiStatus, useGeminiProgress} from './gemini_status';
 import {HoursInput} from './hours_input';
 import {Modal} from './modal';
 import {Select} from './ui/select';
@@ -40,18 +41,25 @@ export function CurriculumImport() {
   const {apiKey, model} = useGemini();
   const [text, setText] = useState('');
   const [step, setStep] = useState<Step>({kind: 'paste'});
+  const {progress, onProgress, clear} = useGeminiProgress();
   const close = () => useUi.getState().setDialog(null);
   if (!project) return null;
 
   const extract = async () => {
     setStep({kind: 'loading'});
     try {
-      const result = await extractCurriculum(text, {apiKey, model});
+      const result = await extractCurriculum(text, {
+        apiKey,
+        model,
+        onProgress,
+      });
       if (!result.topics.length)
         throw new Error('Gemini found no lectures or topics in this text.');
       setStep({kind: 'review', result});
     } catch (e) {
       setStep({kind: 'paste', error: (e as Error).message});
+    } finally {
+      clear();
     }
   };
 
@@ -94,6 +102,13 @@ export function CurriculumImport() {
               className="w-full resize-y rounded-md bg-raised px-3 py-2 text-[13px] placeholder:text-dim"
               disabled={step.kind === 'loading'}
             />
+            {step.kind === 'loading' && progress && (
+              <GeminiStatus
+                progress={progress}
+                field="title"
+                items={['topic', 'topics']}
+              />
+            )}
             {step.kind === 'paste' && step.error && (
               <p role="alert" className="text-[12px] text-danger">
                 {step.error}

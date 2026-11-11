@@ -7,8 +7,13 @@ import {
   CURRICULUM_MAX_LECTURE,
   CURRICULUM_MAX_LECTURES_PER_TOPIC,
 } from '../config';
-import type {Schema} from '@google/genai';
 import {ItemKind, type ItemInit} from '../model/types';
+import {
+  generateJson,
+  parseJson,
+  type GeminiOptions,
+  type GenerateResponse,
+} from './gemini';
 
 export interface Topic {
   title: string;
@@ -130,116 +135,27 @@ export function validateResult(raw: unknown): CurriculumResult {
   };
 }
 
-/** The parts of a generateContent response that matter here. */
-interface GenerateResponse {
-  candidates?: {
-    content?: {parts?: {text?: string}[]};
-    finishReason?: string;
-  }[];
-  promptFeedback?: {blockReason?: string};
-}
-
-/** Why Gemini stopped early, for the finish reasons that leave no usable answer. */
-function finishError(reason: string | undefined): string | null {
-  switch (reason) {
-    case 'MAX_TOKENS':
-      return 'The answer was cut off: the description is too long.';
-    case 'RECITATION':
-      return 'Gemini stopped because its answer repeated published text word for word (its recitation filter). Try again, or import the description in smaller parts.';
-    case 'SAFETY':
-      return 'Gemini’s safety filter blocked the answer. Check that you pasted only the course description.';
-    case 'PROHIBITED_CONTENT':
-      return 'Gemini refused the text as prohibited content. Check that you pasted only the course description.';
-    default:
-      return null;
-  }
-}
-
 /** The result from a generateContent response, or a readable error. */
 export function parseResponse(res: GenerateResponse): CurriculumResult {
-  if (res.promptFeedback?.blockReason)
-    throw new Error(
-      `Gemini refused the text (${res.promptFeedback.blockReason}).`,
-    );
-  const c = res.candidates?.[0];
-  const text = c?.content?.parts?.map(p => p.text ?? '').join('') ?? '';
-  // The text, if any, is cut off where Gemini stopped.
-  const stopped = finishError(c?.finishReason);
-  if (stopped) throw new Error(stopped);
-  if (!text) throw new Error('Gemini returned no answer.');
-  let json: unknown;
-  try {
-    json = JSON.parse(text);
-  } catch {
-    throw new Error('Gemini’s answer isn’t valid JSON.');
-  }
-  return validateResult(json);
+  return validateResult(parseJson(res));
 }
 
 /**
- * Sends the description to Gemini with Google's Gen AI SDK, loaded only when
- * needed. The text goes to Google; the API key is the user's own (Settings).
+ * Sends the description to Gemini (gemini.ts). The text goes to Google; the
+ * API key is the user's own (Settings).
  */
 export async function extractCurriculum(
   text: string,
-  {apiKey, model}: {apiKey: string; model: string},
+  options: GeminiOptions,
 ): Promise<CurriculumResult> {
-  let sdk: typeof import('@google/genai');
-  try {
-    sdk = await import('@google/genai');
-  } catch {
-    // After a deploy, the old version's chunks are gone.
-    throw new Error(
-      'Couldn’t load the Gemini client. If you’re online, the app was probably updated: reload the page and try again.',
-    );
-  }
-  const {GoogleGenAI, ApiError} = sdk;
-  const ai = new GoogleGenAI({apiKey});
-  let res: GenerateResponse;
-  try {
-    res = await ai.models.generateContent({
-      model,
+  return validateResult(
+    await generateJson({
+      ...options,
+      system: SYSTEM_INSTRUCTION,
       contents: text,
-      config: {
-        systemInstruction: SYSTEM_INSTRUCTION,
-        temperature: 0,
-        responseMimeType: 'application/json',
-        responseSchema: RESPONSE_SCHEMA as Schema,
-      },
-    });
-  } catch (e) {
-    if (!(e instanceof ApiError))
-      throw new Error(
-        e instanceof TypeError
-          ? 'Couldn’t reach Gemini. Are you offline?'
-          : `Gemini: ${(e as Error).message}`,
-        {cause: e},
-      );
-    const why = apiErrorMessage(e.message);
-    if (e.status === 400 && /API key/i.test(why))
-      throw new Error('Gemini rejected the API key. Check it in Settings.', {
-        cause: e,
-      });
-    if (e.status === 404)
-      throw new Error(`Gemini doesn’t know the model “${model}”.`, {cause: e});
-    if (e.status === 429)
-      throw new Error('Gemini’s quota or rate limit is reached; try later.', {
-        cause: e,
-      });
-    throw new Error(`Gemini: ${why}`, {cause: e});
-  }
-  return parseResponse(res);
-}
-
-/** The SDK's error message is the API's JSON error body; this picks out its text. */
-function apiErrorMessage(raw: string): string {
-  try {
-    return (
-      (JSON.parse(raw) as {error?: {message?: string}}).error?.message ?? raw
-    );
-  } catch {
-    return raw;
-  }
+      schema: RESPONSE_SCHEMA,
+    }),
+  );
 }
 
 /** Unicode-normalised, whitespace collapsed, for comparing wording. */

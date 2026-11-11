@@ -89,8 +89,9 @@ interface UiState {
   allDayCollapsed: boolean;
   /** The project description above the items is collapsed (narrow panels). Per device. */
   descriptionCollapsed: boolean;
-  /** Dialogs: shortcut help, go-to-date, reviewing new USOS classes, importing a curriculum, or reviewing sync conflicts. */
-  dialog: 'help' | 'goto' | 'usos' | 'curriculum' | 'conflicts' | null;
+  /** Dialogs: shortcut help, go-to-date, reviewing new USOS classes, importing a curriculum, tasks from a prompt, or reviewing sync conflicts. */
+  dialog:
+    'help' | 'goto' | 'usos' | 'curriculum' | 'prompt' | 'conflicts' | null;
   setDialog(d: UiState['dialog']): void;
   /** The project whose USOS classes are under review; all projects if null. */
   usosProjectId: string | null;
@@ -98,6 +99,9 @@ interface UiState {
   /** The project a curriculum is being imported into. */
   curriculumProjectId: string | null;
   importCurriculum(projectId: string): void;
+  /** The project tasks from a prompt go into. */
+  promptProjectId: string | null;
+  tasksFromPrompt(projectId: string): void;
   openItem(id: string | null): void;
   openEvent(id: string | null): void;
   openGoogle(key: string | null): void;
@@ -136,6 +140,9 @@ export const useUi = create<UiState>()((set, get) => ({
   curriculumProjectId: null,
   importCurriculum: projectId =>
     set({dialog: 'curriculum', curriculumProjectId: projectId}),
+  promptProjectId: null,
+  tasksFromPrompt: projectId =>
+    set({dialog: 'prompt', promptProjectId: projectId}),
   openItem: id =>
     set({openItemId: id, openEventId: null, openGoogleKey: null, draft: null}),
   openEvent: id =>

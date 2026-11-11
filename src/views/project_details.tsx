@@ -96,6 +96,16 @@ export function ProjectDetails({
           <button
             className="btn"
             onClick={() => {
+              showItems();
+              useUi.getState().tasksFromPrompt(project.id);
+            }}
+            title="Say what tasks you want, paste the material, and review what Gemini makes of it"
+          >
+            From a prompt…
+          </button>
+          <button
+            className="btn"
+            onClick={() => {
               // The items show behind the dialog, ready for what it adds.
               showItems();
               useUi.getState().importCurriculum(project.id);

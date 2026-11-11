@@ -130,3 +130,5 @@ export const USOS_ICAL_MAX_BYTES = 5_000_000;
 export const CURRICULUM_MAX_LECTURE = 500;
 /** The most lectures one curriculum topic can span. */
 export const CURRICULUM_MAX_LECTURES_PER_TOPIC = 100;
+/** Tasks from a prompt: the most tasks one answer may bring (the rest are dropped, with a warning). */
+export const PROMPT_TASKS_MAX = 200;
