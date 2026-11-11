@@ -10,6 +10,7 @@ import {clearGoogleCache} from '../google/use_google_events';
 import {clearGoogleTasks} from '../google/use_google_tasks';
 import {BufferedInput} from './buffered';
 import {GoogleErrorNotice} from './google_error_notice';
+import {TasksSignIn} from './tasks_sign_in';
 
 const ORIGIN = typeof window !== 'undefined' ? window.location.origin : '';
 
@@ -146,6 +147,7 @@ export function GoogleSettings() {
           </span>
         </span>
       </label>
+      <TasksSignIn />
 
       {connected && g.calendars.length > 0 && (
         <div>

@@ -58,6 +58,7 @@ const FIELDS: Record<string, string> = {
   workTarget: 'weekly work target',
   weekWorkTargets: 'week’s work target',
   workLabel: 'work label',
+  googleTasks: 'Google Tasks',
 };
 
 interface Rec {

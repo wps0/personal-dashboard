@@ -10,6 +10,7 @@ import {claimSingleTab} from './storage/single_tab';
 import {IndexedDbStorage} from './storage/storage';
 import {useStore} from './store';
 import {adoptFoldedGroups} from './ui';
+import {setUpGoogleTasks} from './google/tasks_setting';
 import {setUpSync} from './sync/setup';
 
 const storage = new IndexedDbStorage();
@@ -51,6 +52,7 @@ async function boot() {
   navigator.storage?.persist?.().catch(() => {});
   setUpAutosave(storage);
   adoptFoldedGroups();
+  setUpGoogleTasks();
   setUpSync(storage);
 
   root.render(

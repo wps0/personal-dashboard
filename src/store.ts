@@ -120,6 +120,8 @@ interface Actions {
   deleteWorkSpan(id: string): void;
   /** The default weekly target (0: none) and the label of planned work. */
   setWorkSettings(patch: {workTarget?: number; workLabel?: string}): void;
+  /** Shows Google Tasks on the calendar, or stops (see google/tasks_setting.ts). */
+  setGoogleTasks(on: boolean): void;
   /** One week's own target (by its Monday); `null` goes back to the default. */
   setWeekWorkTarget(monday: ISODate, hours: number | null): void;
 }
@@ -479,6 +481,8 @@ export const useStore = create<State>()((set, get) => {
       update(d => ({workLog: d.workLog.filter(s => s.id !== id)})),
     setWorkSettings: patch =>
       update(d => ({settings: {...d.settings, ...patch}})),
+    setGoogleTasks: on =>
+      update(d => ({settings: {...d.settings, googleTasks: on}})),
     setWeekWorkTarget: (monday, hours) =>
       update(d => {
         const weekWorkTargets = {...d.settings.weekWorkTargets};

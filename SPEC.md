@@ -669,6 +669,13 @@ asking for write access.
   - **Scope:** `tasks.readonly`, asked for only while they're shown (like
     `drive.file` for sync), so connecting the calendar never asks for it. If
     it's refused, they stay hidden and the rest keeps working. GET only.
+  - **On or off is kept in the data** (Settings, `google_tasks`), so it
+    lasts across reloads and syncs to other devices; Undo and Import change
+    it like any setting. A device that gets them turned on from elsewhere
+    doesn't open Google's popup by itself: it asks for their access at its
+    next sign-in, and until then Settings and the calendar's sidebar say
+    "Google Tasks are on, but this session can't read them yet" with **sign
+    in again**. (Before, it was kept on the device and lost on reload.)
   - **Due dates** are dates only (Google keeps no time of day), taken as
     they are, not moved by the time zone. Undated tasks aren't shown.
   - Fetched per visible range like events (5 minutes fresh, Refresh
