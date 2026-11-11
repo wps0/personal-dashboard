@@ -3,6 +3,7 @@ import {beforeEach, describe, expect, it, vi} from 'vitest';
 import {
   addGroup,
   addReserved,
+  carryOver,
   advanceStatus,
   deleteGroup,
   deleteWorkSpan,
@@ -448,5 +449,50 @@ describe('advanceStatus', () => {
     expect(useToasts.getState().toasts).toEqual([]);
     undoLast();
     expect(item().status).toBe(pb.ItemStatus.DONE);
+  });
+});
+
+describe('carryOver', () => {
+  beforeEach(() => {
+    vi.stubGlobal('window', {setTimeout: () => 0});
+    useStore.getState().replaceAll(emptyData());
+    useToasts.setState({toasts: []});
+    clearHistory();
+    useStore.getState().setWorkSettings({workTarget: 40});
+  });
+  const targets = () => useStore.getState().data.settings.weekWorkTargets;
+  // The week from Monday 5 Oct, and the next one.
+  const log = (hours: number) =>
+    useStore.getState().addWorkHours('2026-10-06', hours);
+
+  it('moves a shortfall to next week, keeping the total, in one undo step', () => {
+    log(35);
+    carryOver('2026-10-05');
+    expect(targets()).toEqual({'2026-10-05': 35, '2026-10-12': 45});
+    expect(useToasts.getState().toasts[0].message).toBe(
+      "Added 5h to next week's target",
+    );
+    // Nothing left to move.
+    carryOver('2026-10-05');
+    expect(targets()).toEqual({'2026-10-05': 35, '2026-10-12': 45});
+    undoLast();
+    expect(targets()).toEqual({});
+  });
+
+  it('takes hours over the target off next week, from its own target', () => {
+    log(42.5);
+    setWeekTarget('2026-10-12', 30);
+    carryOver('2026-10-05');
+    expect(targets()).toEqual({'2026-10-05': 42.5, '2026-10-12': 27.5});
+    expect(useToasts.getState().toasts.at(-1)?.message).toBe(
+      "Took 2h 30m off next week's target",
+    );
+  });
+
+  it('does nothing without a target', () => {
+    useStore.getState().setWorkSettings({workTarget: 0});
+    log(5);
+    carryOver('2026-10-05');
+    expect(targets()).toEqual({});
   });
 });

@@ -619,6 +619,12 @@ count in the day's, week's and month's totals like a time slot of that length, b
   its week when the week start changes): typing one on the page sets it for that week only,
   and "Use the default" removes it. 0 means no target. The month totals of
   the months the week touches are shown too.
+- **Carrying over** (only when asked): this week and earlier ones offer
+  "Add the 8h to next week" when short of the target, or "Take the 3h off
+  next week" when over it. It sets the week's own target to the hours
+  logged and moves the difference to the next week's target (from its own
+  or the default), so the two add up to the same, and nothing is left to
+  move. One undo step, with a toast.
 - **On the calendar** (and Home's day), each time slot logged is tinted in
   the accent colour with a solid left edge, over the hatched reserved time
   it was planned in: planned is hatched, worked is solid. It's

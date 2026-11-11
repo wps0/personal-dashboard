@@ -10,7 +10,7 @@ import {
 } from './model/types';
 import * as pb from './gen/dashboard/data_pb';
 import {fmtDuration, fmtWorkSpan} from './format';
-import {formatMedium} from './model/dates';
+import {addDays, formatMedium} from './model/dates';
 import {
   changeEvent,
   deleteEvent as deleteFromEvents,
@@ -21,7 +21,7 @@ import {
   type Scope,
 } from './model/recurrence';
 import {importGroup, statusLabel} from './model/selectors';
-import {plannedWork, targetKey} from './model/work';
+import {plannedWork, targetKey, weekHours, weekTarget} from './model/work';
 import {useStore} from './store';
 import {withUndo} from './toast';
 import {meetingHours, taskFromMeeting, type Proposal} from './usos/usos';
@@ -234,6 +234,34 @@ export function advanceStatus(item: Item) {
     `“${item.title}”: ${statusLabel(next).toLowerCase()}`,
     () => s().updateItem(item.id, {status: next}),
     {quiet: true},
+  );
+}
+
+/**
+ * Moves what the week starting `start` is short of its target, or over it,
+ * to the next week's target: this week's target becomes the hours logged,
+ * and the next one's grows (or shrinks) by the difference, so the two add up
+ * to the same. Once done there's nothing left to move. One undo step.
+ */
+export function carryOver(start: ISODate) {
+  const {settings, workLog} = s().data;
+  const target = weekTarget(settings, start);
+  const logged = weekHours(workLog, start);
+  // In whole minutes, as the log is.
+  const diff = Math.round((target - logged) * 60) / 60;
+  if (!target || !diff) return;
+  const next = addDays(start, 7);
+  withUndo(
+    diff > 0
+      ? `Added ${fmtDuration(diff)} to next week's target`
+      : `Took ${fmtDuration(-diff)} off next week's target`,
+    () => {
+      s().setWeekWorkTarget(targetKey(start), logged);
+      s().setWeekWorkTarget(
+        targetKey(next),
+        Math.max(0, weekTarget(settings, next) + diff),
+      );
+    },
   );
 }
 
