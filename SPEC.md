@@ -1103,6 +1103,12 @@ Same Gemini key, model and privacy note as 5.2.
   hooks rules. Two deviations, both documented there: `== null` is allowed
   (as the style guide itself allows), and named function expressions are
   allowed for `memo(function Name…)`. Prettier with gts's settings.
+- **Long lists stay quick** (the project panel can hold hundreds of tasks):
+  rows are memoized and get only values that compare by value (hours as
+  numbers, a stable select callback); dnd-kit's sensors are module
+  constants, since new ones redraw every draggable; long tables sit in their
+  own layer (`will-change-transform`) and rows have no colour transitions,
+  so typing or hovering doesn't repaint the whole list.
 - **Button text:** buttons with a background start with a capital ("Add",
   "Export JSON", "✓ Mark complete"); text-only buttons and links are
   lowercase ("+ group", "edit", "open project ↗").

@@ -40,12 +40,18 @@ class MouseOrPenSensor extends PointerSensor {
  */
 export function useDragSensors() {
   return useSensors(
-    useSensor(MouseOrPenSensor, {activationConstraint: {distance: 5}}),
-    useSensor(TouchSensor, {
-      activationConstraint: {delay: TOUCH_DRAG_DELAY_MS, tolerance: 8},
-    }),
+    useSensor(MouseOrPenSensor, MOUSE_OPTIONS),
+    useSensor(TouchSensor, TOUCH_OPTIONS),
   );
 }
+
+// Constants, so the sensors stay the same from one render to the next: new
+// ones would give every draggable block a new dnd-kit context, redrawing
+// them all, memoized or not.
+const MOUSE_OPTIONS = {activationConstraint: {distance: 5}};
+const TOUCH_OPTIONS = {
+  activationConstraint: {delay: TOUCH_DRAG_DELAY_MS, tolerance: 8},
+};
 
 let suppressClickUntil = 0;
 
