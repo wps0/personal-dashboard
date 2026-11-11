@@ -77,7 +77,10 @@ interface Prefs {
   driveSync: boolean;
   /** Google Calendar is on for this device: only then are its scopes requested. */
   calendar: boolean;
-  /** Google Tasks are shown on this device: only then is their scope requested. */
+  /**
+   * Google Tasks are shown: only then is their scope requested. Not kept on
+   * the device: it's in the data (see tasks_setting.ts), copied here.
+   */
   tasks: boolean;
 }
 

@@ -231,6 +231,9 @@ message Settings {
   // Reserved time with this label is the planned work, e.g. what "Log as
   // planned" logs. Empty means "Work".
   string work_label = 9;
+  // Google Tasks with a due date shown on the calendar, read-only. Before
+  // this field it was a per-device choice that didn't outlast a reload.
+  bool google_tasks = 10;
 }
 
 message CapacityRule {

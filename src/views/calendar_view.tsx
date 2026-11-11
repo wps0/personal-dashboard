@@ -29,6 +29,7 @@ import {useGoogleCalendars} from '../google/calendars';
 import {clearGoogleCache} from '../google/use_google_events';
 import {clearGoogleTasks, TASKS_LAYER} from '../google/use_google_tasks';
 import {GoogleErrorNotice} from '../components/google_error_notice';
+import {TasksSignIn} from '../components/tasks_sign_in';
 import {useStore} from '../store';
 import {nextHourDraft, useUi} from '../ui';
 import {useNavTarget} from '../keyboard';
@@ -465,6 +466,7 @@ function GoogleLayers() {
           </button>
         }
       />
+      <TasksSignIn />
       {!g.tasks && (
         <button
           className="block px-1 text-[12px] text-accent hover:underline"
