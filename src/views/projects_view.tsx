@@ -1,11 +1,6 @@
-import {
-  memo,
-  useMemo,
-  useState,
-  type PointerEvent as ReactPointerEvent,
-} from 'react';
+import {memo, useMemo, useState} from 'react';
 import {ProgressRing} from '../components/progress_ring';
-import {holdDrag} from '../drag_cancel';
+import {ResizeHandle, usePaneSize} from '../components/resize_handle';
 import {URGENCY_CLASS} from '../format';
 import {countdown} from '../model/dates';
 import {useToday} from '../hooks';
@@ -43,13 +38,19 @@ export function ProjectsView({selectedId}: {selectedId?: string}) {
   const selected = selectedId
     ? projects.find(p => p.id === selectedId)
     : undefined;
-  const [listWidth, startResize] = useSplitWidth();
+  // The list's width beside the panel, dragged on the divider (this device;
+  // an older version kept it under the legacy key).
+  const list = usePaneSize(
+    'project-list',
+    520,
+    'personal-dashboard/project-list-width',
+  );
 
   return (
     <div className="flex h-full">
       <div
         className={`scroll-thin h-full overflow-y-auto p-3 ${selected ? 'hidden shrink-0 md:block' : 'flex-1'}`}
-        style={selected ? {width: listWidth} : undefined}
+        style={selected ? {width: list.size} : undefined}
       >
         <div className="mb-2 flex items-center justify-end gap-2 text-dim">
           <label className="flex items-center gap-1.5">
@@ -79,15 +80,15 @@ export function ProjectsView({selectedId}: {selectedId?: string}) {
         </div>
       </div>
       {selected && (
-        <div
-          role="separator"
-          aria-orientation="vertical"
-          aria-label="Resize project list"
-          onPointerDown={startResize}
-          className="group relative hidden w-px shrink-0 cursor-col-resize bg-line md:block"
-        >
-          <div className="absolute inset-y-0 -right-1.5 -left-1.5 group-hover:bg-accent/30 group-active:bg-accent/50" />
-        </div>
+        <ResizeHandle
+          pane={list}
+          sizes="before"
+          axis="x"
+          min={260}
+          keep={380}
+          label="Resize the project list"
+          className="z-10 -mx-1 hidden w-2 border-x-[3.5px] border-transparent bg-line bg-clip-padding md:block"
+        />
       )}
       {selected ? (
         <div
@@ -107,61 +108,6 @@ export function ProjectsView({selectedId}: {selectedId?: string}) {
       )}
     </div>
   );
-}
-
-const WIDTH_KEY = 'personal-dashboard/project-list-width';
-
-/** Width of the project list beside the panel; drag the divider to change it (remembered per device). */
-function useSplitWidth(): [
-  number,
-  (e: ReactPointerEvent<HTMLElement>) => void,
-] {
-  const [width, setWidth] = useState(() => {
-    try {
-      return Number(localStorage.getItem(WIDTH_KEY)) || 520;
-    } catch {
-      return 520;
-    }
-  });
-  const start = (e: ReactPointerEvent<HTMLElement>) => {
-    const handle = e.currentTarget;
-    const container = handle.parentElement!.getBoundingClientRect();
-    handle.setPointerCapture(e.pointerId);
-    document.body.style.cursor = 'col-resize';
-    const clamp = (x: number) =>
-      Math.max(260, Math.min(container.width - 380, x - container.left));
-    const from = width;
-    let last = width;
-    const move = (ev: PointerEvent) => setWidth((last = clamp(ev.clientX)));
-    const stop = () => {
-      release();
-      handle.removeEventListener('pointermove', move);
-      handle.removeEventListener('pointerup', up);
-      handle.removeEventListener('pointercancel', cancel);
-      handle.removeEventListener('lostpointercapture', cancel);
-      document.body.style.cursor = '';
-    };
-    const up = () => {
-      stop();
-      try {
-        localStorage.setItem(WIDTH_KEY, String(Math.round(last)));
-      } catch {
-        // Not remembered; fine.
-      }
-    };
-    // Cancelled (e.g. the browser took the touch over, or a key was
-    // pressed): back to where it was.
-    const cancel = () => {
-      stop();
-      setWidth(from);
-    };
-    const release = holdDrag(cancel);
-    handle.addEventListener('pointermove', move);
-    handle.addEventListener('pointerup', up);
-    handle.addEventListener('pointercancel', cancel);
-    handle.addEventListener('lostpointercapture', cancel);
-  };
-  return [width, start];
 }
 
 function AreaSection(props: {
