@@ -49,6 +49,28 @@ export function committedHours(allocs: Allocation[]): number {
   );
 }
 
+/**
+ * A task's hours as parts of its estimate: spent (done sessions), planned
+ * (open ones, missed included), and with an estimate what's not planned yet,
+ * or how far spent and planned go over it. They add up to the estimate.
+ */
+export function hoursBreakdown(
+  estimate: number | undefined,
+  allocs: Allocation[],
+): {spent: number; planned: number; unplanned?: number; over?: number} {
+  const spent = actualHours(allocs);
+  const planned = committedHours(allocs) - spent;
+  if (estimate == null) return {spent, planned};
+  // In whole minutes, as lengths are.
+  const left = Math.round((estimate - spent - planned) * 60) / 60;
+  return {
+    spent,
+    planned,
+    unplanned: Math.max(0, left),
+    over: Math.max(0, -left),
+  };
+}
+
 export function allocationsByItem(
   data: Pick<AppData, 'allocations'>,
 ): Map<string, Allocation[]> {

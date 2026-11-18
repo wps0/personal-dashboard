@@ -14,12 +14,7 @@ import {SuggestSessions} from './suggest_sessions';
 import {countdown, dayName, formatMedium, shortDate} from '../model/dates';
 import {endMinutes, fromMinutes, toMinutes} from '../model/time';
 import {useToday} from '../hooks';
-import {
-  actualHours,
-  isItemDone,
-  plannedHours,
-  urgency,
-} from '../model/selectors';
+import {hoursBreakdown, isItemDone, urgency} from '../model/selectors';
 import {
   ItemKind,
   type Allocation,
@@ -74,10 +69,7 @@ function ItemDetails({item, onClose}: {item: Item; onClose(): void}) {
   const project = projects.find(p => p.id === item.projectId);
   const color = areas.find(a => a.id === project?.areaId)?.color;
 
-  const planned = plannedHours(allocs);
-  const spent = actualHours(allocs);
-  const remaining =
-    item.estimateHours != null ? item.estimateHours - spent : undefined;
+  const hours = hoursBreakdown(item.estimateHours, allocs);
 
   return (
     <div className="flex flex-col">
@@ -184,14 +176,22 @@ function ItemDetails({item, onClose}: {item: Item; onClose(): void}) {
             <span className="text-dim">h</span>
           </span>
         </Field>
-        <Field label="spent / planned">
+        <Field label="hours">
+          {/* Parts of the estimate: they add up to it. */}
           <span className="tabular-nums">
-            {fmtDuration(spent)} / {fmtDuration(planned)}
-            {remaining != null && (
-              <span className={remaining < 0 ? 'text-warn' : 'text-dim'}>
+            {fmtDuration(hours.spent)} spent · {fmtDuration(hours.planned)}{' '}
+            planned
+            {hours.over ? (
+              <span className="text-warn">
                 {' '}
-                · {fmtDuration(Math.max(0, remaining))} left
+                · {fmtDuration(hours.over)} over the estimate
               </span>
+            ) : hours.unplanned ? (
+              <span> · {fmtDuration(hours.unplanned)} not planned yet</span>
+            ) : (
+              hours.unplanned === 0 && (
+                <span className="text-dim"> · all planned</span>
+              )
             )}
           </span>
         </Field>

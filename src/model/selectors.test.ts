@@ -8,6 +8,7 @@ import {
   dueByDay,
   findTasks,
   groupIdOf,
+  hoursBreakdown,
   missedAllocations,
   projectStats,
 } from './selectors';
@@ -296,5 +297,36 @@ describe('compareOpenFirst', () => {
       'done early',
       'done late',
     ]);
+  });
+});
+
+describe('hoursBreakdown', () => {
+  // 1h spent (done, 1h 30m planned but 1h taken), 6h planned (one missed).
+  const allocs = [
+    alloc('a', 'i', '2026-11-02', 1.5, {done: true, actualHours: 1}),
+    alloc('b', 'i', '2026-11-05', 2),
+    alloc('c', 'i', '2026-11-20', 4),
+  ];
+
+  it('splits the estimate into spent, planned and not planned yet', () => {
+    expect(hoursBreakdown(8, allocs)).toEqual({
+      spent: 1,
+      planned: 6,
+      unplanned: 1,
+      over: 0,
+    });
+  });
+
+  it('says how far over the estimate spent and planned go', () => {
+    expect(hoursBreakdown(5.5, allocs)).toEqual({
+      spent: 1,
+      planned: 6,
+      unplanned: 0,
+      over: 1.5,
+    });
+  });
+
+  it('without an estimate, only spent and planned', () => {
+    expect(hoursBreakdown(undefined, allocs)).toEqual({spent: 1, planned: 6});
   });
 });
