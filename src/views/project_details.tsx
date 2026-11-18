@@ -240,10 +240,10 @@ function BulkAdd({
         optional
         value={estimate}
         onChange={setEstimate}
-        placeholder="est"
-        className="field w-14"
+        placeholder="estimate"
+        className="field w-20"
       />
-      <span className="text-dim">h each</span>
+      <span className="text-dim">each</span>
       {groups.length > 0 && (
         <Select
           value={groupId}

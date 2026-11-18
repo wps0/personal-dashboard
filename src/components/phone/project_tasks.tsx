@@ -241,10 +241,9 @@ function AddTask({project}: {project: Project}) {
               optional
               value={estimate}
               onChange={setEstimate}
-              placeholder="est"
-              className="field h-10 w-14"
+              placeholder="estimate"
+              className="field h-10 w-24"
             />
-            <span className="text-dim">h</span>
           </span>
           {project.groups.length > 0 && (
             <Select

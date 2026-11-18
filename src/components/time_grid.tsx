@@ -30,7 +30,7 @@ import {
   type MouseEvent as ReactMouseEvent,
   type PointerEvent as ReactPointerEvent,
 } from 'react';
-import {fmtH} from '../format';
+import {fmtDuration} from '../format';
 import {
   useCapacities,
   useLookups,
@@ -748,7 +748,7 @@ const StripChip = memo(function StripChip({
     >
       <span className="min-w-0 flex-1 truncate text-strong">{item?.title}</span>
       <span className="tabular-nums opacity-70">
-        {fmtH(alloc.plannedHours)}
+        {fmtDuration(alloc.plannedHours)}
       </span>
     </div>
   );
@@ -1378,7 +1378,7 @@ const AllocBlock = memo(function AllocBlock(props: {
         background: `color-mix(in srgb, ${lookups.color(item)} 55%, var(--color-panel))`,
         borderLeftColor: lookups.color(item),
       }}
-      title={`${item?.title ?? ''}\n${alloc.start} · ${fmtH((end - start) / 60)}`}
+      title={`${item?.title ?? ''}\n${alloc.start} · ${fmtDuration((end - start) / 60)}`}
     >
       <BlockLabel
         height={height}

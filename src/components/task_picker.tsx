@@ -1,6 +1,6 @@
 import {X} from 'lucide-react';
 import {useCallback, useId, useMemo, useState, type ReactNode} from 'react';
-import {fmtH} from '../format';
+import {fmtDuration} from '../format';
 import {useLookups} from '../hooks';
 import {todayISO} from '../model/dates';
 import {backlogItems, findTasks} from '../model/selectors';
@@ -72,7 +72,7 @@ export function TaskPicker({
             </div>
             <div className="truncate text-[12px] text-dim">
               {lookups.project(picked.projectId)?.name}
-              {left != null && ` · ${fmtH(left)} left to plan`}
+              {left != null && ` · ${fmtDuration(left)} left to plan`}
             </div>
           </div>
           <button
