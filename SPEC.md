@@ -1213,6 +1213,12 @@ privacy note as 5.2 (the call is shared: `curriculum/gemini.ts`).
   constants, since new ones redraw every draggable; long tables sit in their
   own layer (`will-change-transform`) and rows have no colour transitions,
   so typing or hovering doesn't repaint the whole list.
+- **Hours** are written with their unit, in hours and minutes: "1h 30m",
+  "2h", "45m", never "1.5h" or a bare "1.5" (session lengths, estimates,
+  capacity, planned and spent hours, targets). Fields show them the same
+  way and take "1h 30m", "45m", "1:30" or "1.5", in whole minutes; text
+  that isn't a length goes back. Only the Work page's totals are whole hours
+  (3.10).
 - **Button text:** buttons with a background start with a capital ("Add",
   "Export JSON", "✓ Mark complete"); text-only buttons and links are
   lowercase ("+ group", "edit", "open project ↗").

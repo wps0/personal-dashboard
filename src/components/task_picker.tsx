@@ -1,6 +1,6 @@
 import {CircleCheck, X} from 'lucide-react';
 import {useCallback, useId, useMemo, useState, type ReactNode} from 'react';
-import {fmtH} from '../format';
+import {fmtDuration} from '../format';
 import {useLookups} from '../hooks';
 import {todayISO} from '../model/dates';
 import {backlogItems, findTasks, isItemDone} from '../model/selectors';
@@ -74,7 +74,7 @@ export function TaskPicker({
               {lookups.project(picked.projectId)?.name}
               {isItemDone(picked)
                 ? ' · done: time up to today counts as spent'
-                : left != null && ` · ${fmtH(left)} left to plan`}
+                : left != null && ` · ${fmtDuration(left)} left to plan`}
             </div>
           </div>
           <button

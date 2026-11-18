@@ -1,5 +1,5 @@
 import {Minus, Plus} from 'lucide-react';
-import {fmtH} from '../format';
+import {fmtDuration} from '../format';
 import {ruleFor} from '../model/capacity';
 import {formatMedium} from '../model/dates';
 import {isReserved} from '../model/reserved';
@@ -67,7 +67,7 @@ export function CapacitySettings() {
         </button>
         <span className="w-12 text-center tabular-nums">
           {rule.adjustment > 0 ? '+' : rule.adjustment < 0 ? '−' : '±'}
-          {fmtH(Math.abs(rule.adjustment))}
+          {fmtDuration(Math.abs(rule.adjustment))}
         </span>
         <button
           className="icon-btn"

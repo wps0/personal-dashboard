@@ -61,7 +61,7 @@ import {TaskPicker} from './task_picker';
 import {TimeSelect} from './time_select';
 import {MoveBar} from './ui/move_bar';
 import {Select} from './ui/select';
-import {fmtH, KIND_OPTIONS} from '../format';
+import {fmtDuration, KIND_OPTIONS} from '../format';
 import {unreachable} from '../unreachable';
 
 type When = Pick<CalendarEvent, 'date' | 'start' | 'end' | 'allDay'>;
@@ -343,8 +343,8 @@ export function DraftEditor() {
           <>
             <p className="pl-7 text-[12px] text-dim">
               {draft.allDay
-                ? `Planned for ${shortDate(draft.date)}, without a time (${fmtH(ALL_DAY_TASK_SESSION_HOURS)}).`
-                : `${draft.start}–${showEnd(draft.end)} on ${shortDate(draft.date)} planned for it (${fmtH(
+                ? `Planned for ${shortDate(draft.date)}, without a time (${fmtDuration(ALL_DAY_TASK_SESSION_HOURS)}).`
+                : `${draft.start}–${showEnd(draft.end)} on ${shortDate(draft.date)} planned for it (${fmtDuration(
                     (endMinutes(draft.end) - toMinutes(draft.start)) / 60,
                   )}).`}{' '}
               No due date.
