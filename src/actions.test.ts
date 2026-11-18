@@ -4,6 +4,7 @@ import {
   addGroup,
   addReserved,
   carryOver,
+  deleteArea,
   advanceStatus,
   deleteGroup,
   deleteWorkSpan,
@@ -494,5 +495,52 @@ describe('carryOver', () => {
     log(5);
     carryOver('2026-10-05');
     expect(targets()).toEqual({});
+  });
+});
+
+describe('deleteArea', () => {
+  beforeEach(() => {
+    vi.stubGlobal('window', {setTimeout: () => 0});
+    useStore.getState().replaceAll(emptyData());
+    useToasts.setState({toasts: []});
+    clearHistory();
+  });
+
+  it('deletes an area with its projects, tasks and sessions; Undo brings them all back', () => {
+    const st = useStore.getState();
+    const uni = st.addArea('University');
+    const home = st.addArea('Home');
+    const os = st.addProject(uni, 'OS');
+    st.addProject(uni, 'Networks');
+    st.addProject(home, 'Garden');
+    st.addItems(os, [{title: 'Lab 4'}]);
+    const item = useStore.getState().data.items[0].id;
+    st.addAllocation(item, '2026-11-10', 2);
+    // A change before it, to check that history before the delete survives.
+    renameGroup(os, addGroup(os, 'Lab'), 'Labs');
+    const before = useStore.getState().data;
+
+    deleteArea(useStore.getState().data.areas[0]);
+    const d = useStore.getState().data;
+    expect(d.areas.map(a => a.name)).toEqual(['Home']);
+    expect(d.projects.map(p => p.name)).toEqual(['Garden']);
+    expect(d.items).toEqual([]);
+    expect(d.allocations).toEqual([]);
+    expect(useToasts.getState().toasts[0].message).toBe(
+      'Deleted “University” and its 2 projects',
+    );
+
+    undoLast();
+    expect(useStore.getState().data).toBe(before);
+    // The steps before it still undo: the rename, here.
+    undoLast();
+    expect(useStore.getState().data.projects[0].groups[0].name).toBe('Lab');
+  });
+
+  it('says so plainly for an area without projects', () => {
+    useStore.getState().addArea('Empty');
+    deleteArea(useStore.getState().data.areas[0]);
+    expect(useStore.getState().data.areas).toEqual([]);
+    expect(useToasts.getState().toasts[0].message).toBe('Deleted “Empty”');
   });
 });

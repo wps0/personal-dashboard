@@ -515,8 +515,9 @@ spread of untimed sessions, nothing added until you say so:
 - Progress rings fill up on load.
 - **Toasts with Undo** confirm deletions and completions. Undo restores the
   data from just before the action, but only if nothing changed since, so it
-  can never drop later edits. This replaces confirm dialogs, except for
-  deleting a project or area and for import/reset.
+  can never drop later edits. This replaces confirm dialogs: deleting a
+  project or an area (with its projects) doesn't ask first either. Only
+  replacing all data (import, sample data, reset) still asks.
 - **The undo bar** (touch screens, where there's no Ctrl+Z): the latest
   change with **Undo**, at the bottom, also for the changes a toast doesn't
   announce (a drag, a resize, ticking a session off). It stays until the
@@ -550,7 +551,9 @@ which deploy it's running.
 Projects page, the calendar's layers, the backlog's filters). Drag an area by
 its grip to reorder it (a line shows where it lands). Undoable, without a
 toast. On phones its colours go on a line of
-their own, under the name.
+their own, under the name. **×** deletes an area with its projects, their
+tasks and planned time, at once and with Undo ("Deleted “University” and
+its 3 projects").
 
 ### 3.9 How many actions things take (UX review, October 2026)
 Counted in a browser for 37 everyday tasks, from a fresh Home page with the

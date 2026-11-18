@@ -1,6 +1,7 @@
 import {
   ItemStatus,
   type Allocation,
+  type Area,
   type CalendarEvent,
   type ISODate,
   type Item,
@@ -289,6 +290,20 @@ export function renameGroup(projectId: string, groupId: string, name: string) {
   withUndo('Group renamed', () => s().renameGroup(projectId, groupId, name), {
     quiet: true,
   });
+}
+
+/**
+ * Deletes an area with its projects, their tasks and planned time, in one
+ * undo step (no question first: Undo brings it all back).
+ */
+export function deleteArea(area: Area) {
+  const n = s().data.projects.filter(p => p.areaId === area.id).length;
+  withUndo(
+    n
+      ? `Deleted “${area.name}” and its ${n} ${n === 1 ? 'project' : 'projects'}`
+      : `Deleted “${area.name}”`,
+    () => s().deleteArea(area.id),
+  );
 }
 
 export function moveArea(id: string, index: number) {
