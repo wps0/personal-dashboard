@@ -454,11 +454,14 @@ Clicking any task (in the week view, backlog, calendar or home), or
 double-clicking one in the project panel, opens an overlay with:
 - the title, project, kind and status;
 - the due date, class date and estimate;
-- spent / planned / remaining hours;
+- **hours**, as parts of the estimate that add up to it: "1h spent · 6h
+  planned · 1h not planned yet" (spent on done sessions, planned on open
+  ones, missed included), "· all planned", or "· 2h over the estimate";
+  without an estimate, spent and planned only;
 - every session, each with an editable date, start, planned and actual hours
   (on phones one hours column: planned, or actual once done, as in the week
   journal); dates in this card leave out the year when it's this year's.
-  Lengths here (planned, actual, spent / planned / left) are written in hours
+  Lengths here (planned, actual, and the hours above) are written in hours
   and minutes ("1h 53m") and typed as "1h 53m", "45m", "1:53" or "1.5";
 - **suggest sessions…** (open tasks): the hours it has left to plan (its
   estimate less spent and planned hours, missed sessions included, as in
