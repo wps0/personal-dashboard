@@ -43,13 +43,8 @@ import {UsosBanner} from '../components/usos_review';
 import {ProjectDetails} from './project_details';
 import {Markdown} from '../components/markdown';
 import {ProgressRing} from '../components/progress_ring';
-import {
-  fmtNum,
-  groupOptions,
-  kindBadge,
-  KIND_OPTIONS,
-  URGENCY_CLASS,
-} from '../format';
+import {KindIcon} from '../components/kind_icon';
+import {fmtNum, groupOptions, KIND_OPTIONS, URGENCY_CLASS} from '../format';
 import {countdown, shortDate} from '../model/dates';
 import {useLatest, useMediaQuery, useToday} from '../hooks';
 import {ProjectTasks} from '../components/phone/project_tasks';
@@ -868,9 +863,7 @@ function GroupMenu({
             className={entry}
             onClick={run(() => moveToGroup(k.items, group))}
           >
-            <span className="w-7 tabular-nums text-[10px] text-dim">
-              {kindBadge(k.kind)}
-            </span>
+            <KindIcon kind={k.kind} named={false} className="text-dim" />
             <span className="flex-1">All {k.name} items</span>
             <span className="tabular-nums text-dim">{k.items.length}</span>
           </button>
@@ -922,7 +915,7 @@ function EmptyGroup({group, ungrouped}: {group: ItemGroup; ungrouped: Item[]}) {
             className="btn-ghost"
             onClick={() => moveToGroup(k.items, group)}
           >
-            all {kindBadge(k.kind)} ({k.items.length})
+            all {k.name} items ({k.items.length})
           </button>
         ))}
       </td>
@@ -1038,9 +1031,7 @@ const ItemRow = memo(function ItemRow({
             title="Click to select, double-click (or Enter) to open"
             aria-pressed={selected}
           >
-            <span className="tabular-nums text-[10px] text-dim">
-              {kindBadge(item.kind)}
-            </span>
+            <KindIcon kind={item.kind} size={12} className="text-dim" />
             <span className="truncate">
               <span className={`strike ${done ? 'is-struck' : ''}`}>
                 {item.title}
