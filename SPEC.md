@@ -1108,14 +1108,32 @@ A general form of the curriculum import (5.2).
    before the next one", "the problem sets in this list, due Fridays") and
    paste any material: a curriculum, a list of lectures, an assignment
    schedule (optional).
-3. Gemini returns tasks as structured JSON: title, kind (CLASS, ASSIGNMENT,
-   EXAM, TASK, OTHER), due date, estimate, group (one of the project's, by
-   name) and notes, plus warnings. The message gives it today's date and
-   weekday (for relative dates), the project's name and its groups.
+3. Two ways to get the tasks, as tabs (the last one used is remembered on
+   the device; without a Gemini key it starts on the first):
+   - **Any AI chat (copy & paste):** **Copy the prompt** copies a complete
+     prompt for ChatGPT, Claude, Gemini or any chat: the same rules Gemini
+     gets, the JSON format spelled out with an example (there's no schema to
+     enforce it), today, the project and its groups, and the request and
+     material (without a request, it asks the AI to wait for one, so it can
+     be written in the chat). "see the prompt" shows it, to copy by hand
+     where the clipboard isn't allowed. Then paste the AI's answer and
+     **Review tasks**. The answer may be in a code block or have words
+     around it; a bare list is taken as the tasks; anything else gets a
+     plain message ("There's no JSON in what's pasted…"). Nothing is sent
+     from the app. Changes are asked for in the chat, and its new answer
+     pasted again (Back).
+   - **Gemini (built in):** as before, the request and material go to
+     Gemini, which returns the tasks as structured JSON.
+
+   Either way the answer is the same: title, kind (CLASS, ASSIGNMENT, EXAM,
+   TASK, OTHER), due date, estimate, group (one of the project's, by name)
+   and notes, plus warnings. The message gives today's date and weekday (for
+   relative dates), the project's name and its groups.
 4. **Review**: every task as a row to edit (title, kind, due date, estimate,
-   group, notes) or untick, with the warnings above. **Ask for changes** in
-   words ("estimates 1h", "drop the labs"): the ticked tasks, as edited, go
-   along with the change, and the whole revised list comes back.
+   group, notes) or untick, with the warnings above. With Gemini, **Ask for
+   changes** in words ("estimates 1h", "drop the labs"): the ticked tasks,
+   as edited, go along with the change, and the whole revised list comes
+   back.
 5. **Add N tasks** adds them in one undoable step; nothing is added before.
 
 The answer is checked and tidied: an unknown kind is a task, a date that
