@@ -4,7 +4,9 @@ import * as pb from '../gen/dashboard/data_pb';
 import {ItemKind} from '../model/types';
 import {
   askForTasks,
+  copyPrompt,
   itemsFromTasks,
+  parseAnswer,
   promptContents,
   RESPONSE_SCHEMA,
   SYSTEM_INSTRUCTION,
@@ -222,5 +224,79 @@ describe('askForTasks', () => {
     expect(body.contents[0].parts[0].text).toContain(
       'Request:\nOne task per lecture',
     );
+  });
+});
+
+describe('the prompt to copy into any AI', () => {
+  const r = {
+    request: 'One task per lecture, 2h each',
+    material: '1. Intro (12.03)\n2. Processes (19.03)',
+    projectName: 'Operating Systems',
+    groups,
+    today: '2026-11-18',
+  };
+
+  it('has the rules, the format, the context, the request and the material', () => {
+    const p = copyPrompt(r);
+    expect(p).toContain('one JSON object in exactly this format');
+    expect(p).toContain('"tasks": [');
+    expect(p).toContain('kind is one of: CLASS, ASSIGNMENT, EXAM, TASK, OTHER');
+    expect(p).toContain('4. dueDate: YYYY-MM-DD');
+    expect(p).toContain(
+      'Today: 2026-11-18 (Wed).\nProject: Operating Systems.\nThe project\'s groups: "Lectures", "Problem sets".',
+    );
+    expect(p).toContain('Request:\nOne task per lecture, 2h each');
+    expect(p).toContain('Material:\n1. Intro (12.03)\n2. Processes (19.03)');
+  });
+
+  it('without a request, asks the AI to wait for one', () => {
+    const p = copyPrompt({...r, request: ' ', material: ''});
+    expect(p).toContain('I will write it in my next message');
+    expect(p).not.toContain('Material:');
+  });
+
+  it('gives an answer in its own format back, whole', () => {
+    // What the example in the prompt would come back as, read as an answer.
+    const json = /\n(\{\n {2}"tasks"[\s\S]*?\n\})/.exec(copyPrompt(r))![1];
+    expect(validateTasks(parseAnswer(json), groups, 'pasted').tasks).toEqual([
+      task({
+        title: 'Lecture 3: Scheduling',
+        dueDate: '2026-03-12',
+        estimateHours: 1.5,
+        group: null,
+      }),
+    ]);
+  });
+});
+
+describe('parseAnswer', () => {
+  const answer = {tasks: [{title: 'Lab 1', kind: 'TASK'}], warnings: []};
+
+  it('reads the JSON as it is, in a code block, or with words around it', () => {
+    const json = JSON.stringify(answer, null, 2);
+    expect(parseAnswer(json)).toEqual(answer);
+    expect(parseAnswer('```json\n' + json + '\n```')).toEqual(answer);
+    expect(
+      parseAnswer(`Here are your tasks:\n\n${json}\n\nWant changes?`),
+    ).toEqual(answer);
+  });
+
+  it('takes a bare list as the tasks', () => {
+    expect(parseAnswer('[{"title": "Lab 1"}]')).toEqual({
+      tasks: [{title: 'Lab 1'}],
+      warnings: [],
+    });
+  });
+
+  it('says what’s wrong when it isn’t JSON', () => {
+    expect(() => parseAnswer('Sure! What tasks do you want?')).toThrow(
+      /no JSON/,
+    );
+    expect(() => parseAnswer('{"tasks": [ {"title": "Lab 1",, } ]}')).toThrow(
+      /isn’t valid JSON/,
+    );
+    expect(() =>
+      validateTasks(parseAnswer('{"items": []}'), groups, 'pasted'),
+    ).toThrow('The pasted answer has no task list');
   });
 });

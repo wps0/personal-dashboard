@@ -99,7 +99,7 @@ export function ProjectDetails({
               showItems();
               useUi.getState().tasksFromPrompt(project.id);
             }}
-            title="Say what tasks you want, paste the material, and review what Gemini makes of it"
+            title="Say what tasks you want and paste the material; copy a ready prompt into any AI chat and paste its answer back, or let Gemini make them. You review them first."
           >
             From a prompt…
           </button>
