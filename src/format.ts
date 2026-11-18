@@ -40,18 +40,13 @@ export const URGENCY_CLASS: Record<Urgency, string> = {
   far: 'text-dim',
 };
 
-const KINDS: Record<ItemKind, {name: string; badge: string}> = {
-  [ItemKind.UNSPECIFIED]: {name: 'Other', badge: '?'},
-  [ItemKind.CLASS]: {name: 'Class', badge: 'CLS'},
-  [ItemKind.ASSIGNMENT]: {name: 'Assignment', badge: 'ASG'},
-  [ItemKind.EXAM]: {name: 'Exam', badge: 'EXM'},
-  [ItemKind.TASK]: {name: 'Task', badge: 'TSK'},
+const KINDS: Record<ItemKind, {name: string}> = {
+  [ItemKind.UNSPECIFIED]: {name: 'Other'},
+  [ItemKind.CLASS]: {name: 'Class'},
+  [ItemKind.ASSIGNMENT]: {name: 'Assignment'},
+  [ItemKind.EXAM]: {name: 'Exam'},
+  [ItemKind.TASK]: {name: 'Task'},
 };
-
-/** The short badge for an item kind; "?" for a kind this version doesn't know. */
-export function kindBadge(kind: ItemKind): string {
-  return KINDS[kind]?.badge ?? '?';
-}
 
 /** An item kind in a word: "Assignment"; "Other" for none or one this version doesn't know. */
 export function kindName(kind: ItemKind): string {

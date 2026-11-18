@@ -5,16 +5,11 @@ import {
   ChevronRight,
   CircleCheck,
   Ellipsis,
-  FileText,
   Flag,
   FolderPlus,
-  GraduationCap,
-  PenLine,
   Plus,
   SlidersHorizontal,
-  SquareCheck,
   Trash2,
-  type LucideIcon,
 } from 'lucide-react';
 import {useMemo, useState} from 'react';
 import {
@@ -54,14 +49,8 @@ import {useUi} from '../../ui';
 import {DateField} from '../date_field';
 import {HoursInput} from '../hours_input';
 import {Select} from '../ui/select';
+import {KindIcon} from '../kind_icon';
 import {Sheet} from './parts';
-
-const KIND_ICON: Partial<Record<ItemKind, LucideIcon>> = {
-  [ItemKind.CLASS]: GraduationCap,
-  [ItemKind.ASSIGNMENT]: FileText,
-  [ItemKind.EXAM]: PenLine,
-  [ItemKind.TASK]: SquareCheck,
-};
 
 /** One tap moves a task on: to do → in progress → done. */
 function StatusButton({item}: {item: Item}) {
@@ -101,7 +90,6 @@ function TaskRow({
   spent: number;
   today: ISODate;
 }) {
-  const Icon = KIND_ICON[item.kind];
   const done = isItemDone(item);
   return (
     <li className="flex min-h-14 items-center pr-3">
@@ -117,7 +105,7 @@ function TaskRow({
             {item.title}
           </span>
           <span className="flex items-center gap-1 truncate text-[13px] text-dim">
-            {Icon && <Icon size={13} aria-hidden />}
+            <KindIcon kind={item.kind} named={false} />
             {kindName(item.kind)}
             {item.dueDate && !done && (
               <span className={URGENCY_CLASS[urgency(item.dueDate, today)]}>

@@ -166,7 +166,9 @@ start in Settings is for the calendar):
 Each day box is a hybrid of three parts:
 1. Calendar events (read-only, in v2) at the top.
 2. Structured blocks ("Lecture 5 – OS · 2h", with a checkbox and a link to its
-   project). These are allocations.
+   project). These are allocations. On hover, **complete** marks the whole
+   task done (the checkbox ticks off only the session) and **×** takes the
+   session off the plan.
 3. A freeform text area for anything else.
 
 - **Planning is manual.** Drag items or allocations into days and set hours.
@@ -278,6 +280,10 @@ and details, as tabs in the side panel.
   type; double-click works too. An empty description is only a small
   "+ Add a description" link. The description tab keeps the full-height
   editor.
+- **Kinds are icons:** a cap for a class, a page for an assignment, a pen for
+  an exam, a box for a task (none for Other), named on hover and for screen
+  readers; the task card and the phone list say the word. No abbreviations
+  to learn.
 - On narrow panels (a wide project list) the items table drops its estimate
   and spent/plan columns, which the task overlay shows, and long titles are
   cut short, so the table never scrolls sideways.

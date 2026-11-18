@@ -427,7 +427,7 @@ const AllocationContent = memo(function AllocationContent(props: {
             onPointerDown={stop}
             onClick={() => completeItem(item)}
           >
-            ✓✓
+            complete
           </button>
         )}
         <button
