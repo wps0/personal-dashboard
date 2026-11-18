@@ -3,13 +3,6 @@ import {ItemKind, type ItemGroup, type WorkSpan} from './model/types';
 import {isHoursOnly} from './model/work';
 import {showEnd} from './model/time';
 
-/** 1.5 → "1.5", 0.25 → "0.25", 2 → "2". */
-export function fmtNum(n: number) {
-  return Number.isInteger(n) ? String(n) : n.toFixed(2).replace(/0$/, '');
-}
-export function fmtH(n: number) {
-  return `${fmtNum(n)}h`;
-}
 /** Hours as "1h 53m", "45m" or "2h" (whole minutes); nothing is "0h". */
 export function fmtDuration(hours: number) {
   const min = Math.round(hours * 60);

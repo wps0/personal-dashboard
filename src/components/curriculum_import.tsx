@@ -343,10 +343,10 @@ function Review({
             optional
             value={estimate}
             onChange={setEstimate}
-            className="field w-14"
+            className="field w-16"
             title="Hours per item"
           />
-          h each
+          each
         </label>
         {groups.length > 0 && (
           <label className="flex items-center gap-1.5">

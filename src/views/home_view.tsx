@@ -16,7 +16,7 @@ import {TimeGrid} from '../components/time_grid';
 import {ToPlanCard} from '../components/to_plan_card';
 import {Select} from '../components/ui/select';
 import {WorkCard} from '../components/work_card';
-import {fmtH, URGENCY_CLASS} from '../format';
+import {fmtDuration, URGENCY_CLASS} from '../format';
 import {useLookups, useToday, useWeekStart, type Lookups} from '../hooks';
 import {
   addDays,
@@ -330,7 +330,7 @@ function Planned({
                 {shortDate(date)}
               </span>
               <span className="ml-auto tabular-nums text-[11px] text-dim">
-                {fmtH(allocs.reduce((s, a) => s + a.plannedHours, 0))}
+                {fmtDuration(allocs.reduce((s, a) => s + a.plannedHours, 0))}
               </span>
             </div>
             {allocs.length === 0 ? (
@@ -397,7 +397,7 @@ const PlannedRow = memo(function PlannedRow({
         <span className="tabular-nums text-[11px] text-dim">{alloc.start}</span>
       )}
       <span className="w-8 text-right tabular-nums text-[11px]">
-        {fmtH(alloc.plannedHours)}
+        {fmtDuration(alloc.plannedHours)}
       </span>
     </li>
   );

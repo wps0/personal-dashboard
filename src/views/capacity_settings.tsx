@@ -6,7 +6,7 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from '../components/ui/popover';
-import {fmtH} from '../format';
+import {fmtDuration} from '../format';
 import {copyDay, ruleFor, type PlanningWindow} from '../model/capacity';
 import {formatMedium} from '../model/dates';
 import {useToday} from '../hooks';
@@ -54,7 +54,7 @@ export function CapacitySettings() {
         </button>
         <span className="w-12 text-center tabular-nums">
           {rule.adjustment > 0 ? '+' : rule.adjustment < 0 ? '−' : '±'}
-          {fmtH(Math.abs(rule.adjustment))}
+          {fmtDuration(Math.abs(rule.adjustment))}
         </span>
         <button
           className="icon-btn"
@@ -102,7 +102,7 @@ export function CapacitySettings() {
                         ariaLabel={`${name} window end`}
                       />
                       <span className="ml-1 w-10 text-dim tabular-nums">
-                        {fmtH(hours)}
+                        {fmtDuration(hours)}
                       </span>
                       <CopyDay
                         day={i}

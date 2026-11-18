@@ -1,4 +1,6 @@
 import {memo, useState} from 'react';
+import {fmtDuration} from '../format';
+import {parseDuration} from '../model/duration';
 
 interface Props {
   value: number | undefined;
@@ -10,7 +12,16 @@ interface Props {
   title?: string;
 }
 
-/** Numeric hours field that commits on blur/Enter, in 0.25h steps. */
+function shown(v: number | undefined) {
+  return v === undefined ? '' : fmtDuration(v);
+}
+
+/**
+ * Hours, written with their unit ("1h 30m", "2h") and typed as "1h 30m",
+ * "45m", "1:30" or "1.5"; in whole minutes. Commits on blur or Enter; text
+ * that isn't a length goes back. Unlike DurationInput it can be empty, when
+ * `optional`.
+ */
 function HoursInputImpl({
   value,
   onChange,
@@ -19,38 +30,41 @@ function HoursInputImpl({
   optional,
   title,
 }: Props) {
-  const [text, setText] = useState(value?.toString() ?? '');
+  const [text, setText] = useState(shown(value));
   // Show outside changes to the value (set during render, not in an effect).
-  const [shown, setShown] = useState(value);
-  if (value !== shown) {
-    setShown(value);
-    setText(value?.toString() ?? '');
+  const [last, setLast] = useState(value);
+  if (value !== last) {
+    setLast(value);
+    setText(shown(value));
   }
 
   const commit = () => {
-    const t = text.trim().replace(',', '.');
-    const n = Math.round(Number(t) * 4) / 4;
+    const t = text.trim();
     if (t === '') {
       if (optional) onChange(undefined);
-    } else if (Number.isFinite(n) && n >= 0) onChange(n);
-    // Back to the stored value: typing 2.1 over 2 stores 2, and the parent may
-    // reject a value. A change that is stored arrives as the new `value`.
-    setText(value?.toString() ?? '');
+    } else {
+      const hours = parseDuration(t);
+      if (hours !== null && hours !== value) onChange(hours);
+    }
+    // Back to the stored value: the parent may reject a value. A change that
+    // is stored arrives as the new `value`.
+    setText(shown(value));
   };
 
   return (
     <input
-      inputMode="decimal"
       value={text}
       placeholder={placeholder}
       title={title}
+      aria-label={title}
       onChange={e => setText(e.target.value)}
+      onFocus={e => e.currentTarget.select()}
       onBlur={commit}
       onKeyDown={e =>
         e.key === 'Enter' && (e.currentTarget as HTMLInputElement).blur()
       }
       onPointerDown={e => e.stopPropagation()}
-      className={`w-10 rounded px-1 text-right tabular-nums hover:bg-raised focus:bg-raised ${className}`}
+      className={`w-12 rounded px-1 text-right tabular-nums hover:bg-raised focus:bg-raised ${className}`}
     />
   );
 }

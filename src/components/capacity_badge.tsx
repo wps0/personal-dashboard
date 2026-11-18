@@ -1,6 +1,6 @@
 import {Minus, Plus, RotateCcw} from 'lucide-react';
 import {memo, useState} from 'react';
-import {fmtH} from '../format';
+import {fmtDuration} from '../format';
 import type {CapacityInfo} from '../model/capacity';
 import {formatLong} from '../model/dates';
 import type {ISODate} from '../model/types';
@@ -11,7 +11,7 @@ import {Popover, PopoverContent, PopoverTrigger} from './ui/popover';
 import {showEnd} from '../model/time';
 
 function signed(n: number) {
-  return n > 0 ? `+${fmtH(n)}` : n < 0 ? `−${fmtH(-n)}` : '±0h';
+  return n > 0 ? `+${fmtDuration(n)}` : n < 0 ? `−${fmtDuration(-n)}` : '±0h';
 }
 
 /** "planned/capacity" for a day; click for the breakdown and per-day adjustments. */
@@ -36,7 +36,7 @@ function CapacityBadgeImpl({
         className={`rounded px-1 text-[11px] tabular-nums hover:bg-raised ${over ? 'text-danger' : planned > 0 ? 'text-fg' : 'text-dim'}`}
         title="Planned / capacity: click for details"
       >
-        {fmtH(planned)}/{fmtH(info.total)}
+        {fmtDuration(planned)}/{fmtDuration(info.total)}
         {tweaked && <span className="text-accent">*</span>}
       </PopoverTrigger>
       <PopoverContent align="end" className="w-64 p-3 text-[12px]">
@@ -47,14 +47,16 @@ function CapacityBadgeImpl({
           <dt className="text-dim">
             Planning window {info.window.start}–{showEnd(info.window.end)}
           </dt>
-          <dd>{fmtH(info.windowHours)}</dd>
+          <dd>{fmtDuration(info.windowHours)}</dd>
           <dt
             className="text-dim"
             title="Reserved time and calendar events in the window, each minute once however many overlap"
           >
             Occupied (reserved, events)
           </dt>
-          <dd>{info.occupiedHours ? `−${fmtH(info.occupiedHours)}` : '0h'}</dd>
+          <dd>
+            {info.occupiedHours ? `−${fmtDuration(info.occupiedHours)}` : '0h'}
+          </dd>
           <dt className="text-dim">Global adjustment</dt>
           <dd>{signed(info.adjustment)}</dd>
           <dt className="text-dim">This day</dt>
@@ -93,10 +95,10 @@ function CapacityBadgeImpl({
             Capacity
           </dt>
           <dd className="border-t border-line pt-1 font-medium text-strong">
-            {fmtH(info.total)}
+            {fmtDuration(info.total)}
           </dd>
           <dt className="text-dim">Planned</dt>
-          <dd className={over ? 'text-danger' : ''}>{fmtH(planned)}</dd>
+          <dd className={over ? 'text-danger' : ''}>{fmtDuration(planned)}</dd>
         </dl>
         {isPast ? (
           <p className="mt-2 text-dim">Past days are locked.</p>
@@ -111,9 +113,8 @@ function CapacityBadgeImpl({
                   onChange={override =>
                     useStore.getState().setDayCapacity(date, {override})
                   }
-                  className="field w-12"
+                  className="field w-16"
                 />
-                <span className="ml-0.5 text-dim">h</span>
               </span>
             </label>
             <div className="flex items-center justify-between">
