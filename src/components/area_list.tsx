@@ -9,7 +9,7 @@ import {GripVertical} from 'lucide-react';
 import {DragCancel} from '../drag_cancel';
 import {useState} from 'react';
 import {createPortal} from 'react-dom';
-import {moveArea} from '../actions';
+import {deleteArea, moveArea} from '../actions';
 import {ghostUnderPointer, suppressClicks, useDragSensors} from '../dnd';
 import {AREA_COLORS, type Area, type Project} from '../model/types';
 import {useStore} from '../store';
@@ -98,7 +98,7 @@ function AreaRow({
   lifted: boolean;
   lands: 'before' | 'after' | null;
 }) {
-  const {updateArea, deleteArea} = useStore.getState();
+  const {updateArea} = useStore.getState();
   const {setNodeRef: dropRef} = useDroppable({id: area.id, data: {index}});
   const {setNodeRef: dragRef, listeners} = useDraggable({
     id: area.id,
@@ -148,13 +148,13 @@ function AreaRow({
       </span>
       <button
         className="btn-ghost hover:text-danger"
-        onClick={() => {
-          if (
-            projects === 0 ||
-            confirm(`Delete "${area.name}" and its ${projects} project(s)?`)
-          )
-            deleteArea(area.id);
-        }}
+        aria-label={`Delete “${area.name}”`}
+        title={
+          projects
+            ? 'Delete, with its projects (Undo brings them back)'
+            : 'Delete (Undo brings it back)'
+        }
+        onClick={() => deleteArea(area)}
       >
         ×
       </button>

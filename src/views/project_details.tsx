@@ -155,16 +155,10 @@ export function ProjectDetails({
             <button
               className="btn hover:!border-danger hover:!text-danger"
               onClick={() => {
-                if (
-                  confirm(
-                    `Delete "${project.name}" with all its items and planned time?`,
-                  )
-                ) {
-                  navigate({name: 'projects'});
-                  withUndo(`Deleted “${project.name}”`, () =>
-                    deleteProject(project.id),
-                  );
-                }
+                navigate({name: 'projects'});
+                withUndo(`Deleted “${project.name}”`, () =>
+                  deleteProject(project.id),
+                );
               }}
             >
               Delete
