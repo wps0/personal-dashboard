@@ -104,6 +104,10 @@ their default then, and stay as they are.
   sessions takes over until the device signs in; its × hides it for the
   rest of this tab. Signing in starts over: the next spell opens with the
   popup again.
+- **Resizable** (from 1024px, see Layouts below): the handle between the
+  calendar and the cards sets the cards' width (380px by default), and the
+  one under the planned sessions sets their height (by default up to 55% of
+  the column).
 
 **On phones (below 640px), Home is Today**, an agenda, not the grid (three
 narrow columns told little and were hard to tap; the grid is on the Calendar
@@ -128,6 +132,14 @@ tab):
 - The missed-sessions notice, the USOS and sign-in banners and the work
   card, as on desktop.
 - Every change shows in the undo bar (3.6).
+
+**Layouts.** Panes are resized by dragging the handle between them
+(`components/resize_handle.tsx`): it sizes the pane on one side, the other
+takes what's left, each keeps a least size, and the size is remembered on
+the device (localStorage). Arrow keys move a focused handle by 16px, a
+double click puts the default back, and a key or another press mid-drag
+cancels. Used on Home and between the project list and the project panel; a
+new place is a usePaneSize and a ResizeHandle between two panes.
 
 ### 3.1 Projects pane view
 A grid of project cards, grouped by area. Clicking a card opens the project's

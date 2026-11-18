@@ -1,8 +1,9 @@
 import {HOME_CALENDAR_DEFAULT, HOME_HOUR_PX} from '../config';
 import {UsosBanner} from '../components/usos_review';
 import {SignInBanner} from '../components/signin_prompt';
+import {ResizeHandle, usePaneSize} from '../components/resize_handle';
 import {ChevronDown, ChevronLeft, ChevronRight} from 'lucide-react';
-import {memo, useMemo, useState} from 'react';
+import {memo, useMemo, useState, type CSSProperties} from 'react';
 import {create} from 'zustand';
 import {MiniMonth} from '../components/mini_month';
 import {
@@ -115,8 +116,15 @@ export function HomeView({date}: {date?: ISODate}) {
       useUi.getState().setDraft(nextHourDraft());
     },
   });
+  // From lg, beside the calendar: the cards' width and Planned's height,
+  // dragged on the handles between them (this device).
+  const cards = usePaneSize('home-cards', 380);
+  const planned = usePaneSize('home-planned', 0);
   return (
-    <div className="grid h-full grid-cols-1 gap-2 overflow-y-auto p-2 lg:grid-cols-[minmax(0,1fr)_380px] lg:overflow-hidden">
+    <div
+      className="grid h-full grid-cols-1 gap-2 overflow-y-auto p-2 lg:grid-cols-[minmax(0,1fr)_auto_var(--cards-w)] lg:gap-x-0 lg:overflow-hidden"
+      style={{'--cards-w': `${cards.size}px`} as CSSProperties}
+    >
       <div className="flex h-[70vh] min-h-0 flex-col rounded-lg border border-line bg-panel lg:h-full">
         <DayNav start={start} days={days} span={span} today={today} />
         <div className="min-h-0 flex-1">
@@ -128,12 +136,30 @@ export function HomeView({date}: {date?: ISODate}) {
           />
         </div>
       </div>
+      <ResizeHandle
+        pane={cards}
+        sizes="after"
+        axis="x"
+        min={280}
+        keep={420}
+        label="Resize the calendar and the cards"
+        className="hidden w-2 lg:block"
+      />
       {/* Below lg the page scrolls, so the cards take the room they need;
           beside the calendar (lg) they share its height. */}
       <div className="flex flex-col gap-2 lg:min-h-0">
         <SignInBanner />
         <UsosBanner />
-        <Planned days={days} />
+        <Planned days={days} height={planned.custom ? planned.size : null} />
+        <ResizeHandle
+          pane={planned}
+          sizes="before"
+          axis="y"
+          min={80}
+          keep={80}
+          label="Resize the planned sessions"
+          className="z-10 -my-2 hidden h-2 lg:block"
+        />
         <ToPlanCard />
         <Projects />
         <WorkCard />
@@ -239,7 +265,14 @@ function relativeDay(d: ISODate, today: ISODate): string {
   return dayName(d);
 }
 
-function Planned({days}: {days: ISODate[]}) {
+function Planned({
+  days,
+  height,
+}: {
+  days: ISODate[];
+  /** Its height beside the calendar (lg), if dragged; else up to 55%. */
+  height: number | null;
+}) {
   const allocations = useStore(s => s.data.allocations);
   const items = useStore(s => s.data.items);
   const projects = useStore(s => s.data.projects);
@@ -261,7 +294,12 @@ function Planned({days}: {days: ISODate[]}) {
   );
 
   return (
-    <section className="flex flex-col rounded border border-line bg-panel lg:max-h-[55%] lg:min-h-0">
+    <section
+      className={`flex flex-col rounded border border-line bg-panel lg:min-h-0 ${height ? 'lg:h-[var(--planned-h)] lg:shrink-0' : 'lg:max-h-[55%]'}`}
+      style={
+        height ? ({'--planned-h': `${height}px`} as CSSProperties) : undefined
+      }
+    >
       <header className="flex items-center border-b border-line px-2 py-1">
         <span className="label">planned</span>
         {missed > 0 && (
