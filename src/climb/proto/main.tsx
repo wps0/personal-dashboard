@@ -3,11 +3,11 @@ import {createRoot} from 'react-dom/client';
 import './climb.css';
 import {SCREENS} from './screens';
 
-// ?theme=light|dark and ?accent=blue pick the look; #screen picks the screen.
+// ?theme=light|dark picks the look, ?scroll=N scrolls the screen down;
+// #screen picks the screen.
 const params = new URLSearchParams(location.search);
 document.documentElement.dataset.theme = params.get('theme') ?? 'dark';
-const accent = params.get('accent');
-if (accent) document.documentElement.dataset.accent = accent;
+const scroll = Number(params.get('scroll') ?? 0);
 
 function App() {
   const [screen, setScreen] = useState(location.hash.slice(1) || 'today');
@@ -16,6 +16,9 @@ function App() {
     addEventListener('hashchange', on);
     return () => removeEventListener('hashchange', on);
   }, []);
+  useEffect(() => {
+    if (scroll) document.querySelector('main')?.scrollTo(0, scroll);
+  }, [screen]);
   const Screen = SCREENS[screen] ?? SCREENS.today;
   return <Screen />;
 }

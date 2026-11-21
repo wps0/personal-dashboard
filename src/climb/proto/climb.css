@@ -1,6 +1,6 @@
 @import '../../index.css';
 
-/* The climbing app's accent: chalk orange, so the two apps tell apart. */
+/* The climbing log's accent: chalk orange, so the two apps tell apart. */
 :root {
   --color-accent: #fb923c;
   --color-on-accent: #3b1505;
@@ -9,25 +9,31 @@
   --color-accent: #c2410c;
   --color-on-accent: #ffffff;
 }
-/* The alternative shown in the screenshots: the dashboard's blue. */
-:root[data-accent='blue'] {
-  --color-accent: #60a5fa;
-  --color-on-accent: #062e6f;
-}
-:root[data-accent='blue'][data-theme='light'] {
-  --color-accent: #2563eb;
-  --color-on-accent: #ffffff;
-}
 
 /*
- * Flash and sent, in charts and badges alike; validated for both surfaces
- * (dataviz palette slots 1 and 2).
+ * Chart colours, validated for both surfaces (dataviz method):
+ * - one series (tonight, this period): orange; the past (an average session,
+ *   the period before) is a long-dashed outline in the text colour;
+ * - two lines on the grade trend: blue (typical) and orange (top 5);
+ * - grade groups, easiest to hardest: one blue ramp, light to dark.
  */
 :root {
-  --series-flash: #d95926;
-  --series-sent: #3987e5;
+  --series-1: #d95926;
+  --series-2: #3987e5;
+  --grade-1: #cde2fb;
+  --grade-2: #9ec5f4;
+  --grade-3: #6da7ec;
+  --grade-4: #3987e5;
+  --grade-5: #256abf;
+  --grade-6: #184f95;
 }
 :root[data-theme='light'] {
-  --series-flash: #eb6834;
-  --series-sent: #2a78d6;
+  --series-1: #eb6834;
+  --series-2: #2a78d6;
+  --grade-1: #86b6ef;
+  --grade-2: #5598e7;
+  --grade-3: #2a78d6;
+  --grade-4: #1c5cab;
+  --grade-5: #104281;
+  --grade-6: #0a2a52;
 }

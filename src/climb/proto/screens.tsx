@@ -1,10 +1,11 @@
 /**
- * The climbing app's prototype screens, for the design document's
+ * The climbing log's prototype screens, for the design document's
  * screenshots. Static: sample data, no storage; links only switch screens.
  */
 import {
-  Check,
+  CalendarRange,
   ChartNoAxesColumn,
+  Check,
   ChevronDown,
   ChevronLeft,
   ChevronRight,
@@ -12,43 +13,40 @@ import {
   GripVertical,
   History,
   House,
-  Minus,
   Mountain,
-  Pencil,
   Plus,
   Settings,
-  Target,
   Timer,
+  TrendingDown,
+  TrendingUp,
   Trophy,
-  X,
-  Zap,
+  Undo2,
 } from 'lucide-react';
 import type {ReactNode} from 'react';
 import {
+  BOARD_GRADES,
+  BOARD_LIVE,
   circuit,
   CIRCUITS,
+  GROUPS,
   HISTORY,
   LIVE,
-  PROBLEM_HISTORY,
-  PROJECTS,
   PYRAMID,
   SCALE,
-  SENT_PROJECTS,
-  WEEKLY,
-  type Logged,
-  type Result,
+  SESSION_VS_MONTH,
+  TREND,
+  WEEKS,
 } from './data';
 
-type Tab = 'today' | 'projects' | 'progress' | 'history';
+type Tab = 'today' | 'progress' | 'history';
 
 const TABS: {tab: Tab; label: string; icon: typeof House}[] = [
   {tab: 'today', label: 'Today', icon: House},
-  {tab: 'projects', label: 'Projects', icon: Target},
   {tab: 'progress', label: 'Progress', icon: ChartNoAxesColumn},
   {tab: 'history', label: 'History', icon: History},
 ];
 
-/** A problem's colour, as a swatch (black and white get a ring). */
+/** A gym colour, as a swatch (black and white get a ring). */
 function Swatch({colour, size = 'h-5 w-5'}: {colour: string; size?: string}) {
   return (
     <span
@@ -57,37 +55,6 @@ function Swatch({colour, size = 'h-5 w-5'}: {colour: string; size?: string}) {
       style={{background: circuit(colour).hex}}
     />
   );
-}
-
-function ResultBadge({result, tries}: {result: Result; tries: number}) {
-  switch (result) {
-    case 'flash':
-      return (
-        <span className="flex items-center gap-1 rounded-full bg-[var(--series-flash)]/15 px-2.5 py-1 text-[13px] font-medium text-strong">
-          <Zap size={14} className="text-[var(--series-flash)]" aria-hidden />
-          Flash
-        </span>
-      );
-    case 'sent':
-      return (
-        <span className="flex items-center gap-1 rounded-full bg-[var(--series-sent)]/15 px-2.5 py-1 text-[13px] font-medium text-strong">
-          <Check size={14} className="text-[var(--series-sent)]" aria-hidden />
-          Sent · {tries} tries
-        </span>
-      );
-    case 'repeat':
-      return (
-        <span className="rounded-full bg-raised px-2.5 py-1 text-[13px] text-dim">
-          Repeat
-        </span>
-      );
-    default:
-      return (
-        <span className="rounded-full border border-line px-2.5 py-1 text-[13px] text-dim">
-          {tries} tries
-        </span>
-      );
-  }
 }
 
 function Header({
@@ -125,7 +92,7 @@ function Header({
             Dashboard
           </a>
           <a
-            href="#gym"
+            href="#places"
             aria-label="Settings"
             className="icon-btn h-11 w-11 text-fg"
           >
@@ -139,7 +106,7 @@ function Header({
 
 function Tabs({active}: {active: Tab}) {
   return (
-    <nav className="grid shrink-0 grid-cols-4 border-t border-line bg-panel">
+    <nav className="grid shrink-0 grid-cols-3 border-t border-line bg-panel">
       {TABS.map(({tab, label, icon: Icon}) => (
         <a
           key={tab}
@@ -154,38 +121,23 @@ function Tabs({active}: {active: Tab}) {
   );
 }
 
-/** Shown above the tabs while a session runs elsewhere in the app. */
-function LiveBar() {
-  return (
-    <a
-      href="#log"
-      className="flex h-12 shrink-0 items-center gap-2 border-t border-accent/40 bg-accent/10 px-4 text-[14px]"
-    >
-      <span className="h-2 w-2 animate-pulse rounded-full bg-accent" />
-      <span className="flex-1 text-strong">Session at Blokownia</span>
-      <span className="tabular-nums text-fg">47:12 · 6 climbs</span>
-      <ChevronRight size={18} className="text-dim" />
-    </a>
-  );
-}
-
 function Screen({
   children,
   tab,
   title = 'Climb',
-  live,
+  overlay,
 }: {
   children: ReactNode;
   tab: Tab;
   title?: string;
-  live?: boolean;
+  overlay?: ReactNode;
 }) {
   return (
-    <div className="flex h-full flex-col bg-bg text-[15px]">
+    <div className="relative flex h-full flex-col bg-bg text-[15px]">
       <Header title={title} />
       <main className="min-h-0 flex-1 overflow-y-auto">{children}</main>
-      {live && <LiveBar />}
       <Tabs active={tab} />
+      {overlay}
     </div>
   );
 }
@@ -195,7 +147,7 @@ function Section({
   more,
   children,
 }: {
-  title: string;
+  title: ReactNode;
   more?: ReactNode;
   children: ReactNode;
 }) {
@@ -210,14 +162,17 @@ function Section({
   );
 }
 
+/** A number, and how it compares with the period before (up is better). */
 function Tile({
   label,
   value,
-  note,
+  was,
+  up,
 }: {
   label: string;
   value: ReactNode;
-  note?: ReactNode;
+  was?: string;
+  up?: boolean;
 }) {
   return (
     <div className="rounded-xl border border-line bg-panel px-3 py-2.5">
@@ -225,7 +180,113 @@ function Tile({
       <div className="mt-0.5 text-[24px] font-semibold text-strong">
         {value}
       </div>
-      {note && <div className="text-[12px] text-dim">{note}</div>}
+      {was && (
+        <div className="flex items-center gap-1 text-[12px] text-dim">
+          {up !== undefined &&
+            (up ? (
+              <TrendingUp size={13} className="text-ok" aria-label="up" />
+            ) : (
+              <TrendingDown size={13} className="text-warn" aria-label="down" />
+            ))}
+          {was}
+        </div>
+      )}
+    </div>
+  );
+}
+
+/** A legend key: a filled swatch, or the long-dashed outline of the past. */
+function Key({dashed, children}: {dashed?: boolean; children: ReactNode}) {
+  return (
+    <span className="flex items-center gap-1.5">
+      <svg width="16" height="10" aria-hidden>
+        {dashed ? (
+          <rect
+            x="0.75"
+            y="0.75"
+            width="14.5"
+            height="8.5"
+            rx="2"
+            fill="none"
+            stroke="var(--color-fg)"
+            strokeWidth="1.5"
+            strokeDasharray="5 3"
+          />
+        ) : (
+          <rect width="16" height="10" rx="2" fill="var(--series-1)" />
+        )}
+      </svg>
+      {children}
+    </span>
+  );
+}
+
+/**
+ * Horizontal bars: now (filled) against the past (a long-dashed outline, not
+ * filled), on one scale, one row per colour or grade.
+ */
+function NowVsPast({
+  rows,
+  nowLabel,
+  pastLabel,
+}: {
+  rows: {key: string; label: ReactNode; now: number; past: number}[];
+  nowLabel: string;
+  pastLabel: string;
+}) {
+  const max = Math.max(...rows.flatMap(r => [r.now, r.past]), 1);
+  const pct = (n: number) => `${(n / max) * 100}%`;
+  return (
+    <div>
+      <div className="mb-2 flex flex-wrap gap-x-4 gap-y-1 text-[13px] text-fg">
+        <Key>{nowLabel}</Key>
+        <Key dashed>{pastLabel}</Key>
+      </div>
+      <div className="space-y-1.5">
+        {rows.map(r => (
+          <div key={r.key} className="flex items-center gap-2">
+            <span className="flex w-24 shrink-0 items-center gap-1.5 text-[13px] text-fg">
+              {r.label}
+            </span>
+            <svg
+              className="h-6 min-w-0 flex-1 overflow-visible"
+              role="img"
+              aria-label={`${r.key}: ${r.now}, ${pastLabel.toLowerCase()} ${r.past}`}
+            >
+              {r.now > 0 && (
+                <rect
+                  x="0"
+                  y="3"
+                  width={pct(r.now)}
+                  height="18"
+                  rx="4"
+                  fill="var(--series-1)"
+                />
+              )}
+              {r.past > 0 && (
+                <rect
+                  x="0.75"
+                  y="0.75"
+                  width={`calc(${pct(r.past)} - 1.5px)`}
+                  height="22.5"
+                  rx="5"
+                  fill="none"
+                  stroke="var(--color-fg)"
+                  strokeWidth="1.5"
+                  strokeDasharray="7 4"
+                />
+              )}
+            </svg>
+            <span className="w-16 shrink-0 text-right text-[13px] tabular-nums text-fg">
+              {r.now}
+              <span className="text-dim">
+                {' '}
+                / {Number.isInteger(r.past) ? r.past : r.past.toFixed(1)}
+              </span>
+            </span>
+          </div>
+        ))}
+      </div>
     </div>
   );
 }
@@ -235,22 +296,13 @@ export function Today() {
     <Screen tab="today">
       <div className="px-4 pt-4">
         <div className="rounded-2xl border border-line bg-panel p-4">
-          <div className="flex gap-2">
-            <button className="flex h-11 flex-1 items-center justify-between rounded-xl bg-raised px-3 text-left">
-              <span>
-                <span className="block text-[11px] text-dim">Where</span>
-                Blokownia
-              </span>
-              <ChevronDown size={18} className="text-dim" />
-            </button>
-            <button className="flex h-11 flex-1 items-center justify-between rounded-xl bg-raised px-3 text-left">
-              <span>
-                <span className="block text-[11px] text-dim">What</span>
-                Bouldering
-              </span>
-              <ChevronDown size={18} className="text-dim" />
-            </button>
-          </div>
+          <button className="flex h-12 w-full items-center justify-between rounded-xl bg-raised px-3 text-left">
+            <span>
+              <span className="block text-[11px] text-dim">Where</span>
+              Blokownia <span className="text-dim">· gym, by colour</span>
+            </span>
+            <ChevronDown size={18} className="text-dim" />
+          </button>
           <a
             href="#log"
             className="mt-3 flex h-14 items-center justify-center gap-2 rounded-xl bg-accent text-[17px] font-semibold text-on-accent"
@@ -261,10 +313,10 @@ export function Today() {
         </div>
       </div>
 
-      <Section title="This week">
+      <Section title="November so far">
         <div className="grid grid-cols-3 gap-2">
-          <Tile label="Sessions" value="1" note="goal: 3" />
-          <Tile label="Sends" value="12" note="5 flashes" />
+          <Tile label="Climbs" value="58" was="Oct: 47" up />
+          <Tile label="Sessions" value="5" was="Oct: 6" up={false} />
           <Tile
             label="Hardest"
             value={
@@ -272,41 +324,9 @@ export function Today() {
                 <Swatch colour="Red" size="h-4 w-4" /> 6C
               </span>
             }
-            note="flash 6B"
+            was="Oct: 6B+"
+            up
           />
-        </div>
-      </Section>
-
-      <Section
-        title="Projects"
-        more={
-          <a href="#projects" className="text-[14px] text-accent">
-            all 4
-          </a>
-        }
-      >
-        <div className="-mx-4 flex gap-2 overflow-x-auto px-4 pb-1">
-          {PROJECTS.slice(0, 3).map(p => (
-            <a
-              key={p.colour + p.grade + p.wall}
-              href="#problem"
-              className="w-40 shrink-0 rounded-xl border border-line bg-panel p-3"
-            >
-              <div className="flex items-center gap-2">
-                <Swatch colour={p.colour} />
-                <span className="text-[17px] font-semibold text-strong">
-                  {p.grade}
-                </span>
-              </div>
-              <div className="mt-1 truncate text-[14px] text-fg">
-                {p.name ?? `${p.colour} · ${p.wall}`}
-              </div>
-              <div className="text-[13px] text-dim">
-                {p.tries} tries · {p.sessions}{' '}
-                {p.sessions === 1 ? 'session' : 'sessions'}
-              </div>
-            </a>
-          ))}
         </div>
       </Section>
 
@@ -324,9 +344,7 @@ export function Today() {
         >
           <div className="min-w-0 flex-1">
             <div className="text-strong">Tue 18 Nov · Blokownia</div>
-            <div className="text-[14px] text-dim">
-              1h 52m · 17 climbs · 12 sends
-            </div>
+            <div className="text-[14px] text-dim">1h 52m · 15 climbs</div>
           </div>
           <div className="flex items-center gap-1 rounded-full bg-raised px-2.5 py-1 text-[13px]">
             <Trophy size={14} className="text-accent" aria-hidden /> first 6C
@@ -334,300 +352,163 @@ export function Today() {
           <ChevronRight size={18} className="text-dim" />
         </a>
       </Section>
-      <div className="h-6" />
+      <p className="px-4 pt-4 text-[13px] text-dim">
+        A session starts only when you press Start, and ends with Finish.
+      </p>
     </Screen>
   );
 }
 
-function LoggedRow({l}: {l: Logged}) {
+function UndoBar({text}: {text: string}) {
   return (
-    <li className="flex min-h-14 items-center gap-3 px-4">
-      <Swatch colour={l.colour} />
-      <div className="min-w-0 flex-1">
-        <div className="text-strong">
-          {l.colour} {l.grade && <span className="text-fg">· {l.grade}</span>}
-        </div>
-        <div className="text-[13px] text-dim">
-          {l.wall} · {l.time}
-        </div>
-      </div>
-      <ResultBadge result={l.result} tries={l.tries} />
-    </li>
+    <div className="flex h-12 shrink-0 items-center gap-3 border-t border-line bg-raised px-4 text-[14px]">
+      <span className="flex-1 text-strong">{text}</span>
+      <button className="flex h-9 items-center gap-1.5 rounded-full px-3 font-medium text-accent">
+        <Undo2 size={16} aria-hidden /> Undo
+      </button>
+    </div>
   );
 }
 
-/** The live session: what's been climbed, and the panel to log the next one. */
+function SessionHeader({title, time}: {title: string; time: string}) {
+  return (
+    <Header
+      back="today"
+      title={
+        <span className="flex items-baseline gap-2">
+          {title}
+          <span className="text-[14px] font-normal tabular-nums text-dim">
+            {time}
+          </span>
+        </span>
+      }
+      right={
+        <a
+          href="#summary"
+          className="flex h-10 items-center rounded-full border border-line px-4 text-[15px] font-medium text-strong"
+        >
+          Finish
+        </a>
+      }
+    />
+  );
+}
+
+/** A live session at a gym: one tap on a colour logs one climb topped. */
 export function Log() {
-  const picked = circuit('Red');
+  const counts = new Map<string, number>();
+  for (const l of LIVE) counts.set(l.colour, (counts.get(l.colour) ?? 0) + 1);
   return (
     <div className="flex h-full flex-col bg-bg text-[15px]">
-      <Header
-        back="today"
-        title={
-          <span className="flex items-baseline gap-2">
-            Blokownia
-            <span className="text-[14px] font-normal tabular-nums text-dim">
-              47:12
-            </span>
-          </span>
-        }
-        right={
-          <a
-            href="#summary"
-            className="flex h-10 items-center rounded-full border border-line px-4 text-[15px] font-medium text-strong"
-          >
-            Finish
-          </a>
-        }
-      />
-      <div className="flex shrink-0 gap-4 px-4 py-2 text-[13px] text-dim">
+      <SessionHeader title="Blokownia" time="47:12" />
+      <div className="flex shrink-0 items-baseline gap-4 px-4 py-2 text-[13px] text-dim">
         <span>
-          <b className="font-semibold text-strong">6</b> climbs
+          <b className="text-[17px] font-semibold text-strong">{LIVE.length}</b>{' '}
+          climbs
         </span>
-        <span>
-          <b className="font-semibold text-strong">4</b> sends
-        </span>
-        <span>
-          <b className="font-semibold text-strong">12</b> tries
-        </span>
-        <span className="ml-auto">hardest 6B+</span>
+        <span className="ml-auto">hardest: Red 6B+</span>
       </div>
       <ul className="min-h-0 flex-1 divide-y divide-line overflow-y-auto border-y border-line">
         {LIVE.map(l => (
-          <LoggedRow key={l.time} l={l} />
+          <li key={l.time} className="flex min-h-12 items-center gap-3 px-4">
+            <Swatch colour={l.colour} />
+            <span className="flex-1 text-strong">
+              {l.colour}
+              {l.grade && <span className="text-fg"> · {l.grade}</span>}
+            </span>
+            {!l.grade && <span className="text-[13px] text-dim">+ grade</span>}
+            <span className="w-12 text-right text-[13px] tabular-nums text-dim">
+              {l.time}
+            </span>
+          </li>
         ))}
       </ul>
-
       <section
         aria-label="Log a climb"
-        className="shrink-0 rounded-t-2xl border-t border-line bg-panel px-4 pt-3 pb-4 shadow-[0_-8px_24px_rgba(0,0,0,0.35)]"
+        className="shrink-0 bg-panel px-4 pt-3 pb-4"
       >
-        <div className="mb-2 flex items-center">
-          <h2 className="label flex-1 !text-[12px]">Log a climb</h2>
-          <span className="text-[13px] text-dim">Cave ▾</span>
-        </div>
+        <h2 className="label mb-2 !text-[12px]">Topped one? Tap its colour</h2>
         <div className="grid grid-cols-3 gap-2">
-          {CIRCUITS.map(c => {
-            const on = c.name === picked.name;
-            return (
-              <button
-                key={c.name}
-                aria-pressed={on}
-                className={`flex h-14 items-center gap-2 rounded-xl border px-2.5 text-left ${on ? 'border-accent bg-accent/10' : 'border-line bg-raised'}`}
-              >
-                <Swatch colour={c.name} size="h-7 w-7" />
-                <span className="min-w-0 leading-tight">
-                  <span className="block font-medium text-strong">
-                    {c.name}
-                  </span>
-                  <span className="block truncate text-[12px] text-dim">
-                    {c.range}
-                  </span>
-                </span>
-              </button>
-            );
-          })}
-        </div>
-        <div className="mt-3 flex items-center gap-2">
-          <span className="w-20 text-[13px] text-dim">Grade</span>
-          {picked.grades.map(g => (
+          {CIRCUITS.map(c => (
             <button
-              key={g}
-              aria-pressed={g === '6B+'}
-              className={`h-10 min-w-14 rounded-full border px-3 text-[15px] ${g === '6B+' ? 'border-accent bg-accent/10 font-semibold text-strong' : 'border-line text-fg'}`}
+              key={c.name}
+              className="relative flex h-[72px] flex-col items-start justify-between rounded-xl border border-line bg-raised p-2.5 text-left"
             >
-              {g}
+              <span className="flex w-full items-center gap-2">
+                <Swatch colour={c.name} size="h-7 w-7" />
+                <span className="font-medium text-strong">{c.name}</span>
+              </span>
+              <span className="text-[12px] text-dim">{c.range}</span>
+              {(counts.get(c.name) ?? 0) > 0 && (
+                <span className="absolute right-2 bottom-2 rounded-full bg-accent px-2 text-[13px] font-semibold text-on-accent tabular-nums">
+                  {counts.get(c.name)}
+                </span>
+              )}
             </button>
           ))}
-          <span className="text-[12px] text-dim">optional</span>
-        </div>
-        <div className="mt-2 flex items-center gap-2">
-          <span className="w-20 text-[13px] text-dim">Tries</span>
-          <button
-            aria-label="One try less"
-            className="flex h-10 w-12 items-center justify-center rounded-full border border-line"
-          >
-            <Minus size={18} />
-          </button>
-          <span className="w-8 text-center text-[20px] font-semibold tabular-nums text-strong">
-            2
-          </span>
-          <button
-            aria-label="One more try"
-            className="flex h-10 w-12 items-center justify-center rounded-full border border-line"
-          >
-            <Plus size={18} />
-          </button>
-        </div>
-        <div className="mt-3 grid grid-cols-3 gap-2">
-          <button
-            disabled
-            className="flex h-14 items-center justify-center gap-1.5 rounded-xl border border-line text-[16px] font-medium text-dim opacity-40"
-          >
-            <Zap size={18} aria-hidden /> Flash
-          </button>
-          <button className="flex h-14 items-center justify-center gap-1.5 rounded-xl bg-accent text-[16px] font-semibold text-on-accent">
-            <Check size={20} aria-hidden /> Sent
-          </button>
-          <button className="flex h-14 items-center justify-center gap-1.5 rounded-xl border border-line bg-raised text-[16px] font-medium text-strong">
-            <X size={18} aria-hidden /> Not yet
-          </button>
         </div>
       </section>
+      <UndoBar text="Red logged" />
     </div>
   );
 }
 
-/** Stacked bars, one per grade: flashes, then the other sends. */
-function Pyramid({rows, compact}: {rows: typeof PYRAMID; compact?: boolean}) {
-  const max = Math.max(...rows.map(r => r.flash + r.sent));
+/** A live board session: one tap on a grade logs one climb. */
+export function BoardLog() {
+  const counts = new Map<string, number>();
+  for (const l of BOARD_LIVE)
+    counts.set(l.grade, (counts.get(l.grade) ?? 0) + 1);
   return (
-    <div className="viz">
-      <div className="mb-2 flex gap-4 text-[13px] text-fg">
-        <span className="flex items-center gap-1.5">
-          <span className="h-2.5 w-2.5 rounded-sm bg-[var(--series-flash)]" />
-          Flash
+    <div className="flex h-full flex-col bg-bg text-[15px]">
+      <SessionHeader title="Kilter · 40°" time="32:40" />
+      <div className="flex shrink-0 items-baseline gap-4 px-4 py-2 text-[13px] text-dim">
+        <span>
+          <b className="text-[17px] font-semibold text-strong">
+            {BOARD_LIVE.length}
+          </b>{' '}
+          climbs
         </span>
-        <span className="flex items-center gap-1.5">
-          <span className="h-2.5 w-2.5 rounded-sm bg-[var(--series-sent)]" />
-          Sent after tries
-        </span>
+        <span className="ml-auto">hardest: 6B</span>
       </div>
-      <div className="space-y-1.5">
-        {rows.map(r => {
-          const total = r.flash + r.sent;
-          return (
-            <div key={r.grade} className="flex items-center gap-2">
-              <span className="w-9 text-right text-[13px] tabular-nums text-dim">
-                {r.grade}
-              </span>
-              <div className="flex h-5 flex-1 items-center gap-[2px]">
-                {r.flash > 0 && (
-                  <span
-                    className="h-full bg-[var(--series-flash)]"
-                    style={{
-                      width: `${(r.flash / max) * (compact ? 80 : 86)}%`,
-                      borderRadius: r.sent ? '0' : '0 4px 4px 0',
-                    }}
-                  />
-                )}
-                {r.sent > 0 && (
-                  <span
-                    className="h-full rounded-r-[4px] bg-[var(--series-sent)]"
-                    style={{width: `${(r.sent / max) * (compact ? 80 : 86)}%`}}
-                  />
-                )}
-                <span className="pl-1.5 text-[13px] tabular-nums text-fg">
-                  {total}
-                </span>
-              </div>
-            </div>
-          );
-        })}
-      </div>
-    </div>
-  );
-}
-
-/** Hardest send per week, on the grade scale; gaps where there was no session. */
-function WeeklyLine() {
-  const w = 360;
-  const h = 170;
-  const left = 34;
-  const right = 30;
-  const top = 10;
-  const bottom = 24;
-  const x = (i: number) =>
-    left + (i * (w - left - right)) / (WEEKLY.length - 1);
-  const y = (g: string) =>
-    top +
-    ((SCALE.length - 1 - SCALE.indexOf(g)) * (h - top - bottom)) /
-      (SCALE.length - 1);
-  const pts = WEEKLY.map((d, i) => (d.hardest ? {i, g: d.hardest} : null));
-  // Segments between consecutive weeks that both had a session.
-  const segs: string[] = [];
-  let cur = '';
-  for (const p of pts) {
-    if (!p) {
-      if (cur) segs.push(cur);
-      cur = '';
-      continue;
-    }
-    cur += `${cur ? 'L' : 'M'}${x(p.i)},${y(p.g)}`;
-  }
-  if (cur) segs.push(cur);
-  const last = pts[pts.length - 1]!;
-  return (
-    <svg
-      viewBox={`0 0 ${w} ${h}`}
-      className="viz w-full"
-      role="img"
-      aria-label="Hardest send per week, last 12 weeks: from 6A+ to 6C"
-    >
-      {SCALE.map(g => (
-        <g key={g}>
-          <line
-            x1={left}
-            x2={w - right}
-            y1={y(g)}
-            y2={y(g)}
-            stroke="var(--color-line)"
-            strokeWidth={1}
-          />
-          <text
-            x={left - 8}
-            y={y(g) + 4}
-            textAnchor="end"
-            className="fill-dim text-[11px] tabular-nums"
-          >
-            {g}
-          </text>
-        </g>
-      ))}
-      {[0, 5, 9].map(i => (
-        <text
-          key={i}
-          x={x(i)}
-          y={h - 6}
-          textAnchor="middle"
-          className="fill-dim text-[11px]"
-        >
-          {WEEKLY[i].week}
-        </text>
-      ))}
-      {segs.map(d => (
-        <path
-          key={d}
-          d={d}
-          fill="none"
-          stroke="var(--series-sent)"
-          strokeWidth={2}
-          strokeLinejoin="round"
-          strokeLinecap="round"
-        />
-      ))}
-      {pts.map(
-        p =>
-          p && (
-            <circle
-              key={p.i}
-              cx={x(p.i)}
-              cy={y(p.g)}
-              r={4}
-              fill="var(--series-sent)"
-              stroke="var(--color-panel)"
-              strokeWidth={2}
-            />
-          ),
-      )}
-      <text
-        x={x(last.i) + 9}
-        y={y(last.g) + 4}
-        className="fill-strong text-[12px] font-semibold"
+      <ul className="min-h-0 flex-1 divide-y divide-line overflow-y-auto border-y border-line">
+        {BOARD_LIVE.map(l => (
+          <li key={l.time} className="flex min-h-12 items-center gap-3 px-4">
+            <span className="w-12 font-semibold text-strong">{l.grade}</span>
+            <span className="flex-1 text-[13px] text-dim">+ name</span>
+            <span className="w-12 text-right text-[13px] tabular-nums text-dim">
+              {l.time}
+            </span>
+          </li>
+        ))}
+      </ul>
+      <section
+        aria-label="Log a climb"
+        className="shrink-0 bg-panel px-4 pt-3 pb-4"
       >
-        {last.g}
-      </text>
-    </svg>
+        <div className="mb-2 flex items-center">
+          <h2 className="label flex-1 !text-[12px]">
+            Topped one? Tap its grade
+          </h2>
+          <span className="text-[13px] text-dim">Font · 40° ▾</span>
+        </div>
+        <div className="grid grid-cols-4 gap-2">
+          {BOARD_GRADES.map(g => (
+            <button
+              key={g}
+              className="relative flex h-14 items-center justify-center rounded-xl border border-line bg-raised text-[17px] font-semibold text-strong"
+            >
+              {g}
+              {(counts.get(g) ?? 0) > 0 && (
+                <span className="absolute top-1 right-1 rounded-full bg-accent px-1.5 text-[12px] font-semibold text-on-accent tabular-nums">
+                  {counts.get(g)}
+                </span>
+              )}
+            </button>
+          ))}
+        </div>
+      </section>
+      <UndoBar text="6B logged" />
+    </div>
   );
 }
 
@@ -637,61 +518,56 @@ export function Summary() {
       <Header back="today" title="Session" right={<span />} />
       <main className="min-h-0 flex-1 overflow-y-auto">
         <div className="px-4 pt-4">
-          <div className="text-[13px] text-dim">Tuesday 18 Nov · Blokownia</div>
+          <div className="text-[13px] text-dim">
+            Tuesday 18 Nov · Blokownia · 19:05–20:57
+          </div>
           <div className="text-[22px] font-semibold text-strong">
-            1h 52m, 17 climbs
+            13 climbs in 1h 52m
           </div>
           <div className="mt-3 flex items-center gap-3 rounded-xl border border-accent/40 bg-accent/10 p-3">
             <Trophy size={22} className="shrink-0 text-accent" aria-hidden />
             <div>
               <div className="font-medium text-strong">
-                Your first 6C: Red on the Cave
+                Your first 6C (a red)
               </div>
               <div className="text-[13px] text-dim">
-                after 11 tries over 4 sessions
+                and more blues than in any session before
               </div>
             </div>
           </div>
         </div>
-        <Section title="Numbers">
-          <div className="grid grid-cols-4 gap-2">
-            <Tile label="Sends" value="12" />
-            <Tile label="Flashes" value="5" />
-            <Tile label="Tries" value="31" />
-            <Tile label="Hardest" value="6C" />
-          </div>
-        </Section>
-        <Section title="Sends by grade">
+        <Section title="Tonight against your average session (last 30 days)">
           <div className="rounded-xl border border-line bg-panel p-3">
-            <Pyramid
-              compact
-              rows={[
-                {grade: '6C', flash: 0, sent: 1},
-                {grade: '6B+', flash: 0, sent: 2},
-                {grade: '6B', flash: 1, sent: 2},
-                {grade: '6A+', flash: 2, sent: 1},
-                {grade: '6A', flash: 2, sent: 1},
-              ]}
+            <NowVsPast
+              nowLabel="Tonight"
+              pastLabel="Average session, last 30 days"
+              rows={SESSION_VS_MONTH.map(r => ({
+                key: r.colour,
+                label: (
+                  <>
+                    <Swatch colour={r.colour} size="h-4 w-4" />
+                    {r.colour}
+                  </>
+                ),
+                now: r.today,
+                past: r.month,
+              }))}
             />
-            <div className="mt-2 text-[13px] text-dim">
-              Not sent: Purple 6C+ (4 tries), Black 7A+ (2 tries)
-            </div>
+            <p className="mt-2 text-[12px] text-dim">
+              Average over your 7 sessions at Blokownia since 19 Oct.
+            </p>
           </div>
         </Section>
-        <Section title="How did it feel?">
-          <div className="grid grid-cols-5 gap-2">
-            {['Easy', 'Good', 'Hard', 'Max', 'Wrecked'].map((f, i) => (
-              <button
-                key={f}
-                aria-pressed={i === 2}
-                className={`h-11 rounded-xl border text-[14px] ${i === 2 ? 'border-accent bg-accent/10 font-medium text-strong' : 'border-line text-fg'}`}
-              >
-                {f}
-              </button>
-            ))}
+        <Section title="Numbers">
+          <div className="grid grid-cols-3 gap-2">
+            <Tile label="Climbs" value="13" was="avg 12.1" up />
+            <Tile label="Hardest" value="6C" was="avg 6B+" up />
+            <Tile label="Per hour" value="7.0" was="avg 6.4" up />
           </div>
-          <div className="mt-2 rounded-xl border border-line bg-panel px-3 py-2.5 text-[15px] text-dim">
-            Notes: skin thin on the right index…
+        </Section>
+        <Section title="Notes">
+          <div className="rounded-xl border border-line bg-panel px-3 py-2.5 text-[15px] text-dim">
+            Skin thin on the right index…
           </div>
         </Section>
         <div className="h-4" />
@@ -708,259 +584,374 @@ export function Summary() {
   );
 }
 
-export function Progress() {
+/** Climbs per week, stacked by grade group, easiest at the bottom. */
+function WeeklyColumns() {
+  const w = 360;
+  const h = 170;
+  const left = 22;
+  const top = 8;
+  const bottom = 22;
+  const max = 15;
+  const band = (w - left) / WEEKS.length;
+  const bar = Math.min(18, band - 6);
+  const y = (n: number) => top + (h - top - bottom) * (1 - n / max);
   return (
-    <Screen tab="progress" title="Progress">
-      <div className="flex gap-2 px-4 pt-3">
-        <div className="flex flex-1 rounded-full bg-raised p-1 text-[14px]">
-          {['4 weeks', '3 months', 'Year', 'All'].map((r, i) => (
-            <button
-              key={r}
-              aria-pressed={i === 1}
-              className={`h-9 flex-1 rounded-full ${i === 1 ? 'bg-panel font-medium text-strong shadow-sm' : 'text-dim'}`}
-            >
-              {r}
-            </button>
-          ))}
-        </div>
+    <div>
+      <div className="mb-2 flex flex-wrap gap-x-3 gap-y-1 text-[12px] text-fg">
+        {GROUPS.map((g, i) => (
+          <span key={g} className="flex items-center gap-1">
+            <span
+              className="h-2.5 w-2.5 rounded-sm"
+              style={{background: `var(--grade-${i + 1})`}}
+            />
+            {g}
+          </span>
+        ))}
       </div>
-      <div className="flex gap-2 px-4 pt-2 text-[14px]">
-        <button className="h-9 rounded-full border border-accent bg-accent/10 px-3 font-medium text-strong">
-          Bouldering
-        </button>
-        <button className="h-9 rounded-full border border-line px-3 text-fg">
-          Ropes
-        </button>
-        <span className="ml-auto self-center text-[13px] text-dim">
-          Font grades
+      <svg
+        viewBox={`0 0 ${w} ${h}`}
+        className="w-full"
+        role="img"
+        aria-label="Climbs per week by grade, the last 13 weeks"
+      >
+        {[0, 5, 10, 15].map(n => (
+          <g key={n}>
+            <line
+              x1={left}
+              x2={w}
+              y1={y(n)}
+              y2={y(n)}
+              stroke="var(--color-line)"
+            />
+            <text
+              x={left - 6}
+              y={y(n) + 4}
+              textAnchor="end"
+              className="fill-dim text-[10px] tabular-nums"
+            >
+              {n}
+            </text>
+          </g>
+        ))}
+        {WEEKS.map((wk, i) => {
+          const x = left + band * i + (band - bar) / 2;
+          let base = 0;
+          return (
+            <g key={wk.week}>
+              {wk.counts.map((n, g) => {
+                if (!n) return null;
+                const y0 = y(base);
+                base += n;
+                const y1 = y(base);
+                // 2px of surface between segments.
+                return (
+                  <rect
+                    key={g}
+                    x={x}
+                    y={y1 + 1}
+                    width={bar}
+                    height={Math.max(0, y0 - y1 - 2)}
+                    rx={base === wk.counts.reduce((a, c) => a + c, 0) ? 3 : 0}
+                    fill={`var(--grade-${g + 1})`}
+                  />
+                );
+              })}
+              {(i % 4 === 0 || i === WEEKS.length - 1) && (
+                <text
+                  x={x + bar / 2}
+                  y={h - 6}
+                  textAnchor="middle"
+                  className="fill-dim text-[10px]"
+                >
+                  {wk.week}
+                </text>
+              )}
+            </g>
+          );
+        })}
+      </svg>
+    </div>
+  );
+}
+
+/** The typical (median) grade and the top-5 average, week by week. */
+function GradeTrend() {
+  const w = 360;
+  const h = 170;
+  const left = 30;
+  const right = 34;
+  const top = 10;
+  const bottom = 22;
+  const x = (i: number) => left + (i * (w - left - right)) / (TREND.length - 1);
+  const y = (v: number) =>
+    top + ((SCALE.length - 1 - v) * (h - top - bottom)) / (SCALE.length - 1);
+  const path = (key: 'median' | 'top5') => {
+    let d = '';
+    let pen = false;
+    TREND.forEach((t, i) => {
+      const v = t[key];
+      if (v === null) {
+        pen = false;
+        return;
+      }
+      d += `${pen ? 'L' : 'M'}${x(i)},${y(v)}`;
+      pen = true;
+    });
+    return d;
+  };
+  const last = TREND[TREND.length - 1];
+  const name = (v: number) => SCALE[Math.round(v)];
+  return (
+    <div>
+      <div className="mb-2 flex flex-wrap gap-x-4 gap-y-1 text-[13px] text-fg">
+        <span className="flex items-center gap-1.5">
+          <span className="h-0.5 w-4 rounded bg-[var(--series-1)]" />
+          Average of your 5 hardest
+        </span>
+        <span className="flex items-center gap-1.5">
+          <span className="h-0.5 w-4 rounded bg-[var(--series-2)]" />
+          Typical climb (median)
         </span>
       </div>
-      <Section title="Last 3 months">
-        <div className="grid grid-cols-4 gap-2">
-          <Tile label="Hardest" value="6C" note="was 6B+" />
-          <Tile label="Flash" value="6B+" note="same" />
-          <Tile label="Sessions" value="22" note="1.8/week" />
-          <Tile label="Sends" value="56" note="30% flash" />
+      <svg
+        viewBox={`0 0 ${w} ${h}`}
+        className="w-full"
+        role="img"
+        aria-label="Grades week by week: the top-5 average rose from 6A to 6B+, the typical climb from 5+ to 6A"
+      >
+        {SCALE.map((g, i) => (
+          <g key={g}>
+            <line
+              x1={left}
+              x2={w - right}
+              y1={y(i)}
+              y2={y(i)}
+              stroke="var(--color-line)"
+            />
+            <text
+              x={left - 6}
+              y={y(i) + 4}
+              textAnchor="end"
+              className="fill-dim text-[10px] tabular-nums"
+            >
+              {g}
+            </text>
+          </g>
+        ))}
+        {[0, 6, 12].map(i => (
+          <text
+            key={i}
+            x={x(i)}
+            y={h - 6}
+            textAnchor="middle"
+            className="fill-dim text-[10px]"
+          >
+            {TREND[i].week}
+          </text>
+        ))}
+        {(['top5', 'median'] as const).map(k => (
+          <path
+            key={k}
+            d={path(k)}
+            fill="none"
+            stroke={k === 'top5' ? 'var(--series-1)' : 'var(--series-2)'}
+            strokeWidth={2}
+            strokeLinejoin="round"
+            strokeLinecap="round"
+          />
+        ))}
+        {(['top5', 'median'] as const).map(k => (
+          <g key={k}>
+            <circle
+              cx={x(TREND.length - 1)}
+              cy={y(last[k]!)}
+              r={4}
+              fill={k === 'top5' ? 'var(--series-1)' : 'var(--series-2)'}
+              stroke="var(--color-panel)"
+              strokeWidth={2}
+            />
+            <text
+              x={x(TREND.length - 1) + 8}
+              y={y(last[k]!) + 4}
+              className="fill-strong text-[11px] font-semibold"
+            >
+              {name(last[k]!)}
+            </text>
+          </g>
+        ))}
+      </svg>
+    </div>
+  );
+}
+
+function RangeBar() {
+  return (
+    <div className="px-4 pt-3">
+      <a
+        href="#range"
+        className="flex min-h-12 items-center gap-3 rounded-xl border border-line bg-panel px-3 py-2"
+      >
+        <CalendarRange size={20} className="shrink-0 text-accent" />
+        <span className="min-w-0 flex-1">
+          <span className="block font-medium text-strong">
+            23 Aug – 21 Nov 2026
+          </span>
+          <span className="block text-[12px] text-dim">
+            last 3 months · against 25 May – 22 Aug
+          </span>
+        </span>
+        <ChevronDown size={18} className="text-dim" />
+      </a>
+      <div className="mt-2 flex gap-2 text-[14px]">
+        <button className="h-9 rounded-full border border-accent bg-accent/10 px-3 font-medium text-strong">
+          Gym
+        </button>
+        <button className="h-9 rounded-full border border-line px-3 text-fg">
+          Board
+        </button>
+        <button className="ml-auto flex h-9 items-center gap-1 rounded-full border border-line px-3 text-fg">
+          All gyms <ChevronDown size={14} className="text-dim" />
+        </button>
+      </div>
+    </div>
+  );
+}
+
+function ProgressBody() {
+  return (
+    <>
+      <RangeBar />
+      <Section title="Numbers, against the 3 months before">
+        <div className="grid grid-cols-3 gap-2">
+          <Tile label="Climbs" value="168" was="was 131" up />
+          <Tile label="Sessions" value="22" was="was 19" up />
+          <Tile label="Per session" value="7.6" was="was 6.9" up />
+          <Tile label="Typical" value="6A" was="was 5+" up />
+          <Tile label="Top 5 avg" value="6B+" was="was 6B" up />
+          <Tile label="Hardest" value="6C" was="was 6B+" up />
         </div>
       </Section>
       <Section
-        title="Sends by grade"
+        title="Climbs by grade"
         more={<span className="text-[14px] text-accent">table</span>}
       >
         <div className="rounded-xl border border-line bg-panel p-3">
-          <Pyramid rows={PYRAMID} />
+          <NowVsPast
+            nowLabel="These 3 months"
+            pastLabel="The 3 months before"
+            rows={PYRAMID.map(r => ({
+              key: r.grade,
+              label: r.grade,
+              now: r.now,
+              past: r.before,
+            }))}
+          />
+          <p className="mt-2 text-[12px] text-dim">
+            A climb logged by colour only counts at its colour&apos;s easiest
+            grade.
+          </p>
         </div>
       </Section>
-      <Section title="Hardest send, week by week">
+      <Section title="Climbs per week, by grade">
         <div className="rounded-xl border border-line bg-panel p-3">
-          <WeeklyLine />
+          <WeeklyColumns />
+        </div>
+      </Section>
+      <Section title="Grades, week by week">
+        <div className="rounded-xl border border-line bg-panel p-3">
+          <GradeTrend />
         </div>
       </Section>
       <div className="h-6" />
+    </>
+  );
+}
+
+export function Progress() {
+  return (
+    <Screen tab="progress" title="Progress">
+      <ProgressBody />
     </Screen>
   );
 }
 
-function ProjectRow({p}: {p: (typeof PROJECTS)[number]}) {
+/** The period picker, as a sheet over Progress. */
+export function Range() {
+  const presets = [
+    'Last 30 days',
+    'Last 3 months',
+    'This year',
+    'All time',
+    'Pick dates',
+  ];
   return (
-    <li>
-      <a href="#problem" className="flex min-h-16 items-center gap-3 px-4 py-2">
-        <Swatch colour={p.colour} size="h-9 w-9" />
-        <div className="min-w-0 flex-1">
-          <div className="truncate text-strong">
-            {p.colour} {p.grade}{' '}
-            <span className="font-normal text-dim">
-              · {p.wall}
-              {p.name && ` · “${p.name}”`}
-            </span>
-          </div>
-          <div className="truncate text-[14px] text-dim">
-            {p.sent
-              ? `Sent ${p.sent} after ${p.tries} tries`
-              : `${p.tries} tries over ${p.sessions} ${p.sessions === 1 ? 'session' : 'sessions'} · last ${p.last}`}
-          </div>
-        </div>
-        <ChevronRight size={18} className="shrink-0 text-dim" />
-      </a>
-    </li>
-  );
-}
-
-export function Projects() {
-  return (
-    <Screen tab="projects" title="Projects" live>
-      <div className="no-scrollbar flex gap-2 overflow-x-auto px-4 pt-3 text-[14px] whitespace-nowrap">
-        <button className="flex h-9 shrink-0 items-center gap-1 rounded-full border border-line px-3 text-fg">
-          Blokownia <ChevronDown size={16} className="text-dim" />
-        </button>
-        <button className="h-9 shrink-0 rounded-full border border-accent bg-accent/10 px-3 font-medium text-strong">
-          Open · 4
-        </button>
-        <button className="h-9 shrink-0 rounded-full border border-line px-3 text-fg">
-          Sent · 9
-        </button>
-        <button className="h-9 shrink-0 rounded-full border border-line px-3 text-fg">
-          Taken down
-        </button>
-      </div>
-      <ul className="mt-2 divide-y divide-line border-y border-line">
-        {PROJECTS.map(p => (
-          <ProjectRow key={p.colour + p.grade + p.wall} p={p} />
-        ))}
-      </ul>
-      <Section title="Sent lately">
-        <ul className="-mx-4 divide-y divide-line border-y border-line">
-          {SENT_PROJECTS.map(p => (
-            <ProjectRow key={p.colour + p.grade + p.wall} p={p} />
-          ))}
-        </ul>
-      </Section>
-      <p className="px-4 pt-4 text-[13px] text-dim">
-        A climb becomes a project when you try it and don’t send it. When the
-        gym resets a wall, mark its problems taken down.
-      </p>
-    </Screen>
-  );
-}
-
-export function Problem() {
-  return (
-    <div className="flex h-full flex-col bg-bg text-[15px]">
-      <Header
-        back="projects"
-        title="Project"
-        right={
-          <button aria-label="Edit" className="icon-btn h-11 w-11 text-fg">
-            <Pencil size={18} />
-          </button>
-        }
-      />
-      <main className="min-h-0 flex-1 overflow-y-auto">
-        <div className="flex items-center gap-4 px-4 pt-4">
-          <Swatch colour="Purple" size="h-16 w-16 rounded-2xl" />
-          <div>
-            <div className="text-[24px] font-semibold text-strong">
-              Purple 6C+
+    <Screen
+      tab="progress"
+      title="Progress"
+      overlay={
+        <div className="absolute inset-0 flex flex-col justify-end bg-black/50">
+          <div className="rounded-t-2xl bg-panel px-4 pt-3 pb-5 shadow-2xl">
+            <div className="mx-auto mb-3 h-1 w-10 rounded-full bg-line" />
+            <h2 className="mb-2 text-[17px] font-semibold text-strong">
+              Period
+            </h2>
+            <div className="flex flex-wrap gap-2">
+              {presets.map(p => (
+                <button
+                  key={p}
+                  aria-pressed={p === 'Pick dates'}
+                  className={`h-10 rounded-full border px-3.5 text-[14px] ${p === 'Pick dates' ? 'border-accent bg-accent/10 font-medium text-strong' : 'border-line text-fg'}`}
+                >
+                  {p}
+                </button>
+              ))}
             </div>
-            <div className="text-dim">Cave · “The crimpy one”</div>
-            <div className="text-[13px] text-dim">Set 3 Nov · Blokownia</div>
-          </div>
-        </div>
-        <div className="grid grid-cols-3 gap-2 px-4 pt-4">
-          <Tile label="Tries" value="9" />
-          <Tile label="Sessions" value="3" />
-          <Tile label="First tried" value="12 Nov" />
-        </div>
-        <div className="grid grid-cols-2 gap-2 px-4 pt-3">
-          <button className="flex h-12 items-center justify-center gap-1.5 rounded-xl border border-line bg-raised font-medium text-strong">
-            <Plus size={18} aria-hidden /> Log tries
-          </button>
-          <button className="flex h-12 items-center justify-center gap-1.5 rounded-xl bg-accent font-semibold text-on-accent">
-            <Check size={18} aria-hidden /> Sent it
-          </button>
-        </div>
-        <Section title="Beta">
-          <div className="rounded-xl border border-line bg-panel p-3 text-fg">
-            Left heel hook on the start hold, then match on the sloper. Don’t
-            cut feet before the crimp.
-          </div>
-        </Section>
-        <Section title="Tries">
-          <ol className="relative ml-2 border-l border-line">
-            {PROBLEM_HISTORY.map(h => (
-              <li key={h.date} className="relative pb-4 pl-5">
-                <span className="absolute top-1.5 -left-[5px] h-2.5 w-2.5 rounded-full bg-dim" />
-                <div className="text-strong">
-                  {h.date}{' '}
-                  <span className="font-normal text-dim">
-                    · {h.tries} tries · {h.result}
+            <div className="mt-3 grid grid-cols-2 gap-2">
+              {[
+                ['From', 'Mon 1 Sep 2026'],
+                ['To', 'Fri 21 Nov 2026'],
+              ].map(([k, v]) => (
+                <label key={k} className="block">
+                  <span className="text-[12px] text-dim">{k}</span>
+                  <span className="mt-1 flex h-12 items-center gap-2 rounded-xl border border-line bg-raised px-3 text-strong">
+                    <CalendarRange size={16} className="text-dim" />
+                    {v}
                   </span>
+                </label>
+              ))}
+            </div>
+            <div className="mt-4 mb-1 text-[12px] text-dim">Compare with</div>
+            <div className="divide-y divide-line rounded-xl border border-line">
+              {[
+                ['The same length before', '11 Jun – 31 Aug', true],
+                ['The same dates last year', '1 Sep – 21 Nov 2025', false],
+                ['Nothing', '', false],
+              ].map(([label, dates, on]) => (
+                <div
+                  key={label as string}
+                  className="flex min-h-12 items-center gap-3 px-3"
+                >
+                  <span
+                    className={`flex h-5 w-5 items-center justify-center rounded-full border-2 ${on ? 'border-accent' : 'border-dim'}`}
+                  >
+                    {on && (
+                      <span className="h-2.5 w-2.5 rounded-full bg-accent" />
+                    )}
+                  </span>
+                  <span className="flex-1 text-strong">{label}</span>
+                  <span className="text-[13px] text-dim">{dates}</span>
                 </div>
-                {h.note && <div className="text-[14px] text-dim">{h.note}</div>}
-              </li>
-            ))}
-          </ol>
-        </Section>
-        <div className="px-4 pb-6">
-          <button className="h-11 w-full rounded-xl border border-line text-[15px] text-dim">
-            Taken down (the gym reset it)
-          </button>
+              ))}
+            </div>
+            <button className="mt-4 flex h-12 w-full items-center justify-center gap-2 rounded-xl bg-accent text-[16px] font-semibold text-on-accent">
+              <Check size={18} aria-hidden /> Show 1 Sep – 21 Nov
+            </button>
+          </div>
         </div>
-      </main>
-    </div>
-  );
-}
-
-export function Gym() {
-  return (
-    <div className="flex h-full flex-col bg-bg text-[15px]">
-      <Header back="today" title="Blokownia" right={<span />} />
-      <main className="min-h-0 flex-1 overflow-y-auto">
-        <Section title="Grades">
-          <div className="divide-y divide-line rounded-xl border border-line bg-panel">
-            <div className="flex min-h-12 items-center px-3">
-              <span className="flex-1">Boulders</span>
-              <span className="text-dim">Colours + Font ▾</span>
-            </div>
-            <div className="flex min-h-12 items-center px-3">
-              <span className="flex-1">Ropes</span>
-              <span className="text-dim">None here ▾</span>
-            </div>
-          </div>
-        </Section>
-        <Section
-          title="Colour circuits"
-          more={<span className="text-[14px] text-accent">+ colour</span>}
-        >
-          <ul className="divide-y divide-line rounded-xl border border-line bg-panel">
-            {CIRCUITS.map(c => (
-              <li
-                key={c.name}
-                className="flex min-h-14 items-center gap-3 px-3"
-              >
-                <GripVertical size={16} className="text-dim" aria-hidden />
-                <Swatch colour={c.name} size="h-7 w-7" />
-                <span className="flex-1 text-strong">{c.name}</span>
-                <span className="rounded-lg bg-raised px-2.5 py-1 tabular-nums">
-                  {c.range}
-                </span>
-              </li>
-            ))}
-          </ul>
-          <p className="mt-2 text-[13px] text-dim">
-            The colour of a problem’s tag says how hard it is. Logging asks for
-            the colour; the exact grade is optional.
-          </p>
-        </Section>
-        <Section title="Walls">
-          <div className="flex flex-wrap gap-2">
-            {['Cave', 'Slab', 'Roof', 'Comp wall', 'Kids'].map(w => (
-              <span
-                key={w}
-                className="flex h-9 items-center rounded-full border border-line px-3"
-              >
-                {w}
-              </span>
-            ))}
-            <span className="flex h-9 items-center rounded-full border border-dashed border-line px-3 text-dim">
-              + wall
-            </span>
-          </div>
-        </Section>
-        <Section title="Other places">
-          <div className="divide-y divide-line rounded-xl border border-line bg-panel">
-            <div className="flex min-h-12 items-center px-3">
-              <span className="flex-1">Ściana Centrum</span>
-              <span className="text-dim">Ropes · French</span>
-            </div>
-            <div className="flex min-h-12 items-center px-3 text-accent">
-              + place (gym or crag)
-            </div>
-          </div>
-        </Section>
-        <div className="h-6" />
-      </main>
-    </div>
+      }
+    >
+      <ProgressBody />
+    </Screen>
   );
 }
 
@@ -1001,13 +992,21 @@ export function HistoryScreen() {
                   </div>
                 </div>
                 <div className="min-w-0 flex-1">
-                  <div className="text-strong">{s.gym}</div>
+                  <div className="text-strong">
+                    {s.place}
+                    {s.board && (
+                      <span className="font-normal text-dim">
+                        {' '}
+                        · board, {s.board}
+                      </span>
+                    )}
+                  </div>
                   <div className="text-[14px] text-dim">
-                    {s.length} · {s.climbs} climbs · {s.sends} sends
+                    {s.length} · {s.climbs} climbs
                   </div>
                 </div>
                 <span className="flex items-center gap-1.5 text-strong">
-                  <Swatch colour={s.colour} size="h-4 w-4" />
+                  {s.colour && <Swatch colour={s.colour} size="h-4 w-4" />}
                   {s.hardest}
                 </span>
                 <ChevronRight size={18} className="text-dim" />
@@ -1020,13 +1019,127 @@ export function HistoryScreen() {
   );
 }
 
+/** Settings: the places you climb, each gym with its own colours. */
+export function Places() {
+  return (
+    <div className="flex h-full flex-col bg-bg text-[15px]">
+      <Header back="today" title="Settings" right={<span />} />
+      <main className="min-h-0 flex-1 overflow-y-auto">
+        <Section
+          title="Gyms"
+          more={<span className="text-[14px] text-accent">+ gym</span>}
+        >
+          <div className="divide-y divide-line rounded-xl border border-line bg-panel">
+            {[
+              ['Blokownia', CIRCUITS],
+              ['West Bouldering', CIRCUITS.slice(0, 5)],
+            ].map(([name, cs]) => (
+              <a
+                key={name as string}
+                href="#gym"
+                className="flex min-h-14 items-center gap-3 px-3"
+              >
+                <span className="flex-1 text-strong">{name as string}</span>
+                <span className="flex gap-1">
+                  {(cs as typeof CIRCUITS).map(c => (
+                    <Swatch key={c.name} colour={c.name} size="h-4 w-4" />
+                  ))}
+                </span>
+                <ChevronRight size={18} className="text-dim" />
+              </a>
+            ))}
+          </div>
+        </Section>
+        <Section
+          title="Boards"
+          more={<span className="text-[14px] text-accent">+ board</span>}
+        >
+          <div className="divide-y divide-line rounded-xl border border-line bg-panel">
+            <div className="flex min-h-14 items-center gap-3 px-3">
+              <span className="flex-1 text-strong">Kilter</span>
+              <span className="text-dim">Font · usually 40°</span>
+              <ChevronRight size={18} className="text-dim" />
+            </div>
+            <div className="flex min-h-14 items-center gap-3 px-3">
+              <span className="flex-1 text-strong">MoonBoard 2019</span>
+              <span className="text-dim">Font · 40°</span>
+              <ChevronRight size={18} className="text-dim" />
+            </div>
+          </div>
+          <p className="mt-2 text-[13px] text-dim">
+            Board climbs are logged by grade and charted on their own, not mixed
+            with the gyms&apos; colours.
+          </p>
+        </Section>
+        <Section title="Data">
+          <div className="divide-y divide-line rounded-xl border border-line bg-panel">
+            <div className="flex min-h-12 items-center px-3">
+              <span className="flex-1">Drive sync</span>
+              <span className="text-dim">climb.binpb · on</span>
+            </div>
+            <div className="flex min-h-12 items-center px-3">
+              <span className="flex-1">Export or import</span>
+              <span className="text-dim">JSON, binary</span>
+            </div>
+          </div>
+          <p className="mt-2 text-[13px] text-dim">
+            Kept apart from the dashboard&apos;s data: its own file on this
+            device and on Drive.
+          </p>
+        </Section>
+        <div className="h-6" />
+      </main>
+    </div>
+  );
+}
+
+export function Gym() {
+  return (
+    <div className="flex h-full flex-col bg-bg text-[15px]">
+      <Header back="places" title="Blokownia" right={<span />} />
+      <main className="min-h-0 flex-1 overflow-y-auto">
+        <Section
+          title="Colours, easiest first"
+          more={<span className="text-[14px] text-accent">+ colour</span>}
+        >
+          <ul className="divide-y divide-line rounded-xl border border-line bg-panel">
+            {CIRCUITS.map(c => (
+              <li
+                key={c.name}
+                className="flex min-h-14 items-center gap-3 px-3"
+              >
+                <GripVertical size={16} className="text-dim" aria-hidden />
+                <Swatch colour={c.name} size="h-7 w-7" />
+                <span className="flex-1 text-strong">{c.name}</span>
+                <span className="rounded-lg bg-raised px-2.5 py-1 tabular-nums">
+                  {c.range}
+                </span>
+              </li>
+            ))}
+          </ul>
+          <p className="mt-2 text-[13px] text-dim">
+            Each gym has its own colours and the Font grades each one covers.
+            You log by colour; the exact grade is optional.
+          </p>
+        </Section>
+        <div className="px-4 pt-5">
+          <button className="flex h-11 w-full items-center justify-center gap-1.5 rounded-xl border border-line text-[15px] text-fg">
+            <Plus size={16} aria-hidden /> Copy colours from another gym
+          </button>
+        </div>
+      </main>
+    </div>
+  );
+}
+
 export const SCREENS: Record<string, () => ReactNode> = {
   today: Today,
   log: Log,
+  board: BoardLog,
   summary: Summary,
   progress: Progress,
-  projects: Projects,
-  problem: Problem,
-  gym: Gym,
+  range: Range,
   history: HistoryScreen,
+  places: Places,
+  gym: Gym,
 };
