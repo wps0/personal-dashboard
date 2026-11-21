@@ -38,7 +38,7 @@ import {
   useToday,
   type Lookups,
 } from '../hooks';
-import {plannedInWindow} from '../model/capacity';
+import {plannedOnDay} from '../model/capacity';
 import {dayName} from '../model/dates';
 import {eventsByDay, shownEvent} from '../model/recurrence';
 import {
@@ -411,7 +411,7 @@ function GridBody({days, hourHeight, scrollToHour, onDayClick}: BodyProps) {
         <div />
         {days.map(d => {
           const day = byDay.get(d)!;
-          const planned = plannedInWindow(
+          const planned = plannedOnDay(
             [...day.timed, ...day.untimed],
             capacities.get(d)!,
           );

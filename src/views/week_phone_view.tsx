@@ -21,7 +21,7 @@ import {BACKLOG_ROWS, MISSED_ROWS} from '../config';
 import {fmtDuration} from '../format';
 import {useCapacities, useLookups, useToday, type Lookups} from '../hooks';
 import {useNavTarget} from '../keyboard';
-import {plannedInWindow} from '../model/capacity';
+import {plannedOnDay} from '../model/capacity';
 import {
   addDays,
   dayName,
@@ -90,7 +90,7 @@ export function WeekPhoneView({week}: {week?: ISODate}) {
     [days, allocations],
   );
   const planned = days.reduce(
-    (sum, d) => sum + plannedInWindow(byDay.get(d)!, capacities.get(d)!),
+    (sum, d) => sum + plannedOnDay(byDay.get(d)!, capacities.get(d)!),
     0,
   );
   const room = days.reduce((sum, d) => sum + capacities.get(d)!.total, 0);
@@ -181,7 +181,7 @@ export function WeekPhoneView({week}: {week?: ISODate}) {
               date={d}
               isToday={d === today}
               allocs={byDay.get(d)!}
-              planned={plannedInWindow(byDay.get(d)!, capacities.get(d)!)}
+              planned={plannedOnDay(byDay.get(d)!, capacities.get(d)!)}
               total={capacities.get(d)!.total}
               lookups={lookups}
             />

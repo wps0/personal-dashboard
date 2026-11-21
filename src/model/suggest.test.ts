@@ -1,7 +1,7 @@
 import {create} from '@bufbuild/protobuf';
 import {describe, expect, it} from 'vitest';
 import * as pb from '../gen/dashboard/data_pb';
-import {capacityFor, defaultRules} from './capacity';
+import {capacityFor, defaultRules, withRuleChange} from './capacity';
 import {freeMinutes, spreadBackward, spreadDays} from './suggest';
 
 /** Free minutes for consecutive days from Monday 9 Nov 2026. */
@@ -92,8 +92,27 @@ describe('spreadBackward', () => {
 });
 
 describe('freeMinutes', () => {
-  // Mon 9 Nov: the default 18:00–21:00 window, 3h.
-  const capacity = capacityFor('2026-11-09', defaultRules(), {}, []);
+  // Mon 9 Nov: sleep (00–07, 23–24) and work (09–17) leave 8h; −5h
+  // adjustment: a capacity of 3h.
+  const reserved = (start: string, end: string) =>
+    create(pb.CalendarEventSchema, {
+      id: start,
+      date: '2026-11-09',
+      start,
+      end,
+      kind: pb.EventKind.RESERVED,
+    });
+  const capacity = capacityFor(
+    '2026-11-09',
+    withRuleChange(defaultRules(), '2026-11-01', {adjustment: -5}),
+    {},
+    [],
+    [
+      reserved('00:00', '07:00'),
+      reserved('09:00', '17:00'),
+      reserved('23:00', '23:59'),
+    ],
+  );
   const session = (plannedHours: number, start?: string) =>
     create(pb.AllocationSchema, {
       id: 'a',
@@ -104,18 +123,22 @@ describe('freeMinutes', () => {
     });
 
   it('is the capacity less what’s planned, in quarter hours', () => {
+    expect(capacity.total).toBe(3);
     expect(freeMinutes(capacity, [])).toBe(180);
     expect(freeMinutes(capacity, [session(1)])).toBe(120);
     // 1h 10m planned leaves 1h 50m: 1h 45m in quarter hours.
     expect(freeMinutes(capacity, [session(70 / 60)])).toBe(105);
-    // A time block at noon is outside the window.
+    // A time block at noon is on work time, already out of the capacity; in
+    // the evening it counts.
     expect(freeMinutes(capacity, [session(2, '12:00')])).toBe(180);
+    expect(freeMinutes(capacity, [session(2, '18:00')])).toBe(60);
     expect(freeMinutes(capacity, [session(4)])).toBe(0);
   });
 
-  it('today: no more than what’s left of the window', () => {
+  it('today: no more than the free time left in the day', () => {
     expect(freeMinutes(capacity, [], 10 * 60)).toBe(180);
-    expect(freeMinutes(capacity, [], 20 * 60 + 10)).toBe(45);
-    expect(freeMinutes(capacity, [], 22 * 60)).toBe(0);
+    // 21:10: 2h 50m to midnight, 1h of it sleep: 1h 50m, 1h 45m in steps.
+    expect(freeMinutes(capacity, [], 21 * 60 + 10)).toBe(105);
+    expect(freeMinutes(capacity, [], 23 * 60)).toBe(0);
   });
 });

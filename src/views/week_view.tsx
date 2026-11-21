@@ -23,7 +23,7 @@ import {
   type Lookups,
 } from '../hooks';
 import {CapacityBadge} from '../components/capacity_badge';
-import {plannedInWindow, type CapacityInfo} from '../model/capacity';
+import {plannedOnDay, type CapacityInfo} from '../model/capacity';
 import {
   addDays,
   countdown,
@@ -146,7 +146,7 @@ function WeekTotal({start}: {start: ISODate}) {
   const planned = days.reduce(
     (sum, d) =>
       sum +
-      plannedInWindow(
+      plannedOnDay(
         allocations.filter(a => a.date === d),
         capacities.get(d)!,
       ),
@@ -269,7 +269,7 @@ const DayContent = memo(function DayContent({
   capacity,
   lookups,
 }: DayBoxProps) {
-  const planned = plannedInWindow(allocs, capacity);
+  const planned = plannedOnDay(allocs, capacity);
   return (
     <>
       <header className="flex items-center gap-1.5 border-b border-line px-2 py-1">

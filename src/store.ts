@@ -93,7 +93,7 @@ interface Actions {
 
   setDayNote(date: ISODate, text: string): void;
   setMonthNote(key: string, text: string): void;
-  /** Changes planning windows / global adjustment from today on (past days keep theirs). */
+  /** Changes the global adjustment from today on (past days keep theirs). */
   changeCapacityRule(patch: Partial<Omit<CapacityRule, 'from'>>): void;
   setDefaultEventMinutes(minutes: number): void;
   setDefaultCalendarView(view: CalendarView): void;

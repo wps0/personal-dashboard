@@ -153,7 +153,7 @@ export function SettingsView() {
 
         <Section
           title="Capacity"
-          hint="When you can plan work: a window per weekday, and an adjustment."
+          hint="How much time a day has for planned work: the day less reserved time and events, plus an adjustment."
         >
           <CapacitySettings />
         </Section>

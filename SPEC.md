@@ -173,29 +173,37 @@ Each day box is a hybrid of three parts:
 
 - **Planning is manual.** Drag items or allocations into days and set hours.
 - **Capacity** is inferred per day:
-  - Start from the weekday's **planning window** (e.g. 18:00–21:00), minus
-    the time **occupied** inside it by reserved time and calendar events:
-    each minute once, however many of them overlap there (an event on
-    reserved time takes it once). The breakdown shows it on one line,
-    "Occupied (reserved, events)".
-  - Add a **global adjustment** (± hours on every day) and the day's own
-    **± delta**. A **fixed value** set for the day overrides the calculation.
-  - Window and adjustment changes are stored as rules with an effective date
-    and apply from today on. Past days keep their old values, and their
-    per-day tweaks are locked.
+  - Start from **the whole day (24h)**, less its **reserved time** (sleep,
+    work…) and its timed **calendar events** (local and busy Google ones):
+    each minute once, however many of them overlap (an event on reserved
+    time takes it once). All-day events take nothing. Sleep from 23:00 is
+    23:00–24:00 on its day and 00:00–07:00 on the next.
+  - Add a **global adjustment** (± hours on every day, e.g. −3h for meals,
+    travel and rest) and the day's own **± delta**. A **fixed value** set for
+    the day overrides the calculation.
+  - The breakdown says it line by line: the whole day 24h, reserved time,
+    events (their time outside reserved time), the adjustments, capacity,
+    planned. A
+    day without any reserved time says so: all 24 hours count until your
+    sleep is on the calendar.
+  - Adjustment changes are stored as rules with an effective date and apply
+    from today on. Past days keep their old values, and their per-day tweaks
+    are locked.
+  - **Until November 2026 a planning window** per weekday (by default
+    18:00–21:00 on weekdays, 10:00–16:00 at weekends) was the starting
+    point, with only what was inside it counted. The windows stay in the
+    data, unused, so older versions of the app can still read it.
   - Click a day's "planned/capacity" badge for the breakdown and the per-day
     controls. A day turns red when it is over capacity.
   - The planned hours set against capacity are the untimed sessions plus the
-    part of timed ones (time blocks) inside the planning window and outside
-    its occupied time: a class at noon doesn't use evening planning time,
-    and a time block on reserved time or an event doesn't use it either,
-    since that time is already out of the capacity (it would be taken
-    twice).
+    timed ones (time blocks), except their part on reserved time or an
+    event: that time is already out of the capacity, so it isn't taken
+    twice.
 - **Reserved time** (e.g. sleep 23:00–07:00, work 09:00–17:00) is a kind of
   event: reserved events, which usually repeat (see Repeating events in 3.4).
   - **Drawn with diagonal hatching** on the calendar. Events can still go
-    there. Inside the planning window it takes capacity, like an event; sleep
-    or work outside the window doesn't. The month view leaves it out.
+    there. It takes capacity, like an event (each minute once). The month
+    view leaves it out.
   - **Can end after midnight:** an end before the start ends the next day
     (sleep). It's drawn at the end of its day and the start of the next.
     Either piece can be dragged: the whole event moves, keeping its length,
@@ -221,8 +229,8 @@ Each day box is a hybrid of three parts:
     the same range on several weekdays becomes one repeating event from the
     rule's date to the next rule's, and a day with its own reserved time
     gets one-off events while the repeating ones skip it. Settings → Capacity
-    has the planning windows and the global adjustment; each weekday's copy
-    button copies its planning window to the days you tick.
+    says how capacity is counted, lists the reserved time on the calendar
+    (or warns there's none) and has the global adjustment.
 - **Overdue tray.** Unfinished allocations from past days move to a "missed"
   tray that is visible on today, so you reschedule them deliberately. They are
   never moved automatically.
@@ -472,8 +480,8 @@ double-clicking one in the project panel, opens an overlay with:
   delete is the trash icon next to × at the top, as in the event card (with
   Undo).
 
-- **Times of day** (event and session starts and ends, work stretches,
-  planning windows) are typed fields with a list, like Google Calendar's:
+- **Times of day** (event and session starts and ends, work stretches)
+  are typed fields with a list, like Google Calendar's:
   type any minute ("9:07", "907", "9.07") and Enter or Tab keeps it, or pick
   from the list in 15-minute steps, which opens on focus scrolled to the
   current time and moves to what's typed as it's typed. The mouse over the
@@ -497,8 +505,8 @@ spread of untimed sessions, nothing added until you say so:
   later, to the day before it (on the day itself it's due). A task due today
   or earlier, or with no due date, says so instead.
 - **Free time** per day: its capacity (3.2) less what's planned on it, every
-  task's, in quarter hours. Today counts only what's left of its planning
-  window.
+  task's, in quarter hours. Today counts no more than the free time left in
+  the day (what reserved time and events leave after now).
 - **The spread:** each day, the latest first, gets a session of the same
   length, at most 2h (5h is 1h 45m, 1h 45m and 1h 30m), as far as its free
   time allows; a day with less than 30 minutes free gets none. If that
@@ -677,8 +685,8 @@ asking for write access.
   (sanitized description, location, link to edit in Google Calendar).
 - **Declined invitations** are shown outlined and struck through, and never
   count as busy. Events the organiser cancelled never arrive.
-- **Capacity:** busy Google events inside the planning window reduce the
-  day's capacity like local events. "Free", all-day and working-location
+- **Capacity:** busy Google events reduce the day's capacity like local
+  events. "Free", all-day and working-location
   entries don't count.
 - **Errors** are explained in plain language (API not enabled, no access,
   not found, rate limited, offline…) with a link to fix them where Google

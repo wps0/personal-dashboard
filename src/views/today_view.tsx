@@ -25,7 +25,7 @@ import {useGoogleEvents} from '../google/use_google_events';
 import {useCapacities, useLookups, useToday, useWeekStart} from '../hooks';
 import {useNavTarget} from '../keyboard';
 import {dayAgenda, nowPosition, type AgendaEntry} from '../model/agenda';
-import {plannedInWindow} from '../model/capacity';
+import {plannedOnDay} from '../model/capacity';
 import {
   addDays,
   dayName,
@@ -122,7 +122,7 @@ export function TodayView({date}: {date?: ISODate}) {
     [plan, today],
   );
   const backlog = useMemo(() => backlogItems(plan, today), [plan, today]);
-  const planned = plannedInWindow(
+  const planned = plannedOnDay(
     allAllocations.filter(a => a.date === day),
     capacity,
   );
