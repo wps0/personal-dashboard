@@ -78,8 +78,15 @@ function save(key: string, value: unknown) {
 interface UiState {
   /** Item shown in the task overlay. */
   openItemId: string | null;
-  /** Existing event whose floating editor is open. */
+  /** Existing event whose card is open. */
   openEventId: string | null;
+  /**
+   * The open event's card is being edited. Cards open read-only, like Google
+   * Calendar's; ✎ makes them editable. Kept here, not in the card, so that a
+   * change that moves the card (a repeating event's occurrence getting an id
+   * of its own) stays in editing.
+   */
+  editingEvent: boolean;
   /** Google event (piece key) whose read-only card is open. */
   openGoogleKey: string | null;
   draft: Draft | null;
@@ -103,7 +110,8 @@ interface UiState {
   promptProjectId: string | null;
   tasksFromPrompt(projectId: string): void;
   openItem(id: string | null): void;
-  openEvent(id: string | null): void;
+  /** Opens an event's card, read-only unless `editing`. */
+  openEvent(id: string | null, editing?: boolean): void;
   openGoogle(key: string | null): void;
   setDraft(d: Draft | null): void;
   patchDraft(p: Partial<Draft>): void;
@@ -115,6 +123,7 @@ interface UiState {
 export const useUi = create<UiState>()((set, get) => ({
   openItemId: null,
   openEventId: null,
+  editingEvent: false,
   openGoogleKey: null,
   draft: null,
   hidden: loadList(HIDDEN_KEY),
@@ -145,8 +154,14 @@ export const useUi = create<UiState>()((set, get) => ({
     set({dialog: 'prompt', promptProjectId: projectId}),
   openItem: id =>
     set({openItemId: id, openEventId: null, openGoogleKey: null, draft: null}),
-  openEvent: id =>
-    set({openEventId: id, openItemId: null, openGoogleKey: null, draft: null}),
+  openEvent: (id, editing = false) =>
+    set({
+      openEventId: id,
+      editingEvent: !!id && editing,
+      openItemId: null,
+      openGoogleKey: null,
+      draft: null,
+    }),
   openGoogle: key =>
     set({openGoogleKey: key, openEventId: null, openItemId: null, draft: null}),
   setDraft: draft =>

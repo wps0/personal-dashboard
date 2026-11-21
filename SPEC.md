@@ -395,11 +395,18 @@ and details, as tabs in the side panel.
     finger) cancels it, as in Google Calendar: what was dragged goes back,
     the key does nothing else, and the release doesn't click
     (`drag_cancel.ts`).
-  - Click an event for its floating editor; click a session for the task
-    overlay.
-  - **Changing an entry's type:** the event card (events and reserved time)
-    has the same **Event | Time block | Task | Reserved** tabs as the create
-    card, under the title.
+  - Click an event for its card; click a session for the task overlay.
+  - **The event card opens read-only,** like Google Calendar's: ✎, delete
+    and × at the top, then the colour and title, when ("Tuesday 10 November
+    · 19:00 – 20:30", "(the next day)" for sleep past midnight), how it
+    repeats ("Every weekday (Monday to Friday)") and the description, with
+    its line breaks. **✎** (or **e**) makes it editable, with the cursor in
+    the title; changes apply as they're made, and **Done** goes back to
+    reading. A card opens read-only every time; one whose occurrence gets
+    an id of its own while being edited stays in editing.
+  - **Changing an entry's type:** the event card (events and reserved time),
+    once ✎ is pressed, has the same **Event | Time block | Task | Reserved**
+    tabs as the create card, under the title.
     - **Event ⇄ Reserved** applies at once, to the occurrences "Changes
       apply to" says. Reserved time needs a time, so an all-day event says
       so instead.

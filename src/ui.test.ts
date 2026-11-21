@@ -9,7 +9,7 @@ vi.stubGlobal('localStorage', {
 
 const {emptyData} = await import('./model/types');
 const {useStore} = await import('./store');
-const {adoptFoldedGroups} = await import('./ui');
+const {adoptFoldedGroups, useUi} = await import('./ui');
 
 const KEY = 'personal-dashboard/collapsed-groups';
 
@@ -43,5 +43,22 @@ describe('adoptFoldedGroups', () => {
     const before = useStore.getState().data;
     adoptFoldedGroups();
     expect(useStore.getState().data).toBe(before);
+  });
+});
+
+describe('the event card', () => {
+  it('opens read-only; editing only when asked, and never for no card', () => {
+    useUi.getState().openEvent('e1');
+    expect(useUi.getState()).toMatchObject({
+      openEventId: 'e1',
+      editingEvent: false,
+    });
+    useUi.getState().openEvent('e1', true);
+    expect(useUi.getState().editingEvent).toBe(true);
+    // Another card opens read-only again.
+    useUi.getState().openEvent('e2');
+    expect(useUi.getState().editingEvent).toBe(false);
+    useUi.getState().openEvent(null, true);
+    expect(useUi.getState().editingEvent).toBe(false);
   });
 });
