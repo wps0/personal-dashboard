@@ -3,6 +3,7 @@ import {beforeEach, describe, expect, it, vi} from 'vitest';
 import {
   addGroup,
   addReserved,
+  addSessionFor,
   carryOver,
   deleteArea,
   advanceStatus,
@@ -664,5 +665,32 @@ describe("changing a calendar entry's type", () => {
     undoLast();
     expect(data().allocations).toHaveLength(1);
     expect(data().events).toEqual([]);
+  });
+});
+
+describe('addSessionFor', () => {
+  beforeEach(() => {
+    vi.stubGlobal('window', {setTimeout: () => 0});
+    useStore.getState().replaceAll(emptyData());
+  });
+
+  it('time on a done task counts as spent up to today, planned after', () => {
+    const area = useStore.getState().addArea('University');
+    const p = useStore.getState().addProject(area, 'OS');
+    useStore
+      .getState()
+      .addItems(p, [
+        {title: 'Lab 4', status: pb.ItemStatus.DONE},
+        {title: 'Lab 5'},
+      ]);
+    const [done, open] = useStore.getState().data.items;
+    addSessionFor(done, '2020-01-06', 1.5, '18:00');
+    addSessionFor(done, '2999-01-06', 1);
+    addSessionFor(open, '2020-01-06', 1);
+    expect(useStore.getState().data.allocations.map(a => a.done)).toEqual([
+      true,
+      false,
+      false,
+    ]);
   });
 });

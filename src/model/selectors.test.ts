@@ -261,16 +261,20 @@ describe('findTasks', () => {
     ]);
   });
 
-  it('searches open tasks by title or project, ignoring case and diacritics', () => {
+  it('searches tasks by title or project, ignoring case and diacritics', () => {
     expect(findTasks(data(), 'PLAN', TODAY).map(i => i.id)).toEqual([
       'Planned',
     ]);
+    // Done ones too, after the open ones.
     expect(findTasks(data(), 'zlozonosc', TODAY).map(i => i.id)).toEqual([
       'Lecture 2',
       'Lecture 10',
       'Planned',
+      'Done one',
     ]);
-    expect(findTasks(data(), 'done', TODAY)).toEqual([]);
+    expect(findTasks(data(), 'done', TODAY).map(i => i.id)).toEqual([
+      'Done one',
+    ]);
     expect(findTasks(data(), 'archived', TODAY)).toEqual([]);
   });
 

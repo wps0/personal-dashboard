@@ -13,7 +13,7 @@ import {
 } from './model/types';
 import * as pb from './gen/dashboard/data_pb';
 import {fmtDuration, fmtWorkSpan} from './format';
-import {addDays, formatMedium} from './model/dates';
+import {addDays, formatMedium, todayISO} from './model/dates';
 import {
   changeEvent,
   deleteEvent as deleteFromEvents,
@@ -191,6 +191,23 @@ export function eventToTask(
 }
 
 /**
+ * Adds a session for `item` (inside the caller's undo step). For a task
+ * that's already done, a session on a day up to today is done too: it
+ * records time spent on it, rather than waiting to be ticked off.
+ */
+export function addSessionFor(
+  item: Item,
+  date: ISODate,
+  hours: number,
+  start?: string,
+): string {
+  const id = s().addAllocation(item.id, date, hours, start);
+  if (item.status === ItemStatus.DONE && date <= todayISO())
+    s().updateAllocation(id, {done: true});
+  return id;
+}
+
+/**
  * Turns the event shown as `e` into time planned for an existing task: a
  * session at the event's time (that day's occurrence of a repeating one).
  * One undo step.
@@ -200,7 +217,7 @@ export function eventToSession(e: CalendarEvent, itemId: string) {
   const hours = eventHours(e);
   if (!item || hours === undefined) return;
   withUndo(`“${e.title}” is now time for “${item.title}”`, () => {
-    s().addAllocation(itemId, e.date, hours, e.start);
+    addSessionFor(item, e.date, hours, e.start);
     s().setEvents(deleteFromEvents(s().data.events, e.id, 'this'));
   });
 }
