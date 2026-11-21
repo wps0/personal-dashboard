@@ -500,7 +500,8 @@ function ItemsTab({project}: {project: Project}) {
             <colgroup>
               <col className="w-28 @md:w-32" />
               <col />
-              <col className="w-20" />
+              {/* A due date ("due in 4d") or a class date ("held 2 Nov"). */}
+              <col className="w-24" />
               {/* Estimate and spent/plan: none on narrow panels (phones). */}
               <col className="w-12 @max-md:w-0" />
               <col className="w-16 @max-md:w-0" />
@@ -1062,13 +1063,13 @@ const ItemRow = memo(function ItemRow({
         {item.dueDate ? (
           <span
             className={done ? '' : URGENCY_CLASS[urgency(item.dueDate, today)]}
-            title={`Due ${item.dueDate}`}
+            title={`Due ${shortDate(item.dueDate)}`}
           >
-            {countdown(item.dueDate, today)}
+            due {countdown(item.dueDate, today)}
           </span>
         ) : item.heldOn ? (
-          <span className="text-dim" title="Class date">
-            {shortDate(item.heldOn)}
+          <span className="text-dim" title="The class's date">
+            held {shortDate(item.heldOn)}
           </span>
         ) : null}
       </td>

@@ -279,6 +279,8 @@ and details, as tabs in the side panel.
   numbered series is added, or while a curriculum is being imported, the
   panel shows the items.
 - **The items toolbar** is the done count, "hide done" and **+ group**.
+- **The date column** says which date it is: "due in 4d" (coloured by how
+  soon) or, for a class without a due date, "held 2 Nov".
 
 - **Description next to the items.** On a wide panel (56rem and up) the
   rendered description is a column to the right of the task list; on a
