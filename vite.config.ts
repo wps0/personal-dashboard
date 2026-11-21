@@ -64,6 +64,16 @@ export default defineConfig({
     'import.meta.env.APP_SOURCE_URL': JSON.stringify(sourceUrl()),
   },
   plugins: [react(), tailwindcss(), assetManifest(), devInlineStyles()],
+  // Prototype only: the climbing app's screens and the board of them.
+  build: {
+    rollupOptions: {
+      input: {
+        main: 'index.html',
+        climb: 'climb/index.html',
+        board: 'climb/board.html',
+      },
+    },
+  },
   test: {
     environment: 'node',
   },

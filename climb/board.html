@@ -1,0 +1,64 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Climb: screens</title>
+    <style>
+      body {
+        margin: 0;
+        background: #1b1e24;
+        font-family: 'Inter', system-ui, sans-serif;
+        color: #d6dbe1;
+      }
+      .row {
+        display: flex;
+        gap: 40px;
+        padding: 36px 40px 40px;
+      }
+      figure {
+        margin: 0;
+      }
+      figcaption {
+        font-size: 18px;
+        margin: 0 0 12px 4px;
+      }
+      figcaption b {
+        color: #fff;
+      }
+      iframe {
+        width: 412px;
+        height: 915px;
+        border: 0;
+        border-radius: 28px;
+        box-shadow:
+          0 0 0 8px #050608,
+          0 0 0 9px #2a2f37;
+        background: #0b0d10;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="row" id="row"></div>
+    <script type="module">
+      // ?s=today:Caption,log:Caption&theme=dark&accent=blue
+      const p = new URLSearchParams(location.search);
+      const look = new URLSearchParams();
+      for (const k of ['theme', 'accent']) if (p.get(k)) look.set(k, p.get(k));
+      for (const item of (p.get('s') ?? 'today').split(',')) {
+        const [screen, caption = '', q = ''] = item.split(':');
+        const fig = document.createElement('figure');
+        const cap = document.createElement('figcaption');
+        cap.innerHTML = caption;
+        const frame = document.createElement('iframe');
+        const query = new URLSearchParams(look);
+        for (const kv of q.split(';').filter(Boolean)) {
+          const [k, v] = kv.split('=');
+          query.set(k, v);
+        }
+        frame.src = `./index.html?${query}#${screen}`;
+        fig.append(cap, frame);
+        document.getElementById('row').append(fig);
+      }
+    </script>
+  </body>
+</html>

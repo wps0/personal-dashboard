@@ -1,0 +1,33 @@
+@import '../../index.css';
+
+/* The climbing app's accent: chalk orange, so the two apps tell apart. */
+:root {
+  --color-accent: #fb923c;
+  --color-on-accent: #3b1505;
+}
+:root[data-theme='light'] {
+  --color-accent: #c2410c;
+  --color-on-accent: #ffffff;
+}
+/* The alternative shown in the screenshots: the dashboard's blue. */
+:root[data-accent='blue'] {
+  --color-accent: #60a5fa;
+  --color-on-accent: #062e6f;
+}
+:root[data-accent='blue'][data-theme='light'] {
+  --color-accent: #2563eb;
+  --color-on-accent: #ffffff;
+}
+
+/*
+ * Flash and sent, in charts and badges alike; validated for both surfaces
+ * (dataviz palette slots 1 and 2).
+ */
+:root {
+  --series-flash: #d95926;
+  --series-sent: #3987e5;
+}
+:root[data-theme='light'] {
+  --series-flash: #eb6834;
+  --series-sent: #2a78d6;
+}
