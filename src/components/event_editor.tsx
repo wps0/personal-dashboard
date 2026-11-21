@@ -1,5 +1,21 @@
-import {memo, useCallback, useMemo, useState, type CSSProperties} from 'react';
-import {AlignLeft, Clock, FolderKanban, Repeat, Trash2, X} from 'lucide-react';
+import {
+  memo,
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  type CSSProperties,
+} from 'react';
+import {
+  AlignLeft,
+  Clock,
+  FolderKanban,
+  Pencil,
+  Repeat,
+  Trash2,
+  X,
+} from 'lucide-react';
 import {ALL_DAY_TASK_SESSION_HOURS} from '../config';
 import {eventStyle} from '../event_colors';
 import {withUndo} from '../toast';
@@ -31,6 +47,7 @@ import {
 } from '../actions';
 import * as pb from '../gen/dashboard/data_pb';
 import {
+  describeRecurrence,
   parseKey,
   shownEvent,
   type EventPatch,
@@ -534,6 +551,62 @@ function ConvertPanel({
   );
 }
 
+/** An event's colour, or reserved time's hatching, beside its title. */
+function Swatch({event, reserved}: {event: CalendarEvent; reserved: boolean}) {
+  return reserved ? (
+    <span className="reserved mt-2.5 h-3 w-3 shrink-0 rounded border border-line" />
+  ) : (
+    <span
+      className="mt-2.5 h-3 w-3 shrink-0 rounded"
+      style={{background: eventStyle(event.color).background}}
+    />
+  );
+}
+
+/**
+ * The card as it opens, read-only like Google Calendar's: the title, when,
+ * how it repeats and the description. ✎ makes it editable.
+ */
+function EventView({
+  event,
+  reserved,
+}: {
+  event: CalendarEvent;
+  reserved: boolean;
+}) {
+  const overnight =
+    !event.allDay && endMinutes(event.end) <= toMinutes(event.start);
+  const when = event.allDay
+    ? formatLong(event.date)
+    : `${formatLong(event.date)} · ${event.start} – ${showEnd(event.end)}${overnight ? ' (the next day)' : ''}`;
+  return (
+    <>
+      <div className="mb-3 flex items-start gap-3">
+        <Swatch event={event} reserved={reserved} />
+        <div className="min-w-0 flex-1">
+          <h2 className="text-lg leading-snug break-words text-strong">
+            {event.title || (reserved ? 'Reserved' : '(No title)')}
+          </h2>
+          <p className="mt-0.5 text-[13px] text-fg">{when}</p>
+          {event.recurrence && (
+            <p className="text-[12px] text-dim">
+              {describeRecurrence(event.recurrence, event.date)}
+            </p>
+          )}
+        </div>
+      </div>
+      {event.notes && (
+        <div className="mb-1 flex gap-3">
+          <AlignLeft size={16} className="mt-0.5 shrink-0 text-dim" />
+          <p className="min-w-0 flex-1 whitespace-pre-wrap break-words">
+            {event.notes}
+          </p>
+        </div>
+      )}
+    </>
+  );
+}
+
 const SCOPES: [Scope, string][] = [
   ['this', 'This event'],
   ['following', 'This and following'],
@@ -541,9 +614,10 @@ const SCOPES: [Scope, string][] = [
 ];
 
 /**
- * Floating editor for an existing event (`eventId` is the key it's shown
- * as); changes apply immediately. For a repeating event's occurrence, a
- * choice at the top says which occurrences they apply to.
+ * The card of an existing event (`eventId` is the key it's shown as). It
+ * opens read-only; ✎ (or e) makes it editable, and changes then apply
+ * immediately. For a repeating event's occurrence, a choice at the top says
+ * which occurrences they apply to.
  */
 export function EventEditor({eventId}: {eventId: string}) {
   // An occurrence is a new copy each time: selected as the event list.
@@ -560,10 +634,31 @@ export function EventEditor({eventId}: {eventId: string}) {
   // Turning it into a task or a time block, once confirmed in the panel.
   const [converting, setConverting] = useState<'task' | 'block' | null>(null);
   const [typeNote, setTypeNote] = useState('');
+  const editing = useUi(s => s.editingEvent);
+  const setEditing = (on: boolean) => {
+    started.current = true;
+    useUi.getState().openEvent(eventId, on);
+  };
+  // Set by ✎ and Done, which move the focus; a card reopened in editing (an
+  // occurrence's new key) leaves the focus alone.
+  const started = useRef(false);
+  const card = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    if (!started.current) return;
+    started.current = false;
+    // Into the title on ✎; back on ✎ after Done, so e edits again.
+    card.current
+      ?.querySelector<HTMLElement>(
+        editing
+          ? 'input[aria-label="Title"], input[aria-label="Label"]'
+          : 'button[aria-label="Edit event"]',
+      )
+      ?.focus();
+  }, [editing]);
   const edit = useCallback(
     (patch: EventPatch, to: Scope = scope) => {
       const key = editEvent(eventId, to, patch);
-      if (key !== eventId) useUi.getState().openEvent(key);
+      if (key !== eventId) useUi.getState().openEvent(key, true);
     },
     [eventId, scope],
   );
@@ -589,11 +684,46 @@ export function EventEditor({eventId}: {eventId: string}) {
       scope,
       t === 'reserved' ? pb.EventKind.RESERVED : pb.EventKind.UNSPECIFIED,
     );
-    if (key !== eventId) useUi.getState().openEvent(key);
+    if (key !== eventId) useUi.getState().openEvent(key, true);
   };
   return (
-    <div className="w-[448px] max-w-[calc(100vw-24px)] p-3">
-      <div className="mb-1 flex justify-end gap-0.5">
+    <div
+      ref={card}
+      className="w-[448px] max-w-[calc(100vw-24px)] p-3"
+      onKeyDown={e => {
+        // e edits, as in Google Calendar; not while typing somewhere.
+        if (
+          !editing &&
+          e.key === 'e' &&
+          !e.ctrlKey &&
+          !e.metaKey &&
+          !e.altKey &&
+          !(e.target instanceof HTMLInputElement) &&
+          !(e.target instanceof HTMLTextAreaElement)
+        ) {
+          e.preventDefault();
+          setEditing(true);
+        }
+      }}
+    >
+      <div className="mb-1 flex items-center justify-end gap-0.5">
+        {editing ? (
+          <button
+            className="btn mr-1 h-7 px-3"
+            onClick={() => setEditing(false)}
+          >
+            Done
+          </button>
+        ) : (
+          <button
+            className="icon-btn pointer-coarse:h-11 pointer-coarse:w-11"
+            aria-label="Edit event"
+            title="Edit (e)"
+            onClick={() => setEditing(true)}
+          >
+            <Pencil size={16} />
+          </button>
+        )}
         {occurrence ? (
           <Popover>
             <PopoverTrigger
@@ -632,126 +762,125 @@ export function EventEditor({eventId}: {eventId: string}) {
           <X size={16} />
         </button>
       </div>
-      <div className="mb-3 flex items-start gap-3">
-        {reserved ? (
-          <span className="reserved mt-2.5 h-3 w-3 shrink-0 rounded border border-line" />
-        ) : (
-          <span
-            className="mt-2.5 h-3 w-3 shrink-0 rounded"
-            style={{background: eventStyle(event.color).background}}
-          />
-        )}
-        <BufferedInput
-          value={event.title}
-          aria-label={reserved ? 'Label' : 'Title'}
-          placeholder={reserved ? 'Label, e.g. Work' : undefined}
-          onCommit={title =>
-            edit({title: title.trim() || (reserved ? '' : '(No title)')})
-          }
-          className="min-w-0 flex-1 border-b-2 border-transparent pb-1 text-lg text-strong hover:border-line focus:border-accent pointer-coarse:border-line"
-        />
-      </div>
-      <div
-        role="tablist"
-        aria-label="Type"
-        className="mb-3 ml-7 flex flex-wrap gap-1"
-      >
-        {ENTRY_TYPES.map(t => (
-          <button
-            key={t}
-            role="tab"
-            aria-selected={current === t}
-            onClick={() => pickType(t)}
-            className={`rounded-md px-3 py-1 text-[13px] font-medium transition-colors pointer-coarse:h-11 ${
-              current === t
-                ? 'bg-accent/20 text-accent'
-                : cantBecome(event, t)
-                  ? 'text-dim'
-                  : 'text-fg hover:bg-raised'
-            }`}
+      {!editing ? (
+        <EventView event={event} reserved={reserved} />
+      ) : (
+        <>
+          <div className="mb-3 flex items-start gap-3">
+            <Swatch event={event} reserved={reserved} />
+            <BufferedInput
+              value={event.title}
+              aria-label={reserved ? 'Label' : 'Title'}
+              placeholder={reserved ? 'Label, e.g. Work' : undefined}
+              onCommit={title =>
+                edit({title: title.trim() || (reserved ? '' : '(No title)')})
+              }
+              className="min-w-0 flex-1 border-b-2 border-transparent pb-1 text-lg text-strong hover:border-line focus:border-accent pointer-coarse:border-line"
+            />
+          </div>
+          <div
+            role="tablist"
+            aria-label="Type"
+            className="mb-3 ml-7 flex flex-wrap gap-1"
           >
-            {DRAFT_MODES[t].label}
-          </button>
-        ))}
-      </div>
-      {typeNote && (
-        <p role="status" className="-mt-2 mb-3 ml-7 text-[12px] text-warn">
-          {typeNote}
-        </p>
-      )}
-      {occurrence && (
-        <div
-          role="radiogroup"
-          aria-label="Changes apply to"
-          className="mb-3 ml-7 flex flex-wrap items-center gap-1 text-[12px]"
-        >
-          <span className="mr-1 text-dim">Changes apply to</span>
-          {SCOPES.map(([s, label]) => (
-            <button
-              key={s}
-              role="radio"
-              aria-checked={scope === s}
-              onClick={() => setScope(s)}
-              className={`rounded-md px-2 py-0.5 ${
-                scope === s
-                  ? 'bg-accent/20 text-accent'
-                  : 'text-fg hover:bg-raised'
-              }`}
+            {ENTRY_TYPES.map(t => (
+              <button
+                key={t}
+                role="tab"
+                aria-selected={current === t}
+                onClick={() => pickType(t)}
+                className={`rounded-md px-3 py-1 text-[13px] font-medium transition-colors pointer-coarse:h-11 ${
+                  current === t
+                    ? 'bg-accent/20 text-accent'
+                    : cantBecome(event, t)
+                      ? 'text-dim'
+                      : 'text-fg hover:bg-raised'
+                }`}
+              >
+                {DRAFT_MODES[t].label}
+              </button>
+            ))}
+          </div>
+          {typeNote && (
+            <p role="status" className="-mt-2 mb-3 ml-7 text-[12px] text-warn">
+              {typeNote}
+            </p>
+          )}
+          {occurrence && (
+            <div
+              role="radiogroup"
+              aria-label="Changes apply to"
+              className="mb-3 ml-7 flex flex-wrap items-center gap-1 text-[12px]"
             >
-              {label}
-            </button>
-          ))}
-        </div>
-      )}
-      <div className="space-y-3">
-        <WhenFields
-          value={event}
-          onChange={onWhen}
-          allDayOption={!reserved}
-          overnight={reserved}
-        />
-        {converting ? (
-          <ConvertPanel
-            // A new panel for each kind of change, with fresh choices.
-            key={converting}
-            event={event}
-            to={converting}
-            occurrence={occurrence}
-            onCancel={() => setConverting(null)}
-            onDone={close}
-          />
-        ) : (
-          <>
-            <div className="flex gap-3">
-              <Repeat size={16} className="mt-1.5 shrink-0 text-dim" />
-              <RepeatSelect
-                value={event.recurrence}
-                date={event.date}
-                // A new rule applies from this occurrence on, or to all of them.
-                onChange={recurrence =>
-                  edit({recurrence}, scope === 'all' ? 'all' : 'following')
-                }
-              />
+              <span className="mr-1 text-dim">Changes apply to</span>
+              {SCOPES.map(([s, label]) => (
+                <button
+                  key={s}
+                  role="radio"
+                  aria-checked={scope === s}
+                  onClick={() => setScope(s)}
+                  className={`rounded-md px-2 py-0.5 ${
+                    scope === s
+                      ? 'bg-accent/20 text-accent'
+                      : 'text-fg hover:bg-raised'
+                  }`}
+                >
+                  {label}
+                </button>
+              ))}
             </div>
-            <div className="flex gap-3">
-              <AlignLeft size={16} className="mt-1.5 shrink-0 text-dim" />
-              <BufferedTextarea
-                value={event.notes ?? ''}
-                placeholder="Add description"
-                rows={3}
-                onCommit={notes => edit({notes: notes.trim() || undefined})}
-                className="min-w-0 flex-1 resize-none rounded-md bg-raised px-2 py-1.5 placeholder:text-dim"
+          )}
+          <div className="space-y-3">
+            <WhenFields
+              value={event}
+              onChange={onWhen}
+              allDayOption={!reserved}
+              overnight={reserved}
+            />
+            {converting ? (
+              <ConvertPanel
+                // A new panel for each kind of change, with fresh choices.
+                key={converting}
+                event={event}
+                to={converting}
+                occurrence={occurrence}
+                onCancel={() => setConverting(null)}
+                onDone={close}
               />
-            </div>
-            {!reserved && (
-              <EventColorRow
-                value={event.color}
-                onChange={color => edit({color})}
-              />
+            ) : (
+              <>
+                <div className="flex gap-3">
+                  <Repeat size={16} className="mt-1.5 shrink-0 text-dim" />
+                  <RepeatSelect
+                    value={event.recurrence}
+                    date={event.date}
+                    // A new rule applies from this occurrence on, or to all of them.
+                    onChange={recurrence =>
+                      edit({recurrence}, scope === 'all' ? 'all' : 'following')
+                    }
+                  />
+                </div>
+                <div className="flex gap-3">
+                  <AlignLeft size={16} className="mt-1.5 shrink-0 text-dim" />
+                  <BufferedTextarea
+                    value={event.notes ?? ''}
+                    placeholder="Add description"
+                    rows={3}
+                    onCommit={notes => edit({notes: notes.trim() || undefined})}
+                    className="min-w-0 flex-1 resize-none rounded-md bg-raised px-2 py-1.5 placeholder:text-dim"
+                  />
+                </div>
+                {!reserved && (
+                  <EventColorRow
+                    value={event.color}
+                    onChange={color => edit({color})}
+                  />
+                )}
+              </>
             )}
-          </>
-        )}
-      </div>
+          </div>
+        </>
+      )}
       {inSeries && (
         <p className="mt-3 flex flex-wrap items-center gap-x-2 pl-7 text-[12px] text-dim">
           Changed on its own from a repeating event.
