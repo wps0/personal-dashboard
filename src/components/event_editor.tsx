@@ -19,7 +19,17 @@ import {DRAFT_MODES, useUi, type Draft, type DraftMode} from '../ui';
 import {BufferedInput, BufferedTextarea} from './buffered';
 import {DateField} from './date_field';
 import {EventColorRow} from './event_color_picker';
-import {addReserved, backToSeries, deleteEvent, editEvent} from '../actions';
+import {
+  addReserved,
+  backToSeries,
+  canBeSession,
+  deleteEvent,
+  editEvent,
+  eventToSession,
+  eventToTask,
+  setEventKind,
+} from '../actions';
+import * as pb from '../gen/dashboard/data_pb';
 import {
   parseKey,
   shownEvent,
@@ -400,6 +410,130 @@ export function DraftEditor() {
   );
 }
 
+/** What a calendar entry can be: an existing event's card offers the same as the create card. */
+type EntryType = 'event' | 'block' | 'task' | 'reserved';
+const ENTRY_TYPES: EntryType[] = ['event', 'block', 'task', 'reserved'];
+
+/** Why the event shown as `e` can't become `t`; undefined if it can. */
+function cantBecome(e: CalendarEvent, t: EntryType): string | undefined {
+  if ((t === 'reserved' || t === 'block') && e.allDay)
+    return `${t === 'reserved' ? 'Reserved time' : 'A time block'} needs a time: set one first.`;
+  if ((t === 'block' || t === 'task') && !canBeSession(e))
+    return 'It runs past midnight, so it can’t be planned time.';
+  return undefined;
+}
+
+/** The project to offer for a new task: the last one used, else the first open one. */
+function defaultProject(): string | undefined {
+  const open = useStore.getState().data.projects.filter(x => !x.archived);
+  return open.some(x => x.id === lastTaskProject)
+    ? lastTaskProject
+    : open[0]?.id;
+}
+
+/**
+ * Turning an event into a task (a new one, in a project) or into time for an
+ * existing task. Only that day's occurrence of a repeating event changes.
+ */
+function ConvertPanel({
+  event,
+  to,
+  occurrence,
+  onCancel,
+  onDone,
+}: {
+  event: CalendarEvent;
+  to: 'task' | 'block';
+  occurrence: boolean;
+  onCancel(): void;
+  onDone(): void;
+}) {
+  const projects = useStore(s => s.data.projects);
+  const areas = useStore(s => s.data.areas);
+  const [projectId, setProjectId] = useState(defaultProject);
+  const [kind, setKind] = useState(ItemKind.TASK);
+  const [itemId, setItemId] = useState<string>();
+  const open = projects.filter(p => !p.archived);
+  const when = event.allDay
+    ? `on ${shortDate(event.date)}, without a time`
+    : `${event.start}–${showEnd(event.end)} on ${shortDate(event.date)}`;
+  const rest = occurrence
+    ? ' Only this day’s event changes; the others keep repeating.'
+    : '';
+  const convert = () => {
+    if (to === 'task') {
+      if (!projectId) return;
+      lastTaskProject = projectId;
+      eventToTask(event, projectId, kind);
+    } else {
+      if (!itemId) return;
+      eventToSession(event, itemId);
+    }
+    onDone();
+  };
+  const buttons = (
+    <div className="mt-2 flex justify-end gap-2">
+      <button className="btn" onClick={onCancel}>
+        Cancel
+      </button>
+      <button
+        className="btn-primary"
+        disabled={to === 'task' ? !projectId : !itemId}
+        onClick={convert}
+      >
+        {to === 'task' ? 'Make it a task' : 'Plan it for this task'}
+      </button>
+    </div>
+  );
+  if (to === 'block')
+    return (
+      <div className="ml-7 rounded-lg border border-accent/40 bg-accent/5 p-2.5">
+        <TaskPicker itemId={itemId} onPick={setItemId} onSave={convert}>
+          <p className="mb-2 text-[12px] text-dim">
+            Time for the task you pick, {when}; the event goes.{rest}
+          </p>
+        </TaskPicker>
+        {buttons}
+      </div>
+    );
+  return (
+    <div className="ml-7 rounded-lg border border-accent/40 bg-accent/5 p-2.5">
+      {open.length ? (
+        <div className="flex flex-wrap items-center gap-2">
+          <FolderKanban size={16} className="shrink-0 text-dim" />
+          <Select
+            value={projectId ?? ''}
+            onChange={setProjectId}
+            options={open.map(p => ({
+              value: p.id,
+              label: p.name,
+              color: areas.find(a => a.id === p.areaId)?.color,
+            }))}
+            className="w-52 max-w-full"
+            ariaLabel="Project"
+          />
+          <Select
+            value={kind}
+            onChange={setKind}
+            options={KIND_OPTIONS}
+            className="w-32"
+            ariaLabel="Kind"
+          />
+        </div>
+      ) : (
+        <p className="text-[12px] text-dim">
+          Add a project first (Projects page).
+        </p>
+      )}
+      <p className="mt-2 text-[12px] text-dim">
+        A new task with its title and description, planned {when}; the event
+        goes.{rest}
+      </p>
+      {buttons}
+    </div>
+  );
+}
+
 const SCOPES: [Scope, string][] = [
   ['this', 'This event'],
   ['following', 'This and following'],
@@ -423,6 +557,9 @@ export function EventEditor({eventId}: {eventId: string}) {
     event.seriesDate !== undefined &&
     events.some(e => e.id === event.seriesId && e.recurrence);
   const [scope, setScope] = useState<Scope>('this');
+  // Turning it into a task or a time block, once confirmed in the panel.
+  const [converting, setConverting] = useState<'task' | 'block' | null>(null);
+  const [typeNote, setTypeNote] = useState('');
   const edit = useCallback(
     (patch: EventPatch, to: Scope = scope) => {
       const key = editEvent(eventId, to, patch);
@@ -436,6 +573,23 @@ export function EventEditor({eventId}: {eventId: string}) {
   const remove = (to: Scope) => {
     close();
     deleteEvent(event, to);
+  };
+  const current: EntryType = converting ?? (reserved ? 'reserved' : 'event');
+  const pickType = (t: EntryType) => {
+    const why = cantBecome(event, t);
+    setTypeNote(why ?? '');
+    if (why || t === current) return;
+    if (t === 'task' || t === 'block') {
+      setConverting(t);
+      return;
+    }
+    setConverting(null);
+    const key = setEventKind(
+      eventId,
+      scope,
+      t === 'reserved' ? pb.EventKind.RESERVED : pb.EventKind.UNSPECIFIED,
+    );
+    if (key !== eventId) useUi.getState().openEvent(key);
   };
   return (
     <div className="w-[448px] max-w-[calc(100vw-24px)] p-3">
@@ -494,9 +648,37 @@ export function EventEditor({eventId}: {eventId: string}) {
           onCommit={title =>
             edit({title: title.trim() || (reserved ? '' : '(No title)')})
           }
-          className="min-w-0 flex-1 border-b-2 border-transparent pb-1 text-lg text-strong hover:border-line focus:border-accent"
+          className="min-w-0 flex-1 border-b-2 border-transparent pb-1 text-lg text-strong hover:border-line focus:border-accent pointer-coarse:border-line"
         />
       </div>
+      <div
+        role="tablist"
+        aria-label="Type"
+        className="mb-3 ml-7 flex flex-wrap gap-1"
+      >
+        {ENTRY_TYPES.map(t => (
+          <button
+            key={t}
+            role="tab"
+            aria-selected={current === t}
+            onClick={() => pickType(t)}
+            className={`rounded-md px-3 py-1 text-[13px] font-medium transition-colors pointer-coarse:h-11 ${
+              current === t
+                ? 'bg-accent/20 text-accent'
+                : cantBecome(event, t)
+                  ? 'text-dim'
+                  : 'text-fg hover:bg-raised'
+            }`}
+          >
+            {DRAFT_MODES[t].label}
+          </button>
+        ))}
+      </div>
+      {typeNote && (
+        <p role="status" className="-mt-2 mb-3 ml-7 text-[12px] text-warn">
+          {typeNote}
+        </p>
+      )}
       {occurrence && (
         <div
           role="radiogroup"
@@ -528,32 +710,46 @@ export function EventEditor({eventId}: {eventId: string}) {
           allDayOption={!reserved}
           overnight={reserved}
         />
-        <div className="flex gap-3">
-          <Repeat size={16} className="mt-1.5 shrink-0 text-dim" />
-          <RepeatSelect
-            value={event.recurrence}
-            date={event.date}
-            // A new rule applies from this occurrence on, or to all of them.
-            onChange={recurrence =>
-              edit({recurrence}, scope === 'all' ? 'all' : 'following')
-            }
+        {converting ? (
+          <ConvertPanel
+            // A new panel for each kind of change, with fresh choices.
+            key={converting}
+            event={event}
+            to={converting}
+            occurrence={occurrence}
+            onCancel={() => setConverting(null)}
+            onDone={close}
           />
-        </div>
-        <div className="flex gap-3">
-          <AlignLeft size={16} className="mt-1.5 shrink-0 text-dim" />
-          <BufferedTextarea
-            value={event.notes ?? ''}
-            placeholder="Add description"
-            rows={3}
-            onCommit={notes => edit({notes: notes.trim() || undefined})}
-            className="min-w-0 flex-1 resize-none rounded-md bg-raised px-2 py-1.5 placeholder:text-dim"
-          />
-        </div>
-        {!reserved && (
-          <EventColorRow
-            value={event.color}
-            onChange={color => edit({color})}
-          />
+        ) : (
+          <>
+            <div className="flex gap-3">
+              <Repeat size={16} className="mt-1.5 shrink-0 text-dim" />
+              <RepeatSelect
+                value={event.recurrence}
+                date={event.date}
+                // A new rule applies from this occurrence on, or to all of them.
+                onChange={recurrence =>
+                  edit({recurrence}, scope === 'all' ? 'all' : 'following')
+                }
+              />
+            </div>
+            <div className="flex gap-3">
+              <AlignLeft size={16} className="mt-1.5 shrink-0 text-dim" />
+              <BufferedTextarea
+                value={event.notes ?? ''}
+                placeholder="Add description"
+                rows={3}
+                onCommit={notes => edit({notes: notes.trim() || undefined})}
+                className="min-w-0 flex-1 resize-none rounded-md bg-raised px-2 py-1.5 placeholder:text-dim"
+              />
+            </div>
+            {!reserved && (
+              <EventColorRow
+                value={event.color}
+                onChange={color => edit({color})}
+              />
+            )}
+          </>
         )}
       </div>
       {inSeries && (

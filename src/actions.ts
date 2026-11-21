@@ -1,4 +1,6 @@
+import {ALL_DAY_TASK_SESSION_HOURS} from './config';
 import {
+  ItemKind,
   ItemStatus,
   type Allocation,
   type Area,
@@ -26,7 +28,7 @@ import {plannedWork, targetKey, weekHours, weekTarget} from './model/work';
 import {useStore} from './store';
 import {withUndo} from './toast';
 import {meetingHours, taskFromMeeting, type Proposal} from './usos/usos';
-import {showEnd} from './model/time';
+import {endMinutes, fromMinutes, showEnd, toMinutes} from './model/time';
 
 /**
  * User-level operations, all undoable with Ctrl+Z. Direct manipulation (drag,
@@ -141,6 +143,117 @@ export function deleteEvent(e: CalendarEvent, scope: Scope = 'this') {
   withUndo(message, () =>
     s().setEvents(deleteFromEvents(s().data.events, e.id, scope)),
   );
+}
+
+/**
+ * An event's length in hours, or undefined when it has none to give a
+ * session: all day, or running past midnight (sleep).
+ */
+export function eventHours(e: CalendarEvent): number | undefined {
+  if (e.allDay) return undefined;
+  const min = endMinutes(e.end) - toMinutes(e.start);
+  return min > 0 ? min / 60 : undefined;
+}
+
+/** Whether the event shown as `e` could become a session: not past midnight. */
+export function canBeSession(e: CalendarEvent): boolean {
+  return e.allDay || eventHours(e) !== undefined;
+}
+
+/**
+ * Turns the event shown as `e` (for a repeating one, that day's occurrence;
+ * the rest keep repeating) into a new task in `projectId`, planned where the
+ * event was: at its time, or without one for an all-day event. Its title and
+ * description go with it. One undo step; returns the task's id.
+ */
+export function eventToTask(
+  e: CalendarEvent,
+  projectId: string,
+  kind: ItemKind = ItemKind.TASK,
+): string {
+  const project = s().data.projects.find(p => p.id === projectId);
+  const hours = eventHours(e);
+  const title = e.title.trim() || 'Untitled';
+  let id = '';
+  withUndo(
+    `“${title}” is now a task in ${project?.name ?? 'a project'}`,
+    () => {
+      [id] = s().addItems(projectId, [
+        {kind, title, notes: e.notes || undefined, estimateHours: hours},
+      ]);
+      if (hours === undefined)
+        s().addAllocation(id, e.date, ALL_DAY_TASK_SESSION_HOURS);
+      else s().addAllocation(id, e.date, hours, e.start);
+      s().setEvents(deleteFromEvents(s().data.events, e.id, 'this'));
+    },
+  );
+  return id;
+}
+
+/**
+ * Turns the event shown as `e` into time planned for an existing task: a
+ * session at the event's time (that day's occurrence of a repeating one).
+ * One undo step.
+ */
+export function eventToSession(e: CalendarEvent, itemId: string) {
+  const item = s().data.items.find(i => i.id === itemId);
+  const hours = eventHours(e);
+  if (!item || hours === undefined) return;
+  withUndo(`“${e.title}” is now time for “${item.title}”`, () => {
+    s().addAllocation(itemId, e.date, hours, e.start);
+    s().setEvents(deleteFromEvents(s().data.events, e.id, 'this'));
+  });
+}
+
+/**
+ * Makes the event shown as `key` reserved time, or reserved time an event,
+ * for the occurrences `scope` says. Returns the key it's shown as now.
+ */
+export function setEventKind(
+  key: string,
+  scope: Scope,
+  kind: pb.EventKind,
+): string {
+  let shown = key;
+  withUndo(
+    kind === pb.EventKind.RESERVED ? 'Now reserved time' : 'Now an event',
+    () => {
+      const r = changeEvent(s().data.events, key, scope, {kind}, () =>
+        crypto.randomUUID(),
+      );
+      s().setEvents(r.events);
+      shown = r.key;
+    },
+  );
+  return shown;
+}
+
+/**
+ * Turns a planned session back into an event of its own, named after its
+ * task, at its time (all day when it has none). The task stays. One undo
+ * step.
+ */
+export function sessionToEvent(alloc: Allocation) {
+  const item = s().data.items.find(i => i.id === alloc.itemId);
+  const title = item?.title ?? 'Untitled';
+  const {start} = alloc;
+  withUndo(`“${title}” on ${formatMedium(alloc.date)} is now an event`, () => {
+    s().addEvent({
+      date: alloc.date,
+      start: start ?? '09:00',
+      end: start
+        ? fromMinutes(
+            Math.min(
+              toMinutes(start) + Math.round(alloc.plannedHours * 60),
+              24 * 60 - 1,
+            ),
+          )
+        : '10:00',
+      allDay: !start,
+      title,
+    });
+    s().deleteAllocation(alloc.id);
+  });
 }
 
 /**
