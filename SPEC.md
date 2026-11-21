@@ -397,6 +397,30 @@ and details, as tabs in the side panel.
     (`drag_cancel.ts`).
   - Click an event for its floating editor; click a session for the task
     overlay.
+  - **Changing an entry's type:** the event card (events and reserved time)
+    has the same **Event | Time block | Task | Reserved** tabs as the create
+    card, under the title.
+    - **Event ⇄ Reserved** applies at once, to the occurrences "Changes
+      apply to" says. Reserved time needs a time, so an all-day event says
+      so instead.
+    - **Task** asks for a project (the course: the one used last, else the
+      first open one) and a kind, and says what happens ("A new task with
+      its title and description, planned 19:00–20:30 on 10 Nov; the event
+      goes."). **Make it a task** creates the task, without a due date and
+      with the event's length as its estimate, and plans it where the event
+      was: at its time, or untimed for an all-day event.
+    - **Time block** picks one of your tasks (the same search as the create
+      card); **Plan it for this task** puts a session for it at the event's
+      time. It needs a time.
+    - The event goes either way. For a repeating event, only that day's
+      occurrence changes and the rest keep repeating. Reserved time past
+      midnight (sleep) can't become planned time.
+    - A task's session goes back to an event of its own from the task card
+      (its sessions' calendar icon, not once done): an event named after
+      the task, at the session's time, or all day without one; the task
+      stays.
+    - Each change is one undo step, with a toast (the undo bar on touch
+      screens).
   - **Repeating events:**
     - **Repeat** in the quick-create card and the event card is like Google
       Calendar's: Does not repeat, Daily, Weekly on (its weekday), Every

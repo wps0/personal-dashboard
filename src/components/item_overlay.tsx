@@ -4,7 +4,7 @@ import {DateField} from './date_field';
 import {StatusSelect} from './status_select';
 import {TimeSelect} from './time_select';
 import {Select} from './ui/select';
-import {Trash2, X} from 'lucide-react';
+import {CalendarPlus, Trash2, X} from 'lucide-react';
 import {DurationInput} from './duration_input';
 import {HoursInput} from './hours_input';
 import {Markdown} from './markdown';
@@ -29,6 +29,7 @@ import {
   completeItem,
   deleteItem as deleteItemAction,
   removeSession,
+  sessionToEvent,
   toggleSession,
 } from '../actions';
 
@@ -406,7 +407,18 @@ function SessionRow({alloc, today}: {alloc: Allocation; today: string}) {
       <td className="px-1 text-right max-sm:hidden">
         {alloc.done ? actual : <span className="text-dim">–</span>}
       </td>
-      <td className="px-1 text-right">
+      <td className="px-1 text-right whitespace-nowrap">
+        {/* Back to an event of its own: not once done, its hours spent. */}
+        {!alloc.done && (
+          <button
+            className="icon-btn invisible h-6 w-6 group-focus-within:visible group-hover:visible pointer-coarse:visible"
+            onClick={() => sessionToEvent(alloc)}
+            title="Make it an event instead (the task stays)"
+            aria-label="Make it an event"
+          >
+            <CalendarPlus size={13} />
+          </button>
+        )}
         <button
           className="icon-btn invisible h-6 w-6 group-focus-within:visible group-hover:visible hover:!text-danger pointer-coarse:visible"
           onClick={() => removeSession(alloc.id, 'Session removed')}

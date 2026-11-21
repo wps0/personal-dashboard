@@ -7,6 +7,8 @@ import {
   deleteArea,
   advanceStatus,
   deleteGroup,
+  eventToSession,
+  eventToTask,
   deleteWorkSpan,
   foldGroup,
   importClasses,
@@ -17,11 +19,14 @@ import {
   logWork,
   moveToGroup,
   renameGroup,
+  sessionToEvent,
+  setEventKind,
   setWeekTarget,
   updateWorkSpan,
 } from './actions';
 import * as pb from './gen/dashboard/data_pb';
 import {ItemKind, emptyData} from './model/types';
+import {occurrenceKey, shownEvent} from './model/recurrence';
 import {useStore} from './store';
 import {clearHistory, undoLast, useToasts} from './toast';
 import type {ClassMeeting, Proposal} from './usos/usos';
@@ -542,5 +547,122 @@ describe('deleteArea', () => {
     deleteArea(useStore.getState().data.areas[0]);
     expect(useStore.getState().data.areas).toEqual([]);
     expect(useToasts.getState().toasts[0].message).toBe('Deleted “Empty”');
+  });
+});
+
+describe("changing a calendar entry's type", () => {
+  let projectId: string;
+  beforeEach(() => {
+    vi.stubGlobal('window', {setTimeout: () => 0});
+    useStore.getState().replaceAll(emptyData());
+    useToasts.setState({toasts: []});
+    clearHistory();
+    const area = useStore.getState().addArea('University');
+    projectId = useStore.getState().addProject(area, 'Operating Systems');
+  });
+  const data = () => useStore.getState().data;
+  const event = (patch = {}) => {
+    const id = useStore.getState().addEvent({
+      date: '2026-11-18',
+      start: '10:15',
+      end: '12:00',
+      title: 'OS lecture',
+      notes: 'Room 3180',
+      ...patch,
+    });
+    return data().events.find(e => e.id === id)!;
+  };
+
+  it('an event becomes a task in a course, planned at its time, in one undo step', () => {
+    eventToTask(event(), projectId, ItemKind.CLASS);
+    const [item] = data().items;
+    expect(item).toMatchObject({
+      projectId,
+      kind: ItemKind.CLASS,
+      title: 'OS lecture',
+      notes: 'Room 3180',
+      estimateHours: 1.75,
+    });
+    expect(item.dueDate).toBeUndefined();
+    expect(data().allocations).toMatchObject([
+      {itemId: item.id, date: '2026-11-18', start: '10:15', plannedHours: 1.75},
+    ]);
+    expect(data().events).toEqual([]);
+    expect(useToasts.getState().toasts[0].message).toBe(
+      '“OS lecture” is now a task in Operating Systems',
+    );
+    undoLast();
+    expect(data().items).toEqual([]);
+    expect(data().events).toHaveLength(1);
+    expect(data().allocations).toEqual([]);
+  });
+
+  it('an all-day event becomes a task planned without a time', () => {
+    eventToTask(event({allDay: true}), projectId);
+    expect(data().items[0].estimateHours).toBeUndefined();
+    expect(data().allocations[0].start).toBeUndefined();
+  });
+
+  it('of a repeating event, only that day becomes a task', () => {
+    const series = event({
+      recurrence: {unit: pb.RecurrenceUnit.WEEK},
+    });
+    const key = occurrenceKey(series.id, '2026-11-25');
+    eventToTask(shownEvent(data().events, key)!, projectId);
+    expect(data().allocations[0].date).toBe('2026-11-25');
+    // Still there the week before and after, not that week.
+    expect(
+      shownEvent(data().events, occurrenceKey(series.id, '2026-11-18')),
+    ).toBeDefined();
+    expect(
+      shownEvent(data().events, occurrenceKey(series.id, '2026-12-02')),
+    ).toBeDefined();
+    expect(shownEvent(data().events, key)).toBeUndefined();
+  });
+
+  it('an event becomes time for an existing task', () => {
+    const [itemId] = useStore
+      .getState()
+      .addItems(projectId, [{title: 'Lab 4'}]);
+    eventToSession(event(), itemId);
+    expect(data().allocations).toMatchObject([
+      {itemId, date: '2026-11-18', start: '10:15', plannedHours: 1.75},
+    ]);
+    expect(data().events).toEqual([]);
+    undoLast();
+    expect(data().allocations).toEqual([]);
+    expect(data().events).toHaveLength(1);
+  });
+
+  it('an event becomes reserved time and back', () => {
+    const e = event();
+    setEventKind(e.id, 'all', pb.EventKind.RESERVED);
+    expect(data().events[0].kind).toBe(pb.EventKind.RESERVED);
+    setEventKind(e.id, 'all', pb.EventKind.UNSPECIFIED);
+    expect(data().events[0].kind).toBe(pb.EventKind.UNSPECIFIED);
+    undoLast();
+    expect(data().events[0].kind).toBe(pb.EventKind.RESERVED);
+  });
+
+  it('a session becomes an event again; the task stays', () => {
+    const [itemId] = useStore
+      .getState()
+      .addItems(projectId, [{title: 'Lab 4'}]);
+    useStore.getState().addAllocation(itemId, '2026-11-18', 1.5, '18:00');
+    sessionToEvent(data().allocations[0]);
+    expect(data().allocations).toEqual([]);
+    expect(data().items).toHaveLength(1);
+    expect(data().events).toMatchObject([
+      {
+        date: '2026-11-18',
+        start: '18:00',
+        end: '19:30',
+        allDay: false,
+        title: 'Lab 4',
+      },
+    ]);
+    undoLast();
+    expect(data().allocations).toHaveLength(1);
+    expect(data().events).toEqual([]);
   });
 });
