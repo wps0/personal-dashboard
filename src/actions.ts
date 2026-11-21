@@ -275,7 +275,7 @@ export function sessionToEvent(alloc: Allocation) {
 
 /**
  * Adds reserved time (sleep, work): a reserved event, which may repeat. It's
- * drawn hatched and takes capacity inside the planning window.
+ * drawn hatched and takes capacity, like an event.
  */
 export function addReserved(
   r: Pick<CalendarEvent, 'date' | 'start' | 'end' | 'title' | 'recurrence'>,

@@ -9,9 +9,8 @@ import {
   SUGGEST_SESSION_MIN_HOURS,
   SUGGEST_STEP_MINUTES,
 } from '../config';
-import {plannedInWindow, type CapacityInfo} from './capacity';
+import {freeAfter, plannedOnDay, type CapacityInfo} from './capacity';
 import {addDays, daysBetween} from './dates';
-import {toMinutes} from './time';
 import type {Allocation, ISODate} from './types';
 
 /** A suggested session: untimed, `hours` long on `date`. */
@@ -43,17 +42,16 @@ export function spreadDays(due: ISODate, today: ISODate): ISODate[] {
 /**
  * A day's free planning time, in whole steps of SUGGEST_STEP_MINUTES: its
  * capacity less what's planned on it (`allocs`, every task's). Given `now`
- * (minutes after midnight, for today), no more than what's left of its
- * planning window.
+ * (minutes after midnight, for today), no more than the free time left in
+ * the day after it.
  */
 export function freeMinutes(
   capacity: CapacityInfo,
   allocs: Allocation[],
   now?: number,
 ): number {
-  let free = (capacity.total - plannedInWindow(allocs, capacity)) * 60;
-  if (now !== undefined)
-    free = Math.min(free, toMinutes(capacity.window.end) - now);
+  let free = (capacity.total - plannedOnDay(allocs, capacity)) * 60;
+  if (now !== undefined) free = Math.min(free, freeAfter(capacity, now));
   const step = SUGGEST_STEP_MINUTES;
   return Math.max(0, Math.floor(free / step + 1e-9) * step);
 }

@@ -7,11 +7,7 @@ import {
   useSyncExternalStore,
 } from 'react';
 import * as pb from './gen/dashboard/data_pb';
-import {
-  capacityFor,
-  plannedInWindow,
-  type CapacityInfo,
-} from './model/capacity';
+import {capacityFor, plannedOnDay, type CapacityInfo} from './model/capacity';
 import {todayISO, type DayOfWeek} from './model/dates';
 import {eventsByDay} from './model/recurrence';
 import {isReserved, reservedByDay} from './model/reserved';
@@ -140,7 +136,7 @@ export function useFreeHours(days: ISODate[]): Map<ISODate, number> {
       new Map(
         days.map(d => {
           const c = capacities.get(d)!;
-          const planned = plannedInWindow(
+          const planned = plannedOnDay(
             allocations.filter(a => a.date === d),
             c,
           );

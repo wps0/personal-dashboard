@@ -1,46 +1,59 @@
-import {Copy, Minus, Plus} from 'lucide-react';
-import {useState} from 'react';
-import {TimeSelect} from '../components/time_select';
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from '../components/ui/popover';
+import {Minus, Plus} from 'lucide-react';
 import {fmtH} from '../format';
-import {copyDay, ruleFor, type PlanningWindow} from '../model/capacity';
+import {ruleFor} from '../model/capacity';
 import {formatMedium} from '../model/dates';
+import {isReserved} from '../model/reserved';
 import {useToday} from '../hooks';
-import {endMinutes, moveStart, toMinutes} from '../model/time';
+import {href} from '../router';
 import {useStore} from '../store';
 
-const WEEKDAYS = [
-  'Monday',
-  'Tuesday',
-  'Wednesday',
-  'Thursday',
-  'Friday',
-  'Saturday',
-  'Sunday',
-];
-
-/** Planning windows and the global adjustment, edited as a rule effective from today. */
+/**
+ * The global adjustment, edited as a rule effective from today, and how a
+ * day's capacity is counted.
+ */
 export function CapacitySettings() {
   const rules = useStore(s => s.data.settings.capacityRules);
   const change = useStore(s => s.changeCapacityRule);
+  // The reserved time on the calendar, by name (each name once).
+  const reserved = useStore(s =>
+    [
+      ...new Set(
+        s.data.events.filter(isReserved).map(e => e.title || 'Reserved'),
+      ),
+    ].join(', '),
+  );
   const today = useToday();
   const rule = ruleFor(rules, today);
-
-  const setWindow = (i: number, w: Partial<PlanningWindow>) =>
-    change({windows: rule.windows.map((x, j) => (j === i ? {...x, ...w} : x))});
   const history = rules.filter(r => r.from > '0000-01-01' && r.from < today);
 
   return (
     <div className="space-y-4">
-      <p className="rounded-md border border-line bg-panel px-3 py-2 text-[12px] text-dim">
-        Changes apply from today ({formatMedium(today)}). Past days keep the
-        settings they had.
-        {history.length > 0 &&
-          ` Earlier changes: ${history.map(r => formatMedium(r.from)).join(', ')}.`}
+      <p className="text-[12px] text-dim">
+        A day&apos;s capacity is the whole day (24h) less its reserved time
+        (sleep, work…) and its calendar events, each minute once however many
+        overlap, plus the global adjustment and the day&apos;s own ± (or a fixed
+        value), both set from the day&apos;s header. All-day events take
+        nothing. What&apos;s planned uses it: sessions without a time in full,
+        time blocks except their part on reserved time or an event.
+      </p>
+      <p
+        className={`rounded-md border px-3 py-2 text-[12px] ${reserved ? 'border-line bg-panel text-dim' : 'border-warn/40 bg-warn/10 text-fg'}`}
+      >
+        {reserved ? (
+          <>Reserved time on the calendar: {reserved}. </>
+        ) : (
+          <>
+            No reserved time yet, so every day counts all 24 hours. Add your
+            sleep (e.g. 23:00–07:00, every day) and work on the calendar with
+            the Reserved tab.{' '}
+          </>
+        )}
+        <a
+          href={href({name: 'calendar'})}
+          className="text-accent hover:underline"
+        >
+          calendar ↗
+        </a>
       </p>
 
       <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
@@ -64,141 +77,15 @@ export function CapacitySettings() {
           <Plus size={14} />
         </button>
         <span className="text-[12px] text-dim">
-          added to every day (e.g. −1h buffer for rest)
+          added to every day (e.g. −3h for meals, travel and rest)
         </span>
       </div>
-
-      {/* Wider than a phone: scrolls sideways on its own, not the page. */}
-      <div className="-mx-4 overflow-x-auto px-4">
-        <table className="w-full min-w-[360px] border-collapse">
-          <thead>
-            <tr className="label text-left [&>th]:px-2 [&>th]:pb-1 [&>th]:font-medium">
-              <th className="w-28">Day</th>
-              <th>Planning window</th>
-            </tr>
-          </thead>
-          <tbody>
-            {WEEKDAYS.map((name, i) => {
-              const w = rule.windows[i];
-              const hours =
-                Math.max(0, endMinutes(w.end) - toMinutes(w.start)) / 60;
-              return (
-                <tr key={name} className="border-t border-line align-top">
-                  <td className="px-2 py-2 font-medium">{name}</td>
-                  <td className="px-2 py-1.5">
-                    <div className="flex items-center gap-1">
-                      <TimeSelect
-                        value={w.start}
-                        onChange={start => setWindow(i, moveStart(w, start))}
-                        className="w-20"
-                        ariaLabel={`${name} window start`}
-                      />
-                      <span className="text-dim">–</span>
-                      <TimeSelect
-                        value={w.end}
-                        after={w.start}
-                        onChange={end => setWindow(i, {end})}
-                        className="w-36"
-                        ariaLabel={`${name} window end`}
-                      />
-                      <span className="ml-1 w-10 text-dim tabular-nums">
-                        {fmtH(hours)}
-                      </span>
-                      <CopyDay
-                        day={i}
-                        onCopy={to => change(copyDay(rule, i, to))}
-                      />
-                    </div>
-                  </td>
-                </tr>
-              );
-            })}
-          </tbody>
-        </table>
-      </div>
       <p className="text-[12px] text-dim">
-        A day's capacity = planning window − calendar events inside it + global
-        adjustment + that day's own adjustment (or a fixed value set from the
-        day's header). Reserved time (sleep, work) is on the calendar: create it
-        with the quick-create card's Reserved tab, and make it repeat.
+        Changes apply from today ({formatMedium(today)}). Past days keep the
+        adjustment they had.
+        {history.length > 0 &&
+          ` Earlier changes: ${history.map(r => formatMedium(r.from)).join(', ')}.`}
       </p>
     </div>
-  );
-}
-
-/** Quick picks of the days to copy to. */
-const DAY_SETS: Array<{label: string; days: number[]}> = [
-  {label: 'Weekdays', days: [0, 1, 2, 3, 4]},
-  {label: 'Weekend', days: [5, 6]},
-  {label: 'All', days: [0, 1, 2, 3, 4, 5, 6]},
-];
-
-/** Copies a weekday's planning window to the days picked. */
-function CopyDay({day, onCopy}: {day: number; onCopy(to: number[]): void}) {
-  const [open, setOpen] = useState(false);
-  const [to, setTo] = useState<number[]>([]);
-  const name = WEEKDAYS[day];
-  return (
-    <Popover
-      open={open}
-      onOpenChange={o => {
-        setOpen(o);
-        if (o) setTo([]);
-      }}
-    >
-      <PopoverTrigger
-        className="icon-btn"
-        title={`Copy ${name}’s planning window to other days`}
-        aria-label={`Copy ${name} to other days`}
-      >
-        <Copy size={14} />
-      </PopoverTrigger>
-      <PopoverContent align="start" className="w-60 space-y-2 p-3">
-        <div className="text-[13px] font-medium text-strong">
-          Copy {name} to
-        </div>
-        <div className="flex gap-2 text-[12px]">
-          {DAY_SETS.map(set => (
-            <button
-              key={set.label}
-              className="text-accent hover:underline"
-              onClick={() => setTo(set.days.filter(d => d !== day))}
-            >
-              {set.label}
-            </button>
-          ))}
-        </div>
-        <div className="grid grid-cols-2 gap-1">
-          {WEEKDAYS.map((other, i) =>
-            i === day ? null : (
-              <label key={other} className="flex items-center gap-2">
-                <input
-                  type="checkbox"
-                  checked={to.includes(i)}
-                  onChange={e =>
-                    setTo(
-                      e.target.checked ? [...to, i] : to.filter(d => d !== i),
-                    )
-                  }
-                />
-                {other}
-              </label>
-            ),
-          )}
-        </div>
-        <button
-          className="btn-primary w-full"
-          disabled={!to.length}
-          onClick={() => {
-            onCopy(to);
-            setOpen(false);
-          }}
-        >
-          {to.length === 1
-            ? `Copy to ${WEEKDAYS[to[0]]}`
-            : `Copy to ${to.length} days`}
-        </button>
-      </PopoverContent>
-    </Popover>
   );
 }

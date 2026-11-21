@@ -8,7 +8,6 @@ import {href} from '../router';
 import {useStore} from '../store';
 import {HoursInput} from './hours_input';
 import {Popover, PopoverContent, PopoverTrigger} from './ui/popover';
-import {showEnd} from '../model/time';
 
 function signed(n: number) {
   return n > 0 ? `+${fmtH(n)}` : n < 0 ? `−${fmtH(-n)}` : '±0h';
@@ -39,22 +38,18 @@ function CapacityBadgeImpl({
         {fmtH(planned)}/{fmtH(info.total)}
         {tweaked && <span className="text-accent">*</span>}
       </PopoverTrigger>
-      <PopoverContent align="end" className="w-64 p-3 text-[12px]">
+      <PopoverContent align="end" className="w-72 p-3 text-[12px]">
         <div className="mb-2 font-medium text-strong">
           Capacity · {formatLong(date)}
         </div>
         <dl className="grid grid-cols-[1fr_auto] gap-x-3 gap-y-1 tabular-nums">
-          <dt className="text-dim">
-            Planning window {info.window.start}–{showEnd(info.window.end)}
-          </dt>
-          <dd>{fmtH(info.windowHours)}</dd>
-          <dt
-            className="text-dim"
-            title="Reserved time and calendar events in the window, each minute once however many overlap"
-          >
-            Occupied (reserved, events)
-          </dt>
-          <dd>{info.occupiedHours ? `−${fmtH(info.occupiedHours)}` : '0h'}</dd>
+          <dt className="text-dim">The whole day</dt>
+          <dd>24h</dd>
+          <dt className="text-dim">Reserved time</dt>
+          <dd>{info.reservedHours ? `−${fmtH(info.reservedHours)}` : '0h'}</dd>
+          {/* Only their time outside reserved time: each minute once. */}
+          <dt className="text-dim">Events</dt>
+          <dd>{info.eventHours ? `−${fmtH(info.eventHours)}` : '0h'}</dd>
           <dt className="text-dim">Global adjustment</dt>
           <dd>{signed(info.adjustment)}</dd>
           <dt className="text-dim">This day</dt>
@@ -98,6 +93,12 @@ function CapacityBadgeImpl({
           <dt className="text-dim">Planned</dt>
           <dd className={over ? 'text-danger' : ''}>{fmtH(planned)}</dd>
         </dl>
+        {info.reservedHours === 0 && (
+          <p className="mt-2 text-warn">
+            No reserved time this day, so all of it counts. Add your sleep (and
+            work) on the calendar with the Reserved tab, repeating.
+          </p>
+        )}
         {isPast ? (
           <p className="mt-2 text-dim">Past days are locked.</p>
         ) : (
@@ -122,7 +123,7 @@ function CapacityBadgeImpl({
                 className="text-accent hover:underline"
                 onClick={() => setOpen(false)}
               >
-                Planning windows…
+                Capacity settings…
               </a>
               {(info.delta !== 0 || info.override != null) && (
                 <button

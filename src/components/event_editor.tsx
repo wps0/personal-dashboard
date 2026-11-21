@@ -895,7 +895,7 @@ export function EventEditor({eventId}: {eventId: string}) {
       )}
       <p className="mt-3 pl-7 text-[11px] text-dim">
         {reserved
-          ? 'Reserved time: drawn hatched; it takes capacity inside the planning window.'
+          ? 'Reserved time: drawn hatched; it takes capacity, like an event.'
           : 'Local event · kept in this app, not in Google Calendar'}
       </p>
     </div>

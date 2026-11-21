@@ -188,8 +188,8 @@ message CalendarEvent {
 enum EventKind {
   // An ordinary event.
   EVENT_KIND_UNSPECIFIED = 0;
-  // Reserved time (sleep, work): drawn hatched; it takes capacity inside the
-  // planning window, like an event.
+  // Reserved time (sleep, work): drawn hatched; it takes capacity, like an
+  // event.
   EVENT_KIND_RESERVED = 1;
 }
 
@@ -211,7 +211,7 @@ enum RecurrenceUnit {
 }
 
 message Settings {
-  // Planning windows and adjustments, each effective from a date.
+  // Capacity adjustments, each effective from a date.
   repeated CapacityRule capacity_rules = 1;
   // Per-day capacity tweaks, keyed by date.
   map<string, DayCapacity> day_capacity = 2;
@@ -239,7 +239,9 @@ message Settings {
 message CapacityRule {
   // The date from which the rule applies.
   string from = 1;
-  // One per weekday, Monday first.
+  // Planning windows, one per weekday, Monday first. Not used since November
+  // 2026 (capacity counts the whole day), but still written, so that older
+  // versions of the app, which read them, can read the data.
   repeated TimeRange windows = 2;
   // Hours added to (or, if negative, removed from) every day.
   double adjustment = 3;
