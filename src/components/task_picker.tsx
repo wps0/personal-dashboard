@@ -1,9 +1,9 @@
-import {X} from 'lucide-react';
+import {CircleCheck, X} from 'lucide-react';
 import {useCallback, useId, useMemo, useState, type ReactNode} from 'react';
 import {fmtH} from '../format';
 import {useLookups} from '../hooks';
 import {todayISO} from '../model/dates';
-import {backlogItems, findTasks} from '../model/selectors';
+import {backlogItems, findTasks, isItemDone} from '../model/selectors';
 import {useStore} from '../store';
 
 /**
@@ -72,7 +72,9 @@ export function TaskPicker({
             </div>
             <div className="truncate text-[12px] text-dim">
               {lookups.project(picked.projectId)?.name}
-              {left != null && ` · ${fmtH(left)} left to plan`}
+              {isItemDone(picked)
+                ? ' · done: time up to today counts as spent'
+                : left != null && ` · ${fmtH(left)} left to plan`}
             </div>
           </div>
           <button
@@ -106,7 +108,7 @@ export function TaskPicker({
           matches[active] ? `${listId}-${matches[active].id}` : undefined
         }
         value={query}
-        placeholder="Search tasks"
+        placeholder="Search tasks, done ones too"
         onChange={e => {
           setQuery(e.target.value);
           setActive(0);
@@ -149,9 +151,16 @@ export function TaskPicker({
               className="h-2 w-2 shrink-0 rounded-full"
               style={{background: lookups.color(item)}}
             />
-            <span className="min-w-0 flex-1 truncate text-strong">
+            <span
+              className={`min-w-0 flex-1 truncate ${isItemDone(item) ? 'text-dim' : 'text-strong'}`}
+            >
               {item.title}
             </span>
+            {isItemDone(item) && (
+              <span className="flex shrink-0 items-center gap-1 text-[12px] text-ok">
+                <CircleCheck size={12} aria-hidden /> done
+              </span>
+            )}
             <span className="max-w-[40%] shrink-0 truncate text-[12px] text-dim">
               {lookups.project(item.projectId)?.name}
             </span>
@@ -160,8 +169,8 @@ export function TaskPicker({
         {!matches.length && (
           <p className="px-2 py-1 text-[12px] text-dim">
             {query.trim()
-              ? 'No open task matches.'
-              : 'Nothing left to plan. Search for any open task.'}
+              ? 'No task matches.'
+              : 'Nothing left to plan. Search for any task, done ones too.'}
           </p>
         )}
       </div>

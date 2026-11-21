@@ -381,9 +381,13 @@ and details, as tabs in the side panel.
     (and is its estimate); "All day" plans an untimed session that day (1h, `ALL_DAY_TASK_SESSION_HOURS` in `src/config.ts`)
     instead. The card says which ("10:00–11:00 on 6 Nov planned for it (1h).
     No due date."). One undo step.
-  - **Time block** plans time for one of your existing tasks: search open tasks by
+  - **Time block** plans time for one of your existing tasks: search tasks by
     title or project (without a query it lists the ones that still need
     time, with the hours left), and Save adds a session at the chosen time.
+    The search finds done tasks too, after the open ones and marked
+    "done": time put on a done task on a day up to today is done at once,
+    as time spent on it (later days stay planned). Converting an event into
+    a time block (below) uses the same search.
     The block is that session, so moving, resizing or deleting it changes
     the task's plan; there's no separate event to keep in sync.
   - Drag blocks to move them, and drag a block's bottom edge to resize it.

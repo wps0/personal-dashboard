@@ -21,6 +21,7 @@ import {DateField} from './date_field';
 import {EventColorRow} from './event_color_picker';
 import {
   addReserved,
+  addSessionFor,
   backToSeries,
   canBeSession,
   deleteEvent,
@@ -209,7 +210,7 @@ function saveDraft(draft: Draft): boolean {
       const item = store.data.items.find(i => i.id === draft.itemId);
       if (!item) return false;
       withUndo(`Planned “${item.title}”`, () =>
-        store.addAllocation(item.id, date, hours, start),
+        addSessionFor(item, date, hours, start),
       );
       return true;
     }

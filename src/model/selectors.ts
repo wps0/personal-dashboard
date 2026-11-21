@@ -224,10 +224,11 @@ function fold(s: string): string {
 }
 
 /**
- * Open tasks of active projects to plan time for. Without a query, the
- * backlog (tasks that still need time, see {@link backlogItems}); with one,
- * every open task whose title or project name contains it, ignoring case and
- * diacritics, sorted by {@link compareItems}.
+ * Tasks of active projects to plan time for. Without a query, the backlog
+ * (tasks that still need time, see {@link backlogItems}); with one, every
+ * task whose title or project name contains it, ignoring case and
+ * diacritics: the open ones, then the done ones (time can be put on a task
+ * after it's done), each sorted by {@link compareItems}.
  */
 export function findTasks(
   data: PlanData,
@@ -246,13 +247,12 @@ export function findTasks(
   return data.items
     .filter(i => {
       const p = projects.get(i.projectId);
-      return (
-        p &&
-        !isItemDone(i) &&
-        (fold(i.title).includes(q) || fold(p.name).includes(q))
-      );
+      return p && (fold(i.title).includes(q) || fold(p.name).includes(q));
     })
-    .sort(compareItems)
+    .sort(
+      (a, b) =>
+        Number(isItemDone(a)) - Number(isItemDone(b)) || compareItems(a, b),
+    )
     .slice(0, limit);
 }
 
