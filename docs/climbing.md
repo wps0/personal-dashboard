@@ -1,429 +1,411 @@
 # Climbing log: design
 
-**Status:** proposal, nothing built yet. The screenshots come from a
-prototype with sample data (branch `proto/climb`, not for merging), so the
-look can be changed before any of it is built.
+**Status:** proposal, second round, after the review of the first one.
+Nothing is built yet. The screenshots come from a prototype with sample data
+(branch `proto/climb`, not for merging), so both the features and the look
+can still change.
 
 ## In short
 
-- **A second app in this repository:** a log for bouldering and rope
-  climbing, made for a phone at the gym. It has its own page (`/climb/`), its
-  own icon on the home screen and its own data. The dashboard links to it, and
-  it links back.
-- **Logging a climb takes two or three taps:** its colour (or grade), then
-  **Sent**, **Flash** or **Not yet**. The number of tries starts at 1, with
-  − and + beside it.
-- **It shows whether you're getting better:**
-  - your hardest send and flash over time;
-  - sends by grade (a pyramid);
-  - your projects (problems tried but not sent yet);
-  - every session.
-- **Local first:** it works offline at the gym. Drive sync is optional and
-  uses a file of its own, as the dashboard does.
+- **A second app in this repository,** made for a phone at the gym:
+  bouldering at gyms (each gym with its own colours) and on boards (Kilter,
+  MoonBoard…). It has its own page (`/climb/`) and its own icon on the home
+  screen. The dashboard links to it, and it links back; nothing else
+  connects them.
+- **One tap logs one climb:** when you top a problem, tap its colour (on a
+  board, its grade). Undo is in the bar at the bottom.
+- **What it's for:**
+  - how many climbs you complete, and at which grades;
+  - whether that's getting better: against your past sessions, and over a
+    period you pick.
+- **Its data is kept apart from the dashboard's:**
+  - its own protobuf schema;
+  - its own storage on the phone;
+  - its own file on Drive.
 
-![Today, logging a climb, after the session, progress](climbing/main-flow.png)
+  The code that saves and syncs is shared.
 
-![Projects, a project, history, a gym's colours](climbing/more-screens.png)
+![Today, at the gym, on a board, after the session](climbing/main-flow.png)
+
+![Progress, scrolled down, choosing the period, history](climbing/progress.png)
+
+![Settings, a gym's colours, and two screens in light mode](climbing/settings-and-light.png)
 
 ![The links between the dashboard and the log](climbing/links.png)
 
-![Looks to choose from: orange or blue, dark or light](climbing/looks.png)
+## The first round's answers
 
-## Goals
-
-- **Log during a session with one hand,** between climbs, with chalky
-  fingers and a short rest:
-  - targets at least 48px, big ones in the bottom half of the screen;
-  - nothing to type;
-  - every change undoable from the undo bar (as in the dashboard, SPEC 3.6).
-- **See whether you're getting better:**
-  - your hardest grade, sent and flashed, over time;
-  - how many climbs at each grade;
-  - how a project is going.
-- **Keep what the gym says:** the colour and the grade on the tag, as
-  written. Nothing logged is ever converted. Conversions are only for
-  charts, and they're marked as approximate.
-- **Your data:** it stays on the phone, in an export, or in your own Drive.
-
-**Not in the first version:**
-- friends, feeds or rankings;
-- gym route databases (TopLogger and the like);
-- outdoor guidebooks and topos;
-- training plans (hangboard, campus board);
-- videos and watches.
-
-## What it tracks
-
-| Thing | What it is | Example |
+| Question | Answer | What it means here |
 |---|---|---|
-| **Place** | A gym or a crag: its grade systems, its colour circuits, its walls | Blokownia: boulders by colour, also Font |
-| **Problem** (a route on ropes) | One climb at a place, kept across sessions: its colour, grade (optional where colours give the range), wall, a name if you like, and beta notes. Marked taken down when the gym resets it | Purple 6C+ on the Cave, "The crimpy one" |
-| **Session** | One visit: place, start and end, how it felt, notes | Tue 18 Nov, 19:05–20:57 |
-| **Climb** (one log entry) | One problem in one session: what happened and in how many tries | Red 6B+, sent in 3 tries |
+| Colours or Font on the tags? | Colours, per gym | Each gym has its own colours, each covering a range of Font grades. You log by colour; the exact grade is optional. |
+| Ropes too? | Bouldering first | No ropes in the first version. The data leaves room for them. |
+| Count tries? | Not for now | No tries, no flash, no "not sent": a climb logged is a climb topped. |
+| Accent | Orange | Kept. |
+| Should the dashboard know about climbing? | No, now or ever | Only the links. A session never starts by itself, from the calendar or anything else: only **Start**. |
+| Boards | Yes, sometimes | Boards are a kind of place: climbs by grade, and the board's angle per session. Charted apart from the gyms. |
+| Photos | No | Out. |
+| Weekly goal | No goals | Out. |
 
-**What happened**, one of:
-- **Flash:** sent on the first try ever;
-- **Sent:** after more tries;
-- **Repeat:** sent before, sent again;
-- **Not yet:** tried, not sent.
+**"Projects" are gone.** In climbing, a project is a problem you keep
+working on over several sessions until you finally top it. Tracking one
+needs tries and "not sent yet", which you don't want to log, so there's
+nothing for it to show. If tries come back later, projects can come back
+with them.
 
-On ropes, **onsight** (first try, no beta) is a kind of flash: it's kept in
-the data, but the first version doesn't ask for it.
+## User stories
 
-**A project** is a problem you've tried and not sent, still on the wall. It
-leaves the project list when you send it or mark it taken down.
+**At the gym:**
+1. When I arrive, I tap **Start**. I want the gym I went to last to be
+   picked already, so starting takes one tap.
+2. When I top a problem, I tap its colour, so logging takes a second and
+   doesn't break my rest.
+3. When I tap the wrong colour, one **Undo** fixes it.
+4. When the tag says the exact grade, I can add it afterwards. It's never
+   required.
+5. On the board, I tap the grade, and the board's angle is kept with the
+   session.
+6. When I'm done, I tap **Finish**. I see how tonight compares with my
+   usual session at this gym (more blues than usual? fewer reds?) and any
+   firsts ("your first 6C").
 
-**Logging, step by step** (the second screenshot of the first image):
-1. **The colour,** with its grade range under it ("Red 6B+–6C").
-2. **The exact grade,** if the tag says it (optional).
-3. **Tries:** 1 at first; − and + change it.
-4. **Sent, Flash or Not yet,** which logs it. Flash is only offered at
-   1 try.
+**Later, at home:**
+7. I pick any period (last 30 days, 3 months, this year, all time, or two
+   dates) and see how many climbs I did and at which grades, against the
+   period before.
+8. I see whether my grades are going up: my typical climb and my 5 hardest,
+   week by week.
+9. I see how my volume changes: climbs per week, by grade.
+10. I see how often I climb: sessions a week.
+11. I look at boards apart from the gyms, and at one gym apart from the
+    others, since grades aren't the same everywhere.
 
-The wall at the top of the panel ("Cave ▾") stays as last picked, since you
-often climb several problems on one wall. Logging the same colour, grade and
-wall as an open project adds to that project: "Purple 6C+ on the Cave: 4 more
-tries, 13 now".
+**Setting up and my data:**
+12. I set up each gym's colours (and their grades) once, and copy them from
+    another gym when they're alike.
+13. My climbing data is mine and separate from the dashboard: its own file,
+    exportable, synced to my Drive if I want.
+
+## What to measure
+
+What climbers and coaches track to see progress, and what fits a log
+without tries:
+
+| Measure | Why | Where |
+|---|---|---|
+| **Climbs**, in a session and in a period | Volume: the simplest sign you're climbing more | After the session; Progress; Today |
+| **Climbs by grade** (the "pyramid") | Progress shows as the middle and the top filling in. Coaches suggest about 3–4 climbs of each grade for every one of the grade above before pushing it. | After the session (by colour); Progress (by grade) |
+| **Typical grade** (the median) | The grade you mostly climb. One odd session barely moves it. | Progress: a number, and a line week by week |
+| **Average of your 5 hardest** | Your level at the top, steadier than the single hardest climb: one lucky send doesn't make it jump. The same idea as 8a.nu's ranking, which counts your best 10 ascents. | Progress: a number, and a line week by week |
+| **Hardest climb** | Motivating, but noisy | Progress; After the session (firsts) |
+| **Sessions a week** | Consistency, which is what makes the rest move | History; Progress |
+| **Climbs per session, per hour** | How much you get out of a session | After the session; Progress |
+
+**Left out**, since they need what isn't logged:
+- **Flash rate** and **send rate:** they need tries and "not sent".
+- **A cumulative score** (e.g. a log-weighted "performance grade"): harder to
+  read than the measures above, for little more.
+
+**Caveats:**
+- **Grades differ between gyms.** Progress can show one gym on its own.
+- **Boards grade harder, and depend on the angle.** Board climbs are always
+  charted apart from the gyms.
+- **Climbs logged by colour only** count at the easiest grade of their
+  colour in charts by grade: "at least 6B+" for a red, never a guess.
+
+## Charts and numbers
+
+**After the session:**
+- **"Tonight against your average session"** (first image, 4th screen):
+  - **The bars:** one row per colour of the gym (on a board, per grade);
+    tonight is a filled orange bar, and your average session at this gym
+    over the last 30 days is a long-dashed outline, not filled, on the same
+    scale.
+  - **The numbers** beside each row: "4 / 4.5".
+  - **The average** is over your sessions at the same gym (or board) in the
+    30 days before, not counting tonight.
+- **Three numbers,** each against that average: climbs, hardest, climbs per
+  hour.
+- **Firsts:** a grade above any before, or more of a colour than in any
+  session before.
+
+**Progress, for any period you pick:**
+- **The period:**
+  - presets (last 30 days, last 3 months, this year, all time) or two
+    dates;
+  - compared with the same length just before (the default), the same dates
+    a year earlier, or nothing.
+- **Gym or Board,** and all gyms or one.
+- **Six numbers,** each against the comparison period: climbs, sessions,
+  climbs per session, typical grade, average of the 5 hardest, hardest.
+- **Climbs by grade:** the same bars as after the session. This period is
+  filled; the comparison period is the dashed outline.
+- **Climbs per week, by grade:** stacked columns, easy at the bottom in
+  light blue, hard at the top in dark blue. A darker top over the weeks
+  means harder climbs.
+- **Grades, week by week:** two lines on the grade scale, the average of
+  your 5 hardest and your typical climb. A week without climbing is a gap,
+  not a zero.
+- **Every chart has a table** of the same numbers ("table"). Tapping a bar
+  or a point shows its numbers.
+
+**History:** sessions a week, then every session, with its place, length,
+climbs and hardest climb.
+
+**Colours in charts:**
+- **Kept:** the dashboard's chart rules, checked with the same
+  colour-blindness and contrast tests on the dark and the light background.
+- **One series:** orange; the past is always a long-dashed outline in the
+  text colour.
+- **Two lines:** orange and blue.
+- **Grades:** one blue, light to dark.
+- **Readable without colour:** every chart has a legend and numbers on it.
+- **Gym colours** appear as swatches beside their names, never as chart
+  colours.
+
+## Screens
+
+**Getting around:**
+- **Tabs:** Today, Progress, History.
+- **Top right:** **Dashboard** and Settings.
+- **A running session** is a screen of its own, without tabs.
+
+**Each screen:**
+- **Today:**
+  - where you'll climb (the last place, changeable) and **Start a session**;
+  - this month so far against the last: climbs, sessions, hardest;
+  - the last session.
+- **At the gym:**
+  - the gym and the time so far, with **Finish**;
+  - the climbs so far, newest first (tap one to add its grade);
+  - at the bottom, in the thumb's reach, the gym's colours as big buttons,
+    each with tonight's count and its grades;
+  - the undo bar.
+- **On a board:** the same, with the board's grades (Font or V) instead of
+  colours, and the angle in the header (changeable). A climb can get the
+  problem's name afterwards.
+- **After the session:** the comparison chart, the numbers, firsts, notes,
+  **Done**.
+- **Progress:** see Charts and numbers.
+- **History:** sessions a week, and every session.
+- **Settings:**
+  - **Gyms**, each with its colours: their order (easiest first) and the
+    Font grades each covers. A gym's colours can be copied from another
+    gym.
+  - **Boards:** grades and usual angle.
+  - **Data:** export and import, Drive sync.
+  - **The theme.**
+
+**How many taps:**
+
+| To… | Taps |
+|---|---|
+| Start a session at the usual gym | 1 |
+| Log a climb | 1 |
+| Undo it | 1 |
+| Add a climb's exact grade | 2 |
+| Finish and see how it went | 1 |
+| Change the period on Progress | 2–3 |
 
 ## Grades
 
-| Climbing | Systems offered | Polish gyms mostly |
-|---|---|---|
-| Boulders | Font (6A, 6A+, 6B…), V (V0–V17), or the gym's colours, each a range of Font or V | Colours, often with Font on the tag |
-| Ropes | French (6a, 6a+…), Kurtyka (VI, VI.1, VI.1+…), YDS (5.10a…), UIAA | French or Kurtyka |
-
-**Each place has its own systems,** and a climb keeps its grade as the gym
-writes it.
-
-**Charts show one kind of climbing at a time** (boulders or ropes, never
-mixed), in the system set in Settings: Font and French unless changed.
-- A grade in another system is converted for the chart only, using tables
-  in the code, and marked with "≈".
-- A climb logged only by colour counts at the low end of its colour's range:
-  "at least 6B+" for red, never a guessed exact grade.
-
-**The conversion tables** are approximate. Sources disagree in the middle
-of the scales, and gyms grade differently anyway.
+- **Gyms:** colours, each a range of Font grades, set per gym. A climb's
+  exact grade (Font) is optional.
+- **Boards:** Font or V, and the angle per session. MoonBoards run at 25° or
+  40° (the same problem is easier at 25°); Kilter boards from 0° to 70°.
+  Board climbs are never mixed with gym climbs in charts.
+- **Charts are in Font** unless V is chosen in Settings. A V grade is
+  converted with the table below, marked with "≈". The sources agree on
+  the ends but differ in the middle of the scale.
 
 | Font | 4 | 5 | 5+ | 6A, 6A+ | 6B, 6B+ | 6C, 6C+ | 7A | 7A+ | 7B, 7B+ | 7C | 7C+ | 8A |
 |---|---|---|---|---|---|---|---|---|---|---|---|---|
 | **V** | V0 | V1 | V2 | V3 | V4 | V5 | V6 | V7 | V8 | V9 | V10 | V11 |
 
-| French | 5a | 5b | 5c | 6a | 6a+ | 6b | 6b+ | 6c | 6c+ | 7a | 7a+ | 7b | 7b+ | 7c | 8a |
-|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
-| **Kurtyka** | V | V+ | VI- | VI | VI+ | VI.1 | VI.1+ | VI.2 | VI.2+ | VI.3 | VI.3+ | VI.4 | VI.4+ | VI.5 | VI.6 |
-
-The French–Kurtyka row is the one usually quoted. The sources found online
-don't confirm it row by row (see Sources), so it gets checked against a
-Polish table in the PR that adds it.
-
-## Screens
-
-The app is made for phones. On a computer it shows in a column of phone
-width.
-
-**Getting around:**
-- **Tabs:** Today, Projects, Progress, History.
-- **Top right:** **Dashboard** and Settings.
-- **The session** is a screen of its own, without the tabs. Left for another
-  tab, it waits in a bar above the tabs ("Session at Blokownia · 47:12 · 6
-  climbs").
-
-**Today:**
-- where and what: the last place and the last kind of climbing, both
-  changeable;
-- **Start a session**;
-- this week: sessions (against a weekly goal, if set), sends, the hardest
-  send and the hardest flash;
-- your projects, sideways;
-- the last session.
-
-**The session:**
-- **The header:** the place, the time so far, **Finish**.
-- **The list:** what you've logged, newest first, each with what happened.
-  A tap edits it: the wall, name, tries, notes.
-- **The logging panel** at the bottom, in the thumb's reach (see What it
-  tracks).
-- **The screen stays on** (Screen Wake Lock), so the phone doesn't lock
-  between climbs. This can be turned off in Settings.
-
-**After the session:**
-- its length and number of climbs;
-- personal bests ("Your first 6C: Red on the Cave, after 11 tries over 4
-  sessions");
-- sends, flashes, tries and the hardest send;
-- this session's sends by grade, and what wasn't sent;
-- how it felt (Easy to Wrecked), and notes.
-
-**Progress:**
-- **The period:** 4 weeks, 3 months, a year or all.
-- **Boulders or ropes.**
-- **Four numbers:** the hardest send, the hardest flash, sessions (and how
-  many a week) and sends (and how many of them flashed).
-- **Sends by grade:** a bar for each grade, flashes and other sends in two
-  colours, with the total at the end. A tap on a bar shows its numbers;
-  "table" shows the same numbers as a table.
-- **Hardest send, week by week:** a line on the grade scale, with a gap
-  where a week had no session.
-
-**Projects:**
-- open, sent or taken down, at one place or all;
-- each project's tries, sessions and when it was last tried.
-
-**A project:**
-- its colour, grade, wall and name;
-- tries, sessions and when it was first tried;
-- **Log tries** and **Sent it**;
-- beta notes;
-- every session's tries;
-- **Taken down**.
-
-**History:**
-- sessions a week, as small bars;
-- every session, with its place, length, climbs, sends and hardest send.
-
-**Settings:**
-- **Places:**
-  - the grade systems for boulders and ropes;
-  - colour circuits, each a colour and its range, in order;
-  - walls.
-- **Charts:** the grade systems they use.
-- **Weekly goal.**
-- **The theme.**
-- **Data:** export and import (JSON), and Drive sync.
-- **Keep the screen on during a session.**
-
-**Charts** follow the same rules as the dashboard's:
-- **Two colours:** flash (orange) and other sends (blue), the same in every
-  chart and badge. Both pass the colour-blindness and contrast checks on the
-  dark and the light background.
-- **Readable without colour:** a legend and numbers on the bars, so colour
-  is never the only cue.
-- **Thin marks:** bars at most 24px thick, 2px lines, 8px points.
-- **A table view** of the same numbers.
-
-### How many taps
-
-| To… | Taps |
-|---|---|
-| Start a session | 1 (2 to change the place) |
-| Log a climb by its colour | 2: colour, Sent (3 with the exact grade, more with tries) |
-| Log a flash | 2: colour, Flash |
-| Undo the last one | 1 |
-| Finish, saying how it felt | 3: Finish, a feeling, Done |
-| Mark a project sent from its page | 1 |
-| See your hardest grade | 1: Progress |
-
-## Look
-
-**Same family as the dashboard:**
-- the same font (Inter), backgrounds, lines and components;
-- dark first, light too.
-
-**Made for a phone:**
-- text 15–17px;
-- buttons 44–56px high;
-- the main buttons at the bottom.
-
-**The accent** tells the two apps apart: chalk orange is proposed, and the
-dashboard's blue is the alternative (fourth image). The gyms' colours appear
-as swatches only, with black and white given a ring so they show on both
-backgrounds.
-
 ## Where it lives
 
-- **This repository, the same build:**
-  - a second page, `climb/index.html`;
-  - code in `src/climb/`, which doesn't import the dashboard's store or
-    model;
-  - what it shares: the styles (`src/index.css`), the general components
-    (popover, select, undo bar), and the Google sign-in and Drive code.
-  - When the phone-app work splits the repository into workspaces
-    (`docs/phone_app.md`), this becomes `apps/climb`.
+- **Code:** this repository, the same build. The log is a second page,
+  `climb/index.html`, with its code in `src/climb/`.
 - **Address:** `https://wps0.github.io/personal-dashboard/climb/`.
-- **Links:** plain links, opened in the same tab.
+- **Links:** plain links in the same tab, and nothing else. From the
+  dashboard: "Climbing" after the page tabs on a computer; a mountain icon
+  next to Settings on a phone with tabs; "Climbing log" under Other apps in
+  the ☰ menu. In the log, **Dashboard** at the top of every screen goes
+  back.
+- **Its own install:** its own manifest, name ("Climb") and icon. To check
+  in the first PR: that Android installs it as an app of its own, since its
+  address sits inside the dashboard's.
+- **Offline:** one service worker for both pages. The log works at the gym
+  without a signal.
 
-  | From | To | Where the link is |
-  |---|---|---|
-  | Dashboard, computer | Climbing log | "Climbing", after the page tabs |
-  | Dashboard, phone with tabs | Climbing log | A mountain icon next to Settings |
-  | Dashboard, phone with the ☰ menu | Climbing log | "Climbing log", under Other apps |
-  | Climbing log | Dashboard | **Dashboard**, at the top of every screen |
-- **Its own install:**
-  - `climb/manifest.webmanifest`: name "Climb", its own icon, start and
-    scope `/climb/`;
-  - the phone shows two icons (third image).
-  - **To check in the first PR:** that Android installs it as an app of its
-    own, since its scope sits inside the dashboard's. If it doesn't, the
-    two apps move to sibling paths (`/app/` and `/climb/`), which also moves
-    the dashboard's address.
-- **Offline:** one service worker for both, not two nested ones.
-  - The dashboard's worker is registered for the whole site, so its scope
-    already includes `/climb/`.
-  - It would also cache `climb/index.html`.
-  - The built files are shared by both pages and already cached.
-- **Storage:** the same origin as the dashboard, kept apart:
-  - its own IndexedDB store and its own `climb/` keys in localStorage;
-  - its own lock against two open tabs;
-  - its data as protobuf binary (`proto/climb/climb.proto`), with a JSON
-    export.
-- **Drive sync:** optional, to its own file, `climb.binpb`.
-  - It uses the dashboard's sync, with its three-way merge.
-  - The OAuth Client ID setting is shared (the same localStorage), so it's
-    set once.
-  - Sign-in is per app: the token is kept per tab.
-- **Security:** the same as the dashboard's. It's on the shared
-  `wps0.github.io` origin, with the same content security policy, and its
-  only secret is the Google token. Moving to the dashboard's own subdomain
-  (SPEC 5) moves both.
+### The data, kept apart
+
+| | Dashboard | Climbing log |
+|---|---|---|
+| Schema | `proto/dashboard/data.proto`, package `dashboard` | `proto/climb/climb.proto`, package `climb` |
+| Generated code | `src/gen/dashboard/` | `src/gen/climb/` |
+| Schema version, migrations | its own | its own, from 1 |
+| On the device | its IndexedDB database | another IndexedDB database, `climb` |
+| On Drive | `personal-dashboard.binpb` (+ `.json`) | `climb.binpb` (+ `climb.json`) |
+| Lock against two open tabs | its own | its own |
+
+- **Neither imports the other's schema or model.** A change to one can't
+  break the other, and each file can be exported, imported or deleted on
+  its own.
+- **Shared, made generic over the schema and the names:**
+  - the codec (binary and JSON, the schema version check, migrations);
+  - autosave;
+  - IndexedDB storage;
+  - Drive sync with its three-way merge and conflict review;
+  - Google sign-in.
+- **The first PR is that refactor alone,** with no change to the dashboard.
+  Tests show it reads and writes exactly the bytes it did before.
+- **The Google Client ID setting is shared,** so it's set once; sign-in is
+  per app.
+- **Both apps are on the same origin** (see the dashboard's own-subdomain
+  TODO); the log's only secret is the Google token.
 
 ## Data model (sketch)
 
-Following the dashboard's rules (SPEC 6):
-- numeric enums, each with an unset value;
-- no nested messages;
-- fields numbered from 1;
-- `optional` where a field can be unset;
-- a schema version from the start.
+Following the dashboard's rules: numeric enums with an unset value, no
+nested messages, fields from 1, `optional` where a field can be unset, and a
+schema version from the start. Adding tries, flashes or ropes later is
+adding fields, which older versions keep.
 
 ```proto
+syntax = "proto3";
+package climb;
+
 message ClimbData {
   int32 schema_version = 1;
   repeated Place places = 2;
-  repeated Problem problems = 3;
-  repeated Session sessions = 4;
-  repeated Climb climbs = 5;
-  Settings settings = 6;
+  repeated Session sessions = 3;
+  repeated Climb climbs = 4;
+  Settings settings = 5;
 }
 
 message Place {
   string id = 1;
   string name = 2;
-  GradeSystem boulder_grades = 3;  // FONT, V, or COLOURS with circuits
-  GradeSystem rope_grades = 4;     // FRENCH, KURTYKA, YDS, UIAA; unset: no ropes
-  repeated Circuit circuits = 5;   // easiest first
-  repeated string walls = 6;
+  PlaceKind kind = 3;              // GYM or BOARD
+  repeated Colour colours = 4;     // gyms: easiest first
+  GradeSystem grades = 5;          // FONT or V
+  optional int32 usual_angle = 6;  // boards, in degrees
   bool archived = 7;
 }
 
-message Circuit {
-  string colour = 1;               // "#ef4444"
-  string name = 2;                 // "Red"
-  optional string lowest = 3;      // "6B+"
-  optional string highest = 4;     // "6C"; unset: and up
+enum PlaceKind {
+  PLACE_KIND_UNSPECIFIED = 0;
+  PLACE_KIND_GYM = 1;
+  PLACE_KIND_BOARD = 2;
 }
 
-message Problem {
-  string id = 1;
-  string place_id = 2;
-  Discipline discipline = 3;       // BOULDER, TOP_ROPE, LEAD, AUTO_BELAY
-  optional string colour = 4;      // a circuit's name, or the holds' colour
-  optional string grade = 5;       // as on the tag, in the place's system
-  optional string wall = 6;
-  optional string name = 7;
-  string beta = 8;
-  optional string taken_down_on = 9;
-  string created_at = 10;
+enum GradeSystem {
+  GRADE_SYSTEM_UNSPECIFIED = 0;
+  GRADE_SYSTEM_FONT = 1;
+  GRADE_SYSTEM_V = 2;
+}
+
+message Colour {
+  string id = 1;                   // stays when renamed or moved
+  string name = 2;                 // "Red"
+  string hex = 3;                  // "#ef4444"
+  string easiest = 4;              // "6B+"
+  optional string hardest = 5;     // "6C"; unset: and up
 }
 
 message Session {
   string id = 1;
   string place_id = 2;
   string date = 3;                 // YYYY-MM-DD
-  optional string start = 4;       // HH:MM
-  optional string end = 5;
-  Feeling feeling = 6;             // EASY … WRECKED; unset: not said
+  string start = 4;                // HH:MM
+  optional string end = 5;         // unset while it runs
+  optional int32 angle = 6;        // boards
   string notes = 7;
 }
 
+// One climb topped.
 message Climb {
   string id = 1;
   string session_id = 2;
-  string problem_id = 3;
-  Result result = 4;               // FLASH, ONSIGHT, SENT, REPEAT, NOT_YET
-  int32 tries = 5;
-  optional string at = 6;          // HH:MM
-  string notes = 7;
+  string at = 3;                   // HH:MM
+  optional string colour_id = 4;   // gyms
+  optional string grade = 5;       // optional at gyms, always on boards
+  optional string name = 6;        // boards: the problem's name
 }
 
 message Settings {
-  GradeSystem chart_boulder_grades = 1;
-  GradeSystem chart_rope_grades = 2;
-  optional int32 weekly_goal = 3;
-  bool keep_screen_on = 4;
+  GradeSystem chart_grades = 1;    // unset: Font
 }
 ```
 
 ## What the numbers mean
 
-- **Hardest send:** the highest grade sent (flash, onsight, sent or repeat)
-  in the period.
-- **Hardest flash:** the same, for flashes and onsights only.
-- **Sends by grade:** each problem counted once per period, at its first
-  send in it; the flash part is the problems flashed.
-- **Personal best:** a send above every earlier send of that kind of
-  climbing ("Your first 6C").
-- **Flash rate:** flashes out of sends.
-- **Volume:** climbs and tries per session; sessions a week.
+- **A climb:** one problem topped, logged with one tap.
+- **A climb's grade:** its exact grade if it has one, else its colour's
+  easiest grade.
+- **Typical grade:** the median of the period's climbs' grades.
+- **Average of the 5 hardest:** the period's 5 hardest climbs, averaged on
+  the grade scale and shown as the nearest grade. With fewer than 5 climbs,
+  it's the average of those there are.
+- **Average session** (after the session): climbs per colour (or grade),
+  averaged over the sessions at the same place in the 30 days before.
+- **Climbs per hour:** climbs ÷ the session's length.
+- **The comparison period:** by default the same length just before ("the
+  3 months before").
+- **A first:** a grade above every earlier climb of that kind (gym or
+  board), or more climbs of a colour than in any earlier session there.
 
 ## Plan
 
 Small PRs, each checked in the browser like the dashboard's:
 
-1. **The shell:**
-   - the `climb/` page, with the tabs and header;
-   - the links both ways;
-   - the manifest and icon;
-   - the service worker caching the page.
-2. **The data:**
-   - the proto, storage and autosave;
-   - export and import;
-   - places and the grade tables (with tests, conversions included);
-   - Settings for places, circuits and walls.
-3. **Sessions:** start and finish, the logging panel, the undo bar, and the
-   screen after the session.
-4. **Problems and projects:** logging adds to an open project; the project
-   list and page; taken down.
-5. **Progress:** the four numbers, sends by grade, the weekly line, and the
-   table view.
-6. **History.**
-7. **Drive sync.**
+1. **Generic saving:** the saving code made generic over the schema (the
+   dashboard unchanged, its bytes checked).
+2. **The shell:** the `/climb/` page, its tabs, the links both ways, the
+   manifest and icon, and the service worker.
+3. **The data:** `climb.proto`, storage and autosave, export and import;
+   Settings for gyms, colours and boards.
+4. **Sessions:** start and finish, one-tap logging at gyms and on boards,
+   undo, and an exact grade or a name afterwards.
+5. **After the session:** the comparison chart, the numbers, firsts.
+6. **Progress:** the period picker, the numbers, climbs by grade, climbs per
+   week, the grade lines, and the tables.
+7. **History.**
+8. **Drive sync** to `climb.binpb`.
 
 ## Open questions
 
-1. **Your gym(s):**
-   - does a colour say how hard a problem is (circuits), or does each tag
-     have a Font grade with any colour of holds?
-   - The prototype assumes circuits, with Font optional.
-2. **Ropes:** in the first version (top rope and lead, French or Kurtyka),
-   or bouldering first?
-3. **Tries:** count them, or only sent / not yet?
-4. **The accent:** orange, or the dashboard's blue?
+1. **Exact grades at gyms:** offer them (optional, as shown), or colours
+   only?
+2. **The board angle:** per session (as shown), or per climb?
+3. **"Your average session":** the last 30 days at the same gym (as shown),
+   or your last 5 sessions there?
+4. **Charts across gyms:** by grade, with a colour-only climb counted at its
+   colour's easiest grade (as shown). With one gym picked, should "Climbs by
+   grade" show that gym's colours instead?
 5. **The name:** "Climb"?
-6. **Should the dashboard know about climbing?**
-   - It could, for example, start a session from a planned "Climbing" event
-     in its calendar, or show sessions in its week.
-   - Proposed: not in the first version, only the links.
-7. **Boards** (MoonBoard, Kilter): out of scope?
-8. **Photos of problems,** to recognise them weeks later: later, since they
-   take space and sync time.
-9. **The weekly goal** on Today: keep it?
 
 ## Sources (checked November 2026)
 
-- Bouldering grades (Font and V): [Masterclass](https://www.masterclass.com/articles/bouldering-grades-explained),
+- What to track and how pyramids are read:
+  - [ClimbStrong: quantifying bouldering sessions](https://climbstrong.com/education-center/quantifying-bouldering-sessions);
+  - [8a.nu: the base of your pyramid](https://www.8a.nu/news/focus-on-the-grade-base-of-your-pyramid);
+  - [Power Company: not all pyramids are built the same](https://powercompanyclimbing.squarespace.com/blog/2020/5/6/not-all-pyramids-are-built-the-same);
+  - [Mountain Project: a "stable pyramid"](https://mountainproject.com/forum/message/111542163);
+  - [AscentStats: a cumulative performance grade](https://ascentstats.com/cumulative-performance-grade/);
+  - [KAYA Pro](https://kayaclimb.com/blog/whats-kaya-pro).
+- Ranking on your best ascents:
+  - [8a.nu user guide](https://www.8a.nu/articles/user-guide-and-faq-1327);
+  - [8a.nu on the top-10 ranking](https://www.8a.nu/news/-49730).
+- Boards:
+  - [Moon Climbing: using your MoonBoard](https://eu.moonclimbing.com/using-your-moonboard);
+  - [Lattice: a MoonBoard logbook](https://latticetraining.com/blog/ben-moons-moonboard-logbook);
+  - [theCrag: Kilter logbooks](https://www.thecrag.com/en/climbing/virtual/area/5170450323/search).
+- Font and V: [Masterclass](https://www.masterclass.com/articles/bouldering-grades-explained),
   [Planetmountain](https://www.planetmountain.com/news/2004/03/boulderinggrades.html),
   [Mammut](https://www.mammut.com/es/en/stories-guides/bouldering-difficulty-scales-explained-climbers-guide),
   [DPM Climbing](https://www.dpmclimbing.com/?p=1314).
-- The Kurtyka scale: [8a.pl](https://8a.pl/8academy/skala-wspinaczkowa/),
-  [theCrag](https://www.thecrag.com/en/article/grades),
-  [Rab](https://rab.equipment/us/rab-lab/climbing-grade-converter),
-  [UIAA](https://www.theuiaa.org/documents/sport/THE-SCALES-OF-DIFFICULTY-IN-CLIMBING_p1b.pdf).
-- What logbook apps track (flash, send, tries, projects, pyramids):
-  [TopLogger](https://apps.apple.com/au/app/toplogger/id1289479862),
-  [Sendtally](https://play.google.com/store/apps/details?id=com.sendtally.app),
-  [BetaFlow](https://apps.apple.com/us/app/id6752315334),
-  [Flashd](https://apps.apple.com/us/app/flashd/id6759596452).
-- Warsaw's bouldering gyms (for the defaults):
-  [Hopsa](https://hopsa.io/en/blog/post/best-climbing-walls-in-warsaw-for-bouldering-enthusiasts),
-  [theCrag](https://www.thecrag.com/en/climbing/poland/warsaw).
+- Logbook apps:
+  - [TopLogger](https://apps.apple.com/au/app/toplogger/id1289479862);
+  - [Sendtally](https://play.google.com/store/apps/details?id=com.sendtally.app);
+  - [BetaFlow](https://apps.apple.com/us/app/id6752315334).
