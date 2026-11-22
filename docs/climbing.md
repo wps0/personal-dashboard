@@ -1,6 +1,7 @@
 # Climbing log: design
 
-**Status:** proposal, third round, after the review of the second one.
+**Status:** proposal, third round, after the review of the second one, with
+the look chosen (Soft).
 Nothing is built yet. The screenshots come from a prototype with sample data
 (branch `proto/climb`, not for merging), so both the features and the look
 can still change.
@@ -34,7 +35,7 @@ can still change.
 
 ![On a board, history, settings, a gym's colour labels](climbing/more-screens.png)
 
-![Today, at the gym and after the session in light mode](climbing/light.png)
+![Today, at the gym, after the session and Progress in light mode](climbing/light.png)
 
 ![The links between the dashboard and the log](climbing/links.png)
 
@@ -52,6 +53,7 @@ can still change.
 | Goals | None for now | Out. |
 | After a session, compare with… | Your sessions of the last month, anywhere | All your gym sessions of the last 30 days by default; only this gym's is a separate switch. |
 | The name | "Climb" | Kept. |
+| The look | Soft, of three proposed | Filled blocks with no outlines; see The look. |
 
 **Projects stay out.** In climbing, a project is a problem you keep working
 on over several sessions until you top it. The log counts tries on climbs
@@ -171,13 +173,35 @@ climbs, flashes and hardest climb.
 
 **Colours in charts:**
 - **Kept:** the dashboard's chart rules, checked with the same
-  colour-blindness and contrast tests on the dark and the light background.
+  colour-blindness and contrast tests on the surface the charts sit on (the
+  filled blocks), dark and light. In light mode, the grade blues start a
+  step darker than the dashboard's so the lightest one shows on the block.
 - **One series:** orange; the past is always a long-dashed outline in the
   text colour.
 - **Two lines:** orange and blue.
 - **Grades:** one blue, light to dark.
 - **Readable without colour:** every chart has a legend and numbers on it.
 - **Gym colours never appear in charts.**
+
+## The look
+
+Soft, picked from three proposals (bordered panes, open with no blocks, and
+soft):
+- **Blocks are filled shapes** with round corners and no outlines: a step
+  lighter than the background in dark mode, a step darker in light mode.
+- **Choices are pills** (the tries, all gyms or one, Gym or Board, the
+  period); the chosen one is filled orange.
+- **The grade buttons** are big rounded tiles; tonight's count is an orange
+  badge on each.
+- **Big buttons** (Start, Done, Save) are orange, with round corners.
+- **The undo bar floats** above the bottom edge, and the current tab has a
+  pill behind its icon.
+- **The same base as the dashboard:** its colours for the background, text
+  and lines, its font, dark and light; the log has its own accent (orange)
+  and these shapes.
+
+The prototype keeps the other two for comparison (`?look=panes`,
+`?look=open`).
 
 ## Screens
 
