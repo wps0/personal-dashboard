@@ -1,15 +1,16 @@
 /**
- * The prototype's looks, picked with ?look= to compare them:
+ * The prototype's looks. Soft, the one chosen, is the default; ?look= shows
+ * the others, kept for the record:
+ * - soft: filled surfaces with no outlines, rounder;
  * - panes: bordered cards (the second and third rounds);
- * - open: no cards; type, space and hairlines;
- * - soft: filled surfaces with no outlines, rounder.
+ * - open: no cards; type, space and hairlines.
  */
 export type Look = 'panes' | 'open' | 'soft';
 
 const asked = new URLSearchParams(location.search).get('look');
 
 export const LOOK: Look =
-  asked === 'open' || asked === 'soft' ? asked : 'panes';
+  asked === 'open' || asked === 'panes' ? asked : 'soft';
 
 /** The value for the current look. */
 export function pick<T>(values: Record<Look, T>): T {

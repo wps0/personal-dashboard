@@ -11,7 +11,9 @@
 }
 
 /*
- * Chart colours, validated for both surfaces (dataviz method):
+ * Chart colours, validated (dataviz method) on the surfaces charts sit on:
+ * the raised blocks, dark #181c22 and light #eceff3.
+ *
  * - one series (tonight, this period): orange; the past (an average session,
  *   the period before) is a long-dashed outline in the text colour;
  * - two lines on the grade trend: blue (typical) and orange (top 5);
@@ -30,10 +32,10 @@
 :root[data-theme='light'] {
   --series-1: #eb6834;
   --series-2: #2a78d6;
-  --grade-1: #86b6ef;
-  --grade-2: #5598e7;
+  --grade-1: #6fa8ed;
+  --grade-2: #4a8fe3;
   --grade-3: #2a78d6;
-  --grade-4: #1c5cab;
-  --grade-5: #104281;
+  --grade-4: #1d5fb0;
+  --grade-5: #124689;
   --grade-6: #0a2a52;
 }

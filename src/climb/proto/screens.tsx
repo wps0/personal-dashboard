@@ -70,6 +70,16 @@ const chip = pick({
   soft: 'bg-raised text-fg',
 });
 
+/** A field to type in or pick from. */
+const field = pick({
+  panes: 'rounded-xl border border-line bg-raised',
+  open: 'border-b border-line',
+  soft: 'rounded-2xl bg-raised',
+});
+
+/** A value shown as a chip inside a list row. */
+const valueChip = pick({panes: 'bg-raised', open: 'bg-raised', soft: 'bg-bg'});
+
 /** A chip that is chosen. */
 const chipOn = pick({
   panes: 'border border-accent bg-accent/10 font-medium text-strong',
@@ -687,7 +697,9 @@ export function EditClimb() {
       undo="6B+ in 3 tries logged"
       overlay={
         <div className="absolute inset-0 flex flex-col justify-end bg-black/50">
-          <div className="rounded-t-2xl bg-panel px-4 pt-3 pb-5 shadow-2xl">
+          <div
+            className={`bg-panel px-4 pt-3 pb-5 shadow-2xl ${pick({panes: 'rounded-t-2xl', open: 'rounded-t-2xl', soft: 'rounded-t-[28px]'})}`}
+          >
             <div className="mx-auto mb-3 h-1 w-10 rounded-full bg-line" />
             <div className="mb-3 flex items-center">
               <h2 className="flex-1 text-[17px] font-semibold text-strong">
@@ -703,7 +715,7 @@ export function EditClimb() {
                 <button
                   key={g}
                   aria-pressed={g === '6B'}
-                  className={`h-10 rounded-lg border text-[15px] font-semibold ${g === '6B' ? 'border-accent bg-accent/15 text-strong' : 'border-line text-fg'}`}
+                  className={`h-10 rounded-xl text-[15px] font-semibold ${g === '6B' ? chipOn : chip}`}
                 >
                   {g}
                 </button>
@@ -713,7 +725,7 @@ export function EditClimb() {
               <span className="flex-1 text-[12px] text-dim">Tries</span>
               <button
                 aria-label="One try fewer"
-                className="flex h-11 w-11 items-center justify-center rounded-full border border-line text-fg"
+                className={`flex h-11 w-11 items-center justify-center rounded-full ${chip}`}
               >
                 <Minus size={18} />
               </button>
@@ -722,7 +734,7 @@ export function EditClimb() {
               </span>
               <button
                 aria-label="One try more"
-                className="flex h-11 w-11 items-center justify-center rounded-full border border-line text-fg"
+                className={`flex h-11 w-11 items-center justify-center rounded-full ${chip}`}
               >
                 <Plus size={18} />
               </button>
@@ -731,7 +743,7 @@ export function EditClimb() {
               Colour <span className="text-dim">(optional)</span>
             </div>
             <div className="flex gap-2">
-              <button className="h-10 rounded-full border border-line px-3 text-[14px] text-fg">
+              <button className={`h-10 rounded-full px-3 text-[14px] ${chip}`}>
                 None
               </button>
               {COLOURS.map(c => (
@@ -748,10 +760,12 @@ export function EditClimb() {
             <div className="mt-4 mb-1 text-[12px] text-dim">
               Name <span className="text-dim">(optional)</span>
             </div>
-            <div className="flex h-12 items-center rounded-xl border border-line bg-raised px-3 text-dim">
+            <div className={`flex h-12 items-center px-3 text-dim ${field}`}>
               the overhang by the window
             </div>
-            <button className="mt-4 flex h-12 w-full items-center justify-center gap-2 rounded-xl bg-accent text-[16px] font-semibold text-on-accent">
+            <button
+              className={`mt-4 flex h-12 w-full items-center justify-center gap-2 bg-accent text-[16px] font-semibold text-on-accent ${bigButton}`}
+            >
               <Check size={18} aria-hidden /> Save
             </button>
           </div>
@@ -1186,7 +1200,9 @@ export function Range() {
       title="Progress"
       overlay={
         <div className="absolute inset-0 flex flex-col justify-end bg-black/50">
-          <div className="rounded-t-2xl bg-panel px-4 pt-3 pb-5 shadow-2xl">
+          <div
+            className={`bg-panel px-4 pt-3 pb-5 shadow-2xl ${pick({panes: 'rounded-t-2xl', open: 'rounded-t-2xl', soft: 'rounded-t-[28px]'})}`}
+          >
             <div className="mx-auto mb-3 h-1 w-10 rounded-full bg-line" />
             <h2 className="mb-2 text-[17px] font-semibold text-strong">
               Period
@@ -1196,7 +1212,7 @@ export function Range() {
                 <button
                   key={p}
                   aria-pressed={p === 'Pick dates'}
-                  className={`h-10 rounded-full border px-3.5 text-[14px] ${p === 'Pick dates' ? 'border-accent bg-accent/10 font-medium text-strong' : 'border-line text-fg'}`}
+                  className={`h-10 rounded-full px-3.5 text-[14px] ${p === 'Pick dates' ? chipOn : chip}`}
                 >
                   {p}
                 </button>
@@ -1209,7 +1225,9 @@ export function Range() {
               ].map(([k, v]) => (
                 <label key={k} className="block">
                   <span className="text-[12px] text-dim">{k}</span>
-                  <span className="mt-1 flex h-12 items-center gap-2 rounded-xl border border-line bg-raised px-3 text-strong">
+                  <span
+                    className={`mt-1 flex h-12 items-center gap-2 px-3 text-strong ${field}`}
+                  >
                     <CalendarRange size={16} className="text-dim" />
                     {v}
                   </span>
@@ -1217,7 +1235,13 @@ export function Range() {
               ))}
             </div>
             <div className="mt-4 mb-1 text-[12px] text-dim">Compare with</div>
-            <div className="divide-y divide-line rounded-xl border border-line">
+            <div
+              className={pick({
+                panes: 'divide-y divide-line rounded-xl border border-line',
+                open: 'divide-y divide-line border-y border-line',
+                soft: 'divide-y divide-line/70 rounded-2xl bg-raised',
+              })}
+            >
               {[
                 ['The same length before', '11 Jun – 31 Aug', true],
                 ['The same dates last year', '1 Sep – 21 Nov 2025', false],
@@ -1239,7 +1263,9 @@ export function Range() {
                 </div>
               ))}
             </div>
-            <button className="mt-4 flex h-12 w-full items-center justify-center gap-2 rounded-xl bg-accent text-[16px] font-semibold text-on-accent">
+            <button
+              className={`mt-4 flex h-12 w-full items-center justify-center gap-2 bg-accent text-[16px] font-semibold text-on-accent ${bigButton}`}
+            >
               <Check size={18} aria-hidden /> Show 1 Sep – 21 Nov
             </button>
           </div>
@@ -1272,7 +1298,13 @@ export function HistoryScreen() {
         </div>
       </div>
       <Section title="November">
-        <ul className="-mx-4 divide-y divide-line border-y border-line">
+        <ul
+          className={pick({
+            panes: '-mx-4 divide-y divide-line border-y border-line',
+            open: '-mx-4 divide-y divide-line border-y border-line',
+            soft: listBox,
+          })}
+        >
           {HISTORY.map(s => (
             <li key={s.date}>
               <a
@@ -1326,15 +1358,15 @@ export function Places() {
             </div>
             <div className={`flex min-h-12 items-center gap-2 ${listRow}`}>
               <span className="flex-1">Buttons at gyms</span>
-              <span className="rounded-lg bg-raised px-2.5 py-1">4</span>
+              <span className={`rounded-lg px-2.5 py-1 ${valueChip}`}>4</span>
               <span className="text-dim">to</span>
-              <span className="rounded-lg bg-raised px-2.5 py-1">7A+</span>
+              <span className={`rounded-lg px-2.5 py-1 ${valueChip}`}>7A+</span>
             </div>
             <div className={`flex min-h-12 items-center gap-2 ${listRow}`}>
               <span className="flex-1">Buttons on boards</span>
-              <span className="rounded-lg bg-raised px-2.5 py-1">5</span>
+              <span className={`rounded-lg px-2.5 py-1 ${valueChip}`}>5</span>
               <span className="text-dim">to</span>
-              <span className="rounded-lg bg-raised px-2.5 py-1">7B+</span>
+              <span className={`rounded-lg px-2.5 py-1 ${valueChip}`}>7B+</span>
             </div>
           </div>
         </Section>
