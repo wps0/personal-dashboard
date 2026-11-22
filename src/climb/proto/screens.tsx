@@ -44,6 +44,38 @@ import {
   TRIES_BY_GRADE,
   WEEKS,
 } from './data';
+import {box, listBox, listRow, LOOK, pick} from './look';
+
+/** Small headings inside a block (Tries, Grade…). */
+const small = pick({
+  panes: 'label !text-[12px]',
+  open: 'text-[14px] text-dim',
+  soft: 'text-[13px] font-medium text-dim',
+});
+
+/** The corners of the big buttons. */
+const bigButton = pick({
+  panes: 'rounded-xl',
+  open: 'rounded-full',
+  soft: 'rounded-2xl',
+});
+
+/** The gaps between number tiles. */
+const tileGap = pick({panes: 'gap-2', open: 'gap-x-3 gap-y-5', soft: 'gap-2'});
+
+/** A small button or chip that isn't chosen. */
+const chip = pick({
+  panes: 'border border-line text-fg',
+  open: 'text-fg',
+  soft: 'bg-raised text-fg',
+});
+
+/** A chip that is chosen. */
+const chipOn = pick({
+  panes: 'border border-accent bg-accent/10 font-medium text-strong',
+  open: 'font-semibold text-accent underline decoration-2 underline-offset-[10px]',
+  soft: 'bg-accent font-semibold text-on-accent',
+});
 
 type Tab = 'today' | 'progress' | 'history';
 
@@ -74,7 +106,9 @@ function Header({
   right?: ReactNode;
 }) {
   return (
-    <header className="flex h-14 shrink-0 items-center gap-2 border-b border-line bg-panel px-2">
+    <header
+      className={`flex h-14 shrink-0 items-center gap-2 px-2 ${pick({panes: 'border-b border-line bg-panel', open: 'bg-bg', soft: 'bg-bg'})}`}
+    >
       {back ? (
         <a
           href={`#${back}`}
@@ -93,7 +127,7 @@ function Header({
         <>
           <a
             href="../"
-            className="flex h-10 items-center gap-1.5 rounded-full border border-line px-3 text-[14px] text-fg"
+            className={`flex h-10 items-center gap-1.5 rounded-full px-3 text-[14px] ${chip}`}
           >
             <CircleGauge size={16} className="text-dim" aria-hidden />
             Dashboard
@@ -113,14 +147,24 @@ function Header({
 
 function Tabs({active}: {active: Tab}) {
   return (
-    <nav className="grid shrink-0 grid-cols-3 border-t border-line bg-panel">
+    <nav
+      className={`grid shrink-0 grid-cols-3 ${pick({panes: 'border-t border-line bg-panel', open: 'border-t border-line bg-bg', soft: 'bg-bg'})}`}
+    >
       {TABS.map(({tab, label, icon: Icon}) => (
         <a
           key={tab}
           href={`#${tab}`}
-          className={`flex h-16 flex-col items-center justify-center gap-1 text-[12px] ${tab === active ? 'font-medium text-accent' : 'text-dim'}`}
+          className={`flex h-16 flex-col items-center justify-center gap-1 text-[12px] ${tab === active ? (LOOK === 'soft' ? 'font-medium text-strong' : 'font-medium text-accent') : 'text-dim'}`}
         >
-          <Icon size={22} aria-hidden />
+          <span
+            className={
+              LOOK === 'soft'
+                ? `flex h-8 w-16 items-center justify-center rounded-full ${tab === active ? 'bg-accent/20 text-accent' : ''}`
+                : ''
+            }
+          >
+            <Icon size={22} aria-hidden />
+          </span>
           {label}
         </a>
       ))}
@@ -159,13 +203,68 @@ function Section({
   children: ReactNode;
 }) {
   return (
-    <section className="px-4 pt-5">
-      <div className="mb-2 flex items-baseline">
-        <h2 className="label flex-1 !text-[12px]">{title}</h2>
+    <section
+      className={pick({
+        panes: 'px-4 pt-5',
+        open: 'px-4 pt-8',
+        soft: 'px-4 pt-6',
+      })}
+    >
+      <div
+        className={`flex items-baseline ${LOOK === 'open' ? 'mb-3' : 'mb-2'}`}
+      >
+        <h2
+          className={`flex-1 ${pick({panes: 'label !text-[12px]', open: 'text-[18px] font-semibold text-strong', soft: 'text-[15px] font-semibold text-strong'})}`}
+        >
+          {title}
+        </h2>
         {more}
       </div>
       {children}
     </section>
+  );
+}
+
+/** A choice of a few options: tries, or which sessions to compare with. */
+function Segmented({
+  label,
+  options,
+  selected,
+}: {
+  label: string;
+  options: string[];
+  selected: string;
+}) {
+  return (
+    <div
+      role="radiogroup"
+      aria-label={label}
+      className={`flex min-w-0 flex-1 ${pick({panes: 'gap-1.5', open: 'border-b border-line', soft: 'rounded-full bg-raised p-1'})}`}
+    >
+      {options.map(o => (
+        <button
+          key={o}
+          role="radio"
+          aria-checked={o === selected}
+          className={`h-10 flex-1 text-[14px] ${
+            o === selected
+              ? pick({
+                  panes:
+                    'rounded-lg border border-accent bg-accent/15 font-semibold text-strong',
+                  open: 'font-semibold text-accent shadow-[inset_0_-2px_0_var(--color-accent)]',
+                  soft: 'rounded-full bg-accent font-semibold text-on-accent',
+                })
+              : pick({
+                  panes: 'rounded-lg border border-line text-fg',
+                  open: 'text-fg',
+                  soft: 'rounded-full text-fg',
+                })
+          }`}
+        >
+          {o}
+        </button>
+      ))}
+    </div>
   );
 }
 
@@ -188,9 +287,17 @@ function Tile({
 }) {
   const Icon = trend === 'up' ? TrendingUp : TrendingDown;
   return (
-    <div className="rounded-xl border border-line bg-panel px-3 py-2.5">
+    <div
+      className={pick({
+        panes: 'rounded-xl border border-line bg-panel px-3 py-2.5',
+        open: 'border-l-2 border-line py-0.5 pl-3',
+        soft: 'rounded-2xl bg-raised px-4 py-3',
+      })}
+    >
       <div className="text-[12px] text-dim">{label}</div>
-      <div className="mt-0.5 text-[24px] font-semibold text-strong">
+      <div
+        className={`mt-0.5 font-semibold text-strong ${LOOK === 'open' ? 'text-[28px] leading-tight' : 'text-[24px]'}`}
+      >
         {value}
       </div>
       {was && (
@@ -314,17 +421,34 @@ export function Today() {
   return (
     <Screen tab="today">
       <div className="px-4 pt-4">
-        <div className="rounded-2xl border border-line bg-panel p-4">
-          <button className="flex h-12 w-full items-center justify-between rounded-xl bg-raised px-3 text-left">
+        <div
+          className={pick({
+            panes: 'rounded-2xl border border-line bg-panel p-4',
+            open: '',
+            soft: 'rounded-3xl bg-raised p-4',
+          })}
+        >
+          <button
+            className={`flex w-full items-center justify-between text-left ${pick({panes: 'h-12 rounded-xl bg-raised px-3', open: 'h-16 border-b border-line', soft: 'h-14 rounded-2xl bg-bg px-4'})}`}
+          >
             <span>
               <span className="block text-[11px] text-dim">Where</span>
-              Blokownia <span className="text-dim">· gym</span>
+              <span
+                className={
+                  LOOK === 'open'
+                    ? 'text-[22px] font-semibold text-strong'
+                    : undefined
+                }
+              >
+                Blokownia
+              </span>{' '}
+              <span className="text-dim">· gym</span>
             </span>
             <ChevronDown size={18} className="text-dim" />
           </button>
           <a
             href="#log"
-            className="mt-3 flex h-14 items-center justify-center gap-2 rounded-xl bg-accent text-[17px] font-semibold text-on-accent"
+            className={`flex h-14 items-center justify-center gap-2 bg-accent text-[17px] font-semibold text-on-accent ${bigButton} ${LOOK === 'open' ? 'mt-5' : 'mt-3'}`}
           >
             <Timer size={20} aria-hidden />
             Start a session
@@ -333,7 +457,7 @@ export function Today() {
       </div>
 
       <Section title="November so far">
-        <div className="grid grid-cols-3 gap-2">
+        <div className={`grid grid-cols-3 ${tileGap}`}>
           <Tile label="Climbs" value="67" was="Oct: 62" trend="up" />
           <Tile label="Flashed" value="42%" was="Oct: 36%" trend="up" />
           <Tile label="Hardest" value="6B+" was="Oct: 6B" trend="up" />
@@ -350,7 +474,7 @@ export function Today() {
       >
         <a
           href="#summary"
-          className="flex items-center gap-3 rounded-xl border border-line bg-panel p-3"
+          className={`flex items-center gap-3 ${pick({panes: 'rounded-xl border border-line bg-panel p-3', open: '-mx-4 border-y border-line px-4 py-3', soft: 'rounded-3xl bg-raised p-4'})}`}
         >
           <div className="min-w-0 flex-1">
             <div className="text-strong">Tue 18 Nov · Blokownia</div>
@@ -371,7 +495,9 @@ export function Today() {
 
 function UndoBar({text}: {text: string}) {
   return (
-    <div className="flex h-12 shrink-0 items-center gap-3 border-t border-line bg-raised px-4 text-[14px]">
+    <div
+      className={`flex h-12 shrink-0 items-center gap-3 px-4 text-[14px] ${pick({panes: 'border-t border-line bg-raised', open: 'border-t border-line bg-bg', soft: 'mx-3 mb-3 rounded-2xl bg-raised'})}`}
+    >
       <span className="flex-1 text-strong">{text}</span>
       <button className="flex h-9 items-center gap-1.5 rounded-full px-3 font-medium text-accent">
         <Undo2 size={16} aria-hidden /> Undo
@@ -395,7 +521,7 @@ function SessionHeader({title, time}: {title: string; time: string}) {
       right={
         <a
           href="#summary"
-          className="flex h-10 items-center rounded-full border border-line px-4 text-[15px] font-medium text-strong"
+          className={`flex h-10 items-center rounded-full px-4 text-[15px] font-semibold ${pick({panes: 'border border-line text-strong', open: 'text-accent', soft: 'bg-raised text-strong'})}`}
         >
           Finish
         </a>
@@ -484,35 +610,26 @@ function LiveSession({
       </ul>
       <section
         aria-label="Log a climb"
-        className="shrink-0 bg-panel px-4 pt-3 pb-4"
+        className={`shrink-0 px-4 pt-3 ${pick({panes: 'bg-panel pb-4', open: 'bg-bg', soft: 'bg-bg pb-3'})}`}
       >
-        <div
-          role="radiogroup"
-          aria-label="Tries"
-          className="mb-3 flex items-center gap-1.5"
-        >
-          <span className="label mr-1 !text-[12px]">Tries</span>
-          {TRIES.map((t, i) => (
-            <button
-              key={t}
-              role="radio"
-              aria-checked={i === 0}
-              className={`h-10 flex-1 rounded-lg border text-[14px] ${i === 0 ? 'border-accent bg-accent/15 font-semibold text-strong' : 'border-line text-fg'}`}
-            >
-              {t}
-            </button>
-          ))}
+        <div className="mb-3 flex items-center gap-2">
+          <span className={small}>Tries</span>
+          <Segmented label="Tries" options={TRIES} selected="Flash" />
         </div>
-        <h2 className="label mb-2 !text-[12px]">Topped one? Tap its grade</h2>
-        <div className="grid grid-cols-4 gap-2">
+        <h2 className={`mb-2 ${small}`}>Topped one? Tap its grade</h2>
+        <div
+          className={`grid grid-cols-4 ${pick({panes: 'gap-2', open: '-mx-4 gap-px border-t border-line bg-line', soft: 'gap-2'})}`}
+        >
           {grades.map(g => (
             <button
               key={g}
-              className="relative flex h-14 items-center justify-center rounded-xl border border-line bg-raised text-[18px] font-semibold text-strong"
+              className={`relative flex items-center justify-center font-semibold text-strong ${pick({panes: 'h-14 rounded-xl border border-line bg-raised text-[18px]', open: 'h-16 bg-bg text-[21px]', soft: 'h-14 rounded-2xl bg-raised text-[18px]'})}`}
             >
               {g}
               {(counts.get(g) ?? 0) > 0 && (
-                <span className="absolute top-1 right-1 rounded-full bg-accent px-1.5 text-[12px] font-semibold text-on-accent tabular-nums">
+                <span
+                  className={`absolute font-semibold tabular-nums ${pick({panes: 'top-1 right-1 rounded-full bg-accent px-1.5 text-[12px] text-on-accent', open: 'top-1.5 right-2.5 text-[13px] text-accent', soft: 'top-1 right-1 rounded-full bg-accent px-1.5 text-[12px] text-on-accent'})}`}
+                >
                   {counts.get(g)}
                 </span>
               )}
@@ -548,7 +665,9 @@ export function BoardLog() {
       climbs={BOARD_LIVE}
       grades={BOARD_GRADES}
       extra={
-        <button className="flex h-7 items-center gap-1 rounded-full border border-line px-2.5 text-[13px] text-fg">
+        <button
+          className={`flex h-7 items-center gap-1 rounded-full px-2.5 text-[13px] ${chip}`}
+        >
           40° <ChevronDown size={13} className="text-dim" />
         </button>
       }
@@ -654,7 +773,9 @@ export function Summary() {
           <div className="text-[22px] font-semibold text-strong">
             13 climbs in 1h 33m
           </div>
-          <div className="mt-3 flex items-center gap-3 rounded-xl border border-accent/40 bg-accent/10 p-3">
+          <div
+            className={`mt-3 flex items-center gap-3 ${pick({panes: 'rounded-xl border border-accent/40 bg-accent/10 p-3', open: 'border-l-2 border-accent py-1 pl-3', soft: 'rounded-3xl bg-accent/15 p-4'})}`}
+          >
             <Trophy size={22} className="shrink-0 text-accent" aria-hidden />
             <div>
               <div className="font-medium text-strong">
@@ -667,16 +788,14 @@ export function Summary() {
           </div>
         </div>
         <Section title="By grade, against an average session">
-          <div className="mb-2 grid grid-cols-2 rounded-xl border border-line p-1 text-[14px]">
-            <button
-              aria-pressed
-              className="h-9 rounded-lg bg-raised font-medium text-strong"
-            >
-              All gyms
-            </button>
-            <button className="h-9 rounded-lg text-fg">Only Blokownia</button>
+          <div className="mb-3 flex">
+            <Segmented
+              label="Compare with"
+              options={['All gyms', 'Only Blokownia']}
+              selected="All gyms"
+            />
           </div>
-          <div className="rounded-xl border border-line bg-panel p-3">
+          <div className={box}>
             <NowVsPast
               nowLabel="Tonight"
               pastLabel="Average session, last 30 days"
@@ -694,7 +813,7 @@ export function Summary() {
           </div>
         </Section>
         <Section title="Numbers, against the same average">
-          <div className="grid grid-cols-2 gap-2">
+          <div className={`grid grid-cols-2 ${tileGap}`}>
             <Tile label="Climbs" value="13" was="avg 11.4" trend="up" />
             <Tile label="Hardest" value="6C" was="avg 6B+" trend="up" />
             <Tile label="Flashed" value="6" was="avg 4.8" trend="up" />
@@ -707,16 +826,20 @@ export function Summary() {
           </div>
         </Section>
         <Section title="Notes">
-          <div className="rounded-xl border border-line bg-panel px-3 py-2.5 text-[15px] text-dim">
+          <div
+            className={`text-[15px] text-dim ${pick({panes: 'rounded-xl border border-line bg-panel px-3 py-2.5', open: 'border-b border-line py-2.5', soft: 'rounded-2xl bg-raised px-4 py-3'})}`}
+          >
             Skin thin on the right index…
           </div>
         </Section>
         <div className="h-4" />
       </main>
-      <div className="shrink-0 border-t border-line bg-panel p-3">
+      <div
+        className={`shrink-0 p-3 ${pick({panes: 'border-t border-line bg-panel', open: 'bg-bg', soft: 'bg-bg'})}`}
+      >
         <a
           href="#today"
-          className="flex h-12 items-center justify-center rounded-xl bg-accent text-[16px] font-semibold text-on-accent"
+          className={`flex h-12 items-center justify-center bg-accent text-[16px] font-semibold text-on-accent ${bigButton}`}
         >
           Done
         </a>
@@ -930,11 +1053,13 @@ function RangeBar() {
     <div className="px-4 pt-3">
       <a
         href="#range"
-        className="flex min-h-12 items-center gap-3 rounded-xl border border-line bg-panel px-3 py-2"
+        className={`flex min-h-12 items-center gap-3 ${pick({panes: 'rounded-xl border border-line bg-panel px-3 py-2', open: 'py-1', soft: 'rounded-3xl bg-raised px-4 py-3'})}`}
       >
         <CalendarRange size={20} className="shrink-0 text-accent" />
         <span className="min-w-0 flex-1">
-          <span className="block font-medium text-strong">
+          <span
+            className={`block text-strong ${LOOK === 'open' ? 'text-[20px] font-semibold' : 'font-medium'}`}
+          >
             23 Aug – 21 Nov 2026
           </span>
           <span className="block text-[12px] text-dim">
@@ -943,14 +1068,22 @@ function RangeBar() {
         </span>
         <ChevronDown size={18} className="text-dim" />
       </a>
-      <div className="mt-2 flex gap-2 text-[14px]">
-        <button className="h-9 rounded-full border border-accent bg-accent/10 px-3 font-medium text-strong">
+      <div
+        className={`flex text-[14px] ${LOOK === 'open' ? 'mt-1 gap-4' : 'mt-2 gap-2'}`}
+      >
+        <button
+          className={`h-9 rounded-full ${LOOK === 'open' ? '' : 'px-3'} ${chipOn}`}
+        >
           Gym
         </button>
-        <button className="h-9 rounded-full border border-line px-3 text-fg">
+        <button
+          className={`h-9 rounded-full ${LOOK === 'open' ? '' : 'px-3'} ${chip}`}
+        >
           Board
         </button>
-        <button className="ml-auto flex h-9 items-center gap-1 rounded-full border border-line px-3 text-fg">
+        <button
+          className={`ml-auto flex h-9 items-center gap-1 rounded-full ${LOOK === 'open' ? '' : 'px-3'} ${chip}`}
+        >
           All gyms <ChevronDown size={14} className="text-dim" />
         </button>
       </div>
@@ -963,7 +1096,7 @@ function ProgressBody() {
     <>
       <RangeBar />
       <Section title="Numbers, against the 3 months before">
-        <div className="grid grid-cols-3 gap-2">
+        <div className={`grid grid-cols-3 ${tileGap}`}>
           <Tile label="Climbs" value="168" was="was 131" trend="up" />
           <Tile label="Sessions" value="22" was="was 19" trend="up" />
           <Tile label="Per session" value="7.6" was="was 6.9" trend="up" />
@@ -976,7 +1109,7 @@ function ProgressBody() {
         title="Climbs by grade"
         more={<span className="text-[14px] text-accent">table</span>}
       >
-        <div className="rounded-xl border border-line bg-panel p-3">
+        <div className={box}>
           <NowVsPast
             nowLabel="These 3 months"
             pastLabel="The 3 months before"
@@ -990,7 +1123,7 @@ function ProgressBody() {
         </div>
       </Section>
       <Section title="Tries">
-        <div className="grid grid-cols-2 gap-2">
+        <div className={`grid grid-cols-2 ${tileGap}`}>
           <Tile label="Flashed" value="41%" was="was 34%" trend="up" />
           <Tile
             label="Tries per climb"
@@ -999,7 +1132,7 @@ function ProgressBody() {
             trend="down"
           />
         </div>
-        <div className="mt-2 rounded-xl border border-line bg-panel p-3">
+        <div className={`mt-2 ${box}`}>
           <div className="mb-2 text-[13px] text-strong">
             Tries to top, by grade (fewer is better)
           </div>
@@ -1016,12 +1149,12 @@ function ProgressBody() {
         </div>
       </Section>
       <Section title="Climbs per week, by grade">
-        <div className="rounded-xl border border-line bg-panel p-3">
+        <div className={box}>
           <WeeklyColumns />
         </div>
       </Section>
       <Section title="Grades, week by week">
-        <div className="rounded-xl border border-line bg-panel p-3">
+        <div className={box}>
           <GradeTrend />
         </div>
       </Section>
@@ -1186,18 +1319,18 @@ export function Places() {
       <Header back="today" title="Settings" right={<span />} />
       <main className="min-h-0 flex-1 overflow-y-auto">
         <Section title="Grades">
-          <div className="divide-y divide-line rounded-xl border border-line bg-panel">
-            <div className="flex min-h-12 items-center px-3">
+          <div className={listBox}>
+            <div className={`flex min-h-12 items-center ${listRow}`}>
               <span className="flex-1">Scale</span>
               <span className="text-dim">Font (6A, 6B+…)</span>
             </div>
-            <div className="flex min-h-12 items-center gap-2 px-3">
+            <div className={`flex min-h-12 items-center gap-2 ${listRow}`}>
               <span className="flex-1">Buttons at gyms</span>
               <span className="rounded-lg bg-raised px-2.5 py-1">4</span>
               <span className="text-dim">to</span>
               <span className="rounded-lg bg-raised px-2.5 py-1">7A+</span>
             </div>
-            <div className="flex min-h-12 items-center gap-2 px-3">
+            <div className={`flex min-h-12 items-center gap-2 ${listRow}`}>
               <span className="flex-1">Buttons on boards</span>
               <span className="rounded-lg bg-raised px-2.5 py-1">5</span>
               <span className="text-dim">to</span>
@@ -1209,7 +1342,7 @@ export function Places() {
           title="Gyms"
           more={<span className="text-[14px] text-accent">+ gym</span>}
         >
-          <div className="divide-y divide-line rounded-xl border border-line bg-panel">
+          <div className={listBox}>
             {[
               ['Blokownia', '6 colour labels'],
               ['West Bouldering', 'no colour labels'],
@@ -1217,7 +1350,7 @@ export function Places() {
               <a
                 key={name}
                 href="#gym"
-                className="flex min-h-14 items-center gap-3 px-3"
+                className={`flex min-h-14 items-center gap-3 ${listRow}`}
               >
                 <span className="flex-1 text-strong">{name}</span>
                 <span className="text-[14px] text-dim">{meta}</span>
@@ -1230,13 +1363,13 @@ export function Places() {
           title="Boards"
           more={<span className="text-[14px] text-accent">+ board</span>}
         >
-          <div className="divide-y divide-line rounded-xl border border-line bg-panel">
-            <div className="flex min-h-14 items-center gap-3 px-3">
+          <div className={listBox}>
+            <div className={`flex min-h-14 items-center gap-3 ${listRow}`}>
               <span className="flex-1 text-strong">Kilter</span>
               <span className="text-dim">usually 40°</span>
               <ChevronRight size={18} className="text-dim" />
             </div>
-            <div className="flex min-h-14 items-center gap-3 px-3">
+            <div className={`flex min-h-14 items-center gap-3 ${listRow}`}>
               <span className="flex-1 text-strong">MoonBoard 2019</span>
               <span className="text-dim">40°</span>
               <ChevronRight size={18} className="text-dim" />
@@ -1248,12 +1381,12 @@ export function Places() {
           </p>
         </Section>
         <Section title="Data">
-          <div className="divide-y divide-line rounded-xl border border-line bg-panel">
-            <div className="flex min-h-12 items-center px-3">
+          <div className={listBox}>
+            <div className={`flex min-h-12 items-center ${listRow}`}>
               <span className="flex-1">Drive sync</span>
               <span className="text-dim">climb.binpb · on</span>
             </div>
-            <div className="flex min-h-12 items-center px-3">
+            <div className={`flex min-h-12 items-center ${listRow}`}>
               <span className="flex-1">Export or import</span>
               <span className="text-dim">JSON, binary</span>
             </div>
@@ -1279,11 +1412,11 @@ export function Gym() {
           title="Colour labels (optional)"
           more={<span className="text-[14px] text-accent">+ colour</span>}
         >
-          <ul className="divide-y divide-line rounded-xl border border-line bg-panel">
+          <ul className={listBox}>
             {COLOURS.map(c => (
               <li
                 key={c.name}
-                className="flex min-h-14 items-center gap-3 px-3"
+                className={`flex min-h-14 items-center gap-3 ${listRow}`}
               >
                 <GripVertical size={16} className="text-dim" aria-hidden />
                 <Swatch colour={c.name} size="h-7 w-7" />
