@@ -1,6 +1,6 @@
 # Climbing log: design
 
-**Status:** proposal, second round, after the review of the first one.
+**Status:** proposal, third round, after the review of the second one.
 Nothing is built yet. The screenshots come from a prototype with sample data
 (branch `proto/climb`, not for merging), so both the features and the look
 can still change.
@@ -8,14 +8,17 @@ can still change.
 ## In short
 
 - **A second app in this repository,** made for a phone at the gym:
-  bouldering at gyms (each gym with its own colours) and on boards (Kilter,
-  MoonBoard…). It has its own page (`/climb/`) and its own icon on the home
-  screen. The dashboard links to it, and it links back; nothing else
-  connects them.
-- **One tap logs one climb:** when you top a problem, tap its colour (on a
-  board, its grade). Undo is in the bar at the bottom.
+  bouldering at gyms and on boards (Kilter, MoonBoard…). It has its own page
+  (`/climb/`) and its own icon on the home screen. The dashboard links to
+  it, and it links back; nothing else connects them.
+- **You log by grade:** when you top a problem, tap its grade. A flash is
+  one tap; if it took more tries, tap the number of tries first. Undo is in
+  the bar at the bottom.
+- **Colours are optional:** a label you can add to a climb afterwards, to
+  tell problems apart. They're never part of logging, and no chart uses
+  them.
 - **What it's for:**
-  - how many climbs you complete, and at which grades;
+  - how many climbs you complete, at which grades, and in how many tries;
   - whether that's getting better: against your past sessions, and over a
     period you pick.
 - **Its data is kept apart from the dashboard's:**
@@ -25,108 +28,120 @@ can still change.
 
   The code that saves and syncs is shared.
 
-![Today, at the gym, on a board, after the session](climbing/main-flow.png)
+![Today, at the gym, a climb opened to fix it, after the session](climbing/main-flow.png)
 
-![Progress, scrolled down, choosing the period, history](climbing/progress.png)
+![Progress at three scroll positions, and choosing the period](climbing/progress.png)
 
-![Settings, a gym's colours, and two screens in light mode](climbing/settings-and-light.png)
+![On a board, history, settings, a gym's colour labels](climbing/more-screens.png)
+
+![Today, at the gym and after the session in light mode](climbing/light.png)
 
 ![The links between the dashboard and the log](climbing/links.png)
 
-## The first round's answers
+## Your answers so far
 
 | Question | Answer | What it means here |
 |---|---|---|
-| Colours or Font on the tags? | Colours, per gym | Each gym has its own colours, each covering a range of Font grades. You log by colour; the exact grade is optional. |
 | Ropes too? | Bouldering first | No ropes in the first version. The data leaves room for them. |
-| Count tries? | Not for now | No tries, no flash, no "not sent": a climb logged is a climb topped. |
+| Log by colour or by grade? | By grade | The logging buttons are Font grades. Colours are only an optional label on a climb. |
+| Count tries? | Yes | Each climb has its tries: 1 is a flash. Flashes and tries per climb are measured. |
 | Accent | Orange | Kept. |
 | Should the dashboard know about climbing? | No, now or ever | Only the links. A session never starts by itself, from the calendar or anything else: only **Start**. |
-| Boards | Yes, sometimes | Boards are a kind of place: climbs by grade, and the board's angle per session. Charted apart from the gyms. |
+| Boards | Yes, sometimes | Boards are a kind of place: the same grade buttons, and the board's angle per session. Charted apart from the gyms. |
 | Photos | No | Out. |
-| Weekly goal | No goals | Out. |
+| Goals | None for now | Out. |
+| After a session, compare with… | Your sessions of the last month, anywhere | All your gym sessions of the last 30 days by default; only this gym's is a separate switch. |
+| The name | "Climb" | Kept. |
 
-**"Projects" are gone.** In climbing, a project is a problem you keep
-working on over several sessions until you finally top it. Tracking one
-needs tries and "not sent yet", which you don't want to log, so there's
-nothing for it to show. If tries come back later, projects can come back
-with them.
+**Projects stay out.** In climbing, a project is a problem you keep working
+on over several sessions until you top it. The log counts tries on climbs
+you top, not tries on problems you didn't, so there's nothing for a project
+to show yet. See the open questions.
 
 ## User stories
 
 **At the gym:**
 1. When I arrive, I tap **Start**. I want the gym I went to last to be
    picked already, so starting takes one tap.
-2. When I top a problem, I tap its colour, so logging takes a second and
-   doesn't break my rest.
-3. When I tap the wrong colour, one **Undo** fixes it.
-4. When the tag says the exact grade, I can add it afterwards. It's never
-   required.
-5. On the board, I tap the grade, and the board's angle is kept with the
+2. When I top a problem first go, I tap its grade: one tap, so it doesn't
+   break my rest.
+3. When it took me more tries, I tap the number of tries, then the grade.
+   The tries go back to Flash after each climb, so I never carry a wrong
+   number over.
+4. When I tap the wrong grade or tries, one **Undo** fixes it, or I tap the
+   climb in the list and change it.
+5. When I want to tell problems apart, I tap a climb and add its colour or
+   a name. It's never required.
+6. On the board, it's the same, and the board's angle is kept with the
    session.
-6. When I'm done, I tap **Finish**. I see how tonight compares with my
-   usual session at this gym (more blues than usual? fewer reds?) and any
-   firsts ("your first 6C").
+7. When I'm done, I tap **Finish**. I see my climbs by grade against my
+   average session of the last 30 days, at all gyms (or only this one),
+   and any firsts ("your first 6C").
 
 **Later, at home:**
-7. I pick any period (last 30 days, 3 months, this year, all time, or two
+8. I pick any period (last 30 days, 3 months, this year, all time, or two
    dates) and see how many climbs I did and at which grades, against the
    period before.
-8. I see whether my grades are going up: my typical climb and my 5 hardest,
+9. I see whether my grades are going up: my typical climb and my 5 hardest,
    week by week.
-9. I see how my volume changes: climbs per week, by grade.
-10. I see how often I climb: sessions a week.
-11. I look at boards apart from the gyms, and at one gym apart from the
+10. I see whether I need fewer tries: how many I flash, and my tries per
+    climb at each grade, against the period before.
+11. I see how my volume changes: climbs per week, by grade.
+12. I see how often I climb: sessions a week.
+13. I look at boards apart from the gyms, and at one gym apart from the
     others, since grades aren't the same everywhere.
 
 **Setting up and my data:**
-12. I set up each gym's colours (and their grades) once, and copy them from
-    another gym when they're alike.
-13. My climbing data is mine and separate from the dashboard: its own file,
+14. I set the range of grade buttons once (4 to 7A+ at gyms, say), and add
+    my gyms and boards. A gym's colour labels are optional.
+15. My climbing data is mine and separate from the dashboard: its own file,
     exportable, synced to my Drive if I want.
 
 ## What to measure
 
-What climbers and coaches track to see progress, and what fits a log
-without tries:
+What climbers and coaches track to see progress:
 
 | Measure | Why | Where |
 |---|---|---|
 | **Climbs**, in a session and in a period | Volume: the simplest sign you're climbing more | After the session; Progress; Today |
-| **Climbs by grade** (the "pyramid") | Progress shows as the middle and the top filling in. Coaches suggest about 3–4 climbs of each grade for every one of the grade above before pushing it. | After the session (by colour); Progress (by grade) |
+| **Climbs by grade** (the "pyramid") | Progress shows as the middle and the top filling in. Coaches suggest about 3–4 climbs of each grade for every one of the grade above before pushing it. | After the session; Progress |
 | **Typical grade** (the median) | The grade you mostly climb. One odd session barely moves it. | Progress: a number, and a line week by week |
 | **Average of your 5 hardest** | Your level at the top, steadier than the single hardest climb: one lucky send doesn't make it jump. The same idea as 8a.nu's ranking, which counts your best 10 ascents. | Progress: a number, and a line week by week |
 | **Hardest climb** | Motivating, but noisy | Progress; After the session (firsts) |
+| **Flashed** (share of climbs topped first go) | A grade you flash is a grade you own; a rising share at the same grades means you're getting stronger before the top grade moves | After the session; Progress; Today |
+| **Tries per climb**, overall and by grade | Fewer tries at a grade is progress at that grade, often weeks before you climb a harder one | After the session; Progress |
 | **Sessions a week** | Consistency, which is what makes the rest move | History; Progress |
-| **Climbs per session, per hour** | How much you get out of a session | After the session; Progress |
+| **Climbs per session** | How much you get out of a session | Progress |
 
-**Left out**, since they need what isn't logged:
-- **Flash rate** and **send rate:** they need tries and "not sent".
+**Left out:**
+- **Send rate** (topped ÷ tried): it needs the problems you tried and
+  didn't top, which aren't logged (see the open questions).
 - **A cumulative score** (e.g. a log-weighted "performance grade"): harder to
   read than the measures above, for little more.
 
 **Caveats:**
-- **Grades differ between gyms.** Progress can show one gym on its own.
+- **Grades differ between gyms.** The session comparison and Progress can
+  show one gym on its own.
 - **Boards grade harder, and depend on the angle.** Board climbs are always
   charted apart from the gyms.
-- **Climbs logged by colour only** count at the easiest grade of their
-  colour in charts by grade: "at least 6B+" for a red, never a guess.
+- **Tries start at Flash.** Forgetting to set them logs a flash, so the
+  flash share can run a little high; Undo or tapping the climb fixes it.
 
 ## Charts and numbers
 
 **After the session:**
-- **"Tonight against your average session"** (first image, 4th screen):
-  - **The bars:** one row per colour of the gym (on a board, per grade);
-    tonight is a filled orange bar, and your average session at this gym
-    over the last 30 days is a long-dashed outline, not filled, on the same
-    scale.
-  - **The numbers** beside each row: "4 / 4.5".
-  - **The average** is over your sessions at the same gym (or board) in the
-    30 days before, not counting tonight.
-- **Three numbers,** each against that average: climbs, hardest, climbs per
-  hour.
-- **Firsts:** a grade above any before, or more of a colour than in any
-  session before.
+- **"By grade, against an average session"** (first image, 4th screen):
+  - **The bars:** one row per grade, hardest first; tonight is a filled
+    orange bar, and your average session is a long-dashed outline, not
+    filled, on the same scale.
+  - **The numbers** beside each row: "3 / 1.9".
+  - **The average** is over your gym sessions of the 30 days before, at all
+    gyms; **Only Blokownia** switches to that gym's. It never counts
+    tonight. A board session is compared with board sessions.
+- **Four numbers,** each against that average: climbs, hardest, flashed,
+  tries per climb (where fewer is better).
+- **Firsts:** a grade above any before, the most climbs of a grade in a
+  session, the most flashes.
 
 **Progress, for any period you pick:**
 - **The period:**
@@ -139,6 +154,9 @@ without tries:
   climbs per session, typical grade, average of the 5 hardest, hardest.
 - **Climbs by grade:** the same bars as after the session. This period is
   filled; the comparison period is the dashed outline.
+- **Tries:** flashed and tries per climb, then **tries to top, by grade**:
+  the same bars, where a shorter filled bar than the outline means fewer
+  tries than before.
 - **Climbs per week, by grade:** stacked columns, easy at the bottom in
   light blue, hard at the top in dark blue. A darker top over the weeks
   means harder climbs.
@@ -149,7 +167,7 @@ without tries:
   or a point shows its numbers.
 
 **History:** sessions a week, then every session, with its place, length,
-climbs and hardest climb.
+climbs, flashes and hardest climb.
 
 **Colours in charts:**
 - **Kept:** the dashboard's chart rules, checked with the same
@@ -159,8 +177,7 @@ climbs and hardest climb.
 - **Two lines:** orange and blue.
 - **Grades:** one blue, light to dark.
 - **Readable without colour:** every chart has a legend and numbers on it.
-- **Gym colours** appear as swatches beside their names, never as chart
-  colours.
+- **Gym colours never appear in charts.**
 
 ## Screens
 
@@ -172,26 +189,29 @@ climbs and hardest climb.
 **Each screen:**
 - **Today:**
   - where you'll climb (the last place, changeable) and **Start a session**;
-  - this month so far against the last: climbs, sessions, hardest;
+  - this month so far against the last: climbs, flashed, hardest;
   - the last session.
 - **At the gym:**
   - the gym and the time so far, with **Finish**;
-  - the climbs so far, newest first (tap one to add its grade);
-  - at the bottom, in the thumb's reach, the gym's colours as big buttons,
-    each with tonight's count and its grades;
+  - climbs, flashes and the hardest so far;
+  - the climbs so far, newest first: grade, tries, and a colour or name if
+    one was added;
+  - at the bottom, in the thumb's reach: the tries (**Flash**, 2, 3, 4, 5,
+    6+; 6+ turns into a counter), then the grades as big buttons, each with
+    tonight's count;
   - the undo bar.
-- **On a board:** the same, with the board's grades (Font or V) instead of
-  colours, and the angle in the header (changeable). A climb can get the
-  problem's name afterwards.
-- **After the session:** the comparison chart, the numbers, firsts, notes,
-  **Done**.
+- **A climb, tapped in the list:** a sheet to change its grade and tries,
+  add a colour or a name, or delete it.
+- **On a board:** the same, with the board's grade buttons, and the angle
+  next to the counts (changeable).
+- **After the session:** firsts, the comparison chart with its switch, the
+  numbers, notes, **Done**.
 - **Progress:** see Charts and numbers.
 - **History:** sessions a week, and every session.
 - **Settings:**
-  - **Gyms**, each with its colours: their order (easiest first) and the
-    Font grades each covers. A gym's colours can be copied from another
-    gym.
-  - **Boards:** grades and usual angle.
+  - **Grades:** Font or V, and the range of buttons at gyms and on boards.
+  - **Gyms:** each with its optional colour labels.
+  - **Boards:** with their usual angle.
   - **Data:** export and import, Drive sync.
   - **The theme.**
 
@@ -200,22 +220,23 @@ climbs and hardest climb.
 | To… | Taps |
 |---|---|
 | Start a session at the usual gym | 1 |
-| Log a climb | 1 |
+| Log a flash | 1 |
+| Log a climb in 2–5 tries | 2 |
 | Undo it | 1 |
-| Add a climb's exact grade | 2 |
+| Add a colour to a climb | 3 (the climb, the colour, Save) |
 | Finish and see how it went | 1 |
 | Change the period on Progress | 2–3 |
 
 ## Grades
 
-- **Gyms:** colours, each a range of Font grades, set per gym. A climb's
-  exact grade (Font) is optional.
-- **Boards:** Font or V, and the angle per session. MoonBoards run at 25° or
-  40° (the same problem is easier at 25°); Kilter boards from 0° to 70°.
-  Board climbs are never mixed with gym climbs in charts.
-- **Charts are in Font** unless V is chosen in Settings. A V grade is
-  converted with the table below, marked with "≈". The sources agree on
-  the ends but differ in the middle of the scale.
+- **Gyms and boards:** Font by default, V if chosen in Settings. The
+  buttons cover a range you set (12 fit without scrolling: 4 to 7A+, say).
+- **Boards:** the angle per session. MoonBoards run at 25° or 40° (the same
+  problem is easier at 25°); Kilter boards from 0° to 70°. Board climbs are
+  never mixed with gym climbs in charts.
+- **Charts are in the grades you log in.** If you change from Font to V, the
+  older climbs are converted with the table below and marked with "≈". The
+  sources agree on the ends but differ in the middle of the scale.
 
 | Font | 4 | 5 | 5+ | 6A, 6A+ | 6B, 6B+ | 6C, 6C+ | 7A | 7A+ | 7B, 7B+ | 7C | 7C+ | 8A |
 |---|---|---|---|---|---|---|---|---|---|---|---|---|
@@ -268,8 +289,8 @@ climbs and hardest climb.
 
 Following the dashboard's rules: numeric enums with an unset value, no
 nested messages, fields from 1, `optional` where a field can be unset, and a
-schema version from the start. Adding tries, flashes or ropes later is
-adding fields, which older versions keep.
+schema version from the start. Adding attempts that weren't topped, or
+ropes, later is adding fields, which older versions keep.
 
 ```proto
 syntax = "proto3";
@@ -287,10 +308,9 @@ message Place {
   string id = 1;
   string name = 2;
   PlaceKind kind = 3;              // GYM or BOARD
-  repeated Colour colours = 4;     // gyms: easiest first
-  GradeSystem grades = 5;          // FONT or V
-  optional int32 usual_angle = 6;  // boards, in degrees
-  bool archived = 7;
+  repeated Colour colours = 4;     // gyms, optional labels
+  optional int32 usual_angle = 5;  // boards, in degrees
+  bool archived = 6;
 }
 
 enum PlaceKind {
@@ -300,17 +320,16 @@ enum PlaceKind {
 }
 
 enum GradeSystem {
-  GRADE_SYSTEM_UNSPECIFIED = 0;
+  GRADE_SYSTEM_UNSPECIFIED = 0;    // Font
   GRADE_SYSTEM_FONT = 1;
   GRADE_SYSTEM_V = 2;
 }
 
+// A label to tell problems apart; nothing is computed from it.
 message Colour {
   string id = 1;                   // stays when renamed or moved
   string name = 2;                 // "Red"
   string hex = 3;                  // "#ef4444"
-  string easiest = 4;              // "6B+"
-  optional string hardest = 5;     // "6C"; unset: and up
 }
 
 message Session {
@@ -328,32 +347,42 @@ message Climb {
   string id = 1;
   string session_id = 2;
   string at = 3;                   // HH:MM
-  optional string colour_id = 4;   // gyms
-  optional string grade = 5;       // optional at gyms, always on boards
-  optional string name = 6;        // boards: the problem's name
+  string grade = 4;                // "6B+", in grade_system
+  GradeSystem grade_system = 5;
+  int32 tries = 6;                 // 1: a flash
+  optional string colour_id = 7;   // a label of the session's gym
+  optional string name = 8;
 }
 
 message Settings {
-  GradeSystem chart_grades = 1;    // unset: Font
+  GradeSystem grades = 1;          // what the buttons and charts use
+  string gym_buttons_from = 2;     // "4"
+  string gym_buttons_to = 3;       // "7A+"
+  string board_buttons_from = 4;   // "5"
+  string board_buttons_to = 5;     // "7B+"
 }
 ```
 
 ## What the numbers mean
 
-- **A climb:** one problem topped, logged with one tap.
-- **A climb's grade:** its exact grade if it has one, else its colour's
-  easiest grade.
+- **A climb:** one problem topped, logged with one tap on its grade.
+- **Tries:** how many goes it took to top it, counting the one that worked;
+  1 is a flash.
+- **Flashed:** climbs in 1 try ÷ all climbs (a count after a session, a
+  share on Progress and Today).
+- **Tries per climb:** all tries ÷ climbs; by grade, the same for the climbs
+  of that grade.
 - **Typical grade:** the median of the period's climbs' grades.
 - **Average of the 5 hardest:** the period's 5 hardest climbs, averaged on
   the grade scale and shown as the nearest grade. With fewer than 5 climbs,
   it's the average of those there are.
-- **Average session** (after the session): climbs per colour (or grade),
-  averaged over the sessions at the same place in the 30 days before.
-- **Climbs per hour:** climbs ÷ the session's length.
+- **Average session** (after the session): climbs per grade, averaged over
+  your gym sessions (or board sessions) in the 30 days before, at all gyms
+  or only this one.
 - **The comparison period:** by default the same length just before ("the
   3 months before").
 - **A first:** a grade above every earlier climb of that kind (gym or
-  board), or more climbs of a colour than in any earlier session there.
+  board), or the most climbs of a grade, or the most flashes, in a session.
 
 ## Plan
 
@@ -364,26 +393,27 @@ Small PRs, each checked in the browser like the dashboard's:
 2. **The shell:** the `/climb/` page, its tabs, the links both ways, the
    manifest and icon, and the service worker.
 3. **The data:** `climb.proto`, storage and autosave, export and import;
-   Settings for gyms, colours and boards.
-4. **Sessions:** start and finish, one-tap logging at gyms and on boards,
-   undo, and an exact grade or a name afterwards.
-5. **After the session:** the comparison chart, the numbers, firsts.
-6. **Progress:** the period picker, the numbers, climbs by grade, climbs per
-   week, the grade lines, and the tables.
+   Settings for grades, gyms (with colour labels) and boards.
+4. **Sessions:** start and finish, logging by tries and grade at gyms and on
+   boards, undo, and the sheet to change a climb.
+5. **After the session:** the comparison chart and its switch, the numbers,
+   firsts.
+6. **Progress:** the period picker, the numbers, climbs by grade, tries,
+   climbs per week, the grade lines, and the tables.
 7. **History.**
 8. **Drive sync** to `climb.binpb`.
 
 ## Open questions
 
-1. **Exact grades at gyms:** offer them (optional, as shown), or colours
-   only?
-2. **The board angle:** per session (as shown), or per climb?
-3. **"Your average session":** the last 30 days at the same gym (as shown),
-   or your last 5 sessions there?
-4. **Charts across gyms:** by grade, with a colour-only climb counted at its
-   colour's easiest grade (as shown). With one gym picked, should "Climbs by
-   grade" show that gym's colours instead?
-5. **The name:** "Climb"?
+1. **Problems you tried and didn't top:** log them too (say, a long press on
+   a grade)? That would bring back the send rate, and projects with it.
+   Left out for now: logging stays "topped, in N tries".
+2. **Tries before or after the grade:** before (as shown: pick 3, then tap
+   6B), or after (tap 6B, then 3 on the climb that was just logged)?
+3. **The board angle:** per session (as shown), or per climb?
+4. **Board sessions after the session:** compared with all your board
+   sessions of the last 30 days (as shown), or only with the same board at
+   the same angle?
 
 ## Sources (checked November 2026)
 
