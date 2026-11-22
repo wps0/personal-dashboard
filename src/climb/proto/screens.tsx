@@ -13,28 +13,35 @@ import {
   GripVertical,
   History,
   House,
+  Minus,
   Mountain,
   Plus,
   Settings,
   Timer,
+  Trash2,
   TrendingDown,
   TrendingUp,
   Trophy,
   Undo2,
+  Zap,
 } from 'lucide-react';
 import type {ReactNode} from 'react';
 import {
   BOARD_GRADES,
   BOARD_LIVE,
-  circuit,
-  CIRCUITS,
+  colourHex,
+  COLOURS,
+  GRADES,
   GROUPS,
   HISTORY,
   LIVE,
+  type LoggedClimb,
   PYRAMID,
   SCALE,
-  SESSION_VS_MONTH,
+  SESSION_BY_GRADE,
   TREND,
+  TRIES,
+  TRIES_BY_GRADE,
   WEEKS,
 } from './data';
 
@@ -46,13 +53,13 @@ const TABS: {tab: Tab; label: string; icon: typeof House}[] = [
   {tab: 'history', label: 'History', icon: History},
 ];
 
-/** A gym colour, as a swatch (black and white get a ring). */
+/** A colour label, as a swatch (black and white get a ring). */
 function Swatch({colour, size = 'h-5 w-5'}: {colour: string; size?: string}) {
   return (
     <span
       aria-hidden
       className={`inline-block shrink-0 rounded-md ring-1 ring-white/25 ${size}`}
-      style={{background: circuit(colour).hex}}
+      style={{background: colourHex(colour)}}
     />
   );
 }
@@ -162,18 +169,24 @@ function Section({
   );
 }
 
-/** A number, and how it compares with the period before (up is better). */
+/**
+ * A number, and how it compares: which way it went, and whether that's good
+ * (fewer tries per climb is).
+ */
 function Tile({
   label,
   value,
   was,
-  up,
+  trend,
+  good = true,
 }: {
   label: string;
   value: ReactNode;
   was?: string;
-  up?: boolean;
+  trend?: 'up' | 'down';
+  good?: boolean;
 }) {
+  const Icon = trend === 'up' ? TrendingUp : TrendingDown;
   return (
     <div className="rounded-xl border border-line bg-panel px-3 py-2.5">
       <div className="text-[12px] text-dim">{label}</div>
@@ -182,12 +195,13 @@ function Tile({
       </div>
       {was && (
         <div className="flex items-center gap-1 text-[12px] text-dim">
-          {up !== undefined &&
-            (up ? (
-              <TrendingUp size={13} className="text-ok" aria-label="up" />
-            ) : (
-              <TrendingDown size={13} className="text-warn" aria-label="down" />
-            ))}
+          {trend && (
+            <Icon
+              size={13}
+              className={good ? 'text-ok' : 'text-warn'}
+              aria-label={`${trend}, ${good ? 'better' : 'worse'}`}
+            />
+          )}
           {was}
         </div>
       )}
@@ -221,6 +235,11 @@ function Key({dashed, children}: {dashed?: boolean; children: ReactNode}) {
   );
 }
 
+/** A count as is, an average to one decimal. */
+function num(n: number): string {
+  return Number.isInteger(n) ? String(n) : n.toFixed(1);
+}
+
 /**
  * Horizontal bars: now (filled) against the past (a long-dashed outline, not
  * filled), on one scale, one row per colour or grade.
@@ -230,11 +249,11 @@ function NowVsPast({
   nowLabel,
   pastLabel,
 }: {
-  rows: {key: string; label: ReactNode; now: number; past: number}[];
+  rows: {key: string; label: ReactNode; now: number; past: number | null}[];
   nowLabel: string;
   pastLabel: string;
 }) {
-  const max = Math.max(...rows.flatMap(r => [r.now, r.past]), 1);
+  const max = Math.max(...rows.flatMap(r => [r.now, r.past ?? 0]), 1);
   const pct = (n: number) => `${(n / max) * 100}%`;
   return (
     <div>
@@ -251,7 +270,7 @@ function NowVsPast({
             <svg
               className="h-6 min-w-0 flex-1 overflow-visible"
               role="img"
-              aria-label={`${r.key}: ${r.now}, ${pastLabel.toLowerCase()} ${r.past}`}
+              aria-label={`${r.key}: ${r.now}, ${pastLabel.toLowerCase()} ${r.past ?? 'none'}`}
             >
               {r.now > 0 && (
                 <rect
@@ -263,7 +282,7 @@ function NowVsPast({
                   fill="var(--series-1)"
                 />
               )}
-              {r.past > 0 && (
+              {!!r.past && (
                 <rect
                   x="0.75"
                   y="0.75"
@@ -278,10 +297,10 @@ function NowVsPast({
               )}
             </svg>
             <span className="w-16 shrink-0 text-right text-[13px] tabular-nums text-fg">
-              {r.now}
+              {num(r.now)}
               <span className="text-dim">
                 {' '}
-                / {Number.isInteger(r.past) ? r.past : r.past.toFixed(1)}
+                / {r.past === null ? '–' : num(r.past)}
               </span>
             </span>
           </div>
@@ -299,7 +318,7 @@ export function Today() {
           <button className="flex h-12 w-full items-center justify-between rounded-xl bg-raised px-3 text-left">
             <span>
               <span className="block text-[11px] text-dim">Where</span>
-              Blokownia <span className="text-dim">· gym, by colour</span>
+              Blokownia <span className="text-dim">· gym</span>
             </span>
             <ChevronDown size={18} className="text-dim" />
           </button>
@@ -315,18 +334,9 @@ export function Today() {
 
       <Section title="November so far">
         <div className="grid grid-cols-3 gap-2">
-          <Tile label="Climbs" value="58" was="Oct: 47" up />
-          <Tile label="Sessions" value="5" was="Oct: 6" up={false} />
-          <Tile
-            label="Hardest"
-            value={
-              <span className="flex items-center gap-1.5">
-                <Swatch colour="Red" size="h-4 w-4" /> 6C
-              </span>
-            }
-            was="Oct: 6B+"
-            up
-          />
+          <Tile label="Climbs" value="67" was="Oct: 62" trend="up" />
+          <Tile label="Flashed" value="42%" was="Oct: 36%" trend="up" />
+          <Tile label="Hardest" value="6B+" was="Oct: 6B" trend="up" />
         </div>
       </Section>
 
@@ -344,11 +354,11 @@ export function Today() {
         >
           <div className="min-w-0 flex-1">
             <div className="text-strong">Tue 18 Nov · Blokownia</div>
-            <div className="text-[14px] text-dim">1h 52m · 15 climbs</div>
+            <div className="text-[14px] text-dim">
+              1h 52m · 15 climbs · 7 flashed
+            </div>
           </div>
-          <div className="flex items-center gap-1 rounded-full bg-raised px-2.5 py-1 text-[13px]">
-            <Trophy size={14} className="text-accent" aria-hidden /> first 6C
-          </div>
+          <span className="font-semibold text-strong">6B+</span>
           <ChevronRight size={18} className="text-dim" />
         </a>
       </Section>
@@ -394,108 +404,111 @@ function SessionHeader({title, time}: {title: string; time: string}) {
   );
 }
 
-/** A live session at a gym: one tap on a colour logs one climb topped. */
-export function Log() {
-  const counts = new Map<string, number>();
-  for (const l of LIVE) counts.set(l.colour, (counts.get(l.colour) ?? 0) + 1);
-  return (
-    <div className="flex h-full flex-col bg-bg text-[15px]">
-      <SessionHeader title="Blokownia" time="47:12" />
-      <div className="flex shrink-0 items-baseline gap-4 px-4 py-2 text-[13px] text-dim">
-        <span>
-          <b className="text-[17px] font-semibold text-strong">{LIVE.length}</b>{' '}
-          climbs
-        </span>
-        <span className="ml-auto">hardest: Red 6B+</span>
-      </div>
-      <ul className="min-h-0 flex-1 divide-y divide-line overflow-y-auto border-y border-line">
-        {LIVE.map(l => (
-          <li key={l.time} className="flex min-h-12 items-center gap-3 px-4">
-            <Swatch colour={l.colour} />
-            <span className="flex-1 text-strong">
-              {l.colour}
-              {l.grade && <span className="text-fg"> · {l.grade}</span>}
-            </span>
-            {!l.grade && <span className="text-[13px] text-dim">+ grade</span>}
-            <span className="w-12 text-right text-[13px] tabular-nums text-dim">
-              {l.time}
-            </span>
-          </li>
-        ))}
-      </ul>
-      <section
-        aria-label="Log a climb"
-        className="shrink-0 bg-panel px-4 pt-3 pb-4"
-      >
-        <h2 className="label mb-2 !text-[12px]">Topped one? Tap its colour</h2>
-        <div className="grid grid-cols-3 gap-2">
-          {CIRCUITS.map(c => (
-            <button
-              key={c.name}
-              className="relative flex h-[72px] flex-col items-start justify-between rounded-xl border border-line bg-raised p-2.5 text-left"
-            >
-              <span className="flex w-full items-center gap-2">
-                <Swatch colour={c.name} size="h-7 w-7" />
-                <span className="font-medium text-strong">{c.name}</span>
-              </span>
-              <span className="text-[12px] text-dim">{c.range}</span>
-              {(counts.get(c.name) ?? 0) > 0 && (
-                <span className="absolute right-2 bottom-2 rounded-full bg-accent px-2 text-[13px] font-semibold text-on-accent tabular-nums">
-                  {counts.get(c.name)}
-                </span>
-              )}
-            </button>
-          ))}
-        </div>
-      </section>
-      <UndoBar text="Red logged" />
-    </div>
+function triesText(tries: number): ReactNode {
+  return tries === 1 ? (
+    <span className="flex items-center gap-1 text-accent">
+      <Zap size={13} aria-hidden /> flash
+    </span>
+  ) : (
+    `${tries} tries`
   );
 }
 
-/** A live board session: one tap on a grade logs one climb. */
-export function BoardLog() {
-  const counts = new Map<string, number>();
-  for (const l of BOARD_LIVE)
-    counts.set(l.grade, (counts.get(l.grade) ?? 0) + 1);
+/** One logged climb; a tap opens it to fix the grade or tries, or add a colour or name. */
+function ClimbRow({climb}: {climb: LoggedClimb}) {
   return (
-    <div className="flex h-full flex-col bg-bg text-[15px]">
-      <SessionHeader title="Kilter · 40°" time="32:40" />
-      <div className="flex shrink-0 items-baseline gap-4 px-4 py-2 text-[13px] text-dim">
+    <li>
+      <a href="#climb" className="flex min-h-12 items-center gap-3 px-4">
+        <span className="w-12 text-[17px] font-semibold text-strong">
+          {climb.grade}
+        </span>
+        <span className="text-[14px] text-fg">{triesText(climb.tries)}</span>
+        <span className="flex min-w-0 flex-1 items-center gap-1.5 text-[14px] text-dim">
+          {climb.colour && <Swatch colour={climb.colour} size="h-3.5 w-3.5" />}
+          <span className="truncate">{climb.name}</span>
+        </span>
+        <span className="w-12 text-right text-[13px] tabular-nums text-dim">
+          {climb.time}
+        </span>
+      </a>
+    </li>
+  );
+}
+
+/**
+ * A live session: pick the tries if it wasn't a flash, then tap the grade;
+ * one tap logs one climb topped, and the tries go back to Flash.
+ */
+function LiveSession({
+  title,
+  time,
+  climbs,
+  grades,
+  extra,
+  undo,
+  overlay,
+}: {
+  title: string;
+  time: string;
+  climbs: LoggedClimb[];
+  grades: string[];
+  extra?: ReactNode;
+  undo: string;
+  overlay?: ReactNode;
+}) {
+  const counts = new Map<string, number>();
+  for (const c of climbs) counts.set(c.grade, (counts.get(c.grade) ?? 0) + 1);
+  const flashed = climbs.filter(c => c.tries === 1).length;
+  const hardest = [...grades].reverse().find(g => counts.has(g));
+  return (
+    <div className="relative flex h-full flex-col bg-bg text-[15px]">
+      <SessionHeader title={title} time={time} />
+      <div className="flex shrink-0 items-baseline gap-3 px-4 py-2 text-[13px] text-dim">
         <span>
           <b className="text-[17px] font-semibold text-strong">
-            {BOARD_LIVE.length}
+            {climbs.length}
           </b>{' '}
           climbs
         </span>
-        <span className="ml-auto">hardest: 6B</span>
+        <span>
+          <b className="text-[17px] font-semibold text-strong">{flashed}</b>{' '}
+          flashed
+        </span>
+        <span className="ml-auto">hardest {hardest}</span>
+        {extra}
       </div>
       <ul className="min-h-0 flex-1 divide-y divide-line overflow-y-auto border-y border-line">
-        {BOARD_LIVE.map(l => (
-          <li key={l.time} className="flex min-h-12 items-center gap-3 px-4">
-            <span className="w-12 font-semibold text-strong">{l.grade}</span>
-            <span className="flex-1 text-[13px] text-dim">+ name</span>
-            <span className="w-12 text-right text-[13px] tabular-nums text-dim">
-              {l.time}
-            </span>
-          </li>
+        {climbs.map(c => (
+          <ClimbRow key={c.time} climb={c} />
         ))}
       </ul>
       <section
         aria-label="Log a climb"
         className="shrink-0 bg-panel px-4 pt-3 pb-4"
       >
-        <div className="mb-2 flex items-center">
-          <h2 className="label flex-1 !text-[12px]">
-            Topped one? Tap its grade
-          </h2>
-          <span className="text-[13px] text-dim">Font · 40° ▾</span>
+        <div
+          role="radiogroup"
+          aria-label="Tries"
+          className="mb-3 flex items-center gap-1.5"
+        >
+          <span className="label mr-1 !text-[12px]">Tries</span>
+          {TRIES.map((t, i) => (
+            <button
+              key={t}
+              role="radio"
+              aria-checked={i === 0}
+              className={`h-10 flex-1 rounded-lg border text-[14px] ${i === 0 ? 'border-accent bg-accent/15 font-semibold text-strong' : 'border-line text-fg'}`}
+            >
+              {t}
+            </button>
+          ))}
         </div>
+        <h2 className="label mb-2 !text-[12px]">Topped one? Tap its grade</h2>
         <div className="grid grid-cols-4 gap-2">
-          {BOARD_GRADES.map(g => (
+          {grades.map(g => (
             <button
               key={g}
-              className="relative flex h-14 items-center justify-center rounded-xl border border-line bg-raised text-[17px] font-semibold text-strong"
+              className="relative flex h-14 items-center justify-center rounded-xl border border-line bg-raised text-[18px] font-semibold text-strong"
             >
               {g}
               {(counts.get(g) ?? 0) > 0 && (
@@ -507,8 +520,125 @@ export function BoardLog() {
           ))}
         </div>
       </section>
-      <UndoBar text="6B logged" />
+      <UndoBar text={undo} />
+      {overlay}
     </div>
+  );
+}
+
+/** A live session at a gym. */
+export function Log() {
+  return (
+    <LiveSession
+      title="Blokownia"
+      time="58:40"
+      climbs={LIVE}
+      grades={GRADES}
+      undo="6B+ in 3 tries logged"
+    />
+  );
+}
+
+/** A live board session: the same, with the board's angle. */
+export function BoardLog() {
+  return (
+    <LiveSession
+      title="Kilter"
+      time="38:20"
+      climbs={BOARD_LIVE}
+      grades={BOARD_GRADES}
+      extra={
+        <button className="flex h-7 items-center gap-1 rounded-full border border-line px-2.5 text-[13px] text-fg">
+          40° <ChevronDown size={13} className="text-dim" />
+        </button>
+      }
+      undo="6B in 4 tries logged"
+    />
+  );
+}
+
+/** A logged climb, opened from the list: everything but the grade is optional. */
+export function EditClimb() {
+  return (
+    <LiveSession
+      title="Blokownia"
+      time="58:40"
+      climbs={LIVE}
+      grades={GRADES}
+      undo="6B+ in 3 tries logged"
+      overlay={
+        <div className="absolute inset-0 flex flex-col justify-end bg-black/50">
+          <div className="rounded-t-2xl bg-panel px-4 pt-3 pb-5 shadow-2xl">
+            <div className="mx-auto mb-3 h-1 w-10 rounded-full bg-line" />
+            <div className="mb-3 flex items-center">
+              <h2 className="flex-1 text-[17px] font-semibold text-strong">
+                Climb at 19:38
+              </h2>
+              <button className="flex h-10 items-center gap-1.5 rounded-full px-3 text-[14px] text-warn">
+                <Trash2 size={16} aria-hidden /> Delete
+              </button>
+            </div>
+            <div className="mb-1 text-[12px] text-dim">Grade</div>
+            <div className="grid grid-cols-6 gap-1.5">
+              {GRADES.map(g => (
+                <button
+                  key={g}
+                  aria-pressed={g === '6B'}
+                  className={`h-10 rounded-lg border text-[15px] font-semibold ${g === '6B' ? 'border-accent bg-accent/15 text-strong' : 'border-line text-fg'}`}
+                >
+                  {g}
+                </button>
+              ))}
+            </div>
+            <div className="mt-4 flex items-center gap-3">
+              <span className="flex-1 text-[12px] text-dim">Tries</span>
+              <button
+                aria-label="One try fewer"
+                className="flex h-11 w-11 items-center justify-center rounded-full border border-line text-fg"
+              >
+                <Minus size={18} />
+              </button>
+              <span className="w-8 text-center text-[20px] font-semibold tabular-nums text-strong">
+                2
+              </span>
+              <button
+                aria-label="One try more"
+                className="flex h-11 w-11 items-center justify-center rounded-full border border-line text-fg"
+              >
+                <Plus size={18} />
+              </button>
+            </div>
+            <div className="mt-4 mb-1 text-[12px] text-dim">
+              Colour <span className="text-dim">(optional)</span>
+            </div>
+            <div className="flex gap-2">
+              <button className="h-10 rounded-full border border-line px-3 text-[14px] text-fg">
+                None
+              </button>
+              {COLOURS.map(c => (
+                <button
+                  key={c.name}
+                  aria-label={c.name}
+                  aria-pressed={c.name === 'Blue'}
+                  className={`flex h-10 w-10 items-center justify-center rounded-full ${c.name === 'Blue' ? 'ring-2 ring-accent' : ''}`}
+                >
+                  <Swatch colour={c.name} size="h-7 w-7" />
+                </button>
+              ))}
+            </div>
+            <div className="mt-4 mb-1 text-[12px] text-dim">
+              Name <span className="text-dim">(optional)</span>
+            </div>
+            <div className="flex h-12 items-center rounded-xl border border-line bg-raised px-3 text-dim">
+              the overhang by the window
+            </div>
+            <button className="mt-4 flex h-12 w-full items-center justify-center gap-2 rounded-xl bg-accent text-[16px] font-semibold text-on-accent">
+              <Check size={18} aria-hidden /> Save
+            </button>
+          </div>
+        </div>
+      }
+    />
   );
 }
 
@@ -519,50 +649,61 @@ export function Summary() {
       <main className="min-h-0 flex-1 overflow-y-auto">
         <div className="px-4 pt-4">
           <div className="text-[13px] text-dim">
-            Tuesday 18 Nov · Blokownia · 19:05–20:57
+            Saturday 21 Nov · Blokownia · 18:58–20:31
           </div>
           <div className="text-[22px] font-semibold text-strong">
-            13 climbs in 1h 52m
+            13 climbs in 1h 33m
           </div>
           <div className="mt-3 flex items-center gap-3 rounded-xl border border-accent/40 bg-accent/10 p-3">
             <Trophy size={22} className="shrink-0 text-accent" aria-hidden />
             <div>
               <div className="font-medium text-strong">
-                Your first 6C (a red)
+                Your first 6C, in 5 tries
               </div>
               <div className="text-[13px] text-dim">
-                and more blues than in any session before
+                and 3 climbs at 6B, your most in a session
               </div>
             </div>
           </div>
         </div>
-        <Section title="Tonight against your average session (last 30 days)">
+        <Section title="By grade, against an average session">
+          <div className="mb-2 grid grid-cols-2 rounded-xl border border-line p-1 text-[14px]">
+            <button
+              aria-pressed
+              className="h-9 rounded-lg bg-raised font-medium text-strong"
+            >
+              All gyms
+            </button>
+            <button className="h-9 rounded-lg text-fg">Only Blokownia</button>
+          </div>
           <div className="rounded-xl border border-line bg-panel p-3">
             <NowVsPast
               nowLabel="Tonight"
               pastLabel="Average session, last 30 days"
-              rows={SESSION_VS_MONTH.map(r => ({
-                key: r.colour,
-                label: (
-                  <>
-                    <Swatch colour={r.colour} size="h-4 w-4" />
-                    {r.colour}
-                  </>
-                ),
-                now: r.today,
-                past: r.month,
+              rows={SESSION_BY_GRADE.map(r => ({
+                key: r.grade,
+                label: r.grade,
+                now: r.tonight,
+                past: r.all,
               }))}
             />
             <p className="mt-2 text-[12px] text-dim">
-              Average over your 7 sessions at Blokownia since 19 Oct.
+              The average of your 8 gym sessions since 22 Oct, at Blokownia and
+              West Bouldering. Board sessions are compared with board sessions.
             </p>
           </div>
         </Section>
-        <Section title="Numbers">
-          <div className="grid grid-cols-3 gap-2">
-            <Tile label="Climbs" value="13" was="avg 12.1" up />
-            <Tile label="Hardest" value="6C" was="avg 6B+" up />
-            <Tile label="Per hour" value="7.0" was="avg 6.4" up />
+        <Section title="Numbers, against the same average">
+          <div className="grid grid-cols-2 gap-2">
+            <Tile label="Climbs" value="13" was="avg 11.4" trend="up" />
+            <Tile label="Hardest" value="6C" was="avg 6B+" trend="up" />
+            <Tile label="Flashed" value="6" was="avg 4.8" trend="up" />
+            <Tile
+              label="Tries per climb"
+              value="2.1"
+              was="avg 2.3"
+              trend="down"
+            />
           </div>
         </Section>
         <Section title="Notes">
@@ -823,12 +964,12 @@ function ProgressBody() {
       <RangeBar />
       <Section title="Numbers, against the 3 months before">
         <div className="grid grid-cols-3 gap-2">
-          <Tile label="Climbs" value="168" was="was 131" up />
-          <Tile label="Sessions" value="22" was="was 19" up />
-          <Tile label="Per session" value="7.6" was="was 6.9" up />
-          <Tile label="Typical" value="6A" was="was 5+" up />
-          <Tile label="Top 5 avg" value="6B+" was="was 6B" up />
-          <Tile label="Hardest" value="6C" was="was 6B+" up />
+          <Tile label="Climbs" value="168" was="was 131" trend="up" />
+          <Tile label="Sessions" value="22" was="was 19" trend="up" />
+          <Tile label="Per session" value="7.6" was="was 6.9" trend="up" />
+          <Tile label="Typical" value="6A" was="was 5+" trend="up" />
+          <Tile label="Top 5 avg" value="6B+" was="was 6B" trend="up" />
+          <Tile label="Hardest" value="6C" was="was 6B+" trend="up" />
         </div>
       </Section>
       <Section
@@ -846,10 +987,32 @@ function ProgressBody() {
               past: r.before,
             }))}
           />
-          <p className="mt-2 text-[12px] text-dim">
-            A climb logged by colour only counts at its colour&apos;s easiest
-            grade.
-          </p>
+        </div>
+      </Section>
+      <Section title="Tries">
+        <div className="grid grid-cols-2 gap-2">
+          <Tile label="Flashed" value="41%" was="was 34%" trend="up" />
+          <Tile
+            label="Tries per climb"
+            value="2.1"
+            was="was 2.5"
+            trend="down"
+          />
+        </div>
+        <div className="mt-2 rounded-xl border border-line bg-panel p-3">
+          <div className="mb-2 text-[13px] text-strong">
+            Tries to top, by grade (fewer is better)
+          </div>
+          <NowVsPast
+            nowLabel="These 3 months"
+            pastLabel="The 3 months before"
+            rows={TRIES_BY_GRADE.map(r => ({
+              key: r.grade,
+              label: r.grade,
+              now: r.now,
+              past: r.before,
+            }))}
+          />
         </div>
       </Section>
       <Section title="Climbs per week, by grade">
@@ -1002,13 +1165,10 @@ export function HistoryScreen() {
                     )}
                   </div>
                   <div className="text-[14px] text-dim">
-                    {s.length} · {s.climbs} climbs
+                    {s.length} · {s.climbs} climbs · {s.flashed} flashed
                   </div>
                 </div>
-                <span className="flex items-center gap-1.5 text-strong">
-                  {s.colour && <Swatch colour={s.colour} size="h-4 w-4" />}
-                  {s.hardest}
-                </span>
+                <span className="font-semibold text-strong">{s.hardest}</span>
                 <ChevronRight size={18} className="text-dim" />
               </a>
             </li>
@@ -1019,32 +1179,48 @@ export function HistoryScreen() {
   );
 }
 
-/** Settings: the places you climb, each gym with its own colours. */
+/** Settings: the grade buttons, and the places you climb. */
 export function Places() {
   return (
     <div className="flex h-full flex-col bg-bg text-[15px]">
       <Header back="today" title="Settings" right={<span />} />
       <main className="min-h-0 flex-1 overflow-y-auto">
+        <Section title="Grades">
+          <div className="divide-y divide-line rounded-xl border border-line bg-panel">
+            <div className="flex min-h-12 items-center px-3">
+              <span className="flex-1">Scale</span>
+              <span className="text-dim">Font (6A, 6B+…)</span>
+            </div>
+            <div className="flex min-h-12 items-center gap-2 px-3">
+              <span className="flex-1">Buttons at gyms</span>
+              <span className="rounded-lg bg-raised px-2.5 py-1">4</span>
+              <span className="text-dim">to</span>
+              <span className="rounded-lg bg-raised px-2.5 py-1">7A+</span>
+            </div>
+            <div className="flex min-h-12 items-center gap-2 px-3">
+              <span className="flex-1">Buttons on boards</span>
+              <span className="rounded-lg bg-raised px-2.5 py-1">5</span>
+              <span className="text-dim">to</span>
+              <span className="rounded-lg bg-raised px-2.5 py-1">7B+</span>
+            </div>
+          </div>
+        </Section>
         <Section
           title="Gyms"
           more={<span className="text-[14px] text-accent">+ gym</span>}
         >
           <div className="divide-y divide-line rounded-xl border border-line bg-panel">
             {[
-              ['Blokownia', CIRCUITS],
-              ['West Bouldering', CIRCUITS.slice(0, 5)],
-            ].map(([name, cs]) => (
+              ['Blokownia', '6 colour labels'],
+              ['West Bouldering', 'no colour labels'],
+            ].map(([name, meta]) => (
               <a
-                key={name as string}
+                key={name}
                 href="#gym"
                 className="flex min-h-14 items-center gap-3 px-3"
               >
-                <span className="flex-1 text-strong">{name as string}</span>
-                <span className="flex gap-1">
-                  {(cs as typeof CIRCUITS).map(c => (
-                    <Swatch key={c.name} colour={c.name} size="h-4 w-4" />
-                  ))}
-                </span>
+                <span className="flex-1 text-strong">{name}</span>
+                <span className="text-[14px] text-dim">{meta}</span>
                 <ChevronRight size={18} className="text-dim" />
               </a>
             ))}
@@ -1057,18 +1233,18 @@ export function Places() {
           <div className="divide-y divide-line rounded-xl border border-line bg-panel">
             <div className="flex min-h-14 items-center gap-3 px-3">
               <span className="flex-1 text-strong">Kilter</span>
-              <span className="text-dim">Font · usually 40°</span>
+              <span className="text-dim">usually 40°</span>
               <ChevronRight size={18} className="text-dim" />
             </div>
             <div className="flex min-h-14 items-center gap-3 px-3">
               <span className="flex-1 text-strong">MoonBoard 2019</span>
-              <span className="text-dim">Font · 40°</span>
+              <span className="text-dim">40°</span>
               <ChevronRight size={18} className="text-dim" />
             </div>
           </div>
           <p className="mt-2 text-[13px] text-dim">
-            Board climbs are logged by grade and charted on their own, not mixed
-            with the gyms&apos; colours.
+            Board grades run harder than a gym&apos;s, so boards are charted and
+            compared on their own.
           </p>
         </Section>
         <Section title="Data">
@@ -1093,17 +1269,18 @@ export function Places() {
   );
 }
 
+/** A gym: its name and its optional colour labels. */
 export function Gym() {
   return (
     <div className="flex h-full flex-col bg-bg text-[15px]">
       <Header back="places" title="Blokownia" right={<span />} />
       <main className="min-h-0 flex-1 overflow-y-auto">
         <Section
-          title="Colours, easiest first"
+          title="Colour labels (optional)"
           more={<span className="text-[14px] text-accent">+ colour</span>}
         >
           <ul className="divide-y divide-line rounded-xl border border-line bg-panel">
-            {CIRCUITS.map(c => (
+            {COLOURS.map(c => (
               <li
                 key={c.name}
                 className="flex min-h-14 items-center gap-3 px-3"
@@ -1111,22 +1288,14 @@ export function Gym() {
                 <GripVertical size={16} className="text-dim" aria-hidden />
                 <Swatch colour={c.name} size="h-7 w-7" />
                 <span className="flex-1 text-strong">{c.name}</span>
-                <span className="rounded-lg bg-raised px-2.5 py-1 tabular-nums">
-                  {c.range}
-                </span>
               </li>
             ))}
           </ul>
           <p className="mt-2 text-[13px] text-dim">
-            Each gym has its own colours and the Font grades each one covers.
-            You log by colour; the exact grade is optional.
+            Only to tell problems apart: tap a logged climb to add its colour.
+            You never need one to log, and the charts don&apos;t use them.
           </p>
         </Section>
-        <div className="px-4 pt-5">
-          <button className="flex h-11 w-full items-center justify-center gap-1.5 rounded-xl border border-line text-[15px] text-fg">
-            <Plus size={16} aria-hidden /> Copy colours from another gym
-          </button>
-        </div>
       </main>
     </div>
   );
@@ -1135,6 +1304,7 @@ export function Gym() {
 export const SCREENS: Record<string, () => ReactNode> = {
   today: Today,
   log: Log,
+  climb: EditClimb,
   board: BoardLog,
   summary: Summary,
   progress: Progress,

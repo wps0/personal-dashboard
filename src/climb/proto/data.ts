@@ -3,49 +3,23 @@
  * Today is Saturday 21 November 2026.
  */
 
-export interface Circuit {
-  name: string;
-  hex: string;
-  /** The Font grades this colour covers at the gym. */
-  range: string;
-  grades: string[];
-}
-
-/** Blokownia's colours, easiest first: each gym has its own. */
-export const CIRCUITS: Circuit[] = [
-  {name: 'Green', hex: '#22c55e', range: '4–5', grades: ['4', '4+', '5']},
-  {name: 'Yellow', hex: '#facc15', range: '5+–6A', grades: ['5+', '6A']},
-  {name: 'Blue', hex: '#3b82f6', range: '6A+–6B', grades: ['6A+', '6B']},
-  {name: 'Red', hex: '#ef4444', range: '6B+–6C', grades: ['6B+', '6C']},
-  {name: 'Purple', hex: '#a855f7', range: '6C+–7A', grades: ['6C+', '7A']},
-  {name: 'Black', hex: '#0a0a0a', range: '7A+ up', grades: ['7A+', '7B']},
+/** The Font grades on the logging buttons (a setting), easiest first. */
+export const GRADES = [
+  '4',
+  '4+',
+  '5',
+  '5+',
+  '6A',
+  '6A+',
+  '6B',
+  '6B+',
+  '6C',
+  '6C+',
+  '7A',
+  '7A+',
 ];
 
-export const circuit = (name: string) => CIRCUITS.find(c => c.name === name)!;
-
-/** Tonight's climbs at Blokownia, latest first: topped, by colour. */
-export const LIVE: {time: string; colour: string; grade?: string}[] = [
-  {time: '19:52', colour: 'Red', grade: '6B+'},
-  {time: '19:44', colour: 'Blue'},
-  {time: '19:38', colour: 'Blue', grade: '6B'},
-  {time: '19:31', colour: 'Red'},
-  {time: '19:20', colour: 'Blue'},
-  {time: '19:12', colour: 'Yellow'},
-  {time: '19:05', colour: 'Blue'},
-  {time: '18:58', colour: 'Yellow', grade: '6A'},
-];
-
-/** Climbs per colour tonight, and an average session at this gym over the past 30 days. */
-export const SESSION_VS_MONTH = [
-  {colour: 'Green', today: 2, month: 3.2},
-  {colour: 'Yellow', today: 4, month: 4.5},
-  {colour: 'Blue', today: 5, month: 3.0},
-  {colour: 'Red', today: 2, month: 1.1},
-  {colour: 'Purple', today: 0, month: 0.3},
-  {colour: 'Black', today: 0, month: 0},
-];
-
-/** Font grades on the board, easiest first. */
+/** The board's buttons: board grades run harder, so the range starts higher. */
 export const BOARD_GRADES = [
   '5',
   '5+',
@@ -61,13 +35,65 @@ export const BOARD_GRADES = [
   '7B+',
 ];
 
-/** Tonight on the Kilter, 40°: climbs by grade, latest first. */
-export const BOARD_LIVE = [
-  {time: '20:41', grade: '6B'},
-  {time: '20:33', grade: '6A+'},
-  {time: '20:24', grade: '6A+'},
-  {time: '20:15', grade: '6A'},
-  {time: '20:09', grade: '5+'},
+/** The tries choices: 6+ opens a number. */
+export const TRIES = ['Flash', '2', '3', '4', '5', '6+'];
+
+/** Blokownia's colour labels: optional, only to tell problems apart. */
+export const COLOURS: {name: string; hex: string}[] = [
+  {name: 'Green', hex: '#22c55e'},
+  {name: 'Yellow', hex: '#facc15'},
+  {name: 'Blue', hex: '#3b82f6'},
+  {name: 'Red', hex: '#ef4444'},
+  {name: 'Purple', hex: '#a855f7'},
+  {name: 'Black', hex: '#0a0a0a'},
+];
+
+export const colourHex = (name: string) =>
+  COLOURS.find(c => c.name === name)!.hex;
+
+export interface LoggedClimb {
+  time: string;
+  grade: string;
+  /** Tries to top it; 1 is a flash. */
+  tries: number;
+  colour?: string;
+  name?: string;
+}
+
+/** Tonight at Blokownia so far, latest first. */
+export const LIVE: LoggedClimb[] = [
+  {time: '19:52', grade: '6B+', tries: 3},
+  {time: '19:44', grade: '6A+', tries: 1},
+  {time: '19:38', grade: '6B', tries: 2, colour: 'Blue'},
+  {time: '19:31', grade: '6B+', tries: 4},
+  {time: '19:20', grade: '6A+', tries: 1},
+  {time: '19:12', grade: '6A', tries: 1},
+  {time: '19:05', grade: '6A+', tries: 2},
+  {time: '18:58', grade: '5+', tries: 1},
+  {time: '18:51', grade: '5', tries: 1},
+];
+
+/** A board session, latest first. */
+export const BOARD_LIVE: LoggedClimb[] = [
+  {time: '11:41', grade: '6B', tries: 4},
+  {time: '11:33', grade: '6A+', tries: 2, name: 'Crimp city'},
+  {time: '11:24', grade: '6A+', tries: 1},
+  {time: '11:15', grade: '6A', tries: 1},
+  {time: '11:09', grade: '5+', tries: 1},
+];
+
+/**
+ * Climbs per grade tonight (13 by the end), hardest first, against an
+ * average session over the last 30 days: at all gyms, or only at this one.
+ */
+export const SESSION_BY_GRADE = [
+  {grade: '6C', tonight: 1, all: 0.1, here: 0.2},
+  {grade: '6B+', tonight: 2, all: 1.0, here: 1.2},
+  {grade: '6B', tonight: 3, all: 1.9, here: 2.2},
+  {grade: '6A+', tonight: 3, all: 2.6, here: 2.8},
+  {grade: '6A', tonight: 2, all: 2.4, here: 2.2},
+  {grade: '5+', tonight: 1, all: 1.8, here: 1.6},
+  {grade: '5 and below', tonight: 1, all: 1.6, here: 1.2},
 ];
 
 /** Climbs by grade in the chosen period (and the one before it), hardest first. */
@@ -79,6 +105,22 @@ export const PYRAMID = [
   {grade: '6A', now: 44, before: 38},
   {grade: '5+', now: 38, before: 31},
   {grade: '5 and below', now: 26, before: 21},
+];
+
+/** Average tries to top, by grade, in the period and the one before (fewer is better). */
+export const TRIES_BY_GRADE: {
+  grade: string;
+  now: number;
+  /** null: none climbed then. */
+  before: number | null;
+}[] = [
+  {grade: '6C', now: 4.5, before: null},
+  {grade: '6B+', now: 3.4, before: 4.6},
+  {grade: '6B', now: 2.6, before: 3.1},
+  {grade: '6A+', now: 1.9, before: 2.3},
+  {grade: '6A', now: 1.5, before: 1.7},
+  {grade: '5+', now: 1.2, before: 1.3},
+  {grade: '5 and below', now: 1.0, before: 1.1},
 ];
 
 /** The grade groups the weekly columns stack, easiest first. */
@@ -131,18 +173,26 @@ export interface PastSession {
   board?: string;
   length: string;
   climbs: number;
+  flashed: number;
   hardest: string;
-  colour?: string;
 }
 
 export const HISTORY: PastSession[] = [
+  {
+    date: 'Sat 21 Nov',
+    place: 'Blokownia',
+    length: '1h 33m',
+    climbs: 13,
+    flashed: 6,
+    hardest: '6C',
+  },
   {
     date: 'Tue 18 Nov',
     place: 'Blokownia',
     length: '1h 52m',
     climbs: 15,
-    hardest: '6C',
-    colour: 'Red',
+    flashed: 7,
+    hardest: '6B+',
   },
   {
     date: 'Sun 16 Nov',
@@ -150,30 +200,31 @@ export const HISTORY: PastSession[] = [
     board: '40°',
     length: '1h 05m',
     climbs: 9,
+    flashed: 2,
     hardest: '6B',
   },
   {
     date: 'Fri 14 Nov',
-    place: 'Blokownia',
+    place: 'West Bouldering',
     length: '1h 30m',
     climbs: 12,
+    flashed: 5,
     hardest: '6B+',
-    colour: 'Red',
   },
   {
     date: 'Wed 12 Nov',
     place: 'Blokownia',
     length: '2h 05m',
     climbs: 17,
+    flashed: 8,
     hardest: '6B+',
-    colour: 'Red',
   },
   {
     date: 'Tue 4 Nov',
     place: 'Blokownia',
     length: '1h 45m',
     climbs: 14,
-    hardest: '6C',
-    colour: 'Red',
+    flashed: 6,
+    hardest: '6B+',
   },
 ];
