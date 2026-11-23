@@ -1,0 +1,103 @@
+// The climbing log's data: everything it stores in the browser and syncs to
+// Drive, kept apart from the dashboard's (proto/dashboard/data.proto): its
+// own schema, version, database on the device and file on Drive.
+//
+// Stored as protobuf binary (climb/storage.ts), with protobuf's JSON form
+// alongside as a read-only copy for people. Never renumber, retype or reuse a
+// field or enum value (mark removed ones `reserved`). Adding a field is safe:
+// older versions of the app keep fields they don't know when they save. Raise
+// schema_version for any change older versions can't handle; they refuse such
+// data and ask to be updated.
+//
+// A field that can be unset is `optional`, message fields included. An enum
+// is unset at its `*_UNSPECIFIED` value instead.
+//
+// Dates are `YYYY-MM-DD` and times of day `HH:MM`, in local time.
+syntax = "proto3";
+
+package climb;
+
+message ClimbData {
+  // Raised on every change older versions of the app can't read correctly;
+  // they refuse data with a higher version and ask to be updated.
+  int32 schema_version = 1;
+  repeated Place places = 2;
+  repeated Session sessions = 3;
+  repeated Climb climbs = 4;
+  optional Settings settings = 5;
+}
+
+// A gym, or a board (Kilter, MoonBoard…).
+message Place {
+  string id = 1;
+  string name = 2;
+  PlaceKind kind = 3;
+  // Gyms: labels to tell problems apart, in the order shown. Nothing is
+  // computed from them.
+  repeated Colour colours = 4;
+  // Boards: the angle a session starts at, in degrees.
+  optional int32 usual_angle = 5;
+  // Hidden from the places to start a session at; its sessions stay.
+  bool archived = 6;
+}
+
+enum PlaceKind {
+  PLACE_KIND_UNSPECIFIED = 0;
+  PLACE_KIND_GYM = 1;
+  PLACE_KIND_BOARD = 2;
+}
+
+enum GradeSystem {
+  // Font.
+  GRADE_SYSTEM_UNSPECIFIED = 0;
+  GRADE_SYSTEM_FONT = 1;
+  GRADE_SYSTEM_V = 2;
+}
+
+// A label to tell problems apart at a gym.
+message Colour {
+  // Stays when the colour is renamed or moved.
+  string id = 1;
+  // "Red".
+  string name = 2;
+  // "#ef4444".
+  string hex = 3;
+}
+
+message Session {
+  string id = 1;
+  string place_id = 2;
+  string date = 3;
+  string start = 4;
+  // Unset while the session runs.
+  optional string end = 5;
+  // Boards: the angle, in degrees.
+  optional int32 angle = 6;
+  string notes = 7;
+}
+
+// One climb topped.
+message Climb {
+  string id = 1;
+  string session_id = 2;
+  // When it was logged.
+  string at = 3;
+  // "6B+", in grade_system.
+  string grade = 4;
+  GradeSystem grade_system = 5;
+  // Tries to top it, counting the one that worked: 1 is a flash.
+  int32 tries = 6;
+  // One of the session's gym's colours.
+  optional string colour_id = 7;
+  optional string name = 8;
+}
+
+message Settings {
+  // What the buttons and charts use.
+  GradeSystem grades = 1;
+  // The range of grade buttons; empty for the default.
+  string gym_buttons_from = 2;
+  string gym_buttons_to = 3;
+  string board_buttons_from = 4;
+  string board_buttons_to = 5;
+}

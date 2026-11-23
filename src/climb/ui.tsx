@@ -13,8 +13,11 @@ import {
   Mountain,
   Settings,
 } from 'lucide-react';
-import type {ReactNode} from 'react';
+import {Undo2, X} from 'lucide-react';
+import {useEffect, type ReactNode} from 'react';
+import {CLIMB_UNDO_BAR_MS} from '../config';
 import {href, type Route} from './router';
+import {dismissBar, setNotice, undo, useClimb} from './store';
 
 type Tab = 'today' | 'progress' | 'history';
 
@@ -26,6 +29,16 @@ const TABS: {tab: Tab; label: string; icon: typeof House}[] = [
 
 /** A filled block: a list, a chart, a group of settings. */
 export const BLOCK = 'rounded-3xl bg-raised';
+
+/** A list in a block, its rows split by faint lines. */
+export const LIST = `${BLOCK} divide-y divide-line/70`;
+
+/** A value or control inside a block's row. */
+export const IN_BLOCK = 'rounded-lg bg-bg';
+
+/** A small button that isn't the main action: "+ gym", "Export". */
+export const SMALL_BUTTON =
+  'flex h-10 items-center gap-1.5 rounded-full bg-raised px-4 text-[14px] text-fg';
 
 /** The link back to the dashboard, at the top of every screen. */
 export function DashboardLink() {
@@ -103,6 +116,53 @@ function Tabs({active}: {active: Tab}) {
   );
 }
 
+/**
+ * The last change, with Undo, floating above the bottom edge for a few
+ * seconds; and a problem (saving failed) until it's dismissed.
+ */
+export function UndoBar() {
+  const bar = useClimb(s => s.bar);
+  const notice = useClimb(s => s.notice);
+  useEffect(() => {
+    if (!bar) return;
+    const t = window.setTimeout(dismissBar, CLIMB_UNDO_BAR_MS);
+    return () => window.clearTimeout(t);
+  }, [bar]);
+  if (notice)
+    return (
+      <div
+        role="alert"
+        className="mx-3 mb-3 flex shrink-0 items-start gap-3 rounded-2xl bg-raised px-4 py-3 text-[14px] text-danger"
+      >
+        <span className="flex-1">{notice}</span>
+        <button
+          type="button"
+          aria-label="Dismiss"
+          onClick={() => setNotice(null)}
+          className="icon-btn h-8 w-8"
+        >
+          <X size={16} />
+        </button>
+      </div>
+    );
+  if (!bar) return null;
+  return (
+    <div
+      role="status"
+      className="mx-3 mb-3 flex h-12 shrink-0 items-center gap-3 rounded-2xl bg-raised px-4 text-[14px]"
+    >
+      <span className="min-w-0 flex-1 truncate text-strong">{bar.message}</span>
+      <button
+        type="button"
+        onClick={undo}
+        className="flex h-9 items-center gap-1.5 rounded-full px-3 font-medium text-accent"
+      >
+        <Undo2 size={16} aria-hidden /> Undo
+      </button>
+    </div>
+  );
+}
+
 /** A screen with the tabs: Today, Progress, History. */
 export function TabScreen({
   tab,
@@ -117,6 +177,7 @@ export function TabScreen({
     <div className="flex h-full flex-col bg-bg text-[15px]">
       <Header title={title} />
       <main className="min-h-0 flex-1 overflow-y-auto pb-6">{children}</main>
+      <UndoBar />
       <Tabs active={tab} />
     </div>
   );
@@ -128,7 +189,7 @@ export function SubScreen({
   back,
   children,
 }: {
-  title: string;
+  title: ReactNode;
   back: Route;
   children: ReactNode;
 }) {
@@ -136,6 +197,7 @@ export function SubScreen({
     <div className="flex h-full flex-col bg-bg text-[15px]">
       <Header title={title} back={back} right={<span />} />
       <main className="min-h-0 flex-1 overflow-y-auto pb-6">{children}</main>
+      <UndoBar />
     </div>
   );
 }

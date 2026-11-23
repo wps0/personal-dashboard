@@ -6,23 +6,39 @@
 import {useSyncExternalStore} from 'react';
 
 export type Route =
-  {name: 'today'} | {name: 'progress'} | {name: 'history'} | {name: 'settings'};
+  | {name: 'today'}
+  | {name: 'progress'}
+  | {name: 'history'}
+  | {name: 'settings'}
+  | {name: 'place'; id: string};
 
 export function parse(hash: string): Route {
-  switch (hash.replace(/^#\/?/, '').split('/')[0]) {
+  const [first, id] = hash.replace(/^#\/?/, '').split('/');
+  switch (first) {
     case 'progress':
       return {name: 'progress'};
     case 'history':
       return {name: 'history'};
     case 'settings':
       return {name: 'settings'};
+    case 'place':
+      return id
+        ? {name: 'place', id: decodeURIComponent(id)}
+        : {name: 'settings'};
     default:
       return {name: 'today'};
   }
 }
 
 export function href(route: Route): string {
-  return route.name === 'today' ? '#/' : `#/${route.name}`;
+  switch (route.name) {
+    case 'today':
+      return '#/';
+    case 'place':
+      return `#/place/${encodeURIComponent(route.id)}`;
+    default:
+      return `#/${route.name}`;
+  }
 }
 
 function subscribe(onChange: () => void) {
