@@ -56,6 +56,14 @@ export function change(f: (data: ClimbData) => ClimbData, message?: string) {
   });
 }
 
+/**
+ * Puts in what a sync brought. Undo starts afresh: going back past a sync
+ * would undo the other device's changes too, and upload that.
+ */
+export function syncedData(data: ClimbData) {
+  useClimb.setState({data, history: [], bar: null});
+}
+
 /** Goes back before the last change that can be undone. */
 export function undo() {
   const {history} = useClimb.getState();
