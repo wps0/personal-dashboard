@@ -938,6 +938,10 @@ Google Drive sync.
     Fetching feeds needs a CORS proxy or a small backend, which this
     serverless app avoids today, so it needs a design decision first.
 - **Planned.** Class photos (5.3) and tasks from a prompt (5.4).
+- **Climbing log** (proposed): a separate app in this repository, for
+  bouldering at gyms and on boards, on a phone, linked from the dashboard
+  and back (only linked: its data is kept apart). Design and screenshots in
+  `docs/climbing.md`.
 
 ### 5.1 Keyboard shortcuts ✅
 
