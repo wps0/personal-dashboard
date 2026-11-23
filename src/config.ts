@@ -166,3 +166,5 @@ export const CLIMB_COLUMN_GROUPS = 6;
 export const CLIMB_MAX_WEEKS = 26;
 /** The hardest climbs averaged for "Top 5 avg" (8a.nu ranks on 10). */
 export const CLIMB_TOP_N = 5;
+/** Weeks in History's "sessions a week". */
+export const CLIMB_HISTORY_WEEKS = 12;

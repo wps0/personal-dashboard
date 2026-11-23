@@ -242,3 +242,39 @@ export function monthStats(
     hardest: top >= 0 ? scale(system)[top] : undefined,
   };
 }
+
+/** Sessions by month ("2026-11"), newest first, each month's newest first. */
+export function sessionsByMonth(
+  data: ClimbData,
+): {month: string; sessions: Session[]}[] {
+  const sorted = [...data.sessions].sort((a, b) =>
+    before(a, b) ? 1 : before(b, a) ? -1 : 0,
+  );
+  const out: {month: string; sessions: Session[]}[] = [];
+  for (const s of sorted) {
+    const month = dayOf(s).slice(0, 7);
+    if (out.at(-1)?.month !== month) out.push({month, sessions: []});
+    out.at(-1)!.sessions.push(s);
+  }
+  return out;
+}
+
+/** Sessions in each of the `weeks` weeks (from Monday) up to the one with `today`, oldest first. */
+export function sessionsPerWeek(
+  data: ClimbData,
+  today: string,
+  weeks: number,
+): {from: string; count: number}[] {
+  const [y, m, d] = today.split('-').map(Number);
+  const back = (new Date(y, m - 1, d).getDay() + 6) % 7;
+  const monday = addDays(today, -back);
+  return Array.from({length: weeks}, (_, i) => {
+    const from = addDays(monday, -7 * (weeks - 1 - i));
+    const to = addDays(from, 6);
+    return {
+      from,
+      count: data.sessions.filter(s => dayOf(s) >= from && dayOf(s) <= to)
+        .length,
+    };
+  });
+}
