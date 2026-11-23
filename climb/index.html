@@ -1,0 +1,43 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <!--
+      GitHub Pages can't send headers, so the policy is set here, before
+      anything it governs. The climbing log talks to no other site. The hash
+      is the theme script's below, the same as the dashboard's (checked by
+      src/csp.test.ts).
+    -->
+    <meta
+      http-equiv="Content-Security-Policy"
+      content="default-src 'none'; script-src 'self' 'sha256-wc2NscKmjjaKyESu5NPMrvafpm3kEN5p+7xaTADN7AY='; style-src 'self'; img-src 'self' data:; font-src 'self'; connect-src 'self'; worker-src 'self'; manifest-src 'self'; form-action 'none'; base-uri 'none'; object-src 'none'"
+    />
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta
+      name="theme-color"
+      content="#0b0d10"
+      media="(prefers-color-scheme: dark)"
+    />
+    <meta
+      name="theme-color"
+      content="#f5f6f8"
+      media="(prefers-color-scheme: light)"
+    />
+    <script>
+      // Apply the stored theme before first paint (see src/theme.ts).
+      try {
+        var t = localStorage.getItem('personal-dashboard/theme');
+        if (t === 'light' || t === 'dark')
+          document.documentElement.dataset.theme = t;
+      } catch (e) {}
+    </script>
+    <link rel="icon" href="/climb/icon.svg" type="image/svg+xml" />
+    <link rel="apple-touch-icon" href="/climb/apple-touch-icon.png" />
+    <link rel="manifest" href="/climb/manifest.webmanifest" />
+    <title>Climb</title>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/climb/main.tsx"></script>
+  </body>
+</html>

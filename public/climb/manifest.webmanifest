@@ -1,0 +1,22 @@
+{
+  "id": "./",
+  "name": "Climb",
+  "short_name": "Climb",
+  "description": "A bouldering log: climbs by grade and tries, at gyms and on boards.",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#0b0d10",
+  "theme_color": "#0b0d10",
+  "icons": [
+    {"src": "icon-192.png", "sizes": "192x192", "type": "image/png"},
+    {"src": "icon-512.png", "sizes": "512x512", "type": "image/png"},
+    {
+      "src": "icon-maskable-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    },
+    {"src": "icon.svg", "sizes": "any", "type": "image/svg+xml"}
+  ]
+}

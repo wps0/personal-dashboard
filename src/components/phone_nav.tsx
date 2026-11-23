@@ -1,4 +1,4 @@
-import {CircleGauge, Menu, Settings, X} from 'lucide-react';
+import {CircleGauge, Menu, Mountain, Settings, X} from 'lucide-react';
 import {useCallback, useEffect, useRef, useState, type ReactNode} from 'react';
 import {PAGES, usePhoneNav} from '../nav';
 import {href, type Route} from '../router';
@@ -47,6 +47,15 @@ export function PhoneHeader({
         {page?.label}
       </span>
       {actions}
+      {nav === 'tabs' && (
+        <a
+          href="climb/"
+          aria-label="Climbing log"
+          className="icon-btn h-9 w-9 shrink-0"
+        >
+          <Mountain size={18} />
+        </a>
+      )}
       {nav === 'tabs' && (
         <a
           href={href({name: 'settings'})}
@@ -151,6 +160,18 @@ function PageDrawer({route, onClose}: {route: Route; onClose(): void}) {
               </a>
             );
           })}
+        </div>
+        <div className="mx-4 border-t border-line pt-3 text-[11px] font-medium tracking-wide text-dim uppercase">
+          Other apps
+        </div>
+        <div className="p-2">
+          <a
+            href="climb/"
+            className="flex items-center gap-3 rounded-lg px-3 py-2.5 text-[15px] text-fg hover:bg-raised"
+          >
+            <Mountain size={19} aria-hidden />
+            <span className="flex-1">Climbing log</span>
+          </a>
         </div>
       </nav>
     </div>

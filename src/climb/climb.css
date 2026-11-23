@@ -1,0 +1,20 @@
+@import '../index.css';
+
+/*
+ * The climbing log's accent: chalk orange, so the two apps tell apart. The
+ * rest of the palette is the dashboard's (index.css), dark and light.
+ */
+:root {
+  --color-accent: #fb923c;
+  --color-on-accent: #3b1505;
+}
+:root[data-theme='light'] {
+  --color-accent: #c2410c;
+  --color-on-accent: #ffffff;
+}
+@media (prefers-color-scheme: light) {
+  :root:not([data-theme='dark']) {
+    --color-accent: #c2410c;
+    --color-on-accent: #ffffff;
+  }
+}

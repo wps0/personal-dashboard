@@ -1,4 +1,11 @@
-import {CircleGauge, Keyboard, Monitor, Moon, Sun} from 'lucide-react';
+import {
+  CircleGauge,
+  Keyboard,
+  Monitor,
+  Moon,
+  Mountain,
+  Sun,
+} from 'lucide-react';
 import {ConflictsBadge} from './components/conflicts_badge';
 import {BottomTabs, PhoneHeader} from './components/phone_nav';
 import {Toaster} from './components/toaster';
@@ -115,6 +122,12 @@ export function App() {
             </a>
           ))}
         </nav>
+        <a
+          href="climb/"
+          className="mr-1 flex shrink-0 items-center gap-1.5 rounded-md border border-line px-2.5 py-1 text-dim hover:text-fg"
+        >
+          <Mountain size={14} aria-hidden /> Climbing
+        </a>
         <ConflictsBadge />
         <button
           className="icon-btn shrink-0"
