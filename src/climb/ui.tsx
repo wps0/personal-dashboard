@@ -174,7 +174,7 @@ export function TabScreen({
   children: ReactNode;
 }) {
   return (
-    <div className="flex h-full flex-col bg-bg text-[15px]">
+    <div className="relative flex h-full flex-col bg-bg text-[15px]">
       <Header title={title} />
       <main className="min-h-0 flex-1 overflow-y-auto pb-6">{children}</main>
       <UndoBar />
