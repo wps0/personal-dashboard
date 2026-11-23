@@ -1,15 +1,12 @@
 import type {DriveFile} from '../google/drive';
 import {emptyData, type AppData} from '../model/types';
+import type {SyncBase as Base} from '../saving/local_store';
 import {encode, toReadableJson} from '../storage/codec';
 import {readStored} from '../storage/storage';
 import {mergeData, same, type Conflict} from './merge';
 
 /** Where this device stands with Drive: the file, and its version and content at the last sync. */
-export interface SyncBase {
-  fileId: string;
-  version: string;
-  data: AppData;
-}
+export type SyncBase = Base<AppData>;
 
 /** The Drive operations a sync needs (google/drive.ts; a fake in tests). */
 export interface Remote {

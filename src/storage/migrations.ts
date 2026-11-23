@@ -1,6 +1,7 @@
 /**
  * @fileoverview Upgrades data saved by older versions of the app, one schema
- * version at a time, as it's read (see `checked()` in codec.ts). That covers
+ * version at a time, as it's read (see `protoCodec()` in
+ * saving/proto_codec.ts). That covers
  * every way data comes in: this device's copy, the sync base, the file on
  * Drive and imported exports.
  *
@@ -20,10 +21,14 @@
  */
 
 import type * as pb from '../gen/dashboard/data_pb';
+import {
+  migrate as migrateWith,
+  type Migration as Step,
+} from '../saving/proto_codec';
 import {reservedToEvents} from './v3_reserved_events';
 
 /** Upgrades data of one schema version to the next. */
-export type Migration = (data: pb.AppData) => pb.AppData;
+export type Migration = Step<pb.AppData>;
 
 /** `MIGRATIONS[n]` upgrades data of schema version `n` to version `n + 1`. */
 export const MIGRATIONS: Readonly<Record<number, Migration>> = {
@@ -46,14 +51,5 @@ export function migrate(
   to: number,
   steps: Readonly<Record<number, Migration>> = MIGRATIONS,
 ): pb.AppData {
-  let out = data;
-  for (let version = from; version < to; version++) {
-    const step = steps[version];
-    if (!step)
-      throw new Error(
-        `Data of schema version ${version} can’t be upgraded: no migration to version ${version + 1}.`,
-      );
-    out = step(out);
-  }
-  return out;
+  return migrateWith(data, from, to, steps);
 }

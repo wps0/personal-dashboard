@@ -1,7 +1,9 @@
+import {createHash} from 'node:crypto';
 import {create, equals, fromBinary, toBinary} from '@bufbuild/protobuf';
 import {BinaryWriter, WireType} from '@bufbuild/protobuf/wire';
-import {describe, expect, it} from 'vitest';
+import {describe, expect, it, vi} from 'vitest';
 import * as pb from '../gen/dashboard/data_pb';
+import {sampleData} from '../model/sample';
 import {
   SCHEMA_VERSION,
   decode,
@@ -30,6 +32,25 @@ function sample(): pb.AppData {
     },
   });
 }
+
+describe('the bytes', () => {
+  // Hashes of what the app wrote before its saving code was shared with the
+  // climbing log (saving/): the same data must give the same bytes.
+  it('are exactly what they were before the saving code was shared', () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date('2026-11-23T12:00:00Z'));
+    const data = sampleData('2026-11-23');
+    vi.useRealTimers();
+    const sha256 = (x: Uint8Array | string) =>
+      createHash('sha256').update(x).digest('hex');
+    expect(sha256(encode(data))).toBe(
+      '1b3268b0364c8085cb5e8ffe7310cf0df0dcf9f62f5b08410537dd44f8181bd6',
+    );
+    expect(sha256(toReadableJson(data))).toBe(
+      'a9cbbc8ae1a8f35361ce9fbfeacbcc843811bfec8dd48bd34762f663a19cad19',
+    );
+  });
+});
 
 describe('binary', () => {
   it('keeps the schema version in field 1, where every version finds it', () => {
