@@ -243,6 +243,17 @@ export function Empty({
   );
 }
 
+/** A gym's colour label, as a swatch (black and white get a ring). */
+export function Swatch({hex, size = 'h-7 w-7'}: {hex: string; size?: string}) {
+  return (
+    <span
+      aria-hidden
+      className={`inline-block shrink-0 rounded-md ring-1 ring-white/25 ${size}`}
+      style={{background: hex}}
+    />
+  );
+}
+
 /** A choice of a few options, as pills; the chosen one is filled. */
 export function Segmented<T extends string>({
   label,

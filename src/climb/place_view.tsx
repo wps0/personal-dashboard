@@ -11,8 +11,17 @@ import {
   renameColour,
   updatePlace,
 } from './model/places';
+import {navigate} from './router';
 import {change, useClimb} from './store';
-import {BLOCK, IN_BLOCK, LIST, Section, SMALL_BUTTON, SubScreen} from './ui';
+import {
+  BLOCK,
+  IN_BLOCK,
+  LIST,
+  Section,
+  SMALL_BUTTON,
+  SubScreen,
+  Swatch,
+} from './ui';
 
 /** A gym: its name and its colour labels. */
 export function PlaceView({id}: {id: string}) {
@@ -62,7 +71,7 @@ export function PlaceView({id}: {id: string}) {
               className={`${SMALL_BUTTON} text-danger`}
               onClick={() => {
                 change(d => deletePlace(d, id), `Deleted ${place.name}`);
-                location.hash = '#/settings';
+                navigate({name: 'settings'});
               }}
             >
               <Trash2 size={16} aria-hidden /> Delete
@@ -96,16 +105,6 @@ function NameField({place}: {place: Place}) {
         if (e.key === 'Enter') e.currentTarget.blur();
       }}
       className={`h-12 w-full px-4 text-[16px] text-strong ${BLOCK}`}
-    />
-  );
-}
-
-function Swatch({hex, size = 'h-7 w-7'}: {hex: string; size?: string}) {
-  return (
-    <span
-      aria-hidden
-      className={`inline-block shrink-0 rounded-md ring-1 ring-white/25 ${size}`}
-      style={{background: hex}}
     />
   );
 }
