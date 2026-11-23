@@ -6,7 +6,7 @@ import {OpenElsewhere} from './components/open_elsewhere';
 import './index.css';
 import {setUpPwa} from './pwa';
 import {setUpAutosave} from './storage/autosave';
-import {claimSingleTab} from './storage/single_tab';
+import {claimSingleTab} from './saving/single_tab';
 import {IndexedDbStorage} from './storage/storage';
 import {useStore} from './store';
 import {adoptFoldedGroups} from './ui';

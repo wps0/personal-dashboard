@@ -33,6 +33,14 @@ describe('claimSingleTab', () => {
     expect(await claimSingleTab(locks)).toBe(false);
   });
 
+  it('gives each app its own lock, so both can be open', async () => {
+    const fake = new FakeLocks();
+    const locks = fake as unknown as LockManager;
+    expect(await claimSingleTab(locks)).toBe(true);
+    expect(await claimSingleTab(locks, 'climb')).toBe(true);
+    expect(await claimSingleTab(locks, 'climb')).toBe(false);
+  });
+
   it('goes ahead without Web Locks, or if the request fails', async () => {
     vi.stubGlobal('navigator', {});
     expect(await claimSingleTab()).toBe(true);
