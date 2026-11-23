@@ -21,3 +21,50 @@ export function hhmm(d: Date): string {
 export function today(): string {
   return isoDate(new Date());
 }
+
+/** `date` (YYYY-MM-DD) moved by `days`. */
+export function addDays(date: string, days: number): string {
+  const [y, m, d] = date.split('-').map(Number);
+  return isoDate(new Date(y, m - 1, d + days));
+}
+
+const DAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+const MONTHS = [
+  'Jan',
+  'Feb',
+  'Mar',
+  'Apr',
+  'May',
+  'Jun',
+  'Jul',
+  'Aug',
+  'Sep',
+  'Oct',
+  'Nov',
+  'Dec',
+];
+
+/** "Sat 21 Nov", in English whatever the browser's language. */
+export function shortDate(date: string): string {
+  const [y, m, d] = date.split('-').map(Number);
+  const day = new Date(y, m - 1, d).getDay();
+  return `${DAYS[day]} ${d} ${MONTHS[m - 1]}`;
+}
+
+/** "Nov 2026"'s month name: "November". */
+export function monthName(month: number): string {
+  return [
+    'January',
+    'February',
+    'March',
+    'April',
+    'May',
+    'June',
+    'July',
+    'August',
+    'September',
+    'October',
+    'November',
+    'December',
+  ][month];
+}

@@ -1,16 +1,24 @@
-import {ChevronDown, Settings, Timer} from 'lucide-react';
+import {ChevronDown, ChevronRight, Settings, Timer} from 'lucide-react';
 import {useState} from 'react';
+import {Tile, trendOf} from './charts';
+import {settingsOf, type ClimbData} from './model/data';
+import {monthName, shortDate, today} from './model/dates';
+import {scale, systemOf} from './model/grades';
 import {
   climbsOf,
+  dayOf,
+  formatLength,
+  lengthOf,
   nextPlaceId,
   runningSession,
   startSession,
   timeOf,
 } from './model/sessions';
+import {lastSession, monthStats} from './model/stats';
 import {placeById} from './model/places';
 import {href, navigate} from './router';
 import {change, useClimb} from './store';
-import {BLOCK, Empty, TabScreen} from './ui';
+import {BLOCK, Empty, Section, TabScreen} from './ui';
 
 export function TodayView() {
   const data = useClimb(s => s.data);
@@ -97,9 +105,101 @@ export function TodayView() {
   return (
     <TabScreen tab="today" title="Climb">
       <div className="px-4 pt-4">{top}</div>
+      <MonthSoFar data={data} />
+      <LastSession data={data} />
       <p className="px-4 pt-4 text-[13px] text-dim">
         A session starts only when you press Start, and ends with Finish.
       </p>
     </TabScreen>
+  );
+}
+
+/** This month so far against the whole of the last: climbs, flashed, hardest. */
+function MonthSoFar({data}: {data: ClimbData}) {
+  const system = systemOf(settingsOf(data));
+  const month = today().slice(0, 7);
+  const [y, m] = month.split('-').map(Number);
+  const prev =
+    m === 1 ? `${y - 1}-12` : `${y}-${String(m - 1).padStart(2, '0')}`;
+  const day = Number(today().slice(8));
+  const now = monthStats(data, month, system);
+  // Last month up to the same day, so early in a month isn't a drop.
+  const was = monthStats(data, prev, system, day);
+  if (!now.sessions && !was.sessions) return null;
+  const short = `by ${day} ${monthName(Number(prev.slice(5)) - 1).slice(0, 3)}`;
+  const pct = (x: number | null) =>
+    x === null ? '–' : `${Math.round(x * 100)}%`;
+  const grades = scale(system);
+  return (
+    <Section title={`${monthName(m - 1)} so far`}>
+      <div className="grid grid-cols-3 gap-2">
+        <Tile
+          label="Climbs"
+          value={now.climbs}
+          was={`${short}: ${was.climbs}`}
+          trend={was.sessions ? trendOf(now.climbs, was.climbs) : undefined}
+        />
+        <Tile
+          label="Flashed"
+          value={pct(now.flashedShare)}
+          was={`${short}: ${pct(was.flashedShare)}`}
+          trend={
+            now.flashedShare !== null && was.flashedShare !== null
+              ? trendOf(
+                  Math.round(now.flashedShare * 100),
+                  Math.round(was.flashedShare * 100),
+                )
+              : undefined
+          }
+        />
+        <Tile
+          label="Hardest"
+          value={now.hardest ?? '–'}
+          was={`${short}: ${was.hardest ?? '–'}`}
+          trend={
+            now.hardest && was.hardest
+              ? trendOf(
+                  grades.indexOf(now.hardest),
+                  grades.indexOf(was.hardest),
+                )
+              : undefined
+          }
+        />
+      </div>
+    </Section>
+  );
+}
+
+function LastSession({data}: {data: ClimbData}) {
+  const last = lastSession(data);
+  if (!last || last.end === undefined) return null;
+  const place = placeById(data, last.placeId);
+  const climbs = climbsOf(data, last.id);
+  const flashed = climbs.filter(c => c.tries <= 1).length;
+  return (
+    <Section
+      title="Last session"
+      more={
+        <a href={href({name: 'history'})} className="text-[14px] text-accent">
+          history
+        </a>
+      }
+    >
+      <a
+        href={href({name: 'summary', id: last.id})}
+        className={`flex items-center gap-3 p-4 ${BLOCK}`}
+      >
+        <div className="min-w-0 flex-1">
+          <div className="truncate text-strong">
+            {shortDate(dayOf(last))} · {place?.name ?? 'Unknown place'}
+          </div>
+          <div className="text-[14px] text-dim">
+            {formatLength(lengthOf(last))} · {climbs.length} climb
+            {climbs.length === 1 ? '' : 's'} · {flashed} flashed
+          </div>
+        </div>
+        <ChevronRight size={18} className="text-dim" aria-hidden />
+      </a>
+    </Section>
   );
 }

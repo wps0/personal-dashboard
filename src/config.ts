@@ -156,3 +156,7 @@ export const CLIMB_COLOURS: readonly (readonly [string, string])[] = [
 export const CLIMB_UNDO_STEPS = 50;
 /** How long the log's undo bar stays after a change. */
 export const CLIMB_UNDO_BAR_MS = 6000;
+/** Days of sessions a finished session is compared with. */
+export const CLIMB_COMPARE_DAYS = 30;
+/** Rows in a chart by grade; the easiest grades beyond it are summed ("5 and below"). */
+export const CLIMB_CHART_ROWS = 7;
