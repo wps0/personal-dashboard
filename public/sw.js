@@ -1,9 +1,11 @@
-// Service worker: makes the app installable and usable offline.
+// Service worker: makes both apps (the dashboard, and the climbing log in
+// climb/) installable and usable offline.
 //
 // - Only this site's own GET requests are handled. Calls to Google, Gemini,
 //   USOS and any other origin go straight to the network, never cached.
-// - Pages: network first, revalidating the HTTP cache (so a new deploy shows
-//   up at once, not after its max-age), the cached copy when offline.
+// - Pages (each app's): network first, revalidating the HTTP cache (so a new
+//   deploy shows up at once, not after its max-age), the cached copy when
+//   offline.
 // - Built assets (/assets/*, content-hashed, never change): cache first.
 // - On install and after each page load, every file of the current build is
 //   cached (see asset-manifest.json), so the app works offline after the
@@ -11,12 +13,17 @@
 const CACHE = 'dashboard-v1';
 const scope = new URL(self.registration.scope);
 const PAGE = new URL('./', scope).href;
+const CLIMB_PAGE = new URL('./climb/', scope).href;
 
 const STATIC = [
   'manifest.webmanifest',
   'icon.svg',
   'icon-192.png',
   'icon-512.png',
+  'climb/manifest.webmanifest',
+  'climb/icon.svg',
+  'climb/icon-192.png',
+  'climb/icon-512.png',
 ];
 
 /**
@@ -42,22 +49,31 @@ async function cacheBuild() {
       await cache.delete(req);
 }
 
-/** Whether `url` is the app's page: the scope's root or its index.html. */
-function isPage(url) {
-  return (
-    url.pathname === scope.pathname ||
-    url.pathname === `${scope.pathname}index.html`
+/**
+ * The page `url` is, as cached: the dashboard (the scope's root or its
+ * index.html) or the climbing log (climb/, or its index.html); else null.
+ */
+function pageOf(url) {
+  for (const page of [PAGE, CLIMB_PAGE]) {
+    const path = new URL(page).pathname;
+    if (url.pathname === path || url.pathname === `${path}index.html`)
+      return page;
+  }
+  return null;
+}
+
+/** Caches a fresh copy of `page`. */
+function cachePage(page) {
+  return fetch(page, {cache: 'no-store'}).then(res =>
+    res.ok ? caches.open(CACHE).then(c => c.put(page, res)) : undefined,
   );
 }
 
 self.addEventListener('install', event => {
   event.waitUntil(
-    Promise.all([
-      fetch(PAGE, {cache: 'no-store'}).then(res =>
-        res.ok ? caches.open(CACHE).then(c => c.put(PAGE, res)) : undefined,
-      ),
-      cacheBuild(),
-    ]).then(() => self.skipWaiting()),
+    Promise.all([cachePage(PAGE), cachePage(CLIMB_PAGE), cacheBuild()]).then(
+      () => self.skipWaiting(),
+    ),
   );
 });
 
@@ -77,24 +93,27 @@ self.addEventListener('fetch', event => {
   const url = new URL(req.url);
   if (req.method !== 'GET' || url.origin !== scope.origin) return;
   if (req.mode === 'navigate') {
+    const page = pageOf(url);
     event.respondWith(
       fetch(req, {cache: 'no-cache'})
         .then(res => {
-          // Only the app's own page becomes the offline copy.
-          if (res.ok && isPage(url)) {
+          // Only the apps' own pages become offline copies.
+          if (res.ok && page) {
             const copy = res.clone();
             // Keep the offline copy current, including a new deploy's files.
             event.waitUntil(
               caches
                 .open(CACHE)
-                .then(c => c.put(PAGE, copy))
+                .then(c => c.put(page, copy))
                 .then(cacheBuild)
                 .catch(() => {}),
             );
           }
           return res;
         })
-        .catch(() => caches.match(PAGE).then(r => r ?? Response.error())),
+        .catch(() =>
+          caches.match(page ?? PAGE).then(r => r ?? Response.error()),
+        ),
     );
     return;
   }

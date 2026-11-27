@@ -1,5 +1,6 @@
 import {describe, expect, it} from 'vitest';
-import html from '../index.html?raw';
+import climbHtml from '../climb/index.html?raw';
+import dashboardHtml from '../index.html?raw';
 
 async function sha256(text: string): Promise<string> {
   const digest = await crypto.subtle.digest(
@@ -9,7 +10,10 @@ async function sha256(text: string): Promise<string> {
   return btoa(String.fromCharCode(...new Uint8Array(digest)));
 }
 
-describe('Content-Security-Policy in index.html', () => {
+describe.each([
+  ['index.html', dashboardHtml],
+  ['climb/index.html', climbHtml],
+])('Content-Security-Policy in %s', (_, html) => {
   const csp = /http-equiv="Content-Security-Policy"\s+content="([^"]*)"/.exec(
     html,
   )?.[1];
