@@ -14,7 +14,7 @@ import {memo, useMemo, useState, type ReactNode} from 'react';
 import {BufferedTextarea} from '../components/buffered';
 import {HoursInput} from '../components/hours_input';
 import {WeekNav} from '../components/week_nav';
-import {fmtH, URGENCY_CLASS} from '../format';
+import {fmtDuration, URGENCY_CLASS} from '../format';
 import {
   useCapacities,
   useLookups,
@@ -163,10 +163,10 @@ function WeekTotal({start}: {start: ISODate}) {
     >
       {/* On phones as short as the day badges: "11.5h/27h". */}
       <span className="hidden sm:inline">Week: </span>
-      {fmtH(planned)}
+      {fmtDuration(planned)}
       <span className="hidden sm:inline"> planned of </span>
       <span className="sm:hidden">/</span>
-      {fmtH(capacity)}
+      {fmtDuration(capacity)}
     </span>
   );
 }
@@ -442,7 +442,7 @@ const AllocationContent = memo(function AllocationContent(props: {
       {alloc.done ? (
         <HoursInput
           value={alloc.actualHours ?? alloc.plannedHours}
-          title={`Actual hours (planned ${alloc.plannedHours}h)`}
+          title={`Actual hours (planned ${fmtDuration(alloc.plannedHours)})`}
           onChange={h =>
             updateSession(alloc.id, {actualHours: h}, 'Hours changed')
           }
@@ -712,10 +712,10 @@ const BacklogContent = memo(function BacklogContent(props: {
         </span>
       )}
       <span
-        className="w-10 shrink-0 text-right tabular-nums text-[11px] text-dim"
+        className="w-12 shrink-0 text-right whitespace-nowrap tabular-nums text-[11px] text-dim"
         title="Hours left to plan"
       >
-        {remaining != null ? fmtH(remaining) : ''}
+        {remaining != null ? fmtDuration(remaining) : ''}
       </span>
     </>
   );
@@ -736,7 +736,9 @@ function DragPreview({drag}: {drag: DragData}) {
       style={{borderLeftColor: lookups.color(item)}}
     >
       <span className="min-w-0 flex-1 truncate">{item.title}</span>
-      <span className="tabular-nums text-[11px] text-dim">{fmtH(hours)}</span>
+      <span className="tabular-nums text-[11px] text-dim">
+        {fmtDuration(hours)}
+      </span>
     </div>
   );
 }

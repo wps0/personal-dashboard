@@ -378,9 +378,8 @@ function WeekSummary({
           <HoursInput
             value={target}
             onChange={h => setWeekTarget(start, h ?? 0)}
-            className="field w-14"
+            className="field w-16"
           />
-          h
         </label>
         {own ? (
           <button

@@ -270,7 +270,7 @@ function WorkSettings() {
           onChange={h => setWorkSettings({workTarget: h ?? 0})}
           className="field w-16"
         />
-        <span className="text-dim">h, for weeks without their own</span>
+        <span className="text-dim">for weeks without their own</span>
       </label>
       <label className="flex items-center gap-2">
         <span className="w-44 text-dim">Planned work is labelled</span>

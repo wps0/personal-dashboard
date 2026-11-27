@@ -395,10 +395,9 @@ export function PromptTasks() {
                           optional
                           value={r.estimateHours ?? undefined}
                           onChange={h => edit(i, {estimateHours: h ?? null})}
-                          className="field w-14"
+                          className="field w-16"
                           title={`Task ${i + 1}: estimate`}
                         />
-                        <span className="text-dim">h</span>
                       </span>
                       {groups.length > 0 && (
                         <Select

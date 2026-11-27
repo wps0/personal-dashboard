@@ -172,9 +172,8 @@ function ItemDetails({item, onClose}: {item: Item; onClose(): void}) {
               optional
               value={item.estimateHours}
               onChange={estimateHours => set({estimateHours})}
-              className="field w-16"
+              className="field w-20"
             />
-            <span className="text-dim">h</span>
           </span>
         </Field>
         <Field label="hours">

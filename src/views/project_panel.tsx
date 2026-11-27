@@ -44,7 +44,12 @@ import {ProjectDetails} from './project_details';
 import {Markdown} from '../components/markdown';
 import {ProgressRing} from '../components/progress_ring';
 import {KindIcon} from '../components/kind_icon';
-import {fmtNum, groupOptions, KIND_OPTIONS, URGENCY_CLASS} from '../format';
+import {
+  fmtDuration,
+  groupOptions,
+  KIND_OPTIONS,
+  URGENCY_CLASS,
+} from '../format';
 import {countdown, shortDate} from '../model/dates';
 import {useLatest, useMediaQuery, useToday} from '../hooks';
 import {ProjectTasks} from '../components/phone/project_tasks';
@@ -503,8 +508,8 @@ function ItemsTab({project}: {project: Project}) {
               {/* A due date ("due in 4d") or a class date ("held 2 Nov"). */}
               <col className="w-24" />
               {/* Estimate and spent/plan: none on narrow panels (phones). */}
-              <col className="w-12 @max-md:w-0" />
               <col className="w-16 @max-md:w-0" />
+              <col className="w-20 @max-md:w-0" />
               <col className="w-5" />
             </colgroup>
             <thead>
@@ -1078,10 +1083,11 @@ const ItemRow = memo(function ItemRow({
           optional
           value={item.estimateHours}
           onChange={estimateHours => updateItem(item.id, {estimateHours})}
+          className="w-full"
         />
       </td>
-      <td className="px-1 py-0.5 text-right tabular-nums text-[11px] text-dim @max-md:invisible @max-md:overflow-hidden @max-md:px-0">
-        {planned > 0 ? `${fmtNum(spent)}/${fmtNum(planned)}` : '–'}
+      <td className="px-1 py-0.5 text-right whitespace-nowrap tabular-nums text-[11px] text-dim @max-md:invisible @max-md:overflow-hidden @max-md:px-0">
+        {planned > 0 ? `${fmtDuration(spent)} / ${fmtDuration(planned)}` : '–'}
       </td>
       <td className="px-1 py-0.5 text-right">
         <button
@@ -1213,10 +1219,9 @@ function AddItem({
           optional
           value={estimate}
           onChange={setEstimate}
-          placeholder="est"
-          className="field w-14"
+          placeholder="estimate"
+          className="field w-20"
         />
-        <span className="text-dim">h</span>
       </span>
       <button className="btn" onClick={submit}>
         Add
