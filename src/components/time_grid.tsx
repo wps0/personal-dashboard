@@ -21,7 +21,9 @@ import {
 } from '../dnd';
 import {create} from 'zustand';
 import {
+  createContext,
   memo,
+  useContext,
   useEffect,
   useLayoutEffect,
   useMemo,
@@ -29,6 +31,7 @@ import {
   useState,
   type MouseEvent as ReactMouseEvent,
   type PointerEvent as ReactPointerEvent,
+  type ReactNode,
 } from 'react';
 import {fmtDuration} from '../format';
 import {
@@ -170,6 +173,37 @@ export function TimeGrid({
   scrollToHour = 7,
   onDayClick,
 }: Props) {
+  const shared = useContext(SharedGridDnd);
+  const body = (
+    <GridBody
+      days={days}
+      hourHeight={hourHeight}
+      scrollToHour={scrollToHour}
+      onDayClick={onDayClick}
+    />
+  );
+  return shared ? (
+    body
+  ) : (
+    <TimeGridDnd hourHeight={hourHeight}>{body}</TimeGridDnd>
+  );
+}
+
+/** Set inside a TimeGridDnd, so the grid in it uses that drag area. */
+const SharedGridDnd = createContext(false);
+
+/**
+ * The time grid's dragging: around the grid alone (TimeGrid makes one), or
+ * around a page that has more to drag onto the grid, like Home's planned
+ * sessions (useSessionDrag). `hourHeight` must be the grid's.
+ */
+export function TimeGridDnd({
+  hourHeight = CALENDAR_HOUR_PX,
+  children,
+}: {
+  hourHeight?: number;
+  children: ReactNode;
+}) {
   // The DndContext owner must not subscribe to data, or every data change
   // re-renders all draggables. GridBody holds the subscriptions.
   const grab = useRef(0);
@@ -238,7 +272,10 @@ export function TimeGrid({
     );
     // A reserved block is dragged by its label: measure from the block's top.
     const node = drag.kind === 'reserved' ? handle?.parentElement : handle;
-    grab.current = node
+    // A block keeps where it was grabbed; anything from outside the hours
+    // (the all-day row, a list beside the grid) lands with its top at the
+    // pointer.
+    grab.current = node?.closest('[data-col]')
       ? pointerY.current - node.getBoundingClientRect().top
       : 0;
   };
@@ -309,12 +346,7 @@ export function TimeGrid({
       onDragCancel={() => (setDragging(null), suppressClicks(), stopTracking())}
     >
       <DragCancel />
-      <GridBody
-        days={days}
-        hourHeight={hourHeight}
-        scrollToHour={scrollToHour}
-        onDayClick={onDayClick}
-      />
+      <SharedGridDnd.Provider value={true}>{children}</SharedGridDnd.Provider>
       <DragOverlay dropAnimation={null} modifiers={[ghostUnderPointer]}>
         {dragging && <DragGhost drag={dragging} />}
       </DragOverlay>
@@ -725,6 +757,18 @@ const AllDayChip = memo(function AllDayChip({event}: {event: CalendarEvent}) {
     </Popover>
   );
 });
+
+/**
+ * Drags a session from outside the grid (inside a TimeGridDnd): dropped in
+ * the hours it gets that day and time, on a day's all-day row that day and
+ * no time. `place` tells this draggable from the same session's block.
+ */
+export function useSessionDrag(alloc: Allocation, place: string) {
+  return useDraggable({
+    id: `${place}:${alloc.id}`,
+    data: {kind: 'alloc', alloc} satisfies Drag,
+  });
+}
 
 /**
  * A task's deadline in the all-day row, dragged to plan time for it: into
