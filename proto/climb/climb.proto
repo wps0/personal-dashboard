@@ -1,25 +1,9 @@
-// The climbing log's data: everything it stores in the browser and syncs to
-// Drive, kept apart from the dashboard's (proto/dashboard/data.proto): its
-// own schema, version, database on the device and file on Drive.
-//
-// Stored as protobuf binary (climb/storage.ts), with protobuf's JSON form
-// alongside as a read-only copy for people. Never renumber, retype or reuse a
-// field or enum value (mark removed ones `reserved`). Adding a field is safe:
-// older versions of the app keep fields they don't know when they save. Raise
-// schema_version for any change older versions can't handle; they refuse such
-// data and ask to be updated.
-//
-// A field that can be unset is `optional`, message fields included. An enum
-// is unset at its `*_UNSPECIFIED` value instead.
-//
-// Dates are `YYYY-MM-DD` and times of day `HH:MM`, in local time.
+// The climbing log's data: what it stores on this device and syncs to Drive.
 syntax = "proto3";
 
 package climb;
 
 message ClimbData {
-  // Raised on every change older versions of the app can't read correctly;
-  // they refuse data with a higher version and ask to be updated.
   int32 schema_version = 1;
   repeated Place places = 2;
   repeated Session sessions = 3;
@@ -67,7 +51,9 @@ message Colour {
 message Session {
   string id = 1;
   string place_id = 2;
+  // YYYY-MM-DD, local.
   string date = 3;
+  // HH:MM, local; so are end and a climb's at.
   string start = 4;
   // Unset while the session runs.
   optional string end = 5;
