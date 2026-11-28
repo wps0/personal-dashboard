@@ -95,7 +95,7 @@ export function SessionView() {
         ? `Session saved: ${n} climb${n === 1 ? '' : 's'}`
         : 'Nothing logged, so the session isn’t kept',
     );
-    navigate({name: 'today'});
+    navigate(n ? {name: 'summary', id: session.id} : {name: 'today'});
   };
 
   return (
