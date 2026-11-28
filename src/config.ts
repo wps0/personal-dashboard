@@ -160,3 +160,9 @@ export const CLIMB_UNDO_BAR_MS = 6000;
 export const CLIMB_COMPARE_DAYS = 30;
 /** Rows in a chart by grade; the easiest grades beyond it are summed ("5 and below"). */
 export const CLIMB_CHART_ROWS = 7;
+/** Grade groups the columns of climbs per week (or month) stack. */
+export const CLIMB_COLUMN_GROUPS = 6;
+/** Beyond this many weeks, Progress's columns and lines go by month. */
+export const CLIMB_MAX_WEEKS = 26;
+/** The hardest climbs averaged for "Top 5 avg" (8a.nu ranks on 10). */
+export const CLIMB_TOP_N = 5;

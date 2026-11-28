@@ -20,9 +20,7 @@ const FONT = GradeSystem.FONT;
  * Sessions at gym A or B, by local start ("2026-11-10T18:00"), two hours
  * long, each with climbs as [grade, tries].
  */
-function fixture(
-  sessions: [string, string, [string, number][]][],
-): ClimbData {
+function fixture(sessions: [string, string, [string, number][]][]): ClimbData {
   const [a, gymA] = addPlace(emptyData(), 'A');
   const [data, gymB] = addPlace(a, 'B');
   const ids: Record<string, string> = {A: gymA, B: gymB};
