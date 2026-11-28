@@ -1,8 +1,14 @@
 import {ChevronRight, Download, Plus, Upload} from 'lucide-react';
 import {useRef, useState, type ReactNode} from 'react';
 import {useTheme, type ThemeChoice} from '../theme';
-import {GradeSystem, PlaceKind, settingsOf, type Place} from './model/data';
-import {buttonRange, scale, systemOf} from './model/grades';
+import {GradeSystem, settingsOf, type Place} from './model/data';
+import {
+  buttonRange,
+  defaultRange,
+  gradeOf,
+  scale,
+  systemOf,
+} from './model/grades';
 import {addPlace, placesOf, updateSettings} from './model/places';
 import {href} from './router';
 import {downloadBinary, downloadJson, readExport} from './storage';
@@ -32,8 +38,7 @@ export function SettingsView() {
   return (
     <SubScreen title="Settings" back={{name: 'today'}}>
       <GradesSettings />
-      <PlacesSettings kind={PlaceKind.GYM} />
-      <PlacesSettings kind={PlaceKind.BOARD} />
+      <PlacesSettings />
       <ArchivedPlaces />
       <DataSettings />
       <Section title="Theme">
@@ -63,39 +68,18 @@ function GradesSettings() {
   const settings = useClimb(s => settingsOf(s.data));
   const system = systemOf(settings);
   const grades = scale(system);
-  const range = (kind: PlaceKind) => {
-    const [from, to] = buttonRange(settings, kind);
-    const set = (which: 'from' | 'to', grade: string) => {
-      const [f, t] = which === 'from' ? [grade, to] : [from, grade];
-      // Kept in order: the other end follows.
-      const i = grades.indexOf(f);
-      const j = grades.indexOf(t);
-      const [a, b] = i <= j ? [f, t] : which === 'from' ? [f, f] : [t, t];
-      change(d =>
-        updateSettings(
-          d,
-          kind === PlaceKind.BOARD
-            ? {boardButtonsFrom: a, boardButtonsTo: b}
-            : {gymButtonsFrom: a, gymButtonsTo: b},
-        ),
-      );
-    };
-    return (
-      <>
-        <GradeSelect
-          label={`${kind === PlaceKind.BOARD ? 'Boards' : 'Gyms'}: from`}
-          grades={grades}
-          value={from}
-          onChange={g => set('from', g)}
-        />
-        <span className="text-dim">to</span>
-        <GradeSelect
-          label={`${kind === PlaceKind.BOARD ? 'Boards' : 'Gyms'}: to`}
-          grades={grades}
-          value={to}
-          onChange={g => set('to', g)}
-        />
-      </>
+  const [from, to] = buttonRange(settings);
+  const set = (which: 'from' | 'to', grade: string) => {
+    const [f, t] = which === 'from' ? [grade, to] : [from, grade];
+    // Kept in order: the other end follows.
+    const i = grades.indexOf(f);
+    const j = grades.indexOf(t);
+    const [a, b] = i <= j ? [f, t] : which === 'from' ? [f, f] : [t, t];
+    change(d =>
+      updateSettings(d, {
+        buttonsFrom: gradeOf(system, a),
+        buttonsTo: gradeOf(system, b),
+      }),
     );
   };
   return (
@@ -108,28 +92,37 @@ function GradesSettings() {
           // The ranges are grades of the old scale: back to the defaults.
           change(d =>
             updateSettings(d, {
-              grades: v === 'v' ? GradeSystem.V : GradeSystem.FONT,
-              gymButtonsFrom: '',
-              gymButtonsTo: '',
-              boardButtonsFrom: '',
-              boardButtonsTo: '',
+              // The scale is the button range's: its default in the other.
+              buttonsFrom: defaultRange(
+                v === 'v' ? GradeSystem.V : GradeSystem.FONT,
+              )[0],
+              buttonsTo: defaultRange(
+                v === 'v' ? GradeSystem.V : GradeSystem.FONT,
+              )[1],
             }),
           )
         }
       />
       <div className={`mt-2 ${LIST}`}>
         <Row>
-          <span className="flex-1">Buttons at gyms</span>
-          {range(PlaceKind.GYM)}
-        </Row>
-        <Row>
-          <span className="flex-1">Buttons on boards</span>
-          {range(PlaceKind.BOARD)}
+          <span className="flex-1">Buttons</span>
+          <GradeSelect
+            label="Buttons from"
+            grades={grades}
+            value={from}
+            onChange={g => set('from', g)}
+          />
+          <span className="text-dim">to</span>
+          <GradeSelect
+            label="Buttons to"
+            grades={grades}
+            value={to}
+            onChange={g => set('to', g)}
+          />
         </Row>
       </div>
       <p className="mt-2 text-[13px] text-dim">
-        The grades you tap to log a climb. Board grades run harder than a
-        gym&apos;s, so boards have their own range.
+        The grades you tap to log a climb.
       </p>
     </Section>
   );
@@ -163,8 +156,6 @@ function GradeSelect({
 }
 
 function placeMeta(p: Place): string {
-  if (p.kind === PlaceKind.BOARD)
-    return p.usualAngle ? `usually ${p.usualAngle}°` : '';
   const n = p.colours.length;
   return n ? `${n} colour label${n === 1 ? '' : 's'}` : 'no colour labels';
 }
@@ -184,21 +175,20 @@ function PlaceRow({place}: {place: Place}) {
   );
 }
 
-function PlacesSettings({kind}: {kind: PlaceKind}) {
+function PlacesSettings() {
   const places = useClimb(s => s.data.places);
-  const list = places.filter(p => p.kind === kind && !p.archived);
+  const list = places.filter(p => !p.archived);
   const [adding, setAdding] = useState(false);
   const [name, setName] = useState('');
-  const board = kind === PlaceKind.BOARD;
   const add = () => {
     const n = name.trim();
-    if (n) change(d => addPlace(d, kind, n)[0], `Added ${n}`);
+    if (n) change(d => addPlace(d, n)[0], `Added ${n}`);
     setName('');
     setAdding(false);
   };
   return (
     <Section
-      title={board ? 'Boards' : 'Gyms'}
+      title="Gyms"
       more={
         !adding && (
           <button
@@ -206,7 +196,7 @@ function PlacesSettings({kind}: {kind: PlaceKind}) {
             onClick={() => setAdding(true)}
             className="flex items-center gap-1 text-[14px] text-accent"
           >
-            <Plus size={15} aria-hidden /> {board ? 'board' : 'gym'}
+            <Plus size={15} aria-hidden /> gym
           </button>
         )
       }
@@ -229,8 +219,8 @@ function PlacesSettings({kind}: {kind: PlaceKind}) {
                 value={name}
                 onChange={e => setName(e.target.value)}
                 onBlur={add}
-                aria-label={board ? 'New board' : 'New gym'}
-                placeholder={board ? 'Kilter, MoonBoard 2019…' : 'The gym'}
+                aria-label="New gym"
+                placeholder="The gym"
                 className={`h-10 min-w-0 flex-1 px-3 text-[15px] text-strong ${IN_BLOCK}`}
               />
               <button
@@ -245,15 +235,7 @@ function PlacesSettings({kind}: {kind: PlaceKind}) {
       )}
       {!list.length && !adding && (
         <p className="text-[14px] text-dim">
-          {board
-            ? 'None yet. Add the boards you use, like a Kilter or a MoonBoard.'
-            : 'None yet. Add the gyms you climb at.'}
-        </p>
-      )}
-      {board && list.length > 0 && (
-        <p className="mt-2 text-[13px] text-dim">
-          Board grades run harder than a gym&apos;s, so boards are charted and
-          compared on their own.
+          None yet. Add the gyms you climb at.
         </p>
       )}
     </Section>
@@ -262,10 +244,7 @@ function PlacesSettings({kind}: {kind: PlaceKind}) {
 
 function ArchivedPlaces() {
   const data = useClimb(s => s.data);
-  const list = [
-    ...placesOf(data, PlaceKind.GYM, true),
-    ...placesOf(data, PlaceKind.BOARD, true),
-  ];
+  const list = [...placesOf(data, true)];
   if (!list.length) return null;
   return (
     <Section title="Archived">

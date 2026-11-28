@@ -135,13 +135,10 @@ export const PROMPT_TASKS_MAX = 200;
 
 // Climbing log (climb/, docs/climbing.md)
 
-/** The grade buttons at gyms, from and to, unless set in Settings: Font. */
-export const CLIMB_GYM_BUTTONS_FONT = ['4', '7A+'] as const;
-/** The same on boards, whose grades run harder. */
-export const CLIMB_BOARD_BUTTONS_FONT = ['5', '7B+'] as const;
-/** The same two in V grades. */
-export const CLIMB_GYM_BUTTONS_V = ['V0', 'V8'] as const;
-export const CLIMB_BOARD_BUTTONS_V = ['V1', 'V10'] as const;
+/** The grade buttons, from and to, unless set in Settings: Font. */
+export const CLIMB_BUTTONS_FONT = ['4', '7A+'] as const;
+/** The same in V grades. */
+export const CLIMB_BUTTONS_V = ['V0', 'V8'] as const;
 /** The colours offered for a gym's labels, as name and hex. */
 export const CLIMB_COLOURS: readonly (readonly [string, string])[] = [
   ['Green', '#22c55e'],
@@ -155,8 +152,6 @@ export const CLIMB_COLOURS: readonly (readonly [string, string])[] = [
   ['White', '#f5f5f5'],
   ['Grey', '#9ca3af'],
 ];
-/** A board's angle when none is set, in degrees. */
-export const CLIMB_BOARD_ANGLE = 40;
 /** Changes the log's Undo can go back. */
 export const CLIMB_UNDO_STEPS = 50;
 /** How long the log's undo bar stays after a change. */

@@ -3,64 +3,32 @@
  * order, the conversion between them, and the range of logging buttons.
  */
 
-import {
-  CLIMB_BOARD_BUTTONS_FONT,
-  CLIMB_BOARD_BUTTONS_V,
-  CLIMB_GYM_BUTTONS_FONT,
-  CLIMB_GYM_BUTTONS_V,
-} from '../../config';
-import {GradeSystem, PlaceKind, type Settings} from './data';
+import {create} from '@bufbuild/protobuf';
+import {CLIMB_BUTTONS_FONT, CLIMB_BUTTONS_V} from '../../config';
+import * as pb from '../../gen/climb/climb_pb';
+import type {Grade, Settings} from './data';
 
-/** Font grades, easiest first. */
-export const FONT = [
-  '3',
-  '4',
-  '4+',
-  '5',
-  '5+',
-  '6A',
-  '6A+',
-  '6B',
-  '6B+',
-  '6C',
-  '6C+',
-  '7A',
-  '7A+',
-  '7B',
-  '7B+',
-  '7C',
-  '7C+',
-  '8A',
-  '8A+',
-  '8B',
-  '8B+',
-  '8C',
-  '8C+',
-  '9A',
-] as const;
+/** A grade scale: the case of a Grade's oneof. */
+export type GradeSystem = 'font' | 'v';
+export const GradeSystem = {FONT: 'font', V: 'v'} as const;
 
-/** V grades, easiest first. */
-export const V = [
-  'VB',
-  'V0',
-  'V1',
-  'V2',
-  'V3',
-  'V4',
-  'V5',
-  'V6',
-  'V7',
-  'V8',
-  'V9',
-  'V10',
-  'V11',
-  'V12',
-  'V13',
-  'V14',
-  'V15',
-  'V16',
-  'V17',
-] as const;
+/** An enum's grades, by number, as labels: "FONT_GRADE_6A_PLUS" is "6A+". */
+function labels(
+  values: readonly {name: string; number: number}[],
+  prefix: string,
+  shown: string,
+): readonly string[] {
+  return values
+    .filter(v => v.number > 0)
+    .sort((a, b) => a.number - b.number)
+    .map(v => shown + v.name.slice(prefix.length).replace('_PLUS', '+'));
+}
+
+/** Font grades, easiest first (FontGrade from 1, in climb.proto). */
+export const FONT = labels(pb.FontGradeSchema.values, 'FONT_GRADE_', '');
+
+/** V grades, easiest first (VGrade from 1): VB, V0… */
+export const V = labels(pb.VGradeSchema.values, 'V_GRADE_', 'V');
 
 /**
  * The V grade of each Font grade (the table in docs/climbing.md). The
@@ -94,63 +62,82 @@ const FONT_TO_V: Readonly<Record<string, string>> = {
   '9A': 'V17',
 };
 
-/** The system the settings use: Font unless V is chosen. */
-export function systemOf(settings: Settings): GradeSystem {
-  return settings.grades === GradeSystem.V ? GradeSystem.V : GradeSystem.FONT;
-}
-
 /** The grades of `system`, easiest first. */
 export function scale(system: GradeSystem): readonly string[] {
-  return system === GradeSystem.V ? V : FONT;
+  return system === 'v' ? V : FONT;
 }
 
-/** `grade` (of `from`) in `to`: itself, or the nearest by the table. */
+/** A grade as stored, from its scale and label ("6B+"). */
+export function gradeOf(system: GradeSystem, label: string): Grade {
+  const value = scale(system).indexOf(label) + 1;
+  return create(pb.GradeSchema, {
+    scale:
+      system === 'v'
+        ? {case: 'v', value: value as pb.VGrade}
+        : {case: 'font', value: value as pb.FontGrade},
+  });
+}
+
+/** A grade's scale; Font if unset. */
+export function systemOfGrade(grade: Grade | undefined): GradeSystem {
+  return grade?.scale.case === 'v' ? 'v' : 'font';
+}
+
+/** A grade's label ("6B+"); '' if unset or unknown. */
+export function labelOf(grade: Grade | undefined): string {
+  if (!grade?.scale.case) return '';
+  return scale(grade.scale.case)[grade.scale.value - 1] ?? '';
+}
+
+/** `label` (of `from`) in `to`: itself, or the nearest by the table. */
 export function convert(
-  grade: string,
+  label: string,
   from: GradeSystem,
   to: GradeSystem,
 ): string {
-  const a = from === GradeSystem.V ? GradeSystem.V : GradeSystem.FONT;
-  const b = to === GradeSystem.V ? GradeSystem.V : GradeSystem.FONT;
-  if (a === b) return grade;
-  if (b === GradeSystem.V) return FONT_TO_V[grade] ?? grade;
+  if (from === to) return label;
+  if (to === 'v') return FONT_TO_V[label] ?? label;
   // V to Font: the easiest Font grade with that V grade.
-  return FONT.find(f => FONT_TO_V[f] === grade) ?? grade;
+  return FONT.find(f => FONT_TO_V[f] === label) ?? label;
 }
 
-/** The default range of buttons for a kind of place, in `system`. */
-function defaultRange(
-  kind: PlaceKind,
-  system: GradeSystem,
-): readonly [string, string] {
-  const board = kind === PlaceKind.BOARD;
-  if (system === GradeSystem.V)
-    return board ? CLIMB_BOARD_BUTTONS_V : CLIMB_GYM_BUTTONS_V;
-  return board ? CLIMB_BOARD_BUTTONS_FONT : CLIMB_GYM_BUTTONS_FONT;
+/** Where `grade` sits on `system`'s scale (converted if it's in the other); -1 if unknown. */
+export function rankOf(grade: Grade | undefined, system: GradeSystem): number {
+  const label = labelOf(grade);
+  if (!label) return -1;
+  return scale(system).indexOf(convert(label, systemOfGrade(grade), system));
+}
+
+/** The scale the settings use: the button range's, Font by default. */
+export function systemOf(settings: Settings): GradeSystem {
+  return systemOfGrade(settings.buttonsFrom);
 }
 
 /**
- * The range of grade buttons for a kind of place, from and to: the
- * settings' if both are grades of the scale in order, else the default.
+ * The range of grade buttons, from and to, as labels: the settings' if both
+ * are grades of one scale in order, else the default.
  */
-export function buttonRange(
-  settings: Settings,
-  kind: PlaceKind,
-): readonly [string, string] {
+export function buttonRange(settings: Settings): readonly [string, string] {
   const system = systemOf(settings);
   const all = scale(system);
-  const [from, to] =
-    kind === PlaceKind.BOARD
-      ? [settings.boardButtonsFrom, settings.boardButtonsTo]
-      : [settings.gymButtonsFrom, settings.gymButtonsTo];
+  const from = labelOf(settings.buttonsFrom);
+  const to = labelOf(settings.buttonsTo);
   const i = all.indexOf(from);
   const j = all.indexOf(to);
-  return i >= 0 && j >= i ? [from, to] : defaultRange(kind, system);
+  if (i >= 0 && j >= i && systemOfGrade(settings.buttonsTo) === system)
+    return [from, to];
+  return system === 'v' ? CLIMB_BUTTONS_V : CLIMB_BUTTONS_FONT;
+}
+
+/** The default button range of a scale, as stored. */
+export function defaultRange(system: GradeSystem): [Grade, Grade] {
+  const [from, to] = system === 'v' ? CLIMB_BUTTONS_V : CLIMB_BUTTONS_FONT;
+  return [gradeOf(system, from), gradeOf(system, to)];
 }
 
 /** The grades on the logging buttons, easiest first. */
-export function buttons(settings: Settings, kind: PlaceKind): string[] {
+export function buttons(settings: Settings): string[] {
   const all = scale(systemOf(settings));
-  const [from, to] = buttonRange(settings, kind);
+  const [from, to] = buttonRange(settings);
   return all.slice(all.indexOf(from), all.indexOf(to) + 1);
 }

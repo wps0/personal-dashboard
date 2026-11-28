@@ -7,11 +7,12 @@
 import {create} from '@bufbuild/protobuf';
 import * as pb from '../../gen/climb/climb_pb';
 
-export {GradeSystem, PlaceKind} from '../../gen/climb/climb_pb';
+export {GradeSystem} from './grades';
 export type {
   Climb,
   ClimbData,
   Colour,
+  Grade,
   Place,
   Session,
   Settings,

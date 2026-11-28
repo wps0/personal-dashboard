@@ -1,8 +1,20 @@
 import {create} from '@bufbuild/protobuf';
+import {timestampFromDate} from '@bufbuild/protobuf/wkt';
 import {describe, expect, it} from 'vitest';
 import * as pb from '../../gen/climb/climb_pb';
-import {emptyData, GradeSystem, PlaceKind, settingsOf} from './data';
-import {buttonRange, buttons, convert, FONT, V} from './grades';
+import {emptyData, GradeSystem, settingsOf} from './data';
+import {
+  buttonRange,
+  buttons,
+  convert,
+  defaultRange,
+  FONT,
+  gradeOf,
+  labelOf,
+  rankOf,
+  systemOf,
+  V,
+} from './grades';
 import {
   addColour,
   addPlace,
@@ -15,19 +27,34 @@ import {
 } from './places';
 
 describe('grades', () => {
-  it('converts by the table, both ways', () => {
+  it('are stored as enums in their scale, and read back as labels', () => {
+    const g = gradeOf(GradeSystem.FONT, '6B+');
+    expect(g.scale).toEqual({
+      case: 'font',
+      value: pb.FontGrade.FONT_GRADE_6B_PLUS,
+    });
+    expect(labelOf(g)).toBe('6B+');
+    expect(labelOf(gradeOf(GradeSystem.V, 'VB'))).toBe('VB');
+    expect(labelOf(undefined)).toBe('');
+    // The enums list the grades in the labels' order.
+    expect(FONT).toHaveLength(Object.keys(pb.FontGrade).length / 2 - 1);
+    expect(V).toHaveLength(Object.keys(pb.VGrade).length / 2 - 1);
+  });
+
+  it('convert by the table, and rank across scales', () => {
     expect(convert('6B+', GradeSystem.FONT, GradeSystem.V)).toBe('V4');
     expect(convert('V4', GradeSystem.V, GradeSystem.FONT)).toBe('6B');
-    expect(convert('6B+', GradeSystem.UNSPECIFIED, GradeSystem.FONT)).toBe(
-      '6B+',
+    expect(rankOf(gradeOf(GradeSystem.V, 'V5'), GradeSystem.FONT)).toBe(
+      FONT.indexOf('6C'),
     );
     for (const f of FONT)
       expect(V).toContain(convert(f, GradeSystem.FONT, GradeSystem.V));
   });
 
-  it('offers 4 to 7A+ at gyms and 5 to 7B+ on boards by default', () => {
+  it('offer 4 to 7A+ by default, or the range set, whose scale the log uses', () => {
     const s = settingsOf(emptyData());
-    expect(buttons(s, PlaceKind.GYM)).toEqual([
+    expect(systemOf(s)).toBe(GradeSystem.FONT);
+    expect(buttons(s)).toEqual([
       '4',
       '4+',
       '5',
@@ -41,62 +68,66 @@ describe('grades', () => {
       '7A',
       '7A+',
     ]);
-    expect(buttonRange(s, PlaceKind.BOARD)).toEqual(['5', '7B+']);
-  });
-
-  it('uses a set range, and the default when it doesn’t fit the scale', () => {
-    const s = create(pb.SettingsSchema, {
-      gymButtonsFrom: '5+',
-      gymButtonsTo: '6B',
-      boardButtonsFrom: '7A',
-      boardButtonsTo: '6A',
+    const set = create(pb.SettingsSchema, {
+      buttonsFrom: gradeOf(GradeSystem.FONT, '5+'),
+      buttonsTo: gradeOf(GradeSystem.FONT, '6B'),
     });
-    expect(buttons(s, PlaceKind.GYM)).toEqual(['5+', '6A', '6A+', '6B']);
-    expect(buttonRange(s, PlaceKind.BOARD)).toEqual(['5', '7B+']);
-    const v = {...s, grades: GradeSystem.V};
-    expect(buttonRange(v, PlaceKind.GYM)).toEqual(['V0', 'V8']);
+    expect(buttons(set)).toEqual(['5+', '6A', '6A+', '6B']);
+    const [from, to] = defaultRange(GradeSystem.V);
+    const v = create(pb.SettingsSchema, {buttonsFrom: from, buttonsTo: to});
+    expect(systemOf(v)).toBe(GradeSystem.V);
+    expect(buttonRange(v)).toEqual(['V0', 'V8']);
+    const backwards = create(pb.SettingsSchema, {
+      buttonsFrom: gradeOf(GradeSystem.FONT, '7A'),
+      buttonsTo: gradeOf(GradeSystem.FONT, '6A'),
+    });
+    expect(buttonRange(backwards)).toEqual(['4', '7A+']);
   });
 });
 
-describe('places', () => {
-  it('adds gyms and boards, a board with the usual angle', () => {
-    const [a, gym] = addPlace(emptyData(), PlaceKind.GYM, ' Blokownia ');
-    const [b, board] = addPlace(a, PlaceKind.BOARD, 'Kilter');
-    expect(placesOf(b, PlaceKind.GYM).map(p => p.name)).toEqual(['Blokownia']);
-    expect(placesOf(b, PlaceKind.BOARD)[0].usualAngle).toBe(40);
+describe('gyms', () => {
+  it('are added, archived, and deleted while they have no sessions', () => {
+    const [a, gym] = addPlace(emptyData(), ' Blokownia ');
+    const [b, west] = addPlace(a, 'West');
+    expect(placesOf(b).map(p => p.name)).toEqual(['Blokownia', 'West']);
     const c = updatePlace(b, gym, {archived: true});
-    expect(placesOf(c, PlaceKind.GYM)).toEqual([]);
-    expect(placesOf(c, PlaceKind.GYM, true)[0].id).toBe(gym);
-    expect(deletePlace(c, board).places).toHaveLength(1);
-  });
-
-  it('keeps a place with sessions: it can only be archived', () => {
-    const [a, gym] = addPlace(emptyData(), PlaceKind.GYM, 'Blokownia');
-    const b = {
-      ...a,
+    expect(placesOf(c).map(p => p.id)).toEqual([west]);
+    expect(placesOf(c, true).map(p => p.id)).toEqual([gym]);
+    expect(deletePlace(c, west).places).toHaveLength(1);
+    const used = {
+      ...c,
       sessions: [create(pb.SessionSchema, {id: 's', placeId: gym})],
     };
-    expect(deletePlace(b, gym)).toBe(b);
+    expect(deletePlace(used, gym)).toBe(used);
   });
 
-  it('adds, renames and removes colour labels; a removed one leaves its climbs', () => {
-    const [a, gym] = addPlace(emptyData(), PlaceKind.GYM, 'Blokownia');
+  it('have colour labels; a removed one leaves the climbs that had it', () => {
+    const [a, gym] = addPlace(emptyData(), 'Blokownia');
     const b = addColour(a, gym, 'Red', '#ef4444');
     const red = b.places[0].colours[0].id;
     const c = renameColour(b, gym, red, 'Crimson');
     expect(c.places[0].colours[0].name).toBe('Crimson');
+    const climb = create(pb.ClimbSchema, {
+      id: 'x',
+      at: timestampFromDate(new Date()),
+      grade: gradeOf(GradeSystem.FONT, '6A'),
+      colourId: red,
+    });
     const d = {
       ...c,
-      climbs: [create(pb.ClimbSchema, {id: 'x', grade: '6A', colourId: red})],
+      sessions: [
+        create(pb.SessionSchema, {id: 's', placeId: gym, climbs: [climb]}),
+      ],
     };
     const e = removeColour(d, gym, red);
     expect(e.places[0].colours).toEqual([]);
-    expect(e.climbs[0].colourId).toBeUndefined();
-    expect(e.climbs[0].grade).toBe('6A');
+    expect(e.sessions[0].climbs[0].colourId).toBeUndefined();
+    expect(labelOf(e.sessions[0].climbs[0].grade)).toBe('6A');
   });
 
-  it('changes the settings', () => {
-    const a = updateSettings(emptyData(), {grades: GradeSystem.V});
-    expect(settingsOf(a).grades).toBe(GradeSystem.V);
+  it('change the settings', () => {
+    const [from, to] = defaultRange(GradeSystem.V);
+    const a = updateSettings(emptyData(), {buttonsFrom: from, buttonsTo: to});
+    expect(systemOf(settingsOf(a))).toBe(GradeSystem.V);
   });
 });

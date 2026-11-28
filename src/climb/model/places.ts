@@ -1,45 +1,30 @@
 /**
- * @fileoverview Gyms and boards, their colour labels, and the settings:
+ * @fileoverview Gyms, their colour labels, and the settings:
  * pure edits that return new data.
  */
 
 import {create} from '@bufbuild/protobuf';
 import * as pb from '../../gen/climb/climb_pb';
-import {CLIMB_BOARD_ANGLE} from '../../config';
 import {
   newId,
-  PlaceKind,
   settingsOf,
   type ClimbData,
   type Place,
   type Settings,
 } from './data';
 
-/** The places of a kind, in the order added; archived ones only if asked. */
-export function placesOf(
-  data: ClimbData,
-  kind: PlaceKind,
-  archived = false,
-): Place[] {
-  return data.places.filter(p => p.kind === kind && p.archived === archived);
+/** The gyms, in the order added; the archived ones only if asked. */
+export function placesOf(data: ClimbData, archived = false): Place[] {
+  return data.places.filter(p => p.archived === archived);
 }
 
 export function placeById(data: ClimbData, id: string): Place | undefined {
   return data.places.find(p => p.id === id);
 }
 
-/** Adds a gym or a board, and returns the data and its id. */
-export function addPlace(
-  data: ClimbData,
-  kind: PlaceKind,
-  name: string,
-): [ClimbData, string] {
-  const place = create(pb.PlaceSchema, {
-    id: newId(),
-    kind,
-    name: name.trim(),
-    usualAngle: kind === PlaceKind.BOARD ? CLIMB_BOARD_ANGLE : undefined,
-  });
+/** Adds a gym, and returns the data and its id. */
+export function addPlace(data: ClimbData, name: string): [ClimbData, string] {
+  const place = create(pb.PlaceSchema, {id: newId(), name: name.trim()});
   return [{...data, places: [...data.places, place]}, place.id];
 }
 
@@ -57,7 +42,7 @@ function updatePlaceWith(
 export function updatePlace(
   data: ClimbData,
   id: string,
-  patch: Partial<Pick<Place, 'name' | 'usualAngle' | 'archived'>>,
+  patch: Partial<Pick<Place, 'name' | 'archived'>>,
 ): ClimbData {
   return updatePlaceWith(data, id, p => ({...p, ...patch}));
 }
@@ -111,8 +96,15 @@ export function removeColour(
   }));
   return {
     ...out,
-    climbs: out.climbs.map(c =>
-      c.colourId === colourId ? {...c, colourId: undefined} : c,
+    sessions: out.sessions.map(s =>
+      s.climbs.some(c => c.colourId === colourId)
+        ? {
+            ...s,
+            climbs: s.climbs.map(c =>
+              c.colourId === colourId ? {...c, colourId: undefined} : c,
+            ),
+          }
+        : s,
     ),
   };
 }

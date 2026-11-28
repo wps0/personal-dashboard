@@ -1,7 +1,7 @@
-import {Archive, ArchiveRestore, Minus, Plus, Trash2, X} from 'lucide-react';
+import {Archive, ArchiveRestore, Plus, Trash2, X} from 'lucide-react';
 import {useState} from 'react';
 import {CLIMB_COLOURS} from '../config';
-import {PlaceKind, type Colour, type Place} from './model/data';
+import type {Colour, Place} from './model/data';
 import {
   addColour,
   deletePlace,
@@ -14,7 +14,7 @@ import {
 import {change, useClimb} from './store';
 import {BLOCK, IN_BLOCK, LIST, Section, SMALL_BUTTON, SubScreen} from './ui';
 
-/** A gym or a board: its name, a gym's colour labels, a board's angle. */
+/** A gym: its name and its colour labels. */
 export function PlaceView({id}: {id: string}) {
   const place = useClimb(s => placeById(s.data, id));
   const used = useClimb(s => hasSessions(s.data, id));
@@ -22,18 +22,17 @@ export function PlaceView({id}: {id: string}) {
     return (
       <SubScreen title="Not found" back={{name: 'settings'}}>
         <p className="px-4 pt-6 text-dim">
-          This gym or board isn&apos;t in the log (any more).
+          This gym isn&apos;t in the log (any more).
         </p>
       </SubScreen>
     );
-  const board = place.kind === PlaceKind.BOARD;
   return (
     <SubScreen title={place.name || 'Unnamed'} back={{name: 'settings'}}>
       <Section title="Name">
         <NameField key={place.name} place={place} />
       </Section>
-      {board ? <AngleSetting place={place} /> : <Colours place={place} />}
-      <Section title={board ? 'This board' : 'This gym'}>
+      <Colours place={place} />
+      <Section title="This gym">
         <div className="flex flex-wrap gap-2">
           <button
             type="button"
@@ -98,42 +97,6 @@ function NameField({place}: {place: Place}) {
       }}
       className={`h-12 w-full px-4 text-[16px] text-strong ${BLOCK}`}
     />
-  );
-}
-
-function AngleSetting({place}: {place: Place}) {
-  const angle = place.usualAngle ?? 0;
-  const set = (a: number) =>
-    change(d =>
-      updatePlace(d, place.id, {usualAngle: Math.max(0, Math.min(90, a))}),
-    );
-  return (
-    <Section title="Usual angle">
-      <div className={`flex items-center gap-3 px-4 py-2 ${BLOCK}`}>
-        <span className="flex-1 text-[14px] text-dim">
-          A session starts at this angle; you can change it there.
-        </span>
-        <button
-          type="button"
-          aria-label="5° less"
-          onClick={() => set(angle - 5)}
-          className={`flex h-11 w-11 items-center justify-center rounded-full ${IN_BLOCK}`}
-        >
-          <Minus size={18} />
-        </button>
-        <span className="w-12 text-center text-[20px] font-semibold tabular-nums text-strong">
-          {angle}°
-        </span>
-        <button
-          type="button"
-          aria-label="5° more"
-          onClick={() => set(angle + 5)}
-          className={`flex h-11 w-11 items-center justify-center rounded-full ${IN_BLOCK}`}
-        >
-          <Plus size={18} />
-        </button>
-      </div>
-    </Section>
   );
 }
 
