@@ -12,7 +12,7 @@ import {
   PopoverTrigger,
 } from '../components/ui/popover';
 import {ProgressRing} from '../components/progress_ring';
-import {TimeGrid} from '../components/time_grid';
+import {TimeGrid, TimeGridDnd, useSessionDrag} from '../components/time_grid';
 import {ToPlanCard} from '../components/to_plan_card';
 import {Select} from '../components/ui/select';
 import {WorkCard} from '../components/work_card';
@@ -120,51 +120,57 @@ export function HomeView({date}: {date?: ISODate}) {
   // dragged on the handles between them (this device).
   const cards = usePaneSize('home-cards', 380);
   const planned = usePaneSize('home-planned', 0);
+  // One drag area for the calendar and the cards: planned sessions drag
+  // onto the calendar to get a time.
   return (
-    <div
-      className="grid h-full grid-cols-1 gap-2 overflow-y-auto p-2 lg:grid-cols-[minmax(0,1fr)_auto_var(--cards-w)] lg:gap-x-0 lg:overflow-hidden"
-      style={{'--cards-w': `${cards.size}px`} as CSSProperties}
-    >
-      <div className="flex h-[70vh] min-h-0 flex-col rounded-lg border border-line bg-panel lg:h-full">
-        <DayNav start={start} days={days} span={span} today={today} />
-        <div className="min-h-0 flex-1">
-          <TimeGrid
-            days={days}
-            hourHeight={HOME_HOUR_PX}
-            scrollToHour={Math.max(0, new Date().getHours() - 2)}
-            onDayClick={d => navigate({name: 'calendar', view: 'day', date: d})}
+    <TimeGridDnd hourHeight={HOME_HOUR_PX}>
+      <div
+        className="grid h-full grid-cols-1 gap-2 overflow-y-auto p-2 lg:grid-cols-[minmax(0,1fr)_auto_var(--cards-w)] lg:gap-x-0 lg:overflow-hidden"
+        style={{'--cards-w': `${cards.size}px`} as CSSProperties}
+      >
+        <div className="flex h-[70vh] min-h-0 flex-col rounded-lg border border-line bg-panel lg:h-full">
+          <DayNav start={start} days={days} span={span} today={today} />
+          <div className="min-h-0 flex-1">
+            <TimeGrid
+              days={days}
+              hourHeight={HOME_HOUR_PX}
+              scrollToHour={Math.max(0, new Date().getHours() - 2)}
+              onDayClick={d =>
+                navigate({name: 'calendar', view: 'day', date: d})
+              }
+            />
+          </div>
+        </div>
+        <ResizeHandle
+          pane={cards}
+          sizes="after"
+          axis="x"
+          min={280}
+          keep={420}
+          label="Resize the calendar and the cards"
+          className="hidden w-2 lg:block"
+        />
+        {/* Below lg the page scrolls, so the cards take the room they need;
+          beside the calendar (lg) they share its height. */}
+        <div className="flex flex-col gap-2 lg:min-h-0">
+          <SignInBanner />
+          <UsosBanner />
+          <Planned days={days} height={planned.custom ? planned.size : null} />
+          <ResizeHandle
+            pane={planned}
+            sizes="before"
+            axis="y"
+            min={80}
+            keep={80}
+            label="Resize the planned sessions"
+            className="z-10 -my-2 hidden h-2 lg:block"
           />
+          <ToPlanCard />
+          <Projects />
+          <WorkCard />
         </div>
       </div>
-      <ResizeHandle
-        pane={cards}
-        sizes="after"
-        axis="x"
-        min={280}
-        keep={420}
-        label="Resize the calendar and the cards"
-        className="hidden w-2 lg:block"
-      />
-      {/* Below lg the page scrolls, so the cards take the room they need;
-          beside the calendar (lg) they share its height. */}
-      <div className="flex flex-col gap-2 lg:min-h-0">
-        <SignInBanner />
-        <UsosBanner />
-        <Planned days={days} height={planned.custom ? planned.size : null} />
-        <ResizeHandle
-          pane={planned}
-          sizes="before"
-          axis="y"
-          min={80}
-          keep={80}
-          label="Resize the planned sessions"
-          className="z-10 -my-2 hidden h-2 lg:block"
-        />
-        <ToPlanCard />
-        <Projects />
-        <WorkCard />
-      </div>
-    </div>
+    </TimeGridDnd>
   );
 }
 
@@ -357,10 +363,18 @@ const PlannedRow = memo(function PlannedRow({
   lookups: Lookups;
 }) {
   const openItem = useUi(s => s.openItem);
+  // Onto the calendar: a session with no time gets one; a block moves.
+  const {attributes, listeners, setNodeRef, isDragging} = useSessionDrag(
+    alloc,
+    'planned',
+  );
   const item = lookups.item(alloc.itemId);
   if (!item) return null;
   return (
     <li
+      ref={setNodeRef}
+      {...attributes}
+      {...listeners}
       tabIndex={0}
       data-block
       onKeyDown={blockKeys({
@@ -368,7 +382,12 @@ const PlannedRow = memo(function PlannedRow({
         toggle: () => toggleSession(alloc.id),
         remove: () => removeSession(alloc.id),
       })}
-      className="flex animate-fade-in items-center gap-1.5 rounded-md border-l-2 bg-raised py-0.5 pr-1.5 pl-1.5 transition-colors duration-150 hover:bg-line/60"
+      title={
+        alloc.start
+          ? 'Drag onto the calendar to move it'
+          : 'Drag onto the calendar to give it a time'
+      }
+      className={`flex animate-fade-in cursor-grab items-center gap-1.5 rounded-md border-l-2 bg-raised py-0.5 pr-1.5 pl-1.5 transition-colors duration-150 hover:bg-line/60 ${isDragging ? 'opacity-40' : ''}`}
       style={{borderLeftColor: lookups.color(item)}}
     >
       <input
