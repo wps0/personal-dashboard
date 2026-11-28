@@ -99,7 +99,7 @@ export function SessionView() {
   };
 
   return (
-    <div className="relative flex h-full flex-col bg-bg text-[15px]">
+    <div className="relative mx-auto flex h-full w-full max-w-3xl flex-col bg-bg text-[15px]">
       <Header
         back={{name: 'today'}}
         title={

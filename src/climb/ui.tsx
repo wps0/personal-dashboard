@@ -57,11 +57,14 @@ export function Header({
   title,
   back,
   right,
+  tab,
 }: {
   title: ReactNode;
   /** Where the back arrow goes; without it, the log's mark. */
   back?: Route;
   right?: ReactNode;
+  /** On a computer, the tabs in the bar, this one current (null: none). */
+  tab?: Tab | null;
 }) {
   return (
     <header className="flex h-14 shrink-0 items-center gap-2 bg-bg px-2">
@@ -72,9 +75,12 @@ export function Header({
       ) : (
         <Mountain size={22} className="mx-2 shrink-0 text-accent" aria-hidden />
       )}
-      <h1 className="min-w-0 flex-1 truncate text-[17px] font-semibold text-strong">
+      <h1
+        className={`min-w-0 flex-1 truncate text-[17px] font-semibold text-strong ${tab === undefined ? '' : 'md:flex-none'}`}
+      >
         {title}
       </h1>
+      {tab !== undefined && <TopTabs active={tab} />}
       {right ?? (
         <>
           <DashboardLink />
@@ -91,9 +97,32 @@ export function Header({
   );
 }
 
+/** The tabs in the top bar, on a computer; phones have them at the bottom. */
+function TopTabs({active}: {active: Tab | null}) {
+  return (
+    <nav className="ml-4 hidden flex-1 items-center gap-1 md:flex">
+      {TABS.map(({tab, label, icon: Icon}) => {
+        const on = tab === active;
+        return (
+          <a
+            key={tab}
+            href={href({name: tab})}
+            aria-current={on ? 'page' : undefined}
+            className={`flex h-9 items-center gap-1.5 rounded-full px-3 text-[14px] ${on ? 'bg-accent/15 font-medium text-accent' : 'text-dim hover:text-fg'}`}
+          >
+            <Icon size={16} aria-hidden />
+            {label}
+          </a>
+        );
+      })}
+    </nav>
+  );
+}
+
+/** The tabs at the bottom, on a phone. */
 function Tabs({active}: {active: Tab}) {
   return (
-    <nav className="grid shrink-0 grid-cols-3 bg-bg pb-[env(safe-area-inset-bottom)]">
+    <nav className="grid shrink-0 grid-cols-3 bg-bg pb-[env(safe-area-inset-bottom)] md:hidden">
       {TABS.map(({tab, label, icon: Icon}) => {
         const on = tab === active;
         return (
@@ -175,8 +204,10 @@ export function TabScreen({
 }) {
   return (
     <div className="relative flex h-full flex-col bg-bg text-[15px]">
-      <Header title={title} />
-      <main className="min-h-0 flex-1 overflow-y-auto pb-6">{children}</main>
+      <Header title={title} tab={tab} />
+      <main className="min-h-0 flex-1 overflow-y-auto pb-6">
+        <div className="mx-auto w-full max-w-3xl">{children}</div>
+      </main>
       <UndoBar />
       <Tabs active={tab} />
     </div>
@@ -195,8 +226,10 @@ export function SubScreen({
 }) {
   return (
     <div className="flex h-full flex-col bg-bg text-[15px]">
-      <Header title={title} back={back} right={<span />} />
-      <main className="min-h-0 flex-1 overflow-y-auto pb-6">{children}</main>
+      <Header title={title} back={back} right={<span />} tab={null} />
+      <main className="min-h-0 flex-1 overflow-y-auto pb-6">
+        <div className="mx-auto w-full max-w-3xl">{children}</div>
+      </main>
       <UndoBar />
     </div>
   );
