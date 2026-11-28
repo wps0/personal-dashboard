@@ -10,7 +10,8 @@ export type Route =
   | {name: 'progress'}
   | {name: 'history'}
   | {name: 'settings'}
-  | {name: 'place'; id: string};
+  | {name: 'place'; id: string}
+  | {name: 'session'};
 
 export function parse(hash: string): Route {
   const [first, id] = hash.replace(/^#\/?/, '').split('/');
@@ -21,6 +22,8 @@ export function parse(hash: string): Route {
       return {name: 'history'};
     case 'settings':
       return {name: 'settings'};
+    case 'session':
+      return {name: 'session'};
     case 'place':
       return id
         ? {name: 'place', id: decodeURIComponent(id)}
@@ -50,4 +53,9 @@ function subscribe(onChange: () => void) {
 export function useRoute(): Route {
   const hash = useSyncExternalStore(subscribe, () => location.hash);
   return parse(hash);
+}
+
+/** Goes to `route` by changing the address's hash. */
+export function navigate(route: Route) {
+  location.hash = href(route);
 }

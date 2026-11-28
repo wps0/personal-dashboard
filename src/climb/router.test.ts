@@ -9,6 +9,7 @@ describe('routes', () => {
       {name: 'history'},
       {name: 'settings'},
       {name: 'place', id: 'a-b/c'},
+      {name: 'session'},
     ];
     for (const r of routes) expect(parse(href(r))).toEqual(r);
   });
