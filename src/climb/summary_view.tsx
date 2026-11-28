@@ -60,7 +60,7 @@ export function SummaryView({id}: {id: string}) {
     v === null ? 'no average' : `avg ${num(v)}`;
 
   return (
-    <SubScreen title="Session" back={{name: 'today'}}>
+    <SubScreen title="Session" back={{name: 'history'}}>
       <div className="px-4 pt-2">
         <div className="text-[13px] text-dim">
           {shortDate(dayOf(session))} · {place?.name ?? 'Unknown place'} ·{' '}

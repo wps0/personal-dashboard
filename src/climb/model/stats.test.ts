@@ -11,6 +11,8 @@ import {
   gradeRows,
   lastSession,
   monthStats,
+  sessionsByMonth,
+  sessionsPerWeek,
   sessionStats,
 } from './stats';
 
@@ -160,5 +162,29 @@ describe('Today', () => {
       hardest: '7A',
     });
     expect(monthStats(data, '2026-11', FONT, 15).climbs).toBe(2);
+  });
+});
+
+describe('History', () => {
+  it('lists sessions by month, newest first, and counts sessions a week', () => {
+    const data = fixture([
+      ['A', '2026-10-30T18:00', [['6A', 1]]],
+      ['A', '2026-11-10T18:00', [['6A', 1]]],
+      ['B', '2026-11-10T20:00', [['6A', 1]]],
+      ['B', '2026-11-21T11:00', [['6A', 1]]],
+    ]);
+    expect(
+      sessionsByMonth(data).map(m => [m.month, m.sessions.map(s => s.id)]),
+    ).toEqual([
+      ['2026-11', ['s3', 's2', 's1']],
+      ['2026-10', ['s0']],
+    ]);
+    expect(sessionsPerWeek(data, '2026-11-23', 5)).toEqual([
+      {from: '2026-10-26', count: 1},
+      {from: '2026-11-02', count: 0},
+      {from: '2026-11-09', count: 2},
+      {from: '2026-11-16', count: 1},
+      {from: '2026-11-23', count: 0},
+    ]);
   });
 });
