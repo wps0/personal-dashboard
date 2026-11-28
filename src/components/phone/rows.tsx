@@ -1,5 +1,5 @@
 import {ChevronDown, Ellipsis, Flag} from 'lucide-react';
-import {useState} from 'react';
+import {useState, type ReactNode} from 'react';
 import {toggleSession} from '../../actions';
 import {fmtDuration, URGENCY_CLASS} from '../../format';
 import type {Lookups} from '../../hooks';
@@ -83,8 +83,11 @@ export function ToPlanRow({
   remaining,
   lookups,
   today,
+  extra,
 }: {
   item: Item;
+  /** Prototype: another action before Plan (+ this week). */
+  extra?: ReactNode;
   /** Hours of its estimate not planned yet; none without an estimate. */
   remaining?: number;
   lookups: Lookups;
@@ -112,6 +115,7 @@ export function ToPlanRow({
           {lookups.project(item.projectId)?.name}
         </div>
       </button>
+      {extra}
       <button
         className="flex h-10 shrink-0 items-center gap-1 rounded-full border border-line bg-raised px-3.5 text-[14px] font-medium text-strong"
         aria-label={`Plan “${item.title}”`}

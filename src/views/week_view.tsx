@@ -44,6 +44,7 @@ import {
 } from '../model/selectors';
 import type {Allocation, ISODate, Item} from '../model/types';
 import {useStore} from '../store';
+import {pick, StageButton, ThisWeekBox} from './this_week';
 import {useUi} from '../ui';
 import {useNavTarget} from '../keyboard';
 import {navigate} from '../router';
@@ -99,6 +100,13 @@ export function WeekView({week}: {week?: ISODate}) {
       if (drag.kind === 'item')
         planSession(drag.item.id, date, defaultAllocationHours(drag.remaining));
       else if (drag.alloc.date !== date) updateSession(drag.alloc.id, {date});
+    } else if (target === 'stage') {
+      // Prototype: picked for the week; a session dropped here leaves its day.
+      if (drag.kind === 'item') pick(start, drag.item.id);
+      else if (!drag.alloc.done) {
+        removeSession(drag.alloc.id, 'Back to this week');
+        pick(start, drag.alloc.itemId);
+      }
     } else if (
       target === 'backlog' &&
       drag.kind === 'alloc' &&
@@ -218,7 +226,9 @@ function WeekGrid({start, today}: {start: ISODate; today: ISODate}) {
           <div className="grid gap-2 md:col-span-2 md:min-h-0 md:grid-cols-2">
             {days.slice(5).map(dayBox)}
           </div>
+          <ThisWeekBox start={start} today={today} lookups={lookups} />
           <BacklogBox
+            week={start}
             lookups={lookups}
             today={today}
             month={monthKey(addDays(start, 3))}
@@ -465,6 +475,7 @@ const AllocationContent = memo(function AllocationContent(props: {
 });
 
 const BacklogBox = memo(function BacklogBox(props: {
+  week: ISODate;
   lookups: Lookups;
   today: ISODate;
   month: string;
@@ -473,7 +484,7 @@ const BacklogBox = memo(function BacklogBox(props: {
   return (
     <section
       ref={setNodeRef}
-      className={`drop-target flex min-h-64 flex-col rounded-lg border bg-panel md:col-span-3 md:min-h-0 ${isOver ? 'is-over border-accent bg-accent/5' : 'border-line'}`}
+      className={`drop-target flex min-h-64 flex-col rounded-lg border bg-panel md:col-span-2 md:min-h-0 ${isOver ? 'is-over border-accent bg-accent/5' : 'border-line'}`}
     >
       <BacklogContents {...props} />
     </section>
@@ -481,10 +492,12 @@ const BacklogBox = memo(function BacklogBox(props: {
 });
 
 const BacklogContents = memo(function BacklogContents({
+  week,
   lookups,
   today,
   month,
 }: {
+  week: ISODate;
   lookups: Lookups;
   today: ISODate;
   month: string;
@@ -493,7 +506,7 @@ const BacklogContents = memo(function BacklogContents({
   const allocations = useStore(s => s.data.allocations);
   const projects = useStore(s => s.data.projects);
   const areas = useStore(s => s.data.areas);
-  const [tab, setTab] = useState<'backlog' | 'notes'>('backlog');
+  const [tab, setTab] = useState<'backlog' | 'projects' | 'notes'>('backlog');
   const [areaFilter, setAreaFilter] = useState<string | null>(null);
   const [backlogRows, setBacklogRows] = useState(BACKLOG_ROWS);
   const [missedRows, setMissedRows] = useState(MISSED_ROWS);
@@ -517,10 +530,13 @@ const BacklogContents = memo(function BacklogContents({
         <Tab active={tab === 'backlog'} onClick={() => setTab('backlog')}>
           backlog <span className="text-dim/70">{backlog.length}</span>
         </Tab>
+        <Tab active={tab === 'projects'} onClick={() => setTab('projects')}>
+          by project
+        </Tab>
         <Tab active={tab === 'notes'} onClick={() => setTab('notes')}>
           {monthName(month)}
         </Tab>
-        {tab === 'backlog' && (
+        {tab !== 'notes' && (
           <div className="ml-auto flex gap-0.5">
             {[null, ...areas].map(a => (
               <button
@@ -542,6 +558,13 @@ const BacklogContents = memo(function BacklogContents({
       </header>
       {tab === 'notes' ? (
         <MonthNote month={month} />
+      ) : tab === 'projects' ? (
+        <ByProject
+          week={week}
+          backlog={visible}
+          lookups={lookups}
+          today={today}
+        />
       ) : (
         <div className="scroll-thin min-h-0 flex-1 overflow-y-auto p-1">
           {missed.length > 0 && (
@@ -577,6 +600,7 @@ const BacklogContents = memo(function BacklogContents({
                 {visible.slice(0, backlogRows).map(b => (
                   <BacklogItem
                     key={b.item.id}
+                    week={week}
                     item={b.item}
                     remaining={b.remaining}
                     lookups={lookups}
@@ -596,6 +620,60 @@ const BacklogContents = memo(function BacklogContents({
     </>
   );
 });
+
+/**
+ * Prototype: the backlog by area and project, each task with + to add it to
+ * this week, like a bullet journal's collections.
+ */
+function ByProject({
+  week,
+  backlog,
+  lookups,
+  today,
+}: {
+  week: ISODate;
+  backlog: {item: Item; remaining?: number}[];
+  lookups: Lookups;
+  today: ISODate;
+}) {
+  const groups = new Map<string, {item: Item; remaining?: number}[]>();
+  for (const b of backlog) {
+    const list = groups.get(b.item.projectId);
+    if (list) list.push(b);
+    else groups.set(b.item.projectId, [b]);
+  }
+  return (
+    <div className="scroll-thin grid min-h-0 flex-1 auto-rows-min grid-cols-1 gap-x-3 gap-y-2 overflow-y-auto p-2 xl:grid-cols-2">
+      {[...groups].map(([projectId, list]) => {
+        const project = lookups.project(projectId);
+        return (
+          <section key={projectId}>
+            <h3 className="mb-0.5 flex items-center gap-1.5 px-1 text-[12px] font-semibold text-strong">
+              <span
+                className="h-2 w-2 rounded-full"
+                style={{background: lookups.color(list[0].item)}}
+              />
+              <span className="truncate">{project?.name}</span>
+              <span className="font-normal text-dim">{list.length}</span>
+            </h3>
+            <ul className="space-y-px">
+              {list.map(b => (
+                <BacklogItem
+                  key={b.item.id}
+                  week={week}
+                  item={b.item}
+                  remaining={b.remaining}
+                  lookups={lookups}
+                  today={today}
+                />
+              ))}
+            </ul>
+          </section>
+        );
+      })}
+    </div>
+  );
+}
 
 /** "Show 60 more (of 240)" under a list cut short; nothing when it isn't. */
 function ShowMore({
@@ -647,11 +725,13 @@ function Tab({
 }
 
 const BacklogItem = memo(function BacklogItem({
+  week,
   item,
   remaining,
   lookups,
   today,
 }: {
+  week: ISODate;
   item: Item;
   remaining?: number;
   lookups: Lookups;
@@ -682,6 +762,7 @@ const BacklogItem = memo(function BacklogItem({
         projectName={lookups.project(item.projectId)?.name}
         today={today}
       />
+      <StageButton week={week} item={item} />
     </li>
   );
 });

@@ -36,8 +36,9 @@ import {backlogItems, missedAllocations} from '../model/selectors';
 import type {Allocation, ISODate} from '../model/types';
 import {navigate} from '../router';
 import {useStore} from '../store';
+import {StageButton, ThisWeekList, usePicked} from './this_week';
 
-type Tab = 'week' | 'plan' | 'notes';
+type Tab = 'week' | 'stage' | 'plan' | 'notes';
 
 /**
  * The week journal on a phone: the days as a list rather than seven boxes.
@@ -62,6 +63,7 @@ export function WeekPhoneView({week}: {week?: ISODate}) {
   });
   const lookups = useLookups();
   const [tab, setTab] = useState<Tab>('week');
+  const picked = usePicked(start);
   const [picking, setPicking] = useState(false);
   const allocations = useStore(s => s.data.allocations);
   const items = useStore(s => s.data.items);
@@ -138,13 +140,14 @@ export function WeekPhoneView({week}: {week?: ISODate}) {
         </div>
         <div
           role="tablist"
-          className="mx-1 mt-2 grid grid-cols-3 rounded-full bg-raised p-1 text-[14px]"
+          className="mx-1 mt-2 grid grid-cols-4 rounded-full bg-raised p-1 text-[14px]"
         >
           {(
             [
-              ['week', start === thisWeek ? 'This week' : 'Week'],
+              ['week', 'Days'],
+              ['stage', `This week · ${picked.size}`],
               ['plan', `To plan · ${backlog.length}`],
-              ['notes', 'Month notes'],
+              ['notes', 'Notes'],
             ] as const
           ).map(([t, label]) => (
             <button
@@ -161,7 +164,17 @@ export function WeekPhoneView({week}: {week?: ISODate}) {
       </div>
 
       {tab === 'plan' && (
-        <ToPlan backlog={backlog} lookups={lookups} today={today} />
+        <ToPlan
+          week={start}
+          backlog={backlog}
+          lookups={lookups}
+          today={today}
+        />
+      )}
+      {tab === 'stage' && (
+        <div className="mt-2 flex flex-col">
+          <ThisWeekList start={start} today={today} lookups={lookups} phone />
+        </div>
       )}
       {tab === 'notes' && <MonthNote month={monthKey(addDays(start, 3))} />}
       {tab === 'week' && (
@@ -360,10 +373,12 @@ function MissedRow({
 }
 
 function ToPlan({
+  week,
   backlog,
   lookups,
   today,
 }: {
+  week: ISODate;
   backlog: ReturnType<typeof backlogItems>;
   lookups: Lookups;
   today: ISODate;
@@ -416,6 +431,7 @@ function ToPlan({
               remaining={b.remaining}
               lookups={lookups}
               today={today}
+              extra={<StageButton week={week} item={b.item} />}
             />
           ))}
         </ul>
