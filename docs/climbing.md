@@ -235,7 +235,7 @@ The prototype keeps the other two for comparison (`?look=panes`,
 - **Settings:**
   - **Grades:** Font or V, and the range of buttons at gyms and on boards.
   - **Gyms:** each with its optional colour labels.
-  - **Boards:** with their usual angle.
+  - **Boards.**
   - **Data:** export and import, Drive sync.
   - **The theme.**
 
@@ -309,83 +309,19 @@ The prototype keeps the other two for comparison (`?look=panes`,
 - **Both apps are on the same origin** (see the dashboard's own-subdomain
   TODO); the log's only secret is the Google token.
 
-## Data model (sketch)
+## Data model
 
-Following the dashboard's rules: numeric enums with an unset value, no
-nested messages, fields from 1, `optional` where a field can be unset, and a
-schema version from the start. Adding attempts that weren't topped, or
-ropes, later is adding fields, which older versions keep.
+The schema is `proto/climb/climb.proto`:
+- **Gyms** with optional colour labels.
+- **Sessions** at a gym, with a start and an end (timestamps) and their
+  climbs inside them.
+- **Climbs:** when, the grade, tries, and an optional colour and name.
+- **Grades** are enums (`FontGrade`, `VGrade`), in a `Grade` message's
+  oneof that also says the scale.
+- **Settings:** the range of grade buttons, whose scale the log uses.
 
-```proto
-syntax = "proto3";
-package climb;
-
-message ClimbData {
-  int32 schema_version = 1;
-  repeated Place places = 2;
-  repeated Session sessions = 3;
-  repeated Climb climbs = 4;
-  Settings settings = 5;
-}
-
-message Place {
-  string id = 1;
-  string name = 2;
-  PlaceKind kind = 3;              // GYM or BOARD
-  repeated Colour colours = 4;     // gyms, optional labels
-  optional int32 usual_angle = 5;  // boards, in degrees
-  bool archived = 6;
-}
-
-enum PlaceKind {
-  PLACE_KIND_UNSPECIFIED = 0;
-  PLACE_KIND_GYM = 1;
-  PLACE_KIND_BOARD = 2;
-}
-
-enum GradeSystem {
-  GRADE_SYSTEM_UNSPECIFIED = 0;    // Font
-  GRADE_SYSTEM_FONT = 1;
-  GRADE_SYSTEM_V = 2;
-}
-
-// A label to tell problems apart; nothing is computed from it.
-message Colour {
-  string id = 1;                   // stays when renamed or moved
-  string name = 2;                 // "Red"
-  string hex = 3;                  // "#ef4444"
-}
-
-message Session {
-  string id = 1;
-  string place_id = 2;
-  string date = 3;                 // YYYY-MM-DD
-  string start = 4;                // HH:MM
-  optional string end = 5;         // unset while it runs
-  optional int32 angle = 6;        // boards
-  string notes = 7;
-}
-
-// One climb topped.
-message Climb {
-  string id = 1;
-  string session_id = 2;
-  string at = 3;                   // HH:MM
-  string grade = 4;                // "6B+", in grade_system
-  GradeSystem grade_system = 5;
-  int32 tries = 6;                 // 1: a flash
-  optional string colour_id = 7;   // a label of the session's gym
-  optional string name = 8;
-}
-
-message Settings {
-  GradeSystem grades = 1;          // what the buttons and charts use
-  string gym_buttons_from = 2;     // "4"
-  string gym_buttons_to = 3;       // "7A+"
-  string board_buttons_from = 4;   // "5"
-  string board_buttons_to = 5;     // "7B+"
-}
-```
+Boards (a kind of place, the board angle) are left out for now; adding
+them later is adding fields, which older versions keep.
 
 ## What the numbers mean
 

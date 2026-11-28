@@ -132,3 +132,27 @@ export const CURRICULUM_MAX_LECTURE = 500;
 export const CURRICULUM_MAX_LECTURES_PER_TOPIC = 100;
 /** Tasks from a prompt: the most tasks one answer may bring (the rest are dropped, with a warning). */
 export const PROMPT_TASKS_MAX = 200;
+
+// Climbing log (climb/, docs/climbing.md)
+
+/** The grade buttons, from and to, unless set in Settings: Font. */
+export const CLIMB_BUTTONS_FONT = ['4', '7A+'] as const;
+/** The same in V grades. */
+export const CLIMB_BUTTONS_V = ['V0', 'V8'] as const;
+/** The colours offered for a gym's labels, as name and hex. */
+export const CLIMB_COLOURS: readonly (readonly [string, string])[] = [
+  ['Green', '#22c55e'],
+  ['Yellow', '#facc15'],
+  ['Orange', '#f97316'],
+  ['Blue', '#3b82f6'],
+  ['Red', '#ef4444'],
+  ['Pink', '#ec4899'],
+  ['Purple', '#a855f7'],
+  ['Black', '#0a0a0a'],
+  ['White', '#f5f5f5'],
+  ['Grey', '#9ca3af'],
+];
+/** Changes the log's Undo can go back. */
+export const CLIMB_UNDO_STEPS = 50;
+/** How long the log's undo bar stays after a change. */
+export const CLIMB_UNDO_BAR_MS = 6000;

@@ -1,0 +1,141 @@
+// The climbing log's data, stored on the device and synced to Drive.
+syntax = "proto3";
+
+package climb;
+
+import "google/protobuf/timestamp.proto";
+
+// Everything the log stores, as one file (climb.binpb on Drive).
+message ClimbData {
+  // The version of this schema the data was written with.
+  int32 schema_version = 1;
+  // Gyms, archived ones included.
+  repeated Place places = 2;
+  // Oldest first, each with its climbs.
+  repeated Session sessions = 3;
+  optional Settings settings = 4;
+}
+
+// A gym the user climbs at.
+message Place {
+  // Random UUID; sessions refer to it.
+  string id = 1;
+  // As the user named it, e.g. "Blokownia".
+  string name = 2;
+  // The gym's colour labels, in display order; never used in stats.
+  repeated Colour colours = 3;
+  // Not offered when starting a session; its past sessions stay.
+  bool archived = 4;
+}
+
+// A boulder grade, in the scale it was logged in.
+message Grade {
+  oneof scale {
+    FontGrade font = 1;
+    VGrade v = 2;
+  }
+}
+
+// Fontainebleau grades, easiest first, so values compare by difficulty.
+enum FontGrade {
+  FONT_GRADE_UNSPECIFIED = 0;
+  FONT_GRADE_3 = 1;
+  FONT_GRADE_4 = 2;
+  FONT_GRADE_4_PLUS = 3;
+  FONT_GRADE_5 = 4;
+  FONT_GRADE_5_PLUS = 5;
+  FONT_GRADE_6A = 6;
+  FONT_GRADE_6A_PLUS = 7;
+  FONT_GRADE_6B = 8;
+  FONT_GRADE_6B_PLUS = 9;
+  FONT_GRADE_6C = 10;
+  FONT_GRADE_6C_PLUS = 11;
+  FONT_GRADE_7A = 12;
+  FONT_GRADE_7A_PLUS = 13;
+  FONT_GRADE_7B = 14;
+  FONT_GRADE_7B_PLUS = 15;
+  FONT_GRADE_7C = 16;
+  FONT_GRADE_7C_PLUS = 17;
+  FONT_GRADE_8A = 18;
+  FONT_GRADE_8A_PLUS = 19;
+  FONT_GRADE_8B = 20;
+  FONT_GRADE_8B_PLUS = 21;
+  FONT_GRADE_8C = 22;
+  FONT_GRADE_8C_PLUS = 23;
+  FONT_GRADE_9A = 24;
+}
+
+// Hueco (V) grades, easiest first; V_GRADE_B is VB.
+enum VGrade {
+  V_GRADE_UNSPECIFIED = 0;
+  V_GRADE_B = 1;
+  V_GRADE_0 = 2;
+  V_GRADE_1 = 3;
+  V_GRADE_2 = 4;
+  V_GRADE_3 = 5;
+  V_GRADE_4 = 6;
+  V_GRADE_5 = 7;
+  V_GRADE_6 = 8;
+  V_GRADE_7 = 9;
+  V_GRADE_8 = 10;
+  V_GRADE_9 = 11;
+  V_GRADE_10 = 12;
+  V_GRADE_11 = 13;
+  V_GRADE_12 = 14;
+  V_GRADE_13 = 15;
+  V_GRADE_14 = 16;
+  V_GRADE_15 = 17;
+  V_GRADE_16 = 18;
+  V_GRADE_17 = 19;
+}
+
+// A colour a gym marks its problems with, used as an optional label.
+message Colour {
+  // Random UUID; climbs refer to it, so a rename keeps them.
+  string id = 1;
+  // Shown with the swatch, e.g. "Red".
+  string name = 2;
+  // The swatch's CSS colour, e.g. "#ef4444".
+  string hex = 3;
+}
+
+// One visit to a gym, from Start to Finish.
+message Session {
+  // Random UUID.
+  string id = 1;
+  // The Place the session was at.
+  string place_id = 2;
+  // When Start was pressed.
+  google.protobuf.Timestamp start = 3;
+  // When Finish was pressed; unset while the session runs.
+  optional google.protobuf.Timestamp end = 4;
+  // Problems topped, in the order logged.
+  repeated Climb climbs = 5;
+  // Free text added after the session.
+  string notes = 6;
+}
+
+// One problem topped during a session.
+message Climb {
+  // Random UUID; edits and sync match climbs by it.
+  string id = 1;
+  // When the grade button was tapped.
+  google.protobuf.Timestamp at = 2;
+  // The problem's grade.
+  Grade grade = 3;
+  // Attempts it took, the successful one included: 1 is a flash.
+  int32 tries = 4;
+  // The Colour (of the session's gym) the problem was marked with.
+  optional string colour_id = 5;
+  // The user's own name for the problem, e.g. "the overhang".
+  optional string name = 6;
+}
+
+// The user's preferences, synced with the data.
+message Settings {
+  // Easiest grade on the logging buttons; its scale is the one the log
+  // shows. Unset: 4.
+  optional Grade buttons_from = 1;
+  // Hardest grade on the logging buttons. Unset: 7A+.
+  optional Grade buttons_to = 2;
+}
