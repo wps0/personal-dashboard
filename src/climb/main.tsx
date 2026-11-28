@@ -15,6 +15,7 @@ import {LoadError, OpenElsewhere} from './boot_screens';
 import './climb.css';
 import {climbStorage, LOCK} from './storage';
 import {replaceAll, setNotice, useClimb} from './store';
+import {setUpClimbSync} from './sync';
 
 // The one service worker serves both apps' pages.
 setUpPwa('../sw.js');
@@ -50,6 +51,8 @@ async function boot() {
         `Changes can’t be saved on this device; export the data (Settings) to keep them. ${String((e as Error)?.message ?? e)}`,
       ),
   });
+
+  setUpClimbSync(storage);
 
   root.render(
     <StrictMode>

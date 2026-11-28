@@ -1,7 +1,9 @@
 # Climbing log: design
 
-**Status:** proposal, third round, after the review of the second one, with
-the look chosen (Soft).
+**Status:** built, in the eight steps of the Plan below; the screenshots
+are from the design's prototype (branch `proto/climb`). Where the build
+differs from the design, this document says so. Boards are left out for
+now: the log has gyms only (see Data model).
 Nothing is built yet. The screenshots come from a prototype with sample data
 (branch `proto/climb`, not for merging), so both the features and the look
 can still change.
@@ -296,12 +298,21 @@ The prototype keeps the other two for comparison (`?look=panes`,
 - **Neither imports the other's schema or model.** A change to one can't
   break the other, and each file can be exported, imported or deleted on
   its own.
-- **Shared, made generic over the schema and the names:**
+- **Shared, made generic over the schema and the names** (`src/saving/`,
+  `src/google/`):
   - the codec (binary and JSON, the schema version check, migrations);
-  - autosave;
+  - autosave, and the one-tab lock;
   - IndexedDB storage;
-  - Drive sync with its three-way merge and conflict review;
-  - Google sign-in.
+  - the Drive sync algorithm with its three-way merge, and the Drive file
+    operations (each app with its own file names and marker);
+  - loading Google sign-in, and the Client ID.
+- **The log's own:** its sign-in (Drive only, the `drive.file` scope; the
+  token kept in the tab), its sync runner, and its merge rules (a session
+  or place deleted on one device comes back if the other used it).
+- **Differences from the dashboard's sync:** a first sync with different
+  data on Drive merges both instead of asking (climbs have their own ids,
+  so nothing is lost or doubled); a value changed on both devices keeps
+  this device's, with a notice, and there's no review screen.
 - **The first PR is that refactor alone,** with no change to the dashboard.
   Tests show it reads and writes exactly the bytes it did before.
 - **The Google Client ID setting is shared,** so it's set once; sign-in is

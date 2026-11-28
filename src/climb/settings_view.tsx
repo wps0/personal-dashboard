@@ -1,4 +1,4 @@
-import {ChevronRight, Download, Plus, Upload} from 'lucide-react';
+import {ChevronRight, Cloud, Download, Plus, Upload} from 'lucide-react';
 import {useRef, useState, type ReactNode} from 'react';
 import {useTheme, type ThemeChoice} from '../theme';
 import {GradeSystem, settingsOf, type Place} from './model/data';
@@ -11,7 +11,9 @@ import {
 } from './model/grades';
 import {addPlace, placesOf, updateSettings} from './model/places';
 import {href} from './router';
+import {setSyncOn, signIn, useDrive} from './google';
 import {downloadBinary, downloadJson, readExport} from './storage';
+import {syncNow, useSyncStatus} from './sync';
 import {change, useClimb} from './store';
 import {
   IN_BLOCK,
@@ -40,6 +42,7 @@ export function SettingsView() {
       <GradesSettings />
       <PlacesSettings />
       <ArchivedPlaces />
+      <DriveSync />
       <DataSettings />
       <Section title="Theme">
         <Segmented
@@ -308,8 +311,99 @@ function DataSettings() {
       </div>
       {error && <p className="mt-2 text-[14px] text-danger">{error}</p>}
       <p className="mt-2 text-[13px] text-dim">
-        Kept apart from the dashboard&apos;s data: its own file on this device.
-        An import replaces the log&apos;s data here (Undo brings it back).
+        Kept apart from the dashboard&apos;s data: its own file on this device
+        and on Drive. An import replaces the log&apos;s data here (Undo brings
+        it back).
+      </p>
+    </Section>
+  );
+}
+
+function syncText(
+  status: ReturnType<typeof useSyncStatus.getState>,
+  signingIn: boolean,
+): string {
+  if (signingIn) return 'Signing in…';
+  switch (status.status) {
+    case 'syncing':
+      return 'Syncing…';
+    case 'idle':
+      return status.lastSynced
+        ? `Synced at ${new Date(status.lastSynced).toTimeString().slice(0, 5)}`
+        : 'On';
+    case 'signed-out':
+      return 'Waiting for you to sign in';
+    case 'offline':
+      return 'Offline: syncs when you’re back online';
+    case 'error':
+      return `Paused: ${status.error ?? 'something went wrong'}`;
+    default:
+      return 'On';
+  }
+}
+
+/** Drive sync of the log's own files, climb.binpb and climb.json. */
+function DriveSync() {
+  const {on, signingIn, error, token} = useDrive();
+  const status = useSyncStatus();
+  const signedOut = on && (!token || status.status === 'signed-out');
+  return (
+    <Section title="Google Drive sync">
+      <div className={LIST}>
+        <Row>
+          <Cloud size={18} className="text-dim" aria-hidden />
+          <span className="flex-1">
+            Sync the log
+            {on && (
+              <span className="block text-[13px] text-dim">
+                {syncText(status, signingIn)}
+              </span>
+            )}
+          </span>
+          <button
+            type="button"
+            role="switch"
+            aria-checked={on}
+            aria-label="Sync the log with Google Drive"
+            onClick={() => setSyncOn(!on)}
+            className={`relative h-7 w-12 rounded-full transition-colors ${on ? 'bg-accent' : 'bg-bg'}`}
+          >
+            <span
+              className={`absolute top-1 h-5 w-5 rounded-full bg-strong transition-[left] ${on ? 'left-6' : 'left-1'}`}
+            />
+          </button>
+        </Row>
+        {on && (
+          <Row>
+            {signedOut ? (
+              <button
+                type="button"
+                onClick={() => void signIn()}
+                className="h-10 rounded-full bg-accent px-4 font-semibold text-on-accent"
+              >
+                Sign in with Google
+              </button>
+            ) : (
+              <button
+                type="button"
+                onClick={() => void syncNow()}
+                className={`${SMALL_BUTTON} bg-bg`}
+              >
+                Sync now
+              </button>
+            )}
+          </Row>
+        )}
+      </div>
+      {error && <p className="mt-2 text-[14px] text-danger">{error}</p>}
+      <p className="mt-2 text-[13px] text-dim">
+        Your climbs in climb.binpb on your Google Drive, with climb.json as a
+        copy to read, apart from the dashboard&apos;s file. The log can only see
+        files it made. It uses the OAuth Client ID from the dashboard&apos;s{' '}
+        <a href="../#/settings" className="text-accent">
+          Settings
+        </a>{' '}
+        and signs in on its own.
       </p>
     </Section>
   );

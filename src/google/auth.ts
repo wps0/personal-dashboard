@@ -1,3 +1,9 @@
+import {
+  BUILT_IN_CLIENT_ID,
+  DRIVE_SCOPE,
+  GOOGLE_PREFS_KEY,
+  loadGis,
+} from './gis';
 import {create} from 'zustand';
 import type {ApiCalendar} from './events';
 
@@ -13,12 +19,7 @@ export const SCOPES = [
   'https://www.googleapis.com/auth/calendar.calendarlist.readonly',
 ] as const;
 
-/**
- * The only Drive permission, requested only while Drive sync is on (and so
- * never by the Calendar sign-in alone): access to the files this app creates,
- * and nothing else in your Drive.
- */
-export const DRIVE_SCOPE = 'https://www.googleapis.com/auth/drive.file';
+export {DRIVE_SCOPE};
 
 /**
  * Google Tasks, read-only, requested only while it's shown (Settings → Google
@@ -27,44 +28,8 @@ export const DRIVE_SCOPE = 'https://www.googleapis.com/auth/drive.file';
  */
 export const TASKS_SCOPE = 'https://www.googleapis.com/auth/tasks.readonly';
 
-const PREFS_KEY = 'personal-dashboard/google';
+const PREFS_KEY = GOOGLE_PREFS_KEY;
 const TOKEN_KEY = 'personal-dashboard/google-token';
-const GIS_SRC = 'https://accounts.google.com/gsi/client';
-/** Built in by the deploy (a repository variable); one set in Settings wins. */
-const BUILT_IN_CLIENT_ID: string = import.meta.env.VITE_GOOGLE_CLIENT_ID ?? '';
-
-/** Minimal typings for Google Identity Services' token model. */
-interface TokenResponse {
-  access_token?: string;
-  expires_in?: number;
-  scope?: string;
-  error?: string;
-  error_description?: string;
-}
-interface TokenClient {
-  requestAccessToken(opts?: {prompt?: '' | 'consent' | 'select_account'}): void;
-}
-interface Gis {
-  accounts: {
-    oauth2: {
-      initTokenClient(cfg: {
-        client_id: string;
-        scope: string;
-        include_granted_scopes?: boolean;
-        callback(r: TokenResponse): void;
-        error_callback?(e: {type: string; message?: string}): void;
-      }): TokenClient;
-      hasGrantedAllScopes(r: TokenResponse, ...scopes: string[]): boolean;
-      revoke(token: string, done?: () => void): void;
-    };
-  };
-}
-declare global {
-  interface Window {
-    google?: Gis;
-  }
-}
-
 type Status = 'signed-out' | 'signing-in' | 'signed-in' | 'expired' | 'error';
 
 interface Prefs {
@@ -189,27 +154,6 @@ function savePrefs(p: Prefs) {
   } catch {
     // Not persisted; fine.
   }
-}
-
-let gisPromise: Promise<Gis> | null = null;
-
-function loadGis(): Promise<Gis> {
-  if (window.google?.accounts?.oauth2) return Promise.resolve(window.google);
-  gisPromise ??= new Promise<Gis>((resolve, reject) => {
-    const s = document.createElement('script');
-    s.src = GIS_SRC;
-    s.async = true;
-    s.onload = () =>
-      window.google?.accounts?.oauth2
-        ? resolve(window.google)
-        : reject(new Error('Google sign-in failed to initialise'));
-    s.onerror = () => {
-      gisPromise = null;
-      reject(new Error('Could not load Google sign-in (offline or blocked?)'));
-    };
-    document.head.appendChild(s);
-  });
-  return gisPromise;
 }
 
 const initialToken = loadToken();
