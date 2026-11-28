@@ -61,9 +61,11 @@ export function planSession(
   date: string,
   hours: number,
   message = 'Planned',
-  {quiet = true} = {},
+  {quiet = true, start}: {quiet?: boolean; start?: string} = {},
 ) {
-  withUndo(message, () => s().addAllocation(itemId, date, hours), {quiet});
+  withUndo(message, () => s().addAllocation(itemId, date, hours, start), {
+    quiet,
+  });
 }
 
 /** Plans a task's suggested sessions (untimed), in one undoable step. */

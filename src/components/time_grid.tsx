@@ -51,7 +51,12 @@ import {
   type ReservedSpan,
   type ReservedTimes,
 } from '../model/reserved';
-import {dueByDay, isItemDone} from '../model/selectors';
+import {
+  committedHours,
+  defaultAllocationHours,
+  dueByDay,
+  isItemDone,
+} from '../model/selectors';
 import {
   endLabel,
   endMinutes,
@@ -92,6 +97,7 @@ import {BlockLabel, blockTextClass} from './block_label';
 import {Popover, PopoverAnchor, PopoverContent, useBeside} from './ui/popover';
 import {
   deleteEvent,
+  planSession,
   removeSession,
   toggleSession,
   updateEvent,
@@ -111,6 +117,8 @@ interface Props {
 
 type Drag =
   | {kind: 'alloc'; alloc: Allocation}
+  /** A task's deadline: dropped, it makes a session (the deadline stays). */
+  | {kind: 'due'; item: Item; hours: number}
   | {kind: 'event'; event: CalendarEvent}
   | {kind: 'reserved'; span: ReservedSpan};
 
@@ -134,6 +142,7 @@ const DAY_MIN = 24 * 60;
  */
 function dragLength(drag: Drag): number {
   if (drag.kind === 'alloc') return Math.round(drag.alloc.plannedHours * 60);
+  if (drag.kind === 'due') return Math.round(drag.hours * 60);
   if (drag.kind === 'reserved') {
     // The whole event, or the part after midnight when that's what's held.
     const {start, end, tail, event} = drag.span;
@@ -247,6 +256,8 @@ export function TimeGrid({
       if (drag.kind === 'reserved') return;
       if (drag.kind === 'alloc')
         updateSession(drag.alloc.id, {date, start: undefined});
+      else if (drag.kind === 'due')
+        planSession(drag.item.id, date, drag.hours, 'Planned', {quiet: false});
       else updateEvent(drag.event.id, {date, allDay: true});
       return;
     }
@@ -255,6 +266,11 @@ export function TimeGrid({
     if (start === null) return;
     if (drag.kind === 'alloc') {
       updateSession(drag.alloc.id, {date, start: fromMinutes(start)});
+    } else if (drag.kind === 'due') {
+      planSession(drag.item.id, date, drag.hours, 'Time block added', {
+        quiet: false,
+        start: fromMinutes(start),
+      });
     } else if (drag.kind === 'reserved') {
       // Only that day, like any repeating event dragged on the calendar. The
       // whole event moves, past midnight if that's where it goes.
@@ -605,12 +621,11 @@ const Strip = memo(function Strip(props: {
     ...events.map(e => <AllDayChip key={e.id} event={e} />),
     ...google.map(e => <GoogleChip key={e.key} ev={e} variant="strip" />),
     ...due.map(i => (
-      <DueChip
+      <DraggableDue
         key={`due:${i.id}`}
         item={i}
         lookups={lookups}
         today={today}
-        variant="strip"
       />
     )),
     ...tasks.map(t => (
@@ -710,6 +725,49 @@ const AllDayChip = memo(function AllDayChip({event}: {event: CalendarEvent}) {
     </Popover>
   );
 });
+
+/**
+ * A task's deadline in the all-day row, dragged to plan time for it: into
+ * the hours it makes a time block, onto a day's row a session with no time
+ * yet. The deadline stays. Its length is what's left of the estimate, up to
+ * the usual session length.
+ */
+function DraggableDue({
+  item,
+  lookups,
+  today,
+}: {
+  item: Item;
+  lookups: Lookups;
+  today: ISODate;
+}) {
+  const committed = useStore(s =>
+    committedHours(s.data.allocations.filter(a => a.itemId === item.id)),
+  );
+  const left =
+    item.estimateHours != null && item.estimateHours > committed
+      ? item.estimateHours - committed
+      : undefined;
+  const {listeners, setNodeRef, isDragging} = useDraggable({
+    id: `due:${item.id}`,
+    data: {
+      kind: 'due',
+      item,
+      hours: defaultAllocationHours(left),
+    } satisfies Drag,
+    disabled: isItemDone(item),
+  });
+  return (
+    <div
+      ref={setNodeRef}
+      {...listeners}
+      title="Drag into the day to plan time for it"
+      className={`touch-none ${isDragging ? 'opacity-40' : ''}`}
+    >
+      <DueChip item={item} lookups={lookups} today={today} variant="strip" />
+    </div>
+  );
+}
 
 const StripChip = memo(function StripChip({
   alloc,
@@ -1431,23 +1489,29 @@ function DropPreview({
         {reservedRange(drag.span, date, start)}
       </div>
     );
-  const item = drag.kind === 'alloc' ? lookups.item(drag.alloc.itemId) : null;
-  const title = drag.kind === 'alloc' ? (item?.title ?? '') : drag.event.title;
+  const item =
+    drag.kind === 'alloc'
+      ? lookups.item(drag.alloc.itemId)
+      : drag.kind === 'due'
+        ? drag.item
+        : null;
+  const task = drag.kind !== 'event';
+  const title = task ? (item?.title ?? '') : drag.event.title;
   return (
     <div
       data-drop-preview
       className={`pointer-events-none absolute right-1 left-0.5 z-30 overflow-hidden rounded-md px-1.5 text-[11px] shadow-lg ring-2 ring-bg ${blockTextClass(height)} ${
-        drag.kind === 'alloc' ? 'border-l-4 text-strong' : ''
+        task ? 'border-l-4 text-strong' : ''
       }`}
       style={{
         top: (start / 60) * hourHeight,
         height,
-        ...(drag.kind === 'alloc'
-          ? {
+        ...(drag.kind === 'event'
+          ? eventStyle(drag.event.color)
+          : {
               background: `color-mix(in srgb, ${lookups.color(item ?? undefined)} 55%, var(--color-panel))`,
               borderLeftColor: lookups.color(item ?? undefined),
-            }
-          : eventStyle(drag.event.color)),
+            }),
       }}
     >
       <BlockLabel
@@ -1471,10 +1535,13 @@ function DragGhost({drag}: {drag: Drag}) {
         {drag.span.event.title || 'Reserved'}
       </div>
     );
-  const title =
-    drag.kind === 'event'
-      ? drag.event.title
-      : (lookups.item(drag.alloc.itemId)?.title ?? '');
+  const item =
+    drag.kind === 'due'
+      ? drag.item
+      : drag.kind === 'alloc'
+        ? lookups.item(drag.alloc.itemId)
+        : undefined;
+  const title = drag.kind === 'event' ? drag.event.title : (item?.title ?? '');
   return (
     <div
       className="w-40 animate-lift cursor-grabbing truncate rounded-md px-1.5 py-0.5 text-[11px] font-medium shadow-xl"
@@ -1482,7 +1549,7 @@ function DragGhost({drag}: {drag: Drag}) {
         drag.kind === 'event'
           ? eventStyle(drag.event.color)
           : {
-              background: lookups.color(lookups.item(drag.alloc.itemId)),
+              background: lookups.color(item),
               color: 'var(--color-on-block)',
             }
       }
